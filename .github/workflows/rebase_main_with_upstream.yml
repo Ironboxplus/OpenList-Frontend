@@ -1,0 +1,58 @@
+name: Rebase Main With Upstream
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: rebase-main-with-upstream
+  cancel-in-progress: false
+
+jobs:
+  rebase:
+    name: Rebase main onto upstream/main
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream main
+        run: |
+          git remote add upstream https://github.com/OpenListTeam/OpenList-Frontend.git
+          git fetch --no-tags origin main
+          git fetch --no-tags upstream main
+
+      - name: Check whether rebase is needed
+        id: check
+        run: |
+          if git merge-base --is-ancestor upstream/main origin/main; then
+            echo "need_rebase=false" >> "$GITHUB_OUTPUT"
+            echo "origin/main already contains upstream/main"
+          else
+            echo "need_rebase=true" >> "$GITHUB_OUTPUT"
+            echo "upstream/main has new commits to rebase onto"
+          fi
+
+      - name: Rebase main onto upstream/main
+        if: steps.check.outputs.need_rebase == 'true'
+        run: |
+          git checkout main
+          git reset --hard origin/main
+          git rebase upstream/main
+
+      - name: Push rebased main
+        if: steps.check.outputs.need_rebase == 'true'
+        run: git push --force-with-lease origin main
