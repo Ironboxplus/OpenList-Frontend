@@ -85,11 +85,30 @@ export default defineConfig({
               src: "src/components/artplayer-plugin-ass/fonts/*",
               dest: "static/fonts",
             },
+            {
+              src: "node_modules/jassub/dist/wasm/jassub-worker.{js,wasm}",
+              dest: "static/jassub",
+            },
+            {
+              src: "node_modules/jassub/dist/wasm/jassub-worker-modern.wasm",
+              dest: "static/jassub",
+            },
+            {
+              src: "node_modules/jassub/dist/default.woff2",
+              dest: "static/jassub",
+            },
+            {
+              src: "node_modules/libpgs/dist/libpgs.worker.js",
+              dest: "static/libpgs",
+            },
           ],
         })
       : null,
     fixLegacyPolyfillDataSrc(),
   ],
+  worker: {
+    format: "es",
+  },
   base: process.env.NODE_ENV === "production" ? "/__dynamic_base__/" : "/",
   // base: "/",
   build: {
@@ -106,6 +125,10 @@ export default defineConfig({
   // },
   server: {
     host: "0.0.0.0",
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "credentialless",
+    },
     proxy: {
       "/api": {
         target: "http://localhost:5244",

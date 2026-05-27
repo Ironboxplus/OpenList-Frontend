@@ -17,6 +17,7 @@ import { convertURL, getPlatform, pathDir } from "~/utils"
 import Artplayer from "artplayer"
 import { SelectWrapper } from "~/components"
 import { BsArrowRight } from "solid-icons/bs"
+import { VideoTreeList } from "./VideoTreeList"
 
 Artplayer.PLAYBACK_RATE = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 Artplayer.REMOVE_SRC_WHEN_DESTROY = true
@@ -194,14 +195,7 @@ export const VideoBox = (props: {
     <VStack w="$full" spacing="$2">
       {props.children}
       <Show when={videoName() !== ""}>
-        <HStack spacing="$2" w="$full">
-          <SelectWrapper
-            onChange={(name: string) => {
-              replace(name)
-            }}
-            value={videoName()}
-            options={videos().map((obj) => ({ value: obj.name }))}
-          />
+        <HStack spacing="$2" w="$full" alignItems="center">
           <Switch
             css={{
               whiteSpace: "nowrap",
@@ -218,6 +212,12 @@ export const VideoBox = (props: {
             {t("home.preview.auto_next")}
           </Switch>
         </HStack>
+        <VideoTreeList
+          currentPath={pathDir(pathname())}
+          objs={objStore.objs}
+          currentVideoName={videoName()}
+          onSelect={(name: string) => replace(name)}
+        />
       </Show>
       <Flex wrap="wrap" gap="$1" justifyContent="center" alignItems="center">
         <For each={platformPlayers()}>

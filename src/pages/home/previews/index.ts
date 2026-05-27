@@ -96,10 +96,16 @@ const previews: Preview[] = [
     prior: true,
   },
   {
+    key: "movi_video",
+    type: ObjType.VIDEO,
+    component: lazy(() => import("./movi_video")),
+    prior: true,
+  },
+  {
     key: "video",
     type: ObjType.VIDEO,
     component: lazy(() => import("./video")),
-    prior: true,
+    prior: false,
   },
   {
     key: "audio",
