@@ -60,35 +60,22 @@ export class SubtitleManager {
   private destroyed = false
   private lastActiveLang: string | null = null
   private pollTimer: number | undefined
-  private fullscreenRequestHandler: ((e: Event) => void) | null = null
   private fullscreenChangeHandler: (() => void) | null = null
 
   constructor(moviEl: HTMLElement) {
     this.moviEl = moviEl
-    if (moviEl) this.setupFullscreenIntercept()
+    if (moviEl) this.setupFullscreenWatch()
   }
 
-  private setupFullscreenIntercept(): void {
-    this.fullscreenRequestHandler = (e: Event) => {
-      e.preventDefault()
-      const wrapper = this.moviEl.parentElement
-      if (!wrapper) return
-
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {})
-      } else {
-        wrapper.requestFullscreen().catch(() => {})
-      }
-    }
-    this.moviEl.addEventListener(
-      "movi-fullscreen-request",
-      this.fullscreenRequestHandler,
-    )
-
+  private setupFullscreenWatch(): void {
     this.fullscreenChangeHandler = () => {
-      const wrapper = this.moviEl.parentElement
-      const isFs = document.fullscreenElement === wrapper
-      ;(this.moviEl as any).setHostFullscreen?.(isFs)
+      if (!this.overlayCanvas) return
+      const fsEl = document.fullscreenElement
+      if (fsEl === this.moviEl) {
+        this.moviEl.shadowRoot?.appendChild(this.overlayCanvas)
+      } else if (!fsEl && this.overlayCanvas.getRootNode() !== document) {
+        this.moviEl.shadowRoot?.appendChild(this.overlayCanvas)
+      }
     }
     document.addEventListener("fullscreenchange", this.fullscreenChangeHandler)
   }
@@ -212,13 +199,6 @@ export class SubtitleManager {
       clearInterval(this.pollTimer)
       this.pollTimer = undefined
     }
-    if (this.fullscreenRequestHandler) {
-      this.moviEl.removeEventListener(
-        "movi-fullscreen-request",
-        this.fullscreenRequestHandler,
-      )
-      this.fullscreenRequestHandler = null
-    }
     if (this.fullscreenChangeHandler) {
       document.removeEventListener(
         "fullscreenchange",
@@ -289,9 +269,6 @@ export class SubtitleManager {
   private getOrCreateOverlay(): HTMLCanvasElement {
     if (this.overlayCanvas) return this.overlayCanvas
 
-    const wrapper = this.moviEl.parentElement!
-    wrapper.style.position = "relative"
-
     this.overlayCanvas = document.createElement("canvas")
     this.overlayCanvas.width = this.moviEl.clientWidth || 0
     this.overlayCanvas.height = this.moviEl.clientHeight || 0
@@ -300,9 +277,21 @@ export class SubtitleManager {
       top: 0; left: 0;
       width: 100%; height: 100%;
       pointer-events: none;
-      z-index: 10;
+      z-index: 7;
     `
-    wrapper.insertBefore(this.overlayCanvas, this.moviEl.nextSibling)
+    const shadow = this.moviEl.shadowRoot
+    if (shadow) {
+      const controls = shadow.querySelector(".movi-controls-container")
+      if (controls) {
+        shadow.insertBefore(this.overlayCanvas, controls)
+      } else {
+        shadow.appendChild(this.overlayCanvas)
+      }
+    } else {
+      const wrapper = this.moviEl.parentElement!
+      wrapper.style.position = "relative"
+      wrapper.insertBefore(this.overlayCanvas, this.moviEl.nextSibling)
+    }
 
     this.resizeObserver = new ResizeObserver(() => {
       if (!this.overlayCanvas) return
