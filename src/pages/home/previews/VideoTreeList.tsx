@@ -12,6 +12,7 @@ import {
   BsFileEarmarkText,
   BsFileEarmarkImage,
   BsFileEarmarkMusic,
+  BsArrowUpShort,
 } from "solid-icons/bs"
 
 function fileIcon(objType?: ObjType) {
@@ -43,6 +44,16 @@ function fileIconColor(objType?: ObjType, isActive?: boolean) {
   }
 }
 
+function pathDir(p: string): string {
+  const i = p.lastIndexOf("/")
+  return i <= 0 ? "/" : p.substring(0, i)
+}
+
+function pathName(p: string): string {
+  const i = p.lastIndexOf("/")
+  return i < 0 ? p : p.substring(i + 1)
+}
+
 interface VideoTreeListProps {
   currentPath: string
   objs: Obj[]
@@ -54,9 +65,12 @@ const TreeItem = (props: {
   node: VideoTreeNode
   currentVideoName: string
   onSelect: (path: string) => void
+  onNavigateInto?: (path: string, children: VideoTreeNode[]) => void
   depth: number
 }) => {
-  const [expanded, setExpanded] = createSignal(false)
+  const [expanded, setExpanded] = createSignal(
+    (props.node.children ?? []).length > 0,
+  )
   const [children, setChildren] = createSignal<VideoTreeNode[]>(
     props.node.children ?? [],
   )
@@ -64,28 +78,42 @@ const TreeItem = (props: {
 
   const isActive = () => props.node.name === props.currentVideoName
 
+  const loadChildren = async () => {
+    if (children().length > 0) return children()
+    setLoading(true)
+    try {
+      const resp = await fsList(props.node.path, "", 1, 0)
+      if (resp.code === 200 && resp.data?.content) {
+        const nodes = buildVideoTree(resp.data.content, props.node.path)
+        setChildren(nodes)
+        return nodes
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false)
+    }
+    return []
+  }
+
+  const handleToggle = async (e: Event) => {
+    e.stopPropagation()
+    if (!expanded()) {
+      await loadChildren()
+      setExpanded(true)
+    } else {
+      setExpanded(false)
+    }
+  }
+
   const handleClick = async () => {
     if (props.node.type === "file") {
       props.onSelect(props.node.name)
       return
     }
-    if (!expanded()) {
-      if (children().length === 0) {
-        setLoading(true)
-        try {
-          const resp = await fsList(props.node.path, "", 1, 0)
-          if (resp.code === 200 && resp.data?.content) {
-            setChildren(buildVideoTree(resp.data.content, props.node.path))
-          }
-        } catch {
-          /* ignore */
-        }
-        setLoading(false)
-      }
-      setExpanded(true)
-    } else {
-      setExpanded(false)
-    }
+    const loaded = await loadChildren()
+    setExpanded(true)
+    props.onNavigateInto?.(props.node.path, loaded)
   }
 
   return (
@@ -109,6 +137,8 @@ const TreeItem = (props: {
             transform={expanded() ? "rotate(90deg)" : "none"}
             transition="transform 0.15s"
             flexShrink={0}
+            cursor="pointer"
+            onClick={handleToggle}
           />
           <Icon
             as={BsFolderFill}
@@ -143,6 +173,7 @@ const TreeItem = (props: {
               node={child}
               currentVideoName={props.currentVideoName}
               onSelect={props.onSelect}
+              onNavigateInto={props.onNavigateInto}
               depth={props.depth + 1}
             />
           )}
@@ -153,7 +184,43 @@ const TreeItem = (props: {
 }
 
 export const VideoTreeList = (props: VideoTreeListProps) => {
-  const tree = () => buildVideoTree(props.objs, props.currentPath)
+  const baseTree = () => buildVideoTree(props.objs, props.currentPath)
+  const [rootPath, setRootPath] = createSignal(props.currentPath)
+  const [rootTree, setRootTree] = createSignal<VideoTreeNode[]>([])
+  const [loadingUp, setLoadingUp] = createSignal(false)
+
+  const tree = () => (rootTree().length > 0 ? rootTree() : baseTree())
+  const canGoUp = () => rootPath() !== "/" && rootPath() !== ""
+
+  const handleNavigateInto = (path: string, children: VideoTreeNode[]) => {
+    setRootTree(children)
+    setRootPath(path)
+  }
+
+  const handleUp = async () => {
+    const cur = rootPath()
+    const parent = pathDir(cur)
+    if (parent === cur) return
+    setLoadingUp(true)
+    try {
+      const resp = await fsList(parent, "", 1, 0)
+      if (resp.code === 200 && resp.data?.content) {
+        const parentTree = buildVideoTree(resp.data.content, parent)
+        const curName = pathName(cur)
+        const curFolder = parentTree.find(
+          (n) => n.type === "folder" && n.name === curName,
+        )
+        if (curFolder) {
+          curFolder.children = tree()
+        }
+        setRootTree(parentTree)
+        setRootPath(parent)
+      }
+    } catch {
+      /* ignore */
+    }
+    setLoadingUp(false)
+  }
 
   return (
     <Box
@@ -165,6 +232,22 @@ export const VideoTreeList = (props: VideoTreeListProps) => {
       borderRadius="$md"
       py="$1"
     >
+      <Show when={canGoUp()}>
+        <HStack
+          spacing="$1"
+          px="$2"
+          py="$1"
+          cursor="pointer"
+          borderRadius="$sm"
+          _hover={{ bg: "$neutral3" }}
+          onClick={handleUp}
+        >
+          <Icon as={BsArrowUpShort} boxSize="14px" color="$neutral9" />
+          <Text fontSize="$xs" color="$neutral11">
+            {loadingUp() ? "..." : ".."}
+          </Text>
+        </HStack>
+      </Show>
       <Show
         when={tree().length > 0}
         fallback={
@@ -179,6 +262,7 @@ export const VideoTreeList = (props: VideoTreeListProps) => {
               node={node}
               currentVideoName={props.currentVideoName}
               onSelect={props.onSelect}
+              onNavigateInto={handleNavigateInto}
               depth={0}
             />
           )}
