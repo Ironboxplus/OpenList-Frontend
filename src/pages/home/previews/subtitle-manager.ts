@@ -60,9 +60,37 @@ export class SubtitleManager {
   private destroyed = false
   private lastActiveLang: string | null = null
   private pollTimer: number | undefined
+  private fullscreenRequestHandler: ((e: Event) => void) | null = null
+  private fullscreenChangeHandler: (() => void) | null = null
 
   constructor(moviEl: HTMLElement) {
     this.moviEl = moviEl
+    this.setupFullscreenIntercept()
+  }
+
+  private setupFullscreenIntercept(): void {
+    this.fullscreenRequestHandler = (e: Event) => {
+      e.preventDefault()
+      const wrapper = this.moviEl.parentElement
+      if (!wrapper) return
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {})
+      } else {
+        wrapper.requestFullscreen().catch(() => {})
+      }
+    }
+    this.moviEl.addEventListener(
+      "movi-fullscreen-request",
+      this.fullscreenRequestHandler,
+    )
+
+    this.fullscreenChangeHandler = () => {
+      const wrapper = this.moviEl.parentElement
+      const isFs = document.fullscreenElement === wrapper
+      ;(this.moviEl as any).setHostFullscreen?.(isFs)
+    }
+    document.addEventListener("fullscreenchange", this.fullscreenChangeHandler)
   }
 
   registerTracks(files: SubtitleFile[]): void {
@@ -183,6 +211,20 @@ export class SubtitleManager {
     if (this.pollTimer) {
       clearInterval(this.pollTimer)
       this.pollTimer = undefined
+    }
+    if (this.fullscreenRequestHandler) {
+      this.moviEl.removeEventListener(
+        "movi-fullscreen-request",
+        this.fullscreenRequestHandler,
+      )
+      this.fullscreenRequestHandler = null
+    }
+    if (this.fullscreenChangeHandler) {
+      document.removeEventListener(
+        "fullscreenchange",
+        this.fullscreenChangeHandler,
+      )
+      this.fullscreenChangeHandler = null
     }
     this.destroyRenderers()
     this.subInfoMap.clear()

@@ -81,8 +81,12 @@ const Preview = () => {
           trackGen.destroy()
 
           const wrapper = document.createElement("div")
-          wrapper.style.position = "relative"
+          wrapper.className = "movi-wrapper"
+          wrapper.style.cssText = "position:relative;width:100%"
           wrapper.innerHTML = `<movi-player src="${escapeAttr(url)}" controls theme="dark" hdr style="width:100%;max-height:80vh">${trackHTML}</movi-player>`
+          const fsStyle = document.createElement("style")
+          fsStyle.textContent = `.movi-wrapper:fullscreen{background:#000;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}.movi-wrapper:fullscreen>movi-player{width:100%;height:100%;max-height:100vh}`
+          wrapper.appendChild(fsStyle)
 
           const el = wrapper.firstElementChild as HTMLElement
           containerRef.appendChild(wrapper)
