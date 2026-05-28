@@ -65,7 +65,7 @@ export class SubtitleManager {
 
   constructor(moviEl: HTMLElement) {
     this.moviEl = moviEl
-    this.setupFullscreenIntercept()
+    if (moviEl) this.setupFullscreenIntercept()
   }
 
   private setupFullscreenIntercept(): void {
