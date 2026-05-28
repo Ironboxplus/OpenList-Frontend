@@ -293,8 +293,8 @@ export class SubtitleManager {
     wrapper.style.position = "relative"
 
     this.overlayCanvas = document.createElement("canvas")
-    this.overlayCanvas.width = this.moviEl.clientWidth || 1920
-    this.overlayCanvas.height = this.moviEl.clientHeight || 1080
+    this.overlayCanvas.width = this.moviEl.clientWidth || 0
+    this.overlayCanvas.height = this.moviEl.clientHeight || 0
     this.overlayCanvas.style.cssText = `
       position: absolute;
       top: 0; left: 0;
@@ -305,7 +305,12 @@ export class SubtitleManager {
     wrapper.insertBefore(this.overlayCanvas, this.moviEl.nextSibling)
 
     this.resizeObserver = new ResizeObserver(() => {
-      log("resize detected, JASSUB/libpgs handle their own canvas sizing")
+      if (!this.overlayCanvas) return
+      const w = this.moviEl.clientWidth || 0
+      const h = this.moviEl.clientHeight || 0
+      this.overlayCanvas.width = w
+      this.overlayCanvas.height = h
+      log("resize overlay to", w, "x", h)
     })
     this.resizeObserver.observe(this.moviEl)
 
@@ -319,11 +324,8 @@ export class SubtitleManager {
       if (typeof time !== "number") return
 
       if (this.assRenderer && !(this.assRenderer as any)._destroyed) {
-        const mc = (this.moviEl as any).getCanvas?.() as
-          | HTMLCanvasElement
-          | undefined
-        const w = mc?.width || this.moviEl.clientWidth || 1920
-        const h = mc?.height || this.moviEl.clientHeight || 1080
+        const w = this.moviEl.clientWidth || 0
+        const h = this.moviEl.clientHeight || 0
         ;(this.assRenderer as any).manualRender({
           expectedDisplayTime: performance.now(),
           width: w,
