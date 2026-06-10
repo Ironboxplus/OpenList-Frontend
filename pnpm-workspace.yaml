@@ -9,3 +9,5 @@ patchedDependencies:
   vite-plugin-dynamic-base: patches/vite-plugin-dynamic-base.patch
 onlyBuiltDependencies:
   - mpegts.js
+minimumReleaseAgeExclude:
+  - movi-player@0.3.1
