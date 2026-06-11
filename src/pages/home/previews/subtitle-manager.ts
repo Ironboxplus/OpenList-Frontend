@@ -55,6 +55,9 @@ export class SubtitleManager {
   private pgsRenderer: PgsRenderer | null = null
   private syncTimer: number | undefined
   private overlayCanvas: HTMLCanvasElement | null = null
+  private jassubCanvas: HTMLCanvasElement | null = null
+  private displayCtx: CanvasRenderingContext2D | null = null
+  private copyFrameId: number | undefined
   private resizeObserver: ResizeObserver | null = null
   private timeOffset = 0
   private destroyed = false
@@ -160,7 +163,6 @@ export class SubtitleManager {
       log("activating SUP renderer for", info.label)
       this.activateSUP(info.url)
     }
-    // srt is pre-converted to vtt by convertSrtTracks(), vtt handled natively
   }
 
   setTimeOffset(seconds: number): void {
@@ -211,8 +213,9 @@ export class SubtitleManager {
   }
 
   private async activateASS(url: string): Promise<void> {
-    const canvas = this.getOrCreateOverlay()
-    log("activateASS: JASSUB for:", url)
+    this.ensureOverlay()
+    const jassubTarget = this.getOrCreateJassubCanvas()
+    log("activateASS: JASSUB (double-canvas) for:", url)
 
     const { default: JASSUB } = await import("jassub")
     const jassubWorkerUrl = (
@@ -229,7 +232,7 @@ export class SubtitleManager {
     const fontBase = `${window.location.origin}${dynamicBase}/static/fonts`
 
     this.assRenderer = new JASSUB({
-      canvas,
+      canvas: jassubTarget,
       subUrl: url,
       workerUrl: jassubWorkerUrl,
       wasmUrl: jassubWasmUrl,
@@ -245,10 +248,11 @@ export class SubtitleManager {
       ;(this.assRenderer as any).timeOffset = this.timeOffset
     }
     this.startSync()
+    this.startCopyLoop()
   }
 
   private async activateSUP(url: string): Promise<void> {
-    const canvas = this.getOrCreateOverlay()
+    this.ensureOverlay()
     const dynamicBase = (window as any).__dynamic_base__ || ""
     const origin = window.location.origin
     const base = `${origin}${dynamicBase}/static`
@@ -256,7 +260,7 @@ export class SubtitleManager {
     const { PgsRenderer } = await import("libpgs")
     log("libpgs init with workerUrl:", `${base}/libpgs/libpgs.worker.js`)
     this.pgsRenderer = new PgsRenderer({
-      canvas,
+      canvas: this.overlayCanvas!,
       subUrl: url,
       workerUrl: `${base}/libpgs/libpgs.worker.js`,
     })
@@ -266,12 +270,36 @@ export class SubtitleManager {
     this.startSync()
   }
 
-  private getOrCreateOverlay(): HTMLCanvasElement {
-    if (this.overlayCanvas) return this.overlayCanvas
+  private getOrCreateJassubCanvas(): HTMLCanvasElement {
+    if (this.jassubCanvas) return this.jassubCanvas
+
+    this.jassubCanvas = document.createElement("canvas")
+    const w = this.moviEl.clientWidth || 0
+    const h = this.moviEl.clientHeight || 0
+    this.jassubCanvas.width = w
+    this.jassubCanvas.height = h
+    this.jassubCanvas.style.cssText = `
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      opacity: 0;
+    `
+    const shadow = this.moviEl.shadowRoot
+    if (shadow) {
+      shadow.appendChild(this.jassubCanvas)
+    }
+    return this.jassubCanvas
+  }
+
+  private ensureOverlay(): void {
+    if (this.overlayCanvas) return
 
     this.overlayCanvas = document.createElement("canvas")
-    this.overlayCanvas.width = this.moviEl.clientWidth || 0
-    this.overlayCanvas.height = this.moviEl.clientHeight || 0
+    const w = this.moviEl.clientWidth || 0
+    const h = this.moviEl.clientHeight || 0
+    this.overlayCanvas.width = w
+    this.overlayCanvas.height = h
     this.overlayCanvas.style.cssText = `
       position: absolute;
       top: 0; left: 0;
@@ -279,6 +307,8 @@ export class SubtitleManager {
       pointer-events: none;
       z-index: 7;
     `
+    this.displayCtx = this.overlayCanvas.getContext("2d")
+
     const shadow = this.moviEl.shadowRoot
     if (shadow) {
       const controls = shadow.querySelector(".movi-controls-container")
@@ -294,16 +324,52 @@ export class SubtitleManager {
     }
 
     this.resizeObserver = new ResizeObserver(() => {
-      if (!this.overlayCanvas) return
       const w = this.moviEl.clientWidth || 0
       const h = this.moviEl.clientHeight || 0
-      this.overlayCanvas.width = w
-      this.overlayCanvas.height = h
+      if (this.overlayCanvas) {
+        this.overlayCanvas.width = w
+        this.overlayCanvas.height = h
+      }
+      if (this.jassubCanvas) {
+        this.jassubCanvas.width = w
+        this.jassubCanvas.height = h
+      }
       log("resize overlay to", w, "x", h)
     })
     this.resizeObserver.observe(this.moviEl)
+  }
 
-    return this.overlayCanvas
+  private startCopyLoop(): void {
+    if (this.copyFrameId != null) return
+    const copy = () => {
+      if (!this.jassubCanvas || !this.overlayCanvas || !this.displayCtx) return
+      this.displayCtx.clearRect(
+        0,
+        0,
+        this.overlayCanvas.width,
+        this.overlayCanvas.height,
+      )
+      try {
+        this.displayCtx.drawImage(
+          this.jassubCanvas,
+          0,
+          0,
+          this.overlayCanvas.width,
+          this.overlayCanvas.height,
+        )
+      } catch {
+        /* canvas may be lost during navigation */
+      }
+      this.copyFrameId = requestAnimationFrame(copy)
+    }
+    this.copyFrameId = requestAnimationFrame(copy)
+  }
+
+  private stopCopyLoop(): void {
+    if (this.copyFrameId != null) {
+      cancelAnimationFrame(this.copyFrameId)
+      this.copyFrameId = undefined
+    }
   }
 
   private startSync(): void {
@@ -334,6 +400,7 @@ export class SubtitleManager {
       clearInterval(this.syncTimer)
       this.syncTimer = undefined
     }
+    this.stopCopyLoop()
     if (this.assRenderer) {
       if (!(this.assRenderer as any)._destroyed) {
         ;(this.assRenderer as any).destroy()
@@ -348,10 +415,15 @@ export class SubtitleManager {
       this.resizeObserver.disconnect()
       this.resizeObserver = null
     }
+    if (this.jassubCanvas) {
+      this.jassubCanvas.remove()
+      this.jassubCanvas = null
+    }
     if (this.overlayCanvas) {
       this.overlayCanvas.remove()
       this.overlayCanvas = null
     }
+    this.displayCtx = null
     this.activeRenderer = "none"
   }
 }
