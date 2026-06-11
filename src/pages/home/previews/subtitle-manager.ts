@@ -274,8 +274,9 @@ export class SubtitleManager {
     if (this.jassubCanvas) return this.jassubCanvas
 
     this.jassubCanvas = document.createElement("canvas")
-    const w = this.moviEl.clientWidth || 0
-    const h = this.moviEl.clientHeight || 0
+    const dpr = devicePixelRatio || 1
+    const w = (this.moviEl.clientWidth || 0) * dpr
+    const h = (this.moviEl.clientHeight || 0) * dpr
     this.jassubCanvas.width = w
     this.jassubCanvas.height = h
     this.jassubCanvas.style.cssText = `
@@ -296,8 +297,9 @@ export class SubtitleManager {
     if (this.overlayCanvas) return
 
     this.overlayCanvas = document.createElement("canvas")
-    const w = this.moviEl.clientWidth || 0
-    const h = this.moviEl.clientHeight || 0
+    const dpr = devicePixelRatio || 1
+    const w = (this.moviEl.clientWidth || 0) * dpr
+    const h = (this.moviEl.clientHeight || 0) * dpr
     this.overlayCanvas.width = w
     this.overlayCanvas.height = h
     this.overlayCanvas.style.cssText = `
@@ -324,17 +326,18 @@ export class SubtitleManager {
     }
 
     this.resizeObserver = new ResizeObserver(() => {
+      const dpr = devicePixelRatio || 1
       const w = this.moviEl.clientWidth || 0
       const h = this.moviEl.clientHeight || 0
       if (this.overlayCanvas) {
-        this.overlayCanvas.width = w
-        this.overlayCanvas.height = h
+        this.overlayCanvas.width = w * dpr
+        this.overlayCanvas.height = h * dpr
       }
       if (this.jassubCanvas) {
-        this.jassubCanvas.width = w
-        this.jassubCanvas.height = h
+        this.jassubCanvas.width = w * dpr
+        this.jassubCanvas.height = h * dpr
       }
-      log("resize overlay to", w, "x", h)
+      log("resize overlay to", w * dpr, "x", h * dpr, "dpr", dpr)
     })
     this.resizeObserver.observe(this.moviEl)
   }
@@ -343,20 +346,18 @@ export class SubtitleManager {
     if (this.copyFrameId != null) return
     const copy = () => {
       if (!this.jassubCanvas || !this.overlayCanvas || !this.displayCtx) return
-      this.displayCtx.clearRect(
-        0,
-        0,
-        this.overlayCanvas.width,
-        this.overlayCanvas.height,
-      )
+      const srcW = this.jassubCanvas.width
+      const srcH = this.jassubCanvas.height
+      if (
+        this.overlayCanvas.width !== srcW ||
+        this.overlayCanvas.height !== srcH
+      ) {
+        this.overlayCanvas.width = srcW
+        this.overlayCanvas.height = srcH
+      }
+      this.displayCtx.clearRect(0, 0, srcW, srcH)
       try {
-        this.displayCtx.drawImage(
-          this.jassubCanvas,
-          0,
-          0,
-          this.overlayCanvas.width,
-          this.overlayCanvas.height,
-        )
+        this.displayCtx.drawImage(this.jassubCanvas, 0, 0)
       } catch {
         /* canvas may be lost during navigation */
       }
