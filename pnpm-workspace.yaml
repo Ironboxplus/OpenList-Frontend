@@ -10,4 +10,4 @@ patchedDependencies:
 onlyBuiltDependencies:
   - mpegts.js
 minimumReleaseAgeExclude:
-  - movi-player@0.3.1
+  - movi-player@0.3.2
