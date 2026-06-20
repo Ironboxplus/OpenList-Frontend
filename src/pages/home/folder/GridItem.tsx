@@ -16,6 +16,7 @@ export const GridItem = (props: { obj: StoreObj; index: number }) => {
     return null
   }
   const { setPathAs } = usePath()
+  const filenameStyle = () => local["list_item_filename_overflow"]
   const objIcon = (
     <Icon
       color={getMainColor()}
@@ -130,11 +131,18 @@ export const GridItem = (props: { obj: StoreObj; index: number }) => {
         </Center>
         <Text
           css={{
-            whiteSpace: "nowrap",
-            textOverflow: "ellipsis",
+            wordBreak: "break-all",
+            whiteSpace: filenameStyle() === "multi_line" ? "unset" : "nowrap",
+            "overflow-x": filenameStyle() === "scrollable" ? "auto" : "hidden",
+            "overflow-y": "hidden",
+            textOverflow: filenameStyle() === "ellipsis" ? "ellipsis" : "unset",
+            "scrollbar-width": "none", // firefox
+            "&::-webkit-scrollbar": {
+              // webkit
+              display: "none",
+            },
           }}
           w="$full"
-          overflow="hidden"
           textAlign="center"
           fontSize="$sm"
           title={props.obj.name}
