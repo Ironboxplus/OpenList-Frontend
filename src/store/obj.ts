@@ -192,7 +192,7 @@ export const isIndeterminate = () => {
 
 const selectedNum = createMemo(() => selectedObjs().length)
 
-export type LayoutType = "list" | "grid" | "image"
+export type LayoutType = "list" | "grid" | "image" | "masonry"
 const [pathname, setPathname] = createSignal<string>(location.pathname)
 const layoutRecord: Record<string, LayoutType> = (() => {
   try {

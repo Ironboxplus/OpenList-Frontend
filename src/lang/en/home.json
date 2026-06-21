@@ -52,9 +52,11 @@
   "layouts": {
     "list": "List View",
     "grid": "Grid View",
-    "image": "Image View"
+    "image": "Image View",
+    "masonry": "Manga / Waterfall"
   },
   "no_images": "No images in the current folder",
+  "empty_folder": "This folder is empty",
   "load_more": "Load more",
   "no_more": "No more",
   "input_password": "Please input password",

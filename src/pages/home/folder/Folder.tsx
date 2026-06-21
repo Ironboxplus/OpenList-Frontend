@@ -27,6 +27,7 @@ import { Search } from "./Search"
 const ListLayout = lazy(() => import("./List"))
 const GridLayout = lazy(() => import("./Grid"))
 const ImageLayout = lazy(() => import("./Images"))
+const MasonryLayout = lazy(() => import("./Masonry"))
 
 const Folder = () => {
   const { rawLink } = useLink()
@@ -79,6 +80,9 @@ const Folder = () => {
         </Match>
         <Match when={layout() === "image"}>
           <ImageLayout images={images()} />
+        </Match>
+        <Match when={layout() === "masonry"}>
+          <MasonryLayout images={images()} />
         </Match>
       </Switch>
       <Pager />
