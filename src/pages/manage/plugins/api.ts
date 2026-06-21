@@ -37,6 +37,49 @@ export const enableBackendPlugin = (
   enabled: boolean,
 ): PResp<GoPlugin[]> => r.post("/admin/plugin/enable", { name, enabled })
 
+/** Cluster storage-sharing config (key redacted on read). */
+export type ClusterConfig = {
+  enabled: boolean
+  key: string
+  peers: string[]
+  share_drivers: string[]
+  share_mounts: string[]
+  share_deletes: boolean
+  apply_remote: boolean
+  announce_interval_sec: number
+  request_timeout_sec: number
+}
+
+export type ClusterRecordView = {
+  mount_path: string
+  driver: string
+  version: number
+  origin: string
+  tombstone: boolean
+  updated_at: number
+  self: boolean
+}
+
+export type ClusterStatus = {
+  node_id: string
+  enabled: boolean
+  active: boolean
+  peers: string[]
+  records: ClusterRecordView[]
+}
+
+export type ClusterConfigData = {
+  config: ClusterConfig
+  status: ClusterStatus
+}
+
+export const getClusterConfig = (): PResp<ClusterConfigData> =>
+  r.get("/admin/cluster/config")
+
+export const setClusterConfig = (
+  config: ClusterConfig,
+): PResp<ClusterConfigData> => r.post("/admin/cluster/config", config)
+
 /** Starter source shown when creating a new backend plugin. */
 export const PLUGIN_TEMPLATE = `package main
 

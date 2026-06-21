@@ -23,6 +23,7 @@ import {
   PLUGIN_TEMPLATE,
   saveBackendPlugin,
 } from "./api"
+import ClusterConfig from "./ClusterConfig"
 
 const Plugins = () => {
   const t = useT()
@@ -275,6 +276,9 @@ const Plugins = () => {
           </VStack>
         </Show>
       </VStack>
+
+      {/* ---- Cluster storage sharing ---- */}
+      <ClusterConfig />
     </VStack>
   )
 }
