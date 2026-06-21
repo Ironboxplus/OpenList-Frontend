@@ -37,40 +37,107 @@ export const enableBackendPlugin = (
   enabled: boolean,
 ): PResp<GoPlugin[]> => r.post("/admin/plugin/enable", { name, enabled })
 
-/** Cluster storage-sharing config (key redacted on read). */
+/**
+ * Cluster credential-sharing config (key redacted on read). The cluster shares
+ * ONLY credentials (tokens/cookies/secrets) between manually-paired storages, so
+ * there are no driver/mount filters here — pairing is done via sync groups.
+ */
 export type ClusterConfig = {
   enabled: boolean
   key: string
-  peers: string[]
-  share_drivers: string[]
-  share_mounts: string[]
-  share_deletes: boolean
+  /** Human-friendly name for THIS node, shown on every node's cluster panel. */
+  label: string
+  /** This node's public base URL; advertising it lets peers auto-discover it. */
+  addr: string
+  /** Optional bootstrap peer URLs to dial when first joining a cluster. */
+  seeds: string[]
   apply_remote: boolean
   announce_interval_sec: number
-  request_timeout_sec: number
 }
 
-export type ClusterRecordView = {
+export type ClusterStorageInfo = {
   mount_path: string
   driver: string
+  status: string
+}
+
+export type ClusterNodeView = {
+  node_id: string
+  label: string
+  addr: string
+  self: boolean
+  online: boolean
+  last_seen: number
+  storages: ClusterStorageInfo[]
+}
+
+export type ClusterMemberView = {
+  node_id: string
+  label: string
+  mount_path: string
+  online: boolean
+  present: boolean
+  is_origin: boolean
+  self: boolean
+}
+
+export type ClusterGroupView = {
+  id: string
+  name: string
+  members: ClusterMemberView[]
+  fields: string[]
+  cred_hash: string
   version: number
   origin: string
-  tombstone: boolean
   updated_at: number
-  self: boolean
+  has_cred: boolean
+}
+
+export type ClusterConnView = {
+  node_id: string
+  addr: string
+  outbound: boolean
+  since: number
+}
+
+export type ClusterEventView = {
+  time: number
+  kind: string
+  group_id: string
+  detail: string
+}
+
+export type ClusterStatsView = {
+  nodes_total: number
+  nodes_online: number
+  groups_total: number
+  creds_total: number
+  connections: number
 }
 
 export type ClusterStatus = {
   node_id: string
+  label: string
+  addr: string
   enabled: boolean
   active: boolean
-  peers: string[]
-  records: ClusterRecordView[]
+  nodes: ClusterNodeView[]
+  groups: ClusterGroupView[]
+  connections: ClusterConnView[]
+  events: ClusterEventView[]
+  stats: ClusterStatsView
 }
 
 export type ClusterConfigData = {
   config: ClusterConfig
   status: ClusterStatus
+}
+
+/** A sync group as edited by the admin (sent back to the server). */
+export type ClusterGroupSpec = {
+  id: string
+  name: string
+  members: { node_id: string; mount_path: string }[]
 }
 
 export const getClusterConfig = (): PResp<ClusterConfigData> =>
@@ -79,6 +146,13 @@ export const getClusterConfig = (): PResp<ClusterConfigData> =>
 export const setClusterConfig = (
   config: ClusterConfig,
 ): PResp<ClusterConfigData> => r.post("/admin/cluster/config", config)
+
+export const getClusterStatus = (): PResp<ClusterStatus> =>
+  r.get("/admin/cluster/status")
+
+export const setClusterGroups = (
+  groups: ClusterGroupSpec[],
+): PResp<ClusterStatus> => r.post("/admin/cluster/groups", { groups })
 
 /** Starter source shown when creating a new backend plugin. */
 export const PLUGIN_TEMPLATE = `package main
