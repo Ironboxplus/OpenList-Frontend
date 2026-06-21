@@ -23,7 +23,7 @@ import {
 } from "@hope-ui/solid"
 import { createMemo, createSignal, For, Match, Show, Switch } from "solid-js"
 import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
-import { handleResp, notify, r } from "~/utils"
+import { createPersistedSignal, handleResp, notify, r } from "~/utils"
 import { EmptyResp, PageResp, Resp, Storage } from "~/types"
 import { StorageGridItem, StorageListItem } from "./Storage"
 import { createStorageSignal } from "@solid-primitives/storage"
@@ -41,7 +41,11 @@ const Storages = () => {
     handleResp(resp, (data) => setStorages(data.content))
   }
   const [drivers, setDrivers] = createSignal<string[]>([])
-  const [selectedDrivers, setSelectedDrivers] = createSignal<string[]>([])
+  // Persisted so the driver filter survives leaving and returning to the page.
+  const [selectedDrivers, setSelectedDrivers] = createPersistedSignal<string[]>(
+    "storages-driver-filter",
+    [],
+  )
   const getDrivers = async () => {
     const resp: Resp<string[]> = await r.get("/admin/driver/names")
     handleResp(resp, (data) => setDrivers(data))

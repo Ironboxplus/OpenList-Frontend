@@ -16,12 +16,16 @@ export interface SideMenuItemProps {
   icon?: IconTypes
   children?: SideMenuItemProps[]
   role?: number
+  // Custom visibility predicate; overrides role-based gating when present.
+  // Used for delegated permissions (e.g. a non-admin who may manage user info).
+  show?: () => boolean
   external?: true
   refresh?: true
 }
 
 const SideMenuItem = (props: SideMenuItemProps) => {
   const ifShow = createMemo(() => {
+    if (props.show) return props.show()
     if (!UserMethods.is_admin(me())) {
       if (props.role === undefined) return false
       else if (props.role === UserRole.GENERAL && !UserMethods.is_general(me()))

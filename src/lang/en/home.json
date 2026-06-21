@@ -260,5 +260,13 @@
     "overwrite_existing": "Overwrite existing files",
     "skip_existing": "Skip existing files",
     "merge": "Only Copy new files and subdirectories"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorites yet",
+    "add": "Add current folder to favorites",
+    "remove": "Remove from favorites",
+    "added": "Added to favorites",
+    "removed": "Removed from favorites"
   }
 }

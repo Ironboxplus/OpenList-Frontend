@@ -18,7 +18,8 @@ import {
   password,
   recordHistory,
   setPassword,
-  /*layout,*/ State,
+  layout,
+  State,
   me,
 } from "~/store"
 import { UserMethods } from "~/types"
@@ -26,8 +27,8 @@ import { UserMethods } from "~/types"
 const Folder = lazy(() => import("./folder/Folder"))
 const File = lazy(() => import("./file/File"))
 const Password = lazy(() => import("./Password"))
-// const ListSkeleton = lazy(() => import("./Folder/ListSkeleton"));
-// const GridSkeleton = lazy(() => import("./Folder/GridSkeleton"));
+const ListSkeleton = lazy(() => import("./folder/ListSkeleton"))
+const GridSkeleton = lazy(() => import("./folder/GridSkeleton"))
 
 const [objBoxRef, setObjBoxRef] = createSignal<HTMLDivElement>()
 export { objBoxRef }
@@ -103,10 +104,9 @@ export const Obj = () => {
               objStore.state,
             )}
           >
-            <FullLoading />
-            {/* <Show when={layout() === "list"} fallback={<GridSkeleton />}>
+            <Show when={layout() === "list"} fallback={<GridSkeleton />}>
               <ListSkeleton />
-            </Show> */}
+            </Show>
           </Match>
           <Match when={objStore.state === State.NeedPassword}>
             <Password

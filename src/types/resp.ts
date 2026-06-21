@@ -1,4 +1,4 @@
-import { Obj } from "."
+import { Obj, MountDetails } from "."
 
 export interface Resp<T> {
   code: number
@@ -20,6 +20,9 @@ export type FsListResp = Resp<{
   write_content_bypass: boolean
   provider: string
   direct_upload_tools?: string[]
+  // Disk usage of the storage the current directory belongs to (undefined at the
+  // virtual storages-root or when hidden). Drives the header disk-usage widget.
+  mount_details?: MountDetails
 }>
 
 export type SearchNode = {

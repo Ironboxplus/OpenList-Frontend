@@ -15,7 +15,8 @@
     "read_archives": "Read archives",
     "decompress": "Decompress",
     "share": "Share",
-    "customize_share_id": "Customize share ID"
+    "customize_share_id": "Customize share ID",
+    "manage_user_info": "Manage other users' profiles (username/password)"
   },
   "username": "Username",
   "password": "Password",

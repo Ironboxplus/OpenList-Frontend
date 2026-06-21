@@ -6,7 +6,7 @@ import { CenterLoading, LinkWithPush, ImageWithError } from "~/components"
 import { usePath, useRouter, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, local, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus, hoverColor } from "~/utils"
+import { bus, hoverColor, listItemIn } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 
@@ -30,9 +30,7 @@ export const GridItem = (props: { obj: StoreObj; index: number }) => {
     useSelectWithMouse()
   return (
     <Motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
+      {...(listItemIn(props.index) as any)}
       style={{
         width: "100%",
       }}

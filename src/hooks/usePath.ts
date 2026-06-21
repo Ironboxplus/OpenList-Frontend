@@ -128,6 +128,7 @@ export const usePath = () => {
       (data) => {
         ObjStore.setObj(data)
         ObjStore.setProvider(data.provider)
+        ObjStore.setMountDetails(data.mount_details)
         if (data.is_dir) {
           setPathAs(path)
           handleFolder(path, index)
@@ -180,6 +181,11 @@ export const usePath = () => {
         ObjStore.setWriteContentBypass(data.write_content_bypass)
         ObjStore.setProvider(data.provider)
         ObjStore.setDirectUploadTools(data.direct_upload_tools)
+        // Keep the header disk-usage widget in sync on folder navigation. The
+        // backend piggybacks the current dir's mount usage on this list response
+        // (cache-backed), so no extra request is made per click. undefined at the
+        // storages-root clears the previous folder's storage so it isn't stale.
+        ObjStore.setMountDetails(data.mount_details)
         shouldKeepState() || ObjStore.setState(State.Folder)
       },
       onlyList

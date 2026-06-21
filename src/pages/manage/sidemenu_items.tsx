@@ -14,6 +14,8 @@ import {
   BsBucket,
   BsHddNetwork,
   BsArrowLeftRight,
+  BsPlugin,
+  BsSpeedometer2,
 } from "solid-icons/bs"
 import { FiLogIn } from "solid-icons/fi"
 import { SiMetabase } from "solid-icons/si"
@@ -21,7 +23,8 @@ import { CgDatabase, CgShare } from "solid-icons/cg"
 import { OcWorkflow2 } from "solid-icons/oc"
 import { IoCopy, IoMove, IoHome, IoMagnetOutline } from "solid-icons/io"
 import { Component, lazy } from "solid-js"
-import { Group, UserRole } from "~/types"
+import { Group, UserRole, UserMethods } from "~/types"
+import { me } from "~/store"
 import { FaSolidBook, FaSolidDatabase } from "solid-icons/fa"
 import { TbArchive } from "solid-icons/tb"
 
@@ -39,6 +42,12 @@ export const side_menu_items: SideMenuItem[] = [
     to: "/@manage",
     role: UserRole.GUEST,
     component: lazy(() => import("./users/Profile")),
+  },
+  {
+    title: "manage.sidemenu.dashboard",
+    icon: BsSpeedometer2,
+    to: "/@manage/dashboard",
+    component: lazy(() => import("./Dashboard")),
   },
   {
     title: "manage.sidemenu.settings",
@@ -166,6 +175,8 @@ export const side_menu_items: SideMenuItem[] = [
     title: "manage.sidemenu.users",
     icon: BsPersonCircle,
     to: "/@manage/users",
+    // Admins, or non-admins delegated the "manage user info" permission.
+    show: () => UserMethods.can_manage_user_info(me()),
     component: lazy(() => import("./users/Users")),
   },
   {
@@ -180,6 +191,12 @@ export const side_menu_items: SideMenuItem[] = [
     to: "/@manage/shares",
     role: UserRole.GENERAL,
     component: lazy(() => import("./shares/Shares")),
+  },
+  {
+    title: "manage.sidemenu.plugins",
+    icon: BsPlugin,
+    to: "/@manage/plugins",
+    component: lazy(() => import("./plugins/Plugins")),
   },
   {
     title: "manage.sidemenu.metas",

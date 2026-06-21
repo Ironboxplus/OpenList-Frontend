@@ -34,6 +34,7 @@ export const UserPermissions = [
   "decompress",
   "share",
   "customize_share_id",
+  "manage_user_info",
 ] as const
 
 export const UserMethods = {
@@ -43,6 +44,9 @@ export const UserMethods = {
   can: (user: User, permission: number) => {
     return ((user.permission >> permission) & 1) == 1
   },
+  // Bit 16: admin can delegate user-profile management to a normal user.
+  can_manage_user_info: (user: User) =>
+    UserMethods.is_admin(user) || ((user.permission >> 16) & 1) == 1,
   // can_see_hides: (user: User) =>
   //   UserMethods.is_admin(user) || (user.permission & 1) == 1,
   // can_access_without_password: (user: User) =>

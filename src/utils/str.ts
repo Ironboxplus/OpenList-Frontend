@@ -55,7 +55,30 @@ export type ConvertURLArgs = {
   raw_url: string
   name: string
   d_url: string
+  // Optional external subtitle URL, used by players that accept one (e.g. mpv
+  // via mpv-handler's subfile parameter).
+  sub_url?: string
   ts?: boolean
+}
+
+// applyEncodeOps applies the encoding flags from a placeholder's op prefix
+// (the chars between `$` and the keyword). Supported ops: e = encodeURIComponent,
+// b = standard base64, B = URL-safe base64 (the encoding mpv-handler expects).
+// Ops are applied right-to-left, matching the historical $eb ordering. Only the
+// captured prefix is inspected, so op letters inside a keyword (the "b" in
+// "sub") are never mistaken for ops.
+const applyEncodeOps = (value: string, opPrefix: string) => {
+  let u = value
+  for (const o of opPrefix.split("").reverse()) {
+    if (o === "e") {
+      u = encodeURIComponent(u)
+    } else if (o === "b") {
+      u = window.btoa(u)
+    } else if (o === "B") {
+      u = safeBtoa(u)
+    }
+  }
+  return u
 }
 
 export const convertURL = (scheme: string, args: ConvertURLArgs) => {
@@ -67,34 +90,21 @@ export const convertURL = (scheme: string, args: ConvertURLArgs) => {
     d.searchParams.set("openlist_ts", ts.toString())
     args.d_url = d.toString()
   }
-  ans = ans.replace(/\$[eb_]*url/, (old) => {
-    const op = old.match(/[eb]/g)
-    let u = args.raw_url
-    if (op) {
-      for (const o of op.reverse()) {
-        if (o === "e") {
-          u = encodeURIComponent(u)
-        } else if (o === "b") {
-          u = window.btoa(u)
-        }
-      }
-    }
-    return u
-  })
-  ans = ans.replace(/\$[eb_]*durl/, (old) => {
-    const op = old.match(/[eb]/g)
-    let u = args.d_url
-    if (op) {
-      for (const o of op.reverse()) {
-        if (o === "e") {
-          u = encodeURIComponent(u)
-        } else if (o === "b") {
-          u = window.btoa(u)
-        }
-      }
-    }
-    return u
-  })
+  // Order matters: match $durl/$sub before $url so the longer tokens win.
+  ans = ans.replace(/\$([ebB_]*)durl/, (_, ops) =>
+    applyEncodeOps(args.d_url, ops),
+  )
+  ans = ans.replace(/\$([ebB_]*)sub/, (_, ops) =>
+    applyEncodeOps(args.sub_url ?? "", ops),
+  )
+  ans = ans.replace(/\$([ebB_]*)url/, (_, ops) =>
+    applyEncodeOps(args.raw_url, ops),
+  )
+  // Drop an empty trailing subfile parameter when no subtitle was supplied, so
+  // a sub-aware scheme degrades cleanly to a plain launch.
+  if (!args.sub_url) {
+    ans = ans.replace(/[?&]subfile=$/, "")
+  }
   return ans
 }
 

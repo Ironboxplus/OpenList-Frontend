@@ -1,4 +1,5 @@
 import {
+  Box,
   HStack,
   Icon,
   Progress,
@@ -8,7 +9,7 @@ import {
 } from "@hope-ui/solid"
 import { Motion } from "solid-motionone"
 import { useContextMenu } from "solid-contextmenu"
-import { batch, Show } from "solid-js"
+import { batch, createSignal, onCleanup, Show } from "solid-js"
 import { LinkWithPush } from "~/components"
 import { usePath, useRouter, useUtil } from "~/hooks"
 import {
@@ -25,13 +26,19 @@ import {
   formatDate,
   getFileSize,
   hoverColor,
+  isTouchDevice,
   showDiskUsage,
   usedPercentage,
   toReadableUsage,
   nearlyFull,
+  listItemIn,
 } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
+import {
+  isMediaPreviewEnabled,
+  shouldShowPreview,
+} from "~/plugins/builtin/media-preview/preview"
 
 export interface Col {
   name: OrderBy
@@ -45,6 +52,8 @@ export const cols: Col[] = [
   { name: "modified", textAlign: "right", w: { "@initial": 0, "@md": "33%" } },
 ]
 
+const PREVIEW_DELAY_MS = 550
+
 export const ListItem = (props: { obj: StoreObj; index: number }) => {
   const { isHide } = useUtil()
   if (isHide(props.obj)) {
@@ -56,13 +65,47 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
   const filenameStyle = () => local["list_item_filename_overflow"]
+
+  // Hover preview state — desktop/non-touch only
+  const [previewVisible, setPreviewVisible] = createSignal(false)
+  let hoverTimer: ReturnType<typeof setTimeout> | undefined
+
+  const clearHoverTimer = () => {
+    if (hoverTimer !== undefined) {
+      clearTimeout(hoverTimer)
+      hoverTimer = undefined
+    }
+  }
+
+  const handleMouseEnter = () => {
+    setPathAs(props.obj.name, props.obj.is_dir, true)
+    if (
+      shouldShowPreview({
+        thumb: props.obj.thumb,
+        isTouch: isTouchDevice(),
+        enabled: isMediaPreviewEnabled(),
+      })
+    ) {
+      clearHoverTimer()
+      hoverTimer = setTimeout(() => setPreviewVisible(true), PREVIEW_DELAY_MS)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    clearHoverTimer()
+    setPreviewVisible(false)
+  }
+
+  onCleanup(() => {
+    clearHoverTimer()
+  })
+
   return (
     <Motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
+      {...(listItemIn(props.index) as any)}
       style={{
         width: "100%",
+        position: "relative",
       }}
     >
       <HStack
@@ -97,9 +140,8 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
             return selectIndex(props.index, !props.obj.selected)
           to(pushHref(props.obj.name))
         }}
-        onMouseEnter={() => {
-          setPathAs(props.obj.name, props.obj.is_dir, true)
-        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onContextMenu={(e: MouseEvent) => {
           batch(() => {
             // if (!checkboxOpen()) {
@@ -215,6 +257,42 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
           {formatDate(props.obj.modified)}
         </Text>
       </HStack>
+
+      {/* Hover thumbnail preview — desktop only, gated by plugin enabled state */}
+      <Show when={previewVisible()}>
+        <Box
+          class="media-hover-preview"
+          pos="absolute"
+          // Position to the right of the name column, slightly above center
+          top="50%"
+          left="52%"
+          zIndex={1000}
+          pointerEvents="none"
+          css={{
+            transform: "translateY(-50%)",
+            animation: "mediaPreviewFadeIn 0.18s ease-out forwards",
+            "@keyframes mediaPreviewFadeIn": {
+              from: { opacity: 0, transform: "translateY(-50%) scale(0.94)" },
+              to: { opacity: 1, transform: "translateY(-50%) scale(1)" },
+            },
+          }}
+        >
+          <Box
+            as="img"
+            src={props.obj.thumb}
+            maxW="320px"
+            maxH="240px"
+            rounded="$lg"
+            shadow="$2xl"
+            css={{
+              display: "block",
+              objectFit: "contain",
+              border: "2px solid var(--hope-colors-neutral4)",
+              background: "var(--hope-colors-neutral1)",
+            }}
+          />
+        </Box>
+      </Show>
     </Motion.div>
   )
 }

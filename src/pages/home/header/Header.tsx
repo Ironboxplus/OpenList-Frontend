@@ -15,6 +15,8 @@ import { CenterLoading } from "~/components"
 import { Container } from "../Container"
 import { bus } from "~/utils"
 import { Layout } from "./layout"
+import { UserMenu } from "./UserMenu"
+import { PluginSlot } from "~/plugins"
 import { isMac } from "~/utils/compatibility"
 
 export const Header = () => {
@@ -54,6 +56,7 @@ export const Header = () => {
             />
           </HStack>
           <HStack class="header-right" spacing="$2">
+            <PluginSlot name="header-right" />
             <Show when={objStore.state === State.Folder}>
               <Show when={getSetting("search_index") !== "none"}>
                 <HStack
@@ -82,6 +85,7 @@ export const Header = () => {
               </Show>
               <Layout />
             </Show>
+            <UserMenu />
           </HStack>
         </HStack>
       </Container>

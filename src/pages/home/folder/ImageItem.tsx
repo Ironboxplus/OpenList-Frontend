@@ -6,7 +6,7 @@ import { CenterLoading, ImageWithError } from "~/components"
 import { useLink, usePath, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, selectAll, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus } from "~/utils"
+import { bus, listItemIn } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 
@@ -25,9 +25,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
     useSelectWithMouse()
   return (
     <Motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
+      {...(listItemIn(props.index) as any)}
       style={{
         "flex-grow": 1,
       }}

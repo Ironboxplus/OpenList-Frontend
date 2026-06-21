@@ -3,6 +3,11 @@ import { Router } from "@solidjs/router"
 import { render } from "solid-js/web"
 
 import { Index } from "./app"
+import { installBuiltinPlugins, installExternalPlugins } from "./plugins"
+
+installBuiltinPlugins()
+// Fire-and-forget: hot-load any backend-served JS plugins.
+void installExternalPlugins()
 
 declare global {
   interface Window {

@@ -103,9 +103,13 @@ export const players: {
     platforms: ["iOS"],
   },
   {
+    // mpv-handler format (github.com/akiirui/mpv-handler): URL-safe base64
+    // payload, with the matching external subtitle passed via subfile so the
+    // sidecar .srt/.ass/.vtt auto-loads. Falls back to a plain launch when the
+    // video has no sidecar subtitle (empty subfile is stripped by convertURL).
     icon: "mpv",
     name: "mpv",
-    scheme: "mpv://$edurl",
+    scheme: "mpv://play/$Bdurl/?subfile=$Bsub",
     platforms: ["Windows", "MacOS", "Linux", "Android"],
   },
 ]
@@ -135,8 +139,16 @@ export const VideoBox = (props: {
   onAutoNextChange: (v: boolean) => void
 }) => {
   const { replace, pathname } = useRouter()
-  const { currentObjLink } = useLink()
+  const { currentObjLink, proxyLink } = useLink()
   const { handleFolder } = usePath()
+  // Sidecar external subtitle for the current video, handed to players that
+  // support one (e.g. mpv via subfile).
+  const subtitleUrl = createMemo(() => {
+    const sub = objStore.related.find((obj) =>
+      [".srt", ".ass", ".vtt"].some((e) => obj.name.toLowerCase().endsWith(e)),
+    )
+    return sub ? proxyLink(sub, true) : undefined
+  })
   const [videoName, setVideoName] = createSignal("")
   const videos = createMemo(() => {
     let isLoadMore = true,
@@ -230,6 +242,7 @@ export const VideoBox = (props: {
                     raw_url: objStore.raw_url,
                     name: objStore.obj.name,
                     d_url: currentObjLink(true),
+                    sub_url: subtitleUrl(),
                   })}
                 >
                   <Image

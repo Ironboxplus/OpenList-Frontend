@@ -21,6 +21,12 @@ export const getHistoryKey = (path: string, page?: number) => {
 
 export const recordHistory = (path: string, page?: number) => {
   const obj = JSON.parse(JSON.stringify(objStore))
+  // JSON.stringify drops undefined keys, so an absent mountDetails would NOT
+  // overwrite a stale value when this snapshot is recovered. Pin it explicitly
+  // (null when absent) so back/forward into a no-storage path — e.g. the
+  // storages-root — clears the header instead of showing the previous folder's
+  // storage usage.
+  obj.mountDetails = objStore.mountDetails ?? null
   if (
     ![State.FetchingMore, State.Folder, State.File].includes(objStore.state)
   ) {

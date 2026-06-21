@@ -7,6 +7,7 @@ import { side_menu_items } from "./sidemenu_items"
 import { Route, Routes } from "@solidjs/router"
 import { For, Suspense } from "solid-js"
 import { routes } from "./routes"
+import { StorageLoadingBar } from "./StorageLoadingBar"
 
 const Manage = () => {
   const t = useT()
@@ -45,6 +46,7 @@ const Manage = () => {
           p="$4"
           overflowY="auto"
         >
+          <StorageLoadingBar />
           <Routes>
             <For each={routes}>
               {(route) => {

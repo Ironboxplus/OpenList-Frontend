@@ -58,6 +58,13 @@ const previews: Preview[] = [
     prior: true,
   },
   {
+    key: "115_video",
+    type: ObjType.VIDEO,
+    provider: /^115 Open$/,
+    component: lazy(() => import("./115_video")),
+    prior: true,
+  },
+  {
     key: "markdown",
     type: ObjType.TEXT,
     component: lazy(() => import("./markdown")),

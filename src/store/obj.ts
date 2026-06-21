@@ -2,7 +2,7 @@ import naturalSort from "typescript-natural-sort"
 import { cookieStorage, createStorageSignal } from "@solid-primitives/storage"
 import { createMemo, createSignal } from "solid-js"
 import { createStore, produce } from "solid-js/store"
-import { Obj, ObjType, StoreObj } from "~/types"
+import { Obj, ObjType, StoreObj, MountDetails } from "~/types"
 import { bus, log } from "~/utils"
 import { keyPressed } from "./key-event"
 import { local } from "./local_settings"
@@ -21,6 +21,11 @@ const initialObjStore = {
   obj: {} as Obj,
   raw_url: "",
   related: [] as Obj[],
+  // Disk usage of the storage the current directory belongs to. Updated on every
+  // navigation (both fs/get and fs/list paths) so the header widget stays in sync
+  // and never shows the previous folder's storage. Undefined = no current mount
+  // (e.g. the virtual storages-root) → the widget hides.
+  mountDetails: undefined as MountDetails | undefined,
 
   objs: [] as StoreObj[],
   total: 0,
@@ -52,6 +57,9 @@ export const ObjStore = {
   },
   setObj: (obj: Obj) => {
     setObjStore("obj", obj)
+  },
+  setMountDetails: (mountDetails?: MountDetails) => {
+    setObjStore("mountDetails", mountDetails)
   },
   setRawUrl: (raw_url: string) => {
     setObjStore("raw_url", raw_url)

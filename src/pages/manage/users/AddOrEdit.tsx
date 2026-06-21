@@ -101,65 +101,72 @@ const AddOrEdit = () => {
           </FormControl>
         </Show>
 
-        <FormControl w="$full" display="flex" flexDirection="column" required>
-          <FormLabel for="base_path" display="flex" alignItems="center">
-            {t(`users.base_path`)}
-          </FormLabel>
-          <FolderChooseInput
-            id="base_path"
-            value={user.base_path}
-            onChange={(path) => setUser("base_path", path)}
-            onlyFolder
-          />
-        </FormControl>
-        <FormControl w="$full" required>
-          <FormLabel display="flex" alignItems="center">
-            {t(`users.permission`)}
-          </FormLabel>
-          <Flex w="$full" wrap="wrap" gap="$2">
-            <For each={UserPermissions}>
-              {(item, i) => (
-                <Permission
-                  name={item}
-                  can={UserMethods.can(user, i())}
-                  onChange={(val) => {
-                    if (val) {
-                      setUser("permission", (user.permission |= 1 << i()))
-                    } else {
-                      setUser("permission", (user.permission &= ~(1 << i())))
-                    }
-                  }}
-                />
-              )}
-            </For>
-          </Flex>
-        </FormControl>
-        <FormControl w="fit-content" display="flex">
-          <Checkbox
-            css={{ whiteSpace: "nowrap" }}
-            id="disabled"
-            onChange={(e: any) => setUser("disabled", e.currentTarget.checked)}
-            color="$neutral10"
-            fontSize="$sm"
-            checked={user.disabled}
-          >
-            {t(`users.disabled`)}
-          </Checkbox>
-        </FormControl>
-        <FormControl w="fit-content" display="flex">
-          <Checkbox
-            css={{ whiteSpace: "nowrap" }}
-            id="allow_ldap"
-            onChange={(e: any) =>
-              setUser("allow_ldap", e.currentTarget.checked)
-            }
-            color="$neutral10"
-            fontSize="$sm"
-            checked={user.allow_ldap}
-          >
-            {t(`users.allow_ldap`)}
-          </Checkbox>
-        </FormControl>
+        {/* Privileged fields: only a real admin may edit base path, permission
+            bits, disabled and LDAP. A delegated (non-admin) editor sees just
+            username/password — matching the backend update policy. */}
+        <Show when={UserMethods.is_admin(me())}>
+          <FormControl w="$full" display="flex" flexDirection="column" required>
+            <FormLabel for="base_path" display="flex" alignItems="center">
+              {t(`users.base_path`)}
+            </FormLabel>
+            <FolderChooseInput
+              id="base_path"
+              value={user.base_path}
+              onChange={(path) => setUser("base_path", path)}
+              onlyFolder
+            />
+          </FormControl>
+          <FormControl w="$full" required>
+            <FormLabel display="flex" alignItems="center">
+              {t(`users.permission`)}
+            </FormLabel>
+            <Flex w="$full" wrap="wrap" gap="$2">
+              <For each={UserPermissions}>
+                {(item, i) => (
+                  <Permission
+                    name={item}
+                    can={UserMethods.can(user, i())}
+                    onChange={(val) => {
+                      if (val) {
+                        setUser("permission", (user.permission |= 1 << i()))
+                      } else {
+                        setUser("permission", (user.permission &= ~(1 << i())))
+                      }
+                    }}
+                  />
+                )}
+              </For>
+            </Flex>
+          </FormControl>
+          <FormControl w="fit-content" display="flex">
+            <Checkbox
+              css={{ whiteSpace: "nowrap" }}
+              id="disabled"
+              onChange={(e: any) =>
+                setUser("disabled", e.currentTarget.checked)
+              }
+              color="$neutral10"
+              fontSize="$sm"
+              checked={user.disabled}
+            >
+              {t(`users.disabled`)}
+            </Checkbox>
+          </FormControl>
+          <FormControl w="fit-content" display="flex">
+            <Checkbox
+              css={{ whiteSpace: "nowrap" }}
+              id="allow_ldap"
+              onChange={(e: any) =>
+                setUser("allow_ldap", e.currentTarget.checked)
+              }
+              color="$neutral10"
+              fontSize="$sm"
+              checked={user.allow_ldap}
+            >
+              {t(`users.allow_ldap`)}
+            </Checkbox>
+          </FormControl>
+        </Show>
         <Button
           loading={okLoading()}
           onClick={async () => {
