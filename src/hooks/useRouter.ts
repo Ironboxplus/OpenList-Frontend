@@ -7,15 +7,34 @@ import {
   _mergeSearchString,
 } from "@solidjs/router"
 import { createMemo, untrack } from "solid-js"
-import { encodePath, joinBase, log, pathDir, pathJoin, trimBase } from "~/utils"
-import { clearHistory } from "~/store"
+import {
+  encodePath,
+  joinBase,
+  log,
+  pathDir,
+  pathJoin,
+  trimBase,
+  trimUserBase,
+} from "~/utils"
+import { clearHistory, me } from "~/store"
 
 const useRouter = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams()
   const pathname = createMemo(() => {
-    return trimBase(decodeURIComponent(location.pathname))
+    const path = trimBase(decodeURIComponent(location.pathname))
+    // Special @-routes (/@login, /@manage, /@s shares, ...) are not file paths
+    // and must not be confined to the user's base_path.
+    if (path.startsWith("/@")) {
+      return path
+    }
+    // Confine to the user's base_path: keep every consumer (fetch, breadcrumb,
+    // navigation, links) working in base-relative terms. This prevents an
+    // absolute path (e.g. a login-redirect landing on the full URL) from being
+    // double-prefixed by the backend's user.JoinPath and 404-ing outside the
+    // user's root.
+    return trimUserBase(path, me().base_path)
   })
   const isShare = createMemo(() => {
     return pathname().startsWith("/@s")

@@ -1,4 +1,4 @@
-import { base_path } from "."
+import { base_path } from "./config"
 
 export const standardizePath = (path: string, noRootSlash?: boolean) => {
   if (path.endsWith("/")) {
@@ -31,6 +31,26 @@ export const trimBase = (path: string) => {
     return res
   }
   return "/" + res
+}
+
+// trimUserBase makes a path relative to the logged-in user's base_path so the
+// rest of the app (fetch, breadcrumb, navigation) always works in base-relative
+// terms — which is exactly what the backend's user.JoinPath expects. The backend
+// re-prepends base_path, so feeding it an absolute path that already contains
+// base_path double-prefixes it (e.g. login-redirect landing on the absolute URL)
+// and 404s outside the user's root. Normalizing here confines a restricted user
+// to their base_path:
+//   - exact base or a child of base  => stripped to the relative remainder
+//   - anything else (already relative, or an @-route)  => returned unchanged
+// A base of "" or "/" (unrestricted user) is a no-op.
+export const trimUserBase = (path: string, userBase: string | undefined) => {
+  if (!userBase || userBase === "/") return path
+  // normalize base: leading slash, no trailing slash, no empty segments
+  const base = "/" + userBase.split("/").filter(Boolean).join("/")
+  if (base === "/") return path
+  if (path === base) return "/"
+  if (path.startsWith(base + "/")) return path.slice(base.length) || "/"
+  return path
 }
 
 export const pathBase = (path: string) => {

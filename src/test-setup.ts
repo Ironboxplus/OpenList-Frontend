@@ -1,6 +1,12 @@
 import { vi, afterEach } from "vitest"
 ;(globalThis as any).window = globalThis.window || globalThis
-;(window as any).OPENLIST_CONFIG = (window as any).OPENLIST_CONFIG || {}
+// Provide a usable runtime config so modules that import ~/utils (which loads
+// config.ts at import time) don't crash on an undefined api/base_path in tests.
+;(window as any).OPENLIST_CONFIG = {
+  api: "/",
+  base_path: "",
+  ...((window as any).OPENLIST_CONFIG || {}),
+}
 
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = class ResizeObserver {
