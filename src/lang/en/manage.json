@@ -86,6 +86,7 @@
     "group_name": "Group name (e.g. 115-main)",
     "delete_group": "Delete",
     "add_storage": "add storage…",
+    "no_storage_left": "all storages already added",
     "not_synced": "no credential yet",
     "synced_fields": "Synced fields",
     "last_update": "updated",

@@ -143,6 +143,10 @@ export type ClusterGroupSpec = {
 export const getClusterConfig = (): PResp<ClusterConfigData> =>
   r.get("/admin/cluster/config")
 
+/** Fetch the cluster key in plaintext (for the "show key" toggle). */
+export const getClusterKey = (): PResp<{ key: string }> =>
+  r.get("/admin/cluster/key")
+
 export const setClusterConfig = (
   config: ClusterConfig,
 ): PResp<ClusterConfigData> => r.post("/admin/cluster/config", config)
