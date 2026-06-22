@@ -8,6 +8,7 @@ import { checkboxOpen, getMainColor, local, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
 import { bus, hoverColor, listItemIn } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
+import { ExtraBadges } from "./ExtraBadges"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 
 export const GridItem = (props: { obj: StoreObj; index: number }) => {
@@ -147,6 +148,7 @@ export const GridItem = (props: { obj: StoreObj; index: number }) => {
         >
           {props.obj.name}
         </Text>
+        <ExtraBadges extra={props.obj.extra} maxTags={1} />
       </VStack>
     </Motion.div>
   )

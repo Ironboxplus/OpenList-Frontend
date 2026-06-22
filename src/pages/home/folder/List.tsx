@@ -1,5 +1,6 @@
-import { HStack, VStack, Text } from "@hope-ui/solid"
+import { Box, HStack, VStack, Text } from "@hope-ui/solid"
 import { batch, createEffect, createSignal, For, Show, onMount } from "solid-js"
+import { AiOutlineArrowUp } from "solid-icons/ai"
 import { useT, useRouter } from "~/hooks"
 import {
   allChecked,
@@ -71,6 +72,16 @@ export const ListTitle = (props: {
     }
   })
 
+  const onSort = (col: Col) => {
+    if (col.name === orderBy()) {
+      setReverse(!reverse())
+    } else {
+      batch(() => {
+        setOrderBy(col.name as OrderBy)
+        setReverse(false)
+      })
+    }
+  }
   const itemProps = (col: Col) => {
     return {
       fontWeight: "bold",
@@ -78,18 +89,27 @@ export const ListTitle = (props: {
       color: "$neutral11",
       textAlign: col.textAlign as any,
       cursor: "pointer",
-      onClick: () => {
-        if (col.name === orderBy()) {
-          setReverse(!reverse())
-        } else {
-          batch(() => {
-            setOrderBy(col.name as OrderBy)
-            setReverse(false)
-          })
-        }
-      },
+      onClick: () => onSort(col),
     }
   }
+  // Direction indicator on the active sort column: one up-arrow that rotates to a
+  // down-arrow via a CSS transform transition (GPU-driven, can't throw — no JS
+  // animation lib needed for a 180° flip). reverse=false → ascending (↑).
+  const SortArrow = (p: { col: Col }) => (
+    <Show when={p.col.name === orderBy()}>
+      <Box
+        display="inline-flex"
+        alignItems="center"
+        color="$accent10"
+        style={{
+          transition: "transform 0.18s ease",
+          transform: reverse() ? "rotate(180deg)" : "rotate(0deg)",
+        }}
+      >
+        <AiOutlineArrowUp size={14} />
+      </Box>
+    </Show>
+  )
   return (
     <HStack class="title" w="$full" p="$2">
       <HStack w={cols[0].w} spacing="$1">
@@ -105,19 +125,37 @@ export const ListTitle = (props: {
         {selectedMsg() ? (
           <Text {...itemProps(cols[0])}>{selectedMsg()}</Text>
         ) : (
-          <Text {...itemProps(cols[0])}>{t(`home.obj.${cols[0].name}`)}</Text>
+          <>
+            <Text {...itemProps(cols[0])}>{t(`home.obj.${cols[0].name}`)}</Text>
+            <SortArrow col={cols[0]} />
+          </>
         )}
       </HStack>
-      <Text w={cols[1].w} {...itemProps(cols[1])}>
-        {t(`home.obj.${cols[1].name}`)}
-      </Text>
-      <Text
-        w={cols[2].w}
-        {...itemProps(cols[2])}
-        display={{ "@initial": "none", "@md": "inline" }}
+      <HStack
+        w={cols[1].w}
+        spacing="$1"
+        justifyContent="flex-end"
+        cursor="pointer"
+        onClick={() => onSort(cols[1])}
       >
-        {t(`home.obj.${cols[2].name}`)}
-      </Text>
+        <Text fontWeight="bold" fontSize="$sm" color="$neutral11">
+          {t(`home.obj.${cols[1].name}`)}
+        </Text>
+        <SortArrow col={cols[1]} />
+      </HStack>
+      <HStack
+        w={cols[2].w}
+        spacing="$1"
+        justifyContent="flex-end"
+        cursor="pointer"
+        onClick={() => onSort(cols[2])}
+        display={{ "@initial": "none", "@md": "flex" }}
+      >
+        <Text fontWeight="bold" fontSize="$sm" color="$neutral11">
+          {t(`home.obj.${cols[2].name}`)}
+        </Text>
+        <SortArrow col={cols[2]} />
+      </HStack>
     </HStack>
   )
 }

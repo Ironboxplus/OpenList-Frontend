@@ -34,6 +34,7 @@ import {
   listItemIn,
 } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
+import { ExtraBadges } from "./ExtraBadges"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 import {
   isMediaPreviewEnabled,
@@ -203,6 +204,7 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
           >
             {props.obj.name}
           </Text>
+          <ExtraBadges extra={props.obj.extra} />
         </HStack>
         <Show
           fallback={

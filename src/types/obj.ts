@@ -10,6 +10,23 @@ export enum ObjType {
   IMAGE,
 }
 
+/**
+ * Optional driver-specific metadata (backend `extra`). All fields are optional
+ * and the index signature keeps it forward-compatible: the UI reads the keys it
+ * knows and ignores anything else, so a changed backend payload never breaks it.
+ */
+export interface ObjExtra {
+  /** Media duration in seconds. */
+  duration?: number
+  /** Short video-resolution badge, e.g. "1080P" / "4K". */
+  resolution?: string
+  /** Whether the item is starred on the provider. */
+  starred?: boolean
+  /** Provider file tags. */
+  tags?: string[]
+  [key: string]: unknown
+}
+
 export interface Obj {
   name: string
   size: number
@@ -20,6 +37,7 @@ export interface Obj {
   thumb: string
   type: ObjType
   mount_details?: MountDetails
+  extra?: ObjExtra
 }
 
 export type StoreObj = Obj & {

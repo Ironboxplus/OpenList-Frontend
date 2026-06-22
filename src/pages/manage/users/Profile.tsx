@@ -157,63 +157,77 @@ const Profile = () => {
         }
       >
         <Heading>{t("users.update_profile")}</Heading>
-        <SimpleGrid gap="$2" columns={{ "@initial": 1, "@md": 2 }}>
-          <FormControl>
-            <FormLabel for="username">{t("users.change_username")}</FormLabel>
-            <Input
-              id="username"
-              value={username()}
-              onInput={(e) => {
-                setUsername(e.currentTarget.value)
-              }}
-            />
-          </FormControl>
-        </SimpleGrid>
-        <SimpleGrid gap="$2" columns={{ "@initial": 1, "@md": 2 }}>
-          <FormControl>
-            <FormLabel for="password">{t("users.change_password")}</FormLabel>
-            <Input
-              id="password"
-              type="password"
-              placeholder="********"
-              value={password()}
-              onInput={(e) => {
-                setPassword(e.currentTarget.value)
-              }}
-            />
-            <FormHelperText>{t("users.change_password-tips")}</FormHelperText>
-          </FormControl>
-          <FormControl>
-            <FormLabel for="confirm-password">
-              {t("users.confirm_password")}
-            </FormLabel>
-            <Input
-              id="confirm-password"
-              type="password"
-              placeholder="********"
-              value={confirmPassword()}
-              onInput={(e) => {
-                setConfirmPassword(e.currentTarget.value)
-              }}
-            />
-            <FormHelperText>{t("users.confirm_password-tips")}</FormHelperText>
-          </FormControl>
-        </SimpleGrid>
-        <HStack spacing="$2">
-          <Button loading={loading()} onClick={[saveMe, false]}>
-            {t("global.save")}
-          </Button>
-          <Show when={!me().otp}>
-            <Button
-              colorScheme="accent"
-              onClick={() => {
-                to("/@manage/2fa")
-              }}
-            >
-              {t("users.enable_2fa")}
+        {/* Editing your own username/password requires the manage-user-info
+            permission (admins always have it). Without it, the fields are hidden
+            and the backend rejects the change too. 2FA stays available below. */}
+        <Show
+          when={UserMethods.can_manage_user_info(me())}
+          fallback={
+            <Text color="$neutral10" fontSize="$sm">
+              {t("users.no_modify_permission")}
+            </Text>
+          }
+        >
+          <SimpleGrid gap="$2" columns={{ "@initial": 1, "@md": 2 }}>
+            <FormControl>
+              <FormLabel for="username">{t("users.change_username")}</FormLabel>
+              <Input
+                id="username"
+                value={username()}
+                onInput={(e) => {
+                  setUsername(e.currentTarget.value)
+                }}
+              />
+            </FormControl>
+          </SimpleGrid>
+          <SimpleGrid gap="$2" columns={{ "@initial": 1, "@md": 2 }}>
+            <FormControl>
+              <FormLabel for="password">{t("users.change_password")}</FormLabel>
+              <Input
+                id="password"
+                type="password"
+                placeholder="********"
+                value={password()}
+                onInput={(e) => {
+                  setPassword(e.currentTarget.value)
+                }}
+              />
+              <FormHelperText>{t("users.change_password-tips")}</FormHelperText>
+            </FormControl>
+            <FormControl>
+              <FormLabel for="confirm-password">
+                {t("users.confirm_password")}
+              </FormLabel>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="********"
+                value={confirmPassword()}
+                onInput={(e) => {
+                  setConfirmPassword(e.currentTarget.value)
+                }}
+              />
+              <FormHelperText>
+                {t("users.confirm_password-tips")}
+              </FormHelperText>
+            </FormControl>
+          </SimpleGrid>
+          <HStack spacing="$2">
+            <Button loading={loading()} onClick={[saveMe, false]}>
+              {t("global.save")}
             </Button>
-          </Show>
-        </HStack>
+          </HStack>
+        </Show>
+        <Show when={!me().otp}>
+          <Button
+            colorScheme="accent"
+            onClick={() => {
+              to("/@manage/2fa")
+            }}
+          >
+            {t("users.enable_2fa")}
+          </Button>
+        </Show>
       </Show>
       <Show
         when={

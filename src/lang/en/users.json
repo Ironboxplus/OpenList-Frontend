@@ -34,6 +34,7 @@
   "confirm_password": "Confirm Password",
   "confirm_password-tips": "Repeat the password that you just input",
   "confirm_password_not_same": "The passwords you entered do not match",
+  "no_modify_permission": "You don't have permission to change your username or password. Contact an administrator.",
   "enable_2fa": "Enable 2FA",
   "cancel_2fa": "Cancel 2FA",
   "cancel_2fa_success": "Cancel 2FA successfully",
