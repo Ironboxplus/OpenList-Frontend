@@ -10,6 +10,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  untrack,
 } from "solid-js"
 import { CenterLoading, ImageWithError, LinkWithPush } from "~/components"
 import { useLink, useRouter, useT, useUtil } from "~/hooks"
@@ -132,7 +133,7 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
   )
   return (
     <Motion.div
-      {...(listItemIn(props.index) as any)}
+      {...(listItemIn(untrack(() => props.index)) as any)}
       style={{ "break-inside": "avoid", "margin-bottom": "0.6rem" }}
     >
       <Box

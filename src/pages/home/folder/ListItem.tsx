@@ -9,7 +9,7 @@ import {
 } from "@hope-ui/solid"
 import { Motion } from "solid-motionone"
 import { useContextMenu } from "solid-contextmenu"
-import { batch, createSignal, onCleanup, Show } from "solid-js"
+import { batch, createSignal, onCleanup, Show, untrack } from "solid-js"
 import { LinkWithPush } from "~/components"
 import { usePath, useRouter, useUtil } from "~/hooks"
 import {
@@ -102,7 +102,7 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
 
   return (
     <Motion.div
-      {...(listItemIn(props.index) as any)}
+      {...(listItemIn(untrack(() => props.index)) as any)}
       style={{
         width: "100%",
         position: "relative",

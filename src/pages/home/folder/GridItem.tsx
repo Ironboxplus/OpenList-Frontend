@@ -1,7 +1,7 @@
 import { Center, VStack, Icon, Text } from "@hope-ui/solid"
 import { Motion } from "solid-motionone"
 import { useContextMenu } from "solid-contextmenu"
-import { batch, Show } from "solid-js"
+import { batch, Show, untrack } from "solid-js"
 import { CenterLoading, LinkWithPush, ImageWithError } from "~/components"
 import { usePath, useRouter, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, local, selectIndex } from "~/store"
@@ -30,7 +30,7 @@ export const GridItem = (props: { obj: StoreObj; index: number }) => {
     useSelectWithMouse()
   return (
     <Motion.div
-      {...(listItemIn(props.index) as any)}
+      {...(listItemIn(untrack(() => props.index)) as any)}
       style={{
         width: "100%",
       }}
