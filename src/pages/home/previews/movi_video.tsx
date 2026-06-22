@@ -222,7 +222,7 @@ const Preview = () => {
             on:click={(e: MouseEvent) => e.stopPropagation()}
           >
             <div
-              onClick={() => setMenuOpen(!menuOpen())}
+              on:click={() => setMenuOpen(!menuOpen())}
               style={{
                 padding: "4px 10px",
                 "border-radius": "6px",
@@ -248,7 +248,7 @@ const Preview = () => {
                 <For each={qualities()}>
                   {(q) => (
                     <div
-                      onClick={() => selectQuality(q)}
+                      on:click={() => selectQuality(q)}
                       style={{
                         padding: "6px 12px",
                         cursor: "pointer",
