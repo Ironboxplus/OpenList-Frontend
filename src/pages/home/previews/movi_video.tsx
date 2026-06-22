@@ -35,6 +35,24 @@ interface Quality {
 
 const ORIGINAL_LABEL = "原画"
 
+// 115's video_play sometimes returns an empty `resolution`; map the numeric
+// definition to a friendly label as a fallback (definition 4 == 1080P, etc).
+const DEFINITION_LABELS: Record<number, string> = {
+  1: "360P",
+  2: "480P",
+  3: "720P",
+  4: "1080P",
+  5: "4K",
+}
+
+// movi-player only treats a source as an adaptive HLS stream when the src string
+// contains ".m3u8" (MoviElement isAdaptive check). The signed /video_proxy URL
+// has no such extension, so append it as a URL fragment: the browser strips the
+// fragment before the HTTP request, so the proxy/signature are unaffected, but
+// movi routes the source through its HLS engine instead of the raw demuxer.
+const withHlsHint = (url: string) =>
+  url.toLowerCase().includes(".m3u8") ? url : `${url}#.m3u8`
+
 const Preview = () => {
   const { proxyLink } = useLink()
   const { pathname } = useRouter()
@@ -108,8 +126,11 @@ const Preview = () => {
       const tiers = resp.data
         .filter((s) => s.url)
         .map((s) => ({
-          label: s.resolution || `${s.definition}P`,
-          url: s.url,
+          label:
+            s.resolution ||
+            DEFINITION_LABELS[s.definition] ||
+            `${s.definition}P`,
+          url: withHlsHint(s.url),
         }))
       setQualities(tiers.length ? [original, ...tiers] : [original])
     } catch {
