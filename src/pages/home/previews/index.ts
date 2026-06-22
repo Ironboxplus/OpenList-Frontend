@@ -58,6 +58,15 @@ const previews: Preview[] = [
     prior: true,
   },
   {
+    // movi-player is the default video player; it is listed before the
+    // provider-specific 115 player so movi wins as the first (default) tab for
+    // 115 videos too, while 115_video stays available as a secondary tab.
+    key: "movi_video",
+    type: ObjType.VIDEO,
+    component: lazy(() => import("./movi_video")),
+    prior: true,
+  },
+  {
     key: "115_video",
     type: ObjType.VIDEO,
     provider: /^115 Open$/,
@@ -100,12 +109,6 @@ const previews: Preview[] = [
     key: "image",
     type: ObjType.IMAGE,
     component: lazy(() => import("./image")),
-    prior: true,
-  },
-  {
-    key: "movi_video",
-    type: ObjType.VIDEO,
-    component: lazy(() => import("./movi_video")),
     prior: true,
   },
   {
