@@ -4,6 +4,10 @@ allowBuilds:
   esbuild: true
   mpegts.js@https://codeload.github.com/OpenListTeam/mpegts.js/tar.gz/1e51e0f6f918cf08e05dfae9c7bfcf658d6b4ac2: true
 patchedDependencies:
+  # Register external subtitle tracks on the adaptive (HLS/DASH) path too — the
+  # upstream Shaka branch returns before the demuxer-path registration, so
+  # external subs (115 transcoded preview) were invisible/unselectable on HLS.
+  movi-player@0.3.2: patches/movi-player@0.3.2.patch
   # if https://github.com/chenxch/vite-plugin-dynamic-base/pull/36 is merged,
   # this patch can be removed
   vite-plugin-dynamic-base: patches/vite-plugin-dynamic-base.patch

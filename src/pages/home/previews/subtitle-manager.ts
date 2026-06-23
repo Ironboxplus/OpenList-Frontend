@@ -31,6 +31,22 @@ function srtToVtt(srt: string): string {
   return "WEBVTT\n\n" + body
 }
 
+// JASSUB/libass only parse UTF-8. Detect a UTF-16 BOM and transcode to UTF-8,
+// stripping the BOM char. Returns null when the bytes are already UTF-8 (with or
+// without BOM), signalling the caller to leave the source untouched.
+export function utf16ToUtf8IfNeeded(buf: ArrayBuffer): string | null {
+  const b = new Uint8Array(buf)
+  let text: string | null = null
+  if (b[0] === 0xff && b[1] === 0xfe) {
+    text = new TextDecoder("utf-16le").decode(buf)
+  } else if (b[0] === 0xfe && b[1] === 0xff) {
+    text = new TextDecoder("utf-16be").decode(buf)
+  }
+  if (text === null) return null
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1)
+  return text
+}
+
 export function detectFormat(filename: string): SubtitleFormat {
   const ext = filename.split(".").pop()?.toLowerCase() ?? ""
   switch (ext) {
@@ -112,6 +128,33 @@ export class SubtitleManager {
             log("converted SRT→VTT for", info.label)
           })
           .catch((e) => log("SRT conversion failed for", info.label, e)),
+      )
+    }
+    await Promise.all(tasks)
+  }
+
+  // JASSUB/libass only parse UTF-8. Many fansub .ass files (e.g. popgo) are
+  // UTF-16 — libass then fails with "Failed to start a track" and nothing
+  // renders, on every source. Detect a UTF-16 BOM, transcode to a UTF-8 blob,
+  // and repoint the track url so JASSUB can load it. UTF-8 (with or without BOM)
+  // is left untouched.
+  async convertAssTracks(): Promise<void> {
+    const tasks: Promise<void>[] = []
+    for (const [, info] of this.subInfoMap) {
+      if (info.format !== "ass") continue
+      tasks.push(
+        fetch(info.url)
+          .then((r) => r.arrayBuffer())
+          .then((buf) => {
+            const text = utf16ToUtf8IfNeeded(buf)
+            if (text === null) return // already UTF-8 (or BOM-less) — leave as-is
+            const blob = new Blob([text], { type: "text/plain" })
+            info.url = URL.createObjectURL(blob)
+            log("converted UTF-16 ASS→UTF-8 for", info.label)
+          })
+          .catch((e) =>
+            log("ASS encoding conversion failed for", info.label, e),
+          ),
       )
     }
     await Promise.all(tasks)

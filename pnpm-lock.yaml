@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  movi-player@0.3.2: e1f54ce0769756883a70dd1e2d0a09e0a6f1b69e2bae1078eceb2b75260ad354
   vite-plugin-dynamic-base: 66b8690f2fc12c4b06543392adc3a5449c39a9224917e837dfb6e32773454c5c
 
 importers:
@@ -127,7 +128,7 @@ importers:
         version: 0.55.1
       movi-player:
         specifier: ^0.3.2
-        version: 0.3.2(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)
+        version: 0.3.2(patch_hash=e1f54ce0769756883a70dd1e2d0a09e0a6f1b69e2bae1078eceb2b75260ad354)(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)
       mpegts.js:
         specifier: github:OpenListTeam/mpegts.js#1e51e0f6f918cf08e05dfae9c7bfcf658d6b4ac2
         version: https://codeload.github.com/OpenListTeam/mpegts.js/tar.gz/1e51e0f6f918cf08e05dfae9c7bfcf658d6b4ac2
@@ -8095,7 +8096,7 @@ snapshots:
       dompurify: 3.2.7
       marked: 14.0.0
 
-  movi-player@0.3.2(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0):
+  movi-player@0.3.2(patch_hash=e1f54ce0769756883a70dd1e2d0a09e0a6f1b69e2bae1078eceb2b75260ad354)(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0):
     dependencies:
       dashjs: 5.2.0(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)
       hls.js: 1.6.16

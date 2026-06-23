@@ -58,19 +58,15 @@ const previews: Preview[] = [
     prior: true,
   },
   {
-    // movi-player is the default video player; it is listed before the
-    // provider-specific 115 player so movi wins as the first (default) tab for
-    // 115 videos too, while 115_video stays available as a secondary tab.
+    // movi-player is the default (and only) video player for 115: it plays the
+    // original stream plus the 115 transcoded tiers (原画/4K/1080P via
+    // /fs/video_play) through its own quality overlay, and renders external ASS
+    // via SubtitleManager/JASSUB. The old provider-specific Artplayer "115_video"
+    // tab was removed — it duplicated quality switching and had a broken,
+    // separate ASS pipeline.
     key: "movi_video",
     type: ObjType.VIDEO,
     component: lazy(() => import("./movi_video")),
-    prior: true,
-  },
-  {
-    key: "115_video",
-    type: ObjType.VIDEO,
-    provider: /^115 Open$/,
-    component: lazy(() => import("./115_video")),
     prior: true,
   },
   {

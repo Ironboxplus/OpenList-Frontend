@@ -63,10 +63,10 @@ export type ConvertURLArgs = {
 
 // applyEncodeOps applies the encoding flags from a placeholder's op prefix
 // (the chars between `$` and the keyword). Supported ops: e = encodeURIComponent,
-// b = standard base64, B = URL-safe base64 (the encoding mpv-handler expects).
-// Ops are applied right-to-left, matching the historical $eb ordering. Only the
-// captured prefix is inspected, so op letters inside a keyword (the "b" in
-// "sub") are never mistaken for ops.
+// b = standard base64, B = URL-safe base64 with padding stripped (the exact
+// encoding akiirui's mpv-handler expects). Ops are applied right-to-left,
+// matching the historical $eb ordering. Only the captured prefix is inspected,
+// so op letters inside a keyword (the "b" in "sub") are never mistaken for ops.
 const applyEncodeOps = (value: string, opPrefix: string) => {
   let u = value
   for (const o of opPrefix.split("").reverse()) {
@@ -75,7 +75,7 @@ const applyEncodeOps = (value: string, opPrefix: string) => {
     } else if (o === "b") {
       u = window.btoa(u)
     } else if (o === "B") {
-      u = safeBtoa(u)
+      u = urlSafeBtoaNoPad(u)
     }
   }
   return u
@@ -133,6 +133,19 @@ export const safeBase64 = (base64: string) => {
 
 export const safeBtoa = (str: string) => {
   return safeBase64(window.btoa(str))
+}
+
+// URL-safe base64 with padding REMOVED — the exact form akiirui's mpv-handler
+// requires (`+`→`-`, `/`→`_`, drop trailing `=`). This deliberately differs from
+// safeBtoa above, which maps `=`→`.` for the backend `/i/` (ipa manifest) route:
+// mpv-handler rejects `.` ("Failed to decode: Invalid symbol 46"), so the mpv
+// `$B` op must strip padding instead of substituting it.
+export const urlSafeBtoaNoPad = (str: string) => {
+  return window
+    .btoa(str)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "")
 }
 
 export const decodeText = (data: BufferSource, encoding?: string) => {

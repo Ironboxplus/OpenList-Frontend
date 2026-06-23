@@ -16,42 +16,16 @@ import { pathDir, pathJoin, r } from "~/utils"
 import { VideoBox } from "./video_box"
 import { useNavigate } from "@solidjs/router"
 import { SubtitleManager } from "./subtitle-manager"
+import {
+  buildQualityList,
+  ORIGINAL_LABEL,
+  qualitySwitchPlan,
+  type Quality,
+  type VideoPlaySource,
+} from "./movi-quality"
 
 const escapeAttr = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")
-
-// 115's online-play (transcoded) sources, already wrapped in OpenList's signed
-// /video_proxy by the backend so they are fetched same-origin (no CORS).
-interface VideoPlaySource {
-  resolution: string
-  definition: number
-  url: string
-}
-
-interface Quality {
-  label: string
-  url: string
-}
-
-const ORIGINAL_LABEL = "原画"
-
-// 115's video_play sometimes returns an empty `resolution`; map the numeric
-// definition to a friendly label as a fallback (definition 4 == 1080P, etc).
-const DEFINITION_LABELS: Record<number, string> = {
-  1: "360P",
-  2: "480P",
-  3: "720P",
-  4: "1080P",
-  5: "4K",
-}
-
-// movi-player only treats a source as an adaptive HLS stream when the src string
-// contains ".m3u8" (MoviElement isAdaptive check). The signed /video_proxy URL
-// has no such extension, so append it as a URL fragment: the browser strips the
-// fragment before the HTTP request, so the proxy/signature are unaffected, but
-// movi routes the source through its HLS engine instead of the raw demuxer.
-const withHlsHint = (url: string) =>
-  url.toLowerCase().includes(".m3u8") ? url : `${url}#.m3u8`
 
 const Preview = () => {
   const { proxyLink } = useLink()
@@ -91,6 +65,10 @@ const Preview = () => {
   const [qualities, setQualities] = createSignal<Quality[]>([])
   const [currentUrl, setCurrentUrl] = createSignal("")
   const [menuOpen, setMenuOpen] = createSignal(false)
+  // Mirrors movi-player's own control-bar visibility so the quality overlay
+  // fades out together with the controls (and reappears on hover / while paused)
+  // instead of being permanently pinned to the top-right corner.
+  const [barVisible, setBarVisible] = createSignal(true)
   const currentLabel = () =>
     qualities().find((q) => q.url === currentUrl())?.label ?? ORIGINAL_LABEL
 
@@ -98,8 +76,54 @@ const Preview = () => {
   let playerHost: HTMLElement | undefined
   let playerEl: HTMLElement | undefined
   let subtitleManager: SubtitleManager | undefined
+  let controlsObserver: MutationObserver | undefined
+  let controlsRaf: number | undefined
+
+  // Watch movi-player's shadow-DOM control bar and mirror its visibility onto
+  // the quality overlay. movi toggles `movi-controls-hidden` on the
+  // `.movi-controls-container` element when the bar auto-hides; the overlay
+  // follows that so it isn't stuck on screen. shadowRoot is mode:"open".
+  const observeControls = (host: HTMLElement) => {
+    let tries = 0
+    const attach = () => {
+      const bar = host.shadowRoot?.querySelector(
+        ".movi-controls-container",
+      ) as HTMLElement | null
+      if (!bar) {
+        // The custom element builds its shadow tree asynchronously; retry for a
+        // couple of seconds, then give up (overlay just stays at its default).
+        if (tries++ < 120) controlsRaf = requestAnimationFrame(attach)
+        return
+      }
+      // Hide movi's built-in quality/rendition menu: it's redundant with our
+      // cross-source quality overlay (movi's only switches renditions within a
+      // single HLS source, and 115 transcoded streams expose a single rendition).
+      const sr = host.shadowRoot
+      if (sr && !sr.querySelector("style[data-ol-hide-quality]")) {
+        const st = document.createElement("style")
+        st.setAttribute("data-ol-hide-quality", "")
+        st.textContent = ".movi-quality-container{display:none !important}"
+        sr.appendChild(st)
+      }
+      const sync = () =>
+        setBarVisible(!bar.classList.contains("movi-controls-hidden"))
+      sync()
+      controlsObserver = new MutationObserver(sync)
+      controlsObserver.observe(bar, {
+        attributes: true,
+        attributeFilter: ["class"],
+      })
+    }
+    attach()
+  }
 
   const destroyPlayer = () => {
+    controlsObserver?.disconnect()
+    controlsObserver = undefined
+    if (controlsRaf !== undefined) {
+      cancelAnimationFrame(controlsRaf)
+      controlsRaf = undefined
+    }
     subtitleManager?.destroy()
     subtitleManager = undefined
     if (playerEl) {
@@ -112,33 +136,21 @@ const Preview = () => {
   // Build the quality list for a freshly-opened video: the original stream is
   // always first/default; 115 transcoded tiers (already proxied) follow.
   const loadQualities = async (originalUrl: string) => {
-    const original: Quality = { label: ORIGINAL_LABEL, url: originalUrl }
-    if (objStore.provider !== "115 Open") {
-      setQualities([original])
+    const provider = objStore.provider
+    if (provider !== "115 Open") {
+      setQualities(buildQualityList(originalUrl, provider, undefined))
       return
     }
     try {
       const resp = await fetchPlaySources()
-      if (resp.code !== 200 || !resp.data) {
-        setQualities([original])
-        return
-      }
-      const tiers = resp.data
-        .filter((s) => s.url)
-        .map((s) => ({
-          label:
-            s.resolution ||
-            DEFINITION_LABELS[s.definition] ||
-            `${s.definition}P`,
-          url: withHlsHint(s.url),
-        }))
-      setQualities(tiers.length ? [original, ...tiers] : [original])
+      const sources = resp.code === 200 ? resp.data : undefined
+      setQualities(buildQualityList(originalUrl, provider, sources))
     } catch {
-      setQualities([original])
+      setQualities(buildQualityList(originalUrl, undefined, undefined))
     }
   }
 
-  const buildPlayer = async (url: string, restoreTime?: number) => {
+  const buildPlayer = async (url: string) => {
     if (!playerHost || !url) return
 
     destroyPlayer()
@@ -160,9 +172,14 @@ const Preview = () => {
     const el = wrapper.firstElementChild as HTMLElement
     playerHost.appendChild(wrapper)
     playerEl = el
+    setBarVisible(true)
+    observeControls(el)
 
     subtitleManager = new SubtitleManager(el)
     subtitleManager.registerTracks(subs)
+    // UTF-16 .ass (common in older fansubs) can't be parsed by JASSUB — transcode
+    // to UTF-8 before polling activates the renderer, else nothing shows at all.
+    await subtitleManager.convertAssTracks()
     subtitleManager.startPolling()
 
     el.addEventListener("ended", () => {
@@ -173,20 +190,33 @@ const Preview = () => {
       const delay = e.detail?.subtitleDelay ?? 0
       subtitleManager?.setTimeOffset(delay)
     }) as EventListener)
+  }
 
-    // Quality switching recreates the player (movi has no in-place source swap
-    // for mixed mp4/HLS); best-effort restore of the playback position.
-    if (restoreTime && restoreTime > 0) {
-      const restore = () => {
-        try {
-          ;(el as any).currentTime = restoreTime
-        } catch {}
-        el.removeEventListener("loadeddata", restore)
-        el.removeEventListener("canplay", restore)
-      }
-      el.addEventListener("loadeddata", restore)
-      el.addEventListener("canplay", restore)
+  // Swap quality WITHOUT tearing down the element: movi's own `src` setter
+  // disposes its inner player and re-loads, but the <movi-player> element (and
+  // its <track> children + our SubtitleManager) survive — so movi re-applies the
+  // original file's external/sidecar subtitles onto the transcoded HLS source.
+  // This is the fix for "switching quality drops the subtitles". No movi changes.
+  // Best-effort restore of playback position and the active subtitle selection.
+  const switchSource = (url: string, restoreTime: number) => {
+    if (qualitySwitchPlan(!!playerEl) === "build") {
+      buildPlayer(url)
+      return
     }
+    const el = playerEl!
+    const activeLang =
+      (el as any).getSubtitleLangs?.()?.find((t: any) => t.active)?.lang ?? null
+    const restore = () => {
+      try {
+        if (restoreTime > 0) (el as any).currentTime = restoreTime
+        if (activeLang) (el as any).selectSubtitleLang?.(activeLang)
+      } catch {}
+      el.removeEventListener("loadeddata", restore)
+      el.removeEventListener("canplay", restore)
+    }
+    el.addEventListener("loadeddata", restore)
+    el.addEventListener("canplay", restore)
+    ;(el as any).src = url
   }
 
   const selectQuality = (q: Quality) => {
@@ -194,7 +224,7 @@ const Preview = () => {
     if (q.url === currentUrl()) return
     const resumeAt = playerEl ? (playerEl as any).currentTime || 0 : 0
     setCurrentUrl(q.url)
-    buildPlayer(q.url, resumeAt)
+    switchSource(q.url, resumeAt)
   }
 
   onMount(async () => {
@@ -239,6 +269,11 @@ const Preview = () => {
               "z-index": "60",
               "font-size": "13px",
               "user-select": "none",
+              // Follow the control bar: fade out when movi hides its controls,
+              // but stay put while the quality menu is open.
+              opacity: barVisible() || menuOpen() ? "1" : "0",
+              "pointer-events": barVisible() || menuOpen() ? "auto" : "none",
+              transition: "opacity 0.2s ease",
             }}
             on:click={(e: MouseEvent) => e.stopPropagation()}
           >
