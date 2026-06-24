@@ -17,11 +17,13 @@ import { VideoBox } from "./video_box"
 import { useNavigate } from "@solidjs/router"
 import { SubtitleManager } from "./subtitle-manager"
 import {
+  buildProviderSubFiles,
   buildQualityList,
   ORIGINAL_LABEL,
   qualitySwitchPlan,
   type Quality,
   type VideoPlaySource,
+  type VideoSubtitleSource,
 } from "./movi-quality"
 
 const escapeAttr = (s: string) =>
@@ -61,6 +63,35 @@ const Preview = () => {
     (): PResp<VideoPlaySource[]> =>
       r.post("/fs/video_play", { path: pathname(), password: password() }),
   )
+
+  // Provider subtitle tracks (e.g. 115 extracts a container's embedded subs
+  // during transcoding and serves them as files). These are independent of the
+  // play source, so they let the transcoded HLS stream show the original file's
+  // subtitles — which sidecar files alone (subtitleFiles) can't cover when the
+  // subs are embedded in the mkv.
+  const [, fetchProviderSubs] = useFetch(
+    (): PResp<VideoSubtitleSource[]> =>
+      r.post("/fs/video_subtitle", { path: pathname(), password: password() }),
+  )
+  const [providerSubs, setProviderSubs] = createSignal<
+    { name: string; url: string }[]
+  >([])
+
+  // Fetch provider subtitle tracks (115 only; other drivers don't expose them).
+  // Best-effort: failures just leave providerSubs empty (sidecar subs still work).
+  const loadProviderSubs = async () => {
+    if (objStore.provider !== "115 Open") {
+      setProviderSubs([])
+      return
+    }
+    try {
+      const resp = await fetchProviderSubs()
+      const list = resp.code === 200 && resp.data ? resp.data : []
+      setProviderSubs(buildProviderSubFiles(list))
+    } catch {
+      setProviderSubs([])
+    }
+  }
 
   const [qualities, setQualities] = createSignal<Quality[]>([])
   const [currentUrl, setCurrentUrl] = createSignal("")
@@ -156,10 +187,16 @@ const Preview = () => {
     destroyPlayer()
 
     const trackGen = new SubtitleManager(null as any)
-    const subs = subtitleFiles().map((sub) => ({
-      name: sub.name,
-      url: proxyLink(sub, true),
-    }))
+    // Sidecar subtitle files (siblings in the folder) + provider subtitle tracks
+    // (115's extracted embedded/sidecar subs). Both render on every source, so
+    // the transcoded HLS stream keeps the original file's subtitles.
+    const subs = [
+      ...subtitleFiles().map((sub) => ({
+        name: sub.name,
+        url: proxyLink(sub, true),
+      })),
+      ...providerSubs(),
+    ]
     trackGen.registerTracks(subs)
     await trackGen.convertSrtTracks()
     const trackHTML = trackGen.getTrackHTML()
@@ -236,7 +273,7 @@ const Preview = () => {
         async (url) => {
           if (!containerRef || !url) return
           setMenuOpen(false)
-          await loadQualities(url)
+          await Promise.all([loadQualities(url), loadProviderSubs()])
           setCurrentUrl(url)
           await buildPlayer(url)
         },

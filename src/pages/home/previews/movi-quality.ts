@@ -55,6 +55,33 @@ export const buildQualityList = (
   return tiers.length ? [original, ...tiers] : [original]
 }
 
+// A provider subtitle track (from /fs/video_subtitle, e.g. 115 extracts a
+// container's embedded subtitles during transcoding and serves them as files).
+// Already wrapped in OpenList's signed /video_proxy by the backend.
+export interface VideoSubtitleSource {
+  language: string
+  title: string
+  url: string
+  type: string
+}
+
+// Map provider subtitle sources to SubtitleManager track entries. The track
+// `name` carries the format extension (e.g. ".srt"/".ass") because
+// SubtitleManager.detectFormat() picks the renderer from the extension. These
+// are independent of the play source, so they render on every quality tier —
+// including transcoded HLS that drops the original embedded subtitle tracks.
+export const buildProviderSubFiles = (
+  subs: VideoSubtitleSource[] | undefined,
+): { name: string; url: string }[] =>
+  (subs ?? [])
+    .filter((s) => s.url)
+    .map((s, i) => ({
+      name: `${s.title || s.language || `字幕${i + 1}`}.${(
+        s.type || "srt"
+      ).toLowerCase()}`,
+      url: s.url,
+    }))
+
 // The fix for "switching quality drops the subtitles": when a player element is
 // already live, switch its source IN PLACE (keeps the <track> children and the
 // SubtitleManager alive, so movi re-applies the original file's external/sidecar

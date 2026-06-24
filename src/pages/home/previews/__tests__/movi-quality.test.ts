@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import {
+  buildProviderSubFiles,
   buildQualityList,
   qualitySwitchPlan,
   withHlsHint,
@@ -74,5 +75,39 @@ describe("qualitySwitchPlan (regression: keep subtitles on quality switch)", () 
   })
   it("builds a fresh element only when none exists yet", () => {
     expect(qualitySwitchPlan(false)).toBe("build")
+  })
+})
+
+describe("buildProviderSubFiles (cross-source provider subtitles)", () => {
+  it("names tracks with the format extension so detectFormat picks the renderer", () => {
+    expect(
+      buildProviderSubFiles([
+        {
+          language: "chi",
+          title: "简体",
+          url: "https://h/video_proxy/a",
+          type: "ass",
+        },
+      ]),
+    ).toEqual([{ name: "简体.ass", url: "https://h/video_proxy/a" }])
+  })
+  it("falls back title->language->index, and lowercases the type", () => {
+    expect(
+      buildProviderSubFiles([
+        { language: "eng", title: "", url: "https://h/b", type: "SRT" },
+        { language: "", title: "", url: "https://h/c", type: "" },
+      ]),
+    ).toEqual([
+      { name: "eng.srt", url: "https://h/b" },
+      { name: "字幕2.srt", url: "https://h/c" },
+    ])
+  })
+  it("drops url-less entries and tolerates undefined", () => {
+    expect(
+      buildProviderSubFiles([
+        { language: "x", title: "x", url: "", type: "srt" },
+      ]),
+    ).toEqual([])
+    expect(buildProviderSubFiles(undefined)).toEqual([])
   })
 })
