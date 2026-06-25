@@ -26,6 +26,8 @@
     "down_proxy_url": "Download Proxy URL",
     "disable_proxy_sign": "Disable Proxy Sign",
     "disable_proxy_sign-tips": "Disable sign for download proxy URL",
+    "proxy_user_agent": "Proxy User-Agent",
+    "proxy_user_agent-tips": "Custom User-Agent for proxy download upstream requests. Empty = passthrough the client's User-Agent.",
     "web_proxy": "Web Proxy",
     "webdav_policy": "WebDAV Policy",
     "proxy_range": "Proxy Range",
