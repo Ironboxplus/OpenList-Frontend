@@ -104,6 +104,7 @@ const previews: Preview[] = [
   {
     key: "image",
     type: ObjType.IMAGE,
+    exts: ["heic", "heif", "avif", "vvc", "avc"], // libheif
     component: lazy(() => import("./image")),
     prior: true,
   },
@@ -131,12 +132,7 @@ const previews: Preview[] = [
     component: lazy(() => import("./plist")),
     prior: true,
   },
-  {
-    key: "heic",
-    exts: ["heic", "heif", "avif", "vvc", "avc", "jpeg", "jpg"],
-    component: lazy(() => import("./heic")),
-    prior: true,
-  },
+
   ...(import.meta.env.VITE_LITE === "true"
     ? []
     : [
@@ -155,13 +151,13 @@ const previews: Preview[] = [
   },
   {
     key: "xls",
-    exts: ["xlsx", "xls"],
+    exts: ["xlsx"],
     component: lazy(() => import("./xls")),
     prior: true,
   },
   {
     key: "doc",
-    exts: ["docx", "doc"],
+    exts: ["docx"],
     component: lazy(() => import("./doc")),
     prior: true,
   },
