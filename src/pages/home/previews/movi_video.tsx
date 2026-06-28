@@ -82,6 +82,14 @@ const Preview = () => {
   // fades out together with the controls (and reappears on hover / while paused)
   // instead of being permanently pinned to the top-right corner.
   const [barVisible, setBarVisible] = createSignal(true)
+  // True while the pointer is over the overlay. The overlay sits on top of
+  // movi's top-right controls zone; if we let it drop to pointer-events:none
+  // while the pointer is parked on it, the pointer "enters" movi underneath,
+  // movi re-shows its controls, the overlay re-enables and re-intercepts — an
+  // infinite show/hide flicker. Pinning it interactive while hovered breaks
+  // that loop so the pointer never falls through to the player.
+  const [overlayHovered, setOverlayHovered] = createSignal(false)
+  const overlayShown = () => barVisible() || menuOpen() || overlayHovered()
   const currentLabel = () =>
     qualities().find((q) => q.url === currentUrl())?.label ?? ORIGINAL_LABEL
 
@@ -283,12 +291,15 @@ const Preview = () => {
               "font-size": "13px",
               "user-select": "none",
               // Follow the control bar: fade out when movi hides its controls,
-              // but stay put while the quality menu is open.
-              opacity: barVisible() || menuOpen() ? "1" : "0",
-              "pointer-events": barVisible() || menuOpen() ? "auto" : "none",
+              // but stay put while the quality menu is open or the pointer is
+              // over the overlay (the latter breaks the hover flicker loop).
+              opacity: overlayShown() ? "1" : "0",
+              "pointer-events": overlayShown() ? "auto" : "none",
               transition: "opacity 0.2s ease",
             }}
             on:click={(e: MouseEvent) => e.stopPropagation()}
+            on:mouseenter={() => setOverlayHovered(true)}
+            on:mouseleave={() => setOverlayHovered(false)}
           >
             <div
               on:click={() => setMenuOpen(!menuOpen())}
