@@ -1,4 +1,4 @@
-name: Rebase Main With Upstream
+name: Merge Main With Upstream
 
 on:
   schedule:
@@ -6,12 +6,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: rebase-main-with-upstream
+  group: merge-main-with-upstream
   cancel-in-progress: false
 
 jobs:
-  rebase:
-    name: Rebase main onto upstream/main
+  merge:
+    name: Merge upstream/main into main
     runs-on: ubuntu-latest
 
     permissions:
@@ -36,24 +36,24 @@ jobs:
           git fetch --no-tags origin main
           git fetch --no-tags upstream main
 
-      - name: Check whether rebase is needed
+      - name: Check whether merge is needed
         id: check
         run: |
           if git merge-base --is-ancestor upstream/main origin/main; then
-            echo "need_rebase=false" >> "$GITHUB_OUTPUT"
+            echo "need_merge=false" >> "$GITHUB_OUTPUT"
             echo "origin/main already contains upstream/main"
           else
-            echo "need_rebase=true" >> "$GITHUB_OUTPUT"
-            echo "upstream/main has new commits to rebase onto"
+            echo "need_merge=true" >> "$GITHUB_OUTPUT"
+            echo "upstream/main has new commits to merge"
           fi
 
-      - name: Rebase main onto upstream/main
-        if: steps.check.outputs.need_rebase == 'true'
+      - name: Merge upstream/main into main
+        if: steps.check.outputs.need_merge == 'true'
         run: |
           git checkout main
           git reset --hard origin/main
-          git rebase upstream/main
+          git merge --no-edit upstream/main
 
-      - name: Push rebased main
-        if: steps.check.outputs.need_rebase == 'true'
-        run: git push --force-with-lease origin main
+      - name: Push merged main
+        if: steps.check.outputs.need_merge == 'true'
+        run: git push origin main
