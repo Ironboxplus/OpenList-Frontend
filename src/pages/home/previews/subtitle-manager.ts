@@ -80,6 +80,7 @@ export class SubtitleManager {
   private lastActiveLang: string | null = null
   private pollTimer: number | undefined
   private fullscreenChangeHandler: (() => void) | null = null
+  private activationSeq = 0
 
   constructor(moviEl: HTMLElement) {
     this.moviEl = moviEl
@@ -184,6 +185,7 @@ export class SubtitleManager {
   handleTrackChange(): void {
     if (this.destroyed) return
     log("handleTrackChange triggered")
+    const activationSeq = ++this.activationSeq
 
     const langs = (this.moviEl as any).getSubtitleLangs?.() as
       | Array<{ lang: string; label: string; active: boolean }>
@@ -200,11 +202,19 @@ export class SubtitleManager {
     if (info.format === "ass") {
       this.activeRenderer = "ass"
       log("activating ASS renderer for", info.label)
-      this.activateASS(info.url)
+      void this.activateASS(info.url, activationSeq).catch((e) => {
+        if (!this.isActivationCurrent(activationSeq)) return
+        log("ASS renderer activation failed", e)
+        this.destroyRenderers()
+      })
     } else if (info.format === "sup") {
       this.activeRenderer = "sup"
       log("activating SUP renderer for", info.label)
-      this.activateSUP(info.url)
+      void this.activateSUP(info.url, activationSeq).catch((e) => {
+        if (!this.isActivationCurrent(activationSeq)) return
+        log("SUP renderer activation failed", e)
+        this.destroyRenderers()
+      })
     }
   }
 
@@ -255,7 +265,12 @@ export class SubtitleManager {
     this.subInfoMap.clear()
   }
 
-  private async activateASS(url: string): Promise<void> {
+  private isActivationCurrent(seq: number): boolean {
+    return !this.destroyed && this.activationSeq === seq
+  }
+
+  private async activateASS(url: string, seq: number): Promise<void> {
+    if (!this.isActivationCurrent(seq)) return
     this.ensureOverlay()
     const jassubTarget = this.getOrCreateJassubCanvas()
     log("activateASS: JASSUB (double-canvas) for:", url)
@@ -270,11 +285,14 @@ export class SubtitleManager {
     const jassubModernWasmUrl = (
       await import("jassub/dist/wasm/jassub-worker-modern.wasm?url")
     ).default
+    if (!this.isActivationCurrent(seq) || typeof window === "undefined") {
+      return
+    }
 
     const dynamicBase = (window as any).__dynamic_base__ || ""
     const fontBase = `${window.location.origin}${dynamicBase}/static/fonts`
 
-    this.assRenderer = new JASSUB({
+    const renderer = new JASSUB({
       canvas: jassubTarget,
       subUrl: url,
       workerUrl: jassubWorkerUrl,
@@ -286,21 +304,29 @@ export class SubtitleManager {
         "times new roman": `${fontBase}/TimesNewRoman.ttf`,
       },
     }) as any
-    await (this.assRenderer as any).ready
+    this.assRenderer = renderer
+    await renderer.ready
+    if (!this.isActivationCurrent(seq)) {
+      if (!renderer._destroyed) renderer.destroy()
+      return
+    }
     if (this.timeOffset !== 0) {
-      ;(this.assRenderer as any).timeOffset = this.timeOffset
+      renderer.timeOffset = this.timeOffset
     }
     this.startSync()
     this.startCopyLoop()
   }
 
-  private async activateSUP(url: string): Promise<void> {
+  private async activateSUP(url: string, seq: number): Promise<void> {
+    if (!this.isActivationCurrent(seq)) return
     this.ensureOverlay()
+    if (!this.isActivationCurrent(seq) || typeof window === "undefined") return
     const dynamicBase = (window as any).__dynamic_base__ || ""
     const origin = window.location.origin
     const base = `${origin}${dynamicBase}/static`
 
     const { PgsRenderer } = await import("libpgs")
+    if (!this.isActivationCurrent(seq)) return
     log("libpgs init with workerUrl:", `${base}/libpgs/libpgs.worker.js`)
     this.pgsRenderer = new PgsRenderer({
       canvas: this.overlayCanvas!,

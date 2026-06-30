@@ -17,6 +17,7 @@ import { VideoBox } from "./video_box"
 import { useNavigate } from "@solidjs/router"
 import { SubtitleManager } from "./subtitle-manager"
 import {
+  buildMoviBufferAttribute,
   buildProviderSubFiles,
   buildQualityList,
   ORIGINAL_LABEL,
@@ -188,7 +189,7 @@ const Preview = () => {
 
     const wrapper = document.createElement("div")
     wrapper.style.cssText = "position:relative;width:100%"
-    wrapper.innerHTML = `<movi-player src="${escapeAttr(url)}" controls theme="dark" hdr fastseek style="width:100%;max-height:80vh">${trackHTML}</movi-player>`
+    wrapper.innerHTML = `<movi-player src="${escapeAttr(url)}" controls theme="dark" hdr fastseek${buildMoviBufferAttribute(objStore.provider)} style="width:100%;max-height:80vh">${trackHTML}</movi-player>`
 
     const el = wrapper.firstElementChild as HTMLElement
     playerHost.appendChild(wrapper)

@@ -16,6 +16,18 @@ export interface Quality {
 }
 
 export const ORIGINAL_LABEL = "原画"
+export const MOVI_115_OPEN_BUFFER_MB = 1024
+
+// Original 115 Remux streams can burst/stall hard enough that movi-player's
+// 250MB default HTTP window is only a short cushion. Keep the larger window
+// provider-scoped so other backends retain movi's default memory profile.
+export const moviBufferSizeForProvider = (provider: string | undefined) =>
+  provider === "115 Open" ? MOVI_115_OPEN_BUFFER_MB : 0
+
+export const buildMoviBufferAttribute = (provider: string | undefined) => {
+  const size = moviBufferSizeForProvider(provider)
+  return size > 0 ? ` buffersize="${size}"` : ""
+}
 
 // 115's video_play sometimes returns an empty `resolution`; map the numeric
 // definition to a friendly label as a fallback (definition 4 == 1080P, etc).

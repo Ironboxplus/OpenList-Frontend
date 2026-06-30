@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest"
 import {
+  MOVI_115_OPEN_BUFFER_MB,
+  buildMoviBufferAttribute,
   buildProviderSubFiles,
   buildQualityList,
+  moviBufferSizeForProvider,
   qualitySwitchPlan,
   withHlsHint,
 } from "../movi-quality"
@@ -64,6 +67,22 @@ describe("buildQualityList", () => {
     expect(buildQualityList(orig, undefined, undefined)).toEqual([
       { label: "原画", url: orig },
     ])
+  })
+})
+
+describe("115 original-stream movi buffer", () => {
+  it("uses a larger movi HTTP buffer only for 115 Open", () => {
+    expect(moviBufferSizeForProvider("115 Open")).toBe(MOVI_115_OPEN_BUFFER_MB)
+    expect(buildMoviBufferAttribute("115 Open")).toBe(
+      ` buffersize="${MOVI_115_OPEN_BUFFER_MB}"`,
+    )
+  })
+
+  it("keeps movi defaults for non-115 providers", () => {
+    expect(moviBufferSizeForProvider("Local")).toBe(0)
+    expect(moviBufferSizeForProvider(undefined)).toBe(0)
+    expect(buildMoviBufferAttribute("Local")).toBe("")
+    expect(buildMoviBufferAttribute(undefined)).toBe("")
   })
 })
 

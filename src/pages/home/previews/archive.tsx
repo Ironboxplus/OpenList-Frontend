@@ -573,9 +573,9 @@ const Preview = () => {
               <Show when={currentPreview()}>
                 <Suspense fallback={<FullLoading />}>
                   <Dynamic
-                    component={currentPreview()?.component}
+                    component={currentPreview()?.component as any}
                     images={files().filter((f) => f.type === ObjType.IMAGE)}
-                    navigate={(name) => {
+                    navigate={(name: string) => {
                       changeFile(name)
                     }}
                   />

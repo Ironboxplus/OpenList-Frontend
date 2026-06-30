@@ -20,6 +20,12 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   }
 }
 
+HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+  clearRect: vi.fn(),
+  drawImage: vi.fn(),
+  putImageData: vi.fn(),
+})) as any
+
 vi.mock("jassub", () => ({
   default: class MockJASSUB {
     timeOffset = 0
