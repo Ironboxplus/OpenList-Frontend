@@ -105,7 +105,7 @@
     "mark.js": "^8.11.1",
     "mitt": "^3.0.1",
     "monaco-editor": "0.55.1",
-    "movi-player": "https://github.com/Ironboxplus/movi-player/releases/download/v0.3.4-dts-worker.7/movi-player-0.3.4-dts-worker.7.tgz",
+    "movi-player": "https://github.com/Ironboxplus/movi-player/releases/download/v0.3.4-dts-worker.8/movi-player-0.3.4-dts-worker.8.tgz",
     "mpegts.js": "github:OpenListTeam/mpegts.js#1e51e0f6f918cf08e05dfae9c7bfcf658d6b4ac2",
     "qrcode": "^1.5.4",
     "rehype-katex": "7.0.1",

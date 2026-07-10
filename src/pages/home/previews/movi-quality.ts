@@ -16,11 +16,14 @@ export interface Quality {
 }
 
 export const ORIGINAL_LABEL = "原画"
-export const MOVI_115_OPEN_BUFFER_MB = 1024
-
 // Original 115 Remux streams can burst/stall hard enough that movi-player's
-// 250MB default HTTP window is only a short cushion. Keep the larger window
-// provider-scoped so other backends retain movi's default memory profile.
+// 250MB default HTTP window is only a short cushion. movi caps the forward
+// download window at 512MB (MAX_STREAM_BUFFER_SIZE), so 640MB is enough to
+// unlock the full 512MB window (min(512, 640*0.9=576)) plus headroom — a
+// larger value (we used 1024) just allocated a bigger SharedArrayBuffer whose
+// top half never fills. Provider-scoped so other backends keep movi's default.
+export const MOVI_115_OPEN_BUFFER_MB = 640
+
 export const moviBufferSizeForProvider = (provider: string | undefined) =>
   provider === "115 Open" ? MOVI_115_OPEN_BUFFER_MB : 0
 
