@@ -1,5 +1,25 @@
 import { Resp } from "~/types"
+import { useT } from "~/hooks/useT"
 import { bus, notify } from "."
+import { loginUrlFor } from "./redirect"
+
+/**
+ * What the user should read for a failed response. Requests that never
+ * completed get a fixed i18n sentence instead of axios's English message;
+ * business failures keep the backend text. Canceled requests have none.
+ */
+export const failureMessage = (resp: Resp<unknown>): string | undefined => {
+  switch (resp.transport) {
+    case "canceled":
+      return undefined
+    case "network":
+      return useT()("errors.network")
+    case "timeout":
+      return useT()("errors.timeout")
+    default:
+      return resp.message
+  }
+}
 
 export const handleResp = <T>(
   resp: Resp<T>,
@@ -13,19 +33,17 @@ export const handleResp = <T>(
     notify_success && notify.success(resp.message)
     success?.(resp.data)
   } else {
-    notify_error && notify.error(resp.message)
+    const shown = failureMessage(resp)
+    notify_error && shown !== undefined && notify.error(shown)
     if (auth && resp.code === 401) {
       if (location.pathname === "/@manage") {
         bus.emit("to", "/")
       } else {
-        bus.emit(
-          "to",
-          `/@login?redirect=${encodeURIComponent(location.pathname)}`,
-        )
+        bus.emit("to", loginUrlFor(location))
       }
       return
     }
-    fail?.(resp.message, resp.code)
+    fail?.(shown ?? resp.message, resp.code)
   }
 }
 

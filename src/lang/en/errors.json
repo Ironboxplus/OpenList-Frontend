@@ -1,0 +1,14 @@
+{
+  "network": "Network error. Check your connection and try again.",
+  "timeout": "The request timed out. Try again.",
+  "canceled": "Request canceled.",
+  "unauthorized": "You are signed out. Sign in again.",
+  "forbidden": "You do not have permission to do this.",
+  "not_found": "Not found.",
+  "rate_limited": "Too many requests. Try again in a moment.",
+  "server": "The server hit an error.",
+  "unknown": "Something went wrong.",
+  "status_stale": "Status not updated",
+  "request_id": "Request ID",
+  "error_code": "Error code"
+}

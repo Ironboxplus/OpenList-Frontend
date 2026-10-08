@@ -1,9 +1,13 @@
 import { Obj, MountDetails } from "."
+import type { ErrorCategory } from "~/platform/contracts/task"
 
 export interface Resp<T> {
   code: number
   message: string
   data: T
+  /** Set by the axios interceptor when the request itself failed. */
+  transport?: ErrorCategory
+  requestId?: string
 }
 
 export type PageResp<T> = Resp<{

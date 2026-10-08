@@ -1,4 +1,5 @@
 import axios from "axios"
+import { classifyAxiosError } from "~/platform/api/classify"
 import { api, log } from "."
 
 const instance = axios.create({
@@ -38,9 +39,14 @@ instance.interceptors.response.use(
     //   title: error.code,
     //   description: error.message,
     // });
+    // Keep the legacy {code, message} shape, plus the transport category so
+    // handleResp can tell "the request never completed" from a business error.
+    const f = classifyAxiosError(error)
     return {
-      code: axios.isCancel(error) ? -1 : error.response?.status,
-      message: error.message,
+      code: f.code,
+      message: f.message,
+      transport: f.transport,
+      requestId: f.requestId,
     }
   },
 )

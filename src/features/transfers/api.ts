@@ -1,17 +1,32 @@
 // HTTP calls behind the transfers store. These are the only calls that speak
-// the legacy /task/* and /admin/sync/* wire formats.
+// the legacy /task/* and /admin/sync/* wire formats. Every request goes through
+// the classified api() client; `Result` is its outcome folded back into the
+// {code, message, data} shape the store and dialogs already branch on.
 import type { SyncSnapshot, SyncSpec } from "~/platform/contracts/task"
-import { r } from "~/utils/request"
+import { api, legacyCode, type ApiResult } from "~/platform/api/client"
 import type { Resp } from "~/types"
 import type { TacheRaw, TacheType, TaskAction } from "./adapter"
 
 export type Result<T> = Resp<T>
 
+const toResult = async <T>(call: Promise<ApiResult<T>>): Promise<Result<T>> => {
+  const out = await call
+  if (out.ok) return { code: 200, message: "success", data: out.data }
+  const { error } = out
+  return {
+    code: legacyCode(error),
+    message: error.message,
+    data: null as T,
+    transport: error.category,
+    requestId: error.requestId,
+  }
+}
+
 export const fetchTache = (
   type: TacheType,
   done: boolean,
 ): Promise<Result<TacheRaw[] | null>> =>
-  r.get(`/task/${type}/${done ? "done" : "undone"}`)
+  toResult(api("get", `/task/${type}/${done ? "done" : "undone"}`))
 
 /** Single-task actions take `?tid=`, bulk ones act on the whole list. */
 export const postTache = (
@@ -19,35 +34,38 @@ export const postTache = (
   action: TaskAction,
   tid?: string,
 ): Promise<Result<unknown>> =>
-  r.post(
-    `/task/${type}/${action}${tid !== undefined ? `?tid=${encodeURIComponent(tid)}` : ""}`,
+  toResult(
+    api("post", `/task/${type}/${action}`, {
+      params: tid !== undefined ? { tid } : undefined,
+    }),
   )
 
 export const fetchSyncList = (): Promise<Result<SyncSnapshot[] | null>> =>
-  r.get("/admin/sync/list")
+  toResult(api("get", "/admin/sync/list"))
 
 export const fetchSyncHistory = (
   limit = 50,
 ): Promise<Result<SyncSnapshot[] | null>> =>
-  r.get(`/admin/sync/history?limit=${limit}`)
+  toResult(api("get", "/admin/sync/history", { params: { limit } }))
 
 export const fetchSyncJob = (
   id: string,
   events = true,
 ): Promise<Result<SyncSnapshot>> =>
-  r.get(`/admin/sync/get?id=${encodeURIComponent(id)}&events=${events}`)
+  toResult(api("get", "/admin/sync/get", { params: { id, events } }))
 
 export const runSync = (
   spec: Partial<SyncSpec>,
-): Promise<Result<SyncSnapshot>> => r.post("/admin/sync/run", spec)
+): Promise<Result<SyncSnapshot>> =>
+  toResult(api("post", "/admin/sync/run", { body: spec }))
 
 export const cancelSync = (id: string): Promise<Result<unknown>> =>
-  r.post(`/admin/sync/cancel?id=${encodeURIComponent(id)}`)
+  toResult(api("post", "/admin/sync/cancel", { params: { id } }))
 
 export const getBwLimit = (): Promise<Result<{ bytes_per_second: number }>> =>
-  r.get("/admin/sync/bwlimit")
+  toResult(api("get", "/admin/sync/bwlimit"))
 
 export const setBwLimit = (
   rate: string,
 ): Promise<Result<{ bytes_per_second: number }>> =>
-  r.post("/admin/sync/bwlimit", { rate })
+  toResult(api("post", "/admin/sync/bwlimit", { body: { rate } }))

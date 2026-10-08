@@ -23,6 +23,7 @@ import {
   base_path,
   handleResp,
   hashPwd,
+  resolveRedirect,
 } from "~/utils"
 import { PResp, Resp } from "~/types"
 import LoginBg from "./LoginBg"
@@ -98,6 +99,9 @@ const Login = () => {
       }),
   )
   const { searchParams, to } = useRouter()
+  // The 401 handler stores the full location (path, query, hash) here.
+  const restoreRedirect = () =>
+    resolveRedirect(searchParams.redirect, base_path || "/")
   const isAuthnConditionalAvailable = async (): Promise<boolean> => {
     if (
       PublicKeyCredential &&
@@ -159,7 +163,7 @@ const Login = () => {
             notify.success(t("login.success"))
             changeToken(data.token)
             to(
-              decodeURIComponent(searchParams.redirect || base_path || "/"),
+              restoreRedirect(),
               true,
             )
           },
@@ -201,7 +205,7 @@ const Login = () => {
           notify.success(t("login.success"))
           changeToken(data.token)
           to(
-            decodeURIComponent(searchParams.redirect || base_path || "/"),
+            restoreRedirect(),
             true,
           )
         },
@@ -336,7 +340,7 @@ const Login = () => {
           onClick={() => {
             changeToken()
             to(
-              decodeURIComponent(searchParams.redirect || base_path || "/"),
+              restoreRedirect(),
               true,
             )
           }}

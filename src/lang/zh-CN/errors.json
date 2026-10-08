@@ -1,0 +1,14 @@
+{
+  "network": "网络错误，请检查网络连接后重试。",
+  "timeout": "请求超时，请重试。",
+  "canceled": "请求已取消。",
+  "unauthorized": "登录已失效，请重新登录。",
+  "forbidden": "你没有权限执行此操作。",
+  "not_found": "未找到。",
+  "rate_limited": "请求过于频繁，请稍后再试。",
+  "server": "服务器出错了。",
+  "unknown": "出了点问题。",
+  "status_stale": "状态未更新",
+  "request_id": "请求 ID",
+  "error_code": "错误码"
+}
