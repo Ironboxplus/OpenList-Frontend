@@ -1,5 +1,6 @@
 import { VStack } from "@hope-ui/solid"
 import { Show } from "solid-js"
+import { AnnouncementCard } from "~/features/files/AnnouncementCard"
 import { FilesFrame } from "~/features/files/FilesFrame"
 import { shellActive } from "~/features/shell/topbar-slot"
 import { Container } from "./Container"
@@ -41,6 +42,7 @@ export const Body = () => (
         footer share one container so nothing is off-centre. */}
     <FilesFrame>
       <VStack class="body" py="$3" minH="70vh" w="$full" gap="$4">
+        <AnnouncementCard />
         <Readme files={["header.md", "top.md", "index.md"]} fromMeta="header" />
         <Obj />
         <Readme

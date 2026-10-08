@@ -23,6 +23,7 @@ import {
   me,
 } from "~/store"
 import { UserMethods } from "~/types"
+import { loginUrlFor } from "~/utils"
 
 const Folder = lazy(() => import("./folder/Folder"))
 const File = lazy(() => import("./file/File"))
@@ -124,9 +125,7 @@ export const Obj = () => {
                 <Text
                   color="$info9"
                   as={LinkWithBase}
-                  href={`/@login?redirect=${encodeURIComponent(
-                    location.pathname,
-                  )}`}
+                  href={loginUrlFor(location)}
                 >
                   {t("global.go_login")}
                 </Text>

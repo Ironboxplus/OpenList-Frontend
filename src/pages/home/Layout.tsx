@@ -5,17 +5,21 @@ import { notify } from "~/utils"
 import { Body } from "./Body"
 import { Footer } from "./Footer"
 import { Header } from "./header/Header"
-import { Show } from "solid-js"
+import { onMount, Show } from "solid-js"
 import { FilesTopLeft, FilesTopRight } from "~/features/files/FilesTopBar"
 import { shellActive, useTopBarSlots } from "~/features/shell/topbar-slot"
 import { Toolbar } from "./toolbar/Toolbar"
 
 const Index = () => {
   useTitle(getSetting("site_title"))
+  // Guests have no shell and keep the toast; inside the shell the announcement
+  // is a card at the top of the content (see AnnouncementCard).
   const announcement = getSetting("announcement")
-  if (announcement) {
-    notify.render(<Markdown children={announcement} />)
-  }
+  onMount(() => {
+    if (announcement && !shellActive()) {
+      notify.render(<Markdown children={announcement} />)
+    }
+  })
   // Inside the shell the TopBar carries the breadcrumb, search and view
   // switch (account and site name live in the sidebar). Guests have no shell
   // and keep the classic header, which also holds their login entry.

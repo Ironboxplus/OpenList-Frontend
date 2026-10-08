@@ -16,7 +16,7 @@ import { AnchorWithBase } from "~/components"
 import { useFetch, useRouter, useT } from "~/hooks"
 import { getMainColor, me } from "~/store"
 import { PResp } from "~/types"
-import { changeToken, handleResp, notify, r } from "~/utils"
+import { changeToken, handleResp, loginUrlFor, notify, r } from "~/utils"
 import { userMenuEntries, type UserMenuEntryId } from "./user-menu"
 
 const entryIcons: Record<UserMenuEntryId, typeof CgProfile> = {
@@ -35,7 +35,7 @@ export const UserMenu = () => {
     handleResp(await logOutReq(), () => {
       changeToken()
       notify.success(t("manage.logout_success"))
-      to(`/@login?redirect=${encodeURIComponent(location.pathname)}`)
+      to(loginUrlFor(location))
     })
   }
 

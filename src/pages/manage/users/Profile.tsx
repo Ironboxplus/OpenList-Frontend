@@ -20,7 +20,13 @@ import { LinkWithBase, MaybeLoading } from "~/components"
 import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
 import { setMe, me, getSettingBool } from "~/store"
 import { PEmptyResp, UserMethods, UserPermissions, PResp } from "~/types"
-import { handleResp, handleRespWithoutNotify, notify, r } from "~/utils"
+import {
+  handleResp,
+  handleRespWithoutNotify,
+  loginUrlFor,
+  notify,
+  r,
+} from "~/utils"
 import { WebauthnItem } from "./Webauthnitems"
 import { PublicKeys } from "./PublicKeys"
 
@@ -90,7 +96,7 @@ const Profile = () => {
       setMe({ ...me(), username: username() })
       if (!ssoID) {
         notify.success(t("users.update_profile_success"))
-        to(`/@login?redirect=${encodeURIComponent(location.pathname)}`)
+        to(loginUrlFor(location))
       } else {
         to("")
       }
@@ -146,9 +152,7 @@ const Profile = () => {
               <Text
                 color="$info9"
                 as={LinkWithBase}
-                href={`/@login?redirect=${encodeURIComponent(
-                  location.pathname,
-                )}`}
+                href={loginUrlFor(location)}
               >
                 {t("global.go_login")}
               </Text>

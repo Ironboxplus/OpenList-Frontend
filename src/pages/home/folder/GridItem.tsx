@@ -9,9 +9,15 @@ import { ObjType, StoreObj } from "~/types"
 import { bus, hoverColor, listItemIn } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
+import { GridCover } from "~/features/files/GridCover"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 
-export const GridItem = (props: { obj: StoreObj; index: number }) => {
+export const GridItem = (props: {
+  obj: StoreObj
+  index: number
+  /** Poster image URL; shown 2:3 and lazy, the icon takes over if it fails. */
+  cover?: string
+}) => {
   const { isHide } = useUtil()
   if (isHide(props.obj)) {
     return null
@@ -84,7 +90,7 @@ export const GridItem = (props: { obj: StoreObj; index: number }) => {
       >
         <Center
           class="item-thumbnail"
-          h={`${parseInt(local["grid_item_size"])}px`}
+          h={props.cover ? undefined : `${parseInt(local["grid_item_size"])}px`}
           w="$full"
           cursor={props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"}
           on:click={(e: MouseEvent) => {
@@ -115,16 +121,27 @@ export const GridItem = (props: { obj: StoreObj; index: number }) => {
               }}
             />
           </Show>
-          <Show when={props.obj.thumb} fallback={objIcon}>
-            <ImageWithError
-              maxH="$full"
-              maxW="$full"
-              rounded="$lg"
-              shadow="$md"
-              fallback={<CenterLoading size="lg" />}
-              fallbackErr={objIcon}
-              src={props.obj.thumb}
-              loading="lazy"
+          <Show
+            when={props.cover}
+            fallback={
+              <Show when={props.obj.thumb} fallback={objIcon}>
+                <ImageWithError
+                  maxH="$full"
+                  maxW="$full"
+                  rounded="$lg"
+                  shadow="$md"
+                  fallback={<CenterLoading size="lg" />}
+                  fallbackErr={objIcon}
+                  src={props.obj.thumb}
+                  loading="lazy"
+                />
+              </Show>
+            }
+          >
+            <GridCover
+              src={props.cover}
+              fallback={objIcon}
+              alt={props.obj.name}
             />
           </Show>
         </Center>
