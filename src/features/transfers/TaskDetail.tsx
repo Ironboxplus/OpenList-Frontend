@@ -54,7 +54,7 @@ const Field = (props: { label: string; children: JSX.Element }) => (
 )
 
 /** Packing / unpacking progress of a job that has either switched on. */
-const PackStatsBlock = (props: { stats: PackStats; stage?: string }) => {
+export const PackStatsBlock = (props: { stats: PackStats; stage?: string }) => {
   const t = useT()
   const saved = () => packSavedPercent(props.stats)
   const unpacking = () =>
@@ -114,6 +114,16 @@ const PackStatsBlock = (props: { stats: PackStats; stage?: string }) => {
               </span>
             </Show>
           </Field>
+          <Show when={(props.stats.conflicts ?? 0) > 0}>
+            <Field label={t("transfers.detail.pack_conflicts")}>
+              <span
+                data-testid="pack-conflicts"
+                class="font-medium text-amber-600 dark:text-amber-400"
+              >
+                {props.stats.conflicts}
+              </span>
+            </Field>
+          </Show>
           <Show when={props.stats.dead_removed > 0}>
             <Field label={t("transfers.detail.pack_dead")}>
               {props.stats.dead_removed}

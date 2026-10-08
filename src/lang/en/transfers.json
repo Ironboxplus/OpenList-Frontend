@@ -125,6 +125,7 @@
     "pack_bytes": "Bytes in → out",
     "pack_saved": "{{percent}}% saved",
     "pack_dead": "Stale entries removed",
+    "pack_conflicts": "Conflicts (loose copy kept)",
     "unpacked_files": "Files unpacked",
     "packs_fetched": "Packs fetched / ranged",
     "spec": "Job settings",

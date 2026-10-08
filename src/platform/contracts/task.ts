@@ -106,6 +106,8 @@ export interface PackStats {
   bytes_out: number
   skipped_dirs: number
   dead_removed: number
+  /** A loose copy at dst that differs from the packed member; it was kept. */
+  conflicts?: number
   unpacked_files?: number
   unpacked_bytes?: number
   packs_fetched?: number

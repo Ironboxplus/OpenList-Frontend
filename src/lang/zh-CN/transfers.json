@@ -125,6 +125,7 @@
     "pack_bytes": "输入 → 输出",
     "pack_saved": "节省 {{percent}}%",
     "pack_dead": "已清理的失效条目",
+    "pack_conflicts": "冲突（保留了散文件）",
     "unpacked_files": "已解包文件",
     "packs_fetched": "整包拉取 / 范围读取",
     "spec": "作业设置",
