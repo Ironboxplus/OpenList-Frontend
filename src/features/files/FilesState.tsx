@@ -1,5 +1,5 @@
 import { TbAlertTriangle, TbFolderOff, TbRefresh } from "solid-icons/tb"
-import { Show, type JSX } from "solid-js"
+import { createSignal, onCleanup, Show, type JSX } from "solid-js"
 import { focusRing } from "~/components/ui/focus"
 import { useT } from "~/hooks"
 import { cn } from "~/utils/cn"
@@ -61,5 +61,45 @@ export const FilesEmpty = () => {
       <TbFolderOff class="size-10" />
       <div class="text-sm">{t("files.empty")}</div>
     </div>
+  )
+}
+
+/** The list request has been pending this long (seconds) before the notice shows. */
+export const SLOW_AFTER_S = 3
+/** ...and this long before a retry is offered. */
+export const RETRY_AFTER_S = 60
+
+/**
+ * Under the loading skeleton: a storage behind a rate limiter (115, say) can
+ * queue a listing for a long time, so say so instead of looking frozen. It
+ * only counts seconds; it sends no request and polls nothing. Mounted only
+ * while the skeleton is, so it restarts for every load.
+ */
+export const SlowLoadNotice = (props: { onRetry: () => void }) => {
+  const t = useT()
+  const [secs, setSecs] = createSignal(0)
+  const timer = setInterval(() => setSecs((n) => n + 1), 1000)
+  onCleanup(() => clearInterval(timer))
+  return (
+    <Show when={secs() >= SLOW_AFTER_S}>
+      <div
+        data-files-state="slow"
+        role="status"
+        class="flex w-full items-center justify-center gap-3 px-4 py-3 text-sm text-muted-foreground"
+      >
+        <span data-slow-text>{t("files.slow", { n: secs() })}</span>
+        <Show when={secs() >= RETRY_AFTER_S}>
+          <button
+            type="button"
+            data-files-retry
+            class={retryButton}
+            onClick={props.onRetry}
+          >
+            <TbRefresh class="size-4" />
+            {t("files.retry")}
+          </button>
+        </Show>
+      </div>
+    </Show>
   )
 }

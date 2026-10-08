@@ -24,7 +24,7 @@ import {
 } from "~/store"
 import { UserMethods } from "~/types"
 import { loginUrlFor } from "~/utils"
-import { FilesError } from "~/features/files/FilesState"
+import { FilesError, SlowLoadNotice } from "~/features/files/FilesState"
 import { shellActive } from "~/features/shell/topbar-slot"
 
 const Folder = lazy(() => import("./folder/Folder"))
@@ -123,6 +123,7 @@ export const Obj = () => {
               objStore.state,
             )}
           >
+            <SlowLoadNotice onRetry={() => refresh(undefined, true)} />
             <Show when={layout() === "list"} fallback={<GridSkeleton />}>
               <ListSkeleton />
             </Show>

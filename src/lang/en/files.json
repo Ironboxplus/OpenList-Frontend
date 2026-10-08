@@ -9,6 +9,7 @@
   "download": "Download",
   "create": "New",
   "retry": "Retry",
+  "slow": "Waiting for the storage API… {{n}}s",
   "empty": "This folder is empty.",
   "error": {
     "network": "Could not reach the server",
