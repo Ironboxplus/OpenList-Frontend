@@ -20,6 +20,7 @@ import {
   selectAll,
   selectedMsg,
   sortObjs,
+  getPagination,
 } from "~/store"
 import { OrderBy } from "~/store"
 import { Col, cols, ListItem } from "./ListItem"
@@ -27,6 +28,10 @@ import { MediaListItem } from "./MediaListItem"
 import { shouldUseMediaRows } from "./row-layout"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 import { bus } from "~/utils"
+import { VirtualRows } from "~/features/files/VirtualRows"
+import { rowEstimate, shouldVirtualize } from "~/features/files/virtualize"
+import { phoneShell } from "~/features/shell/topbar-slot"
+import { StoreObj } from "~/types"
 
 export interface SortState {
   orderBy: string
@@ -152,7 +157,13 @@ export const ListTitle = (props: {
 
   if (props.compact) {
     return (
-      <HStack class="title title-compact" w="$full" px="$2" py="$1" spacing="$2">
+      <HStack
+        class="title title-compact"
+        w="$full"
+        px="$2"
+        py="$1"
+        spacing="$2"
+      >
         <Show when={!props.disableCheckbox && checkboxOpen()}>
           <ItemCheckbox
             checked={allChecked()}
@@ -240,6 +251,20 @@ const ListLayout = () => {
     shouldUseMediaRows(objStore.provider, objStore.objs),
   )
 
+  // Long directories in "all" mode only render what is near the viewport.
+  const pagerType = getPagination().type
+  const virtual = createMemo(() =>
+    shouldVirtualize(pagerType, objStore.objs.length),
+  )
+  const renderRow = (obj: StoreObj, index: number, animate: boolean) => (
+    <Show
+      when={useMediaRows()}
+      fallback={<ListItem obj={obj} index={index} animate={animate} />}
+    >
+      <MediaListItem obj={obj} index={index} animate={animate} />
+    </Show>
+  )
+
   onMount(() => {
     const saved = loadSortState(pathname())
     if (saved) {
@@ -275,18 +300,25 @@ const ListLayout = () => {
         initialReverse={initialReverse()}
         compact={useMediaRows()}
       />
-      <For each={objStore.objs}>
-        {(obj, i) => {
-          return (
-            <Show
-              when={useMediaRows()}
-              fallback={<ListItem obj={obj} index={i()} />}
-            >
-              <MediaListItem obj={obj} index={i()} />
+      <Show
+        when={virtual()}
+        fallback={
+          <For each={objStore.objs}>
+            {(obj, i) => renderRow(obj, i(), true)}
+          </For>
+        }
+      >
+        <VirtualRows
+          count={objStore.objs.length}
+          estimate={rowEstimate(phoneShell(), useMediaRows())}
+          gap={4}
+          render={(i) => (
+            <Show when={objStore.objs[i]} keyed>
+              {(obj) => renderRow(obj, i, false)}
             </Show>
-          )
-        }}
-      </For>
+          )}
+        />
+      </Show>
       <Show when={local["show_count_msg"] === "visible"}>
         <Text size="sm" color="$neutral11">
           {countMsg()}
