@@ -1,0 +1,19 @@
+{
+  "nav": {
+    "files": "文件",
+    "transfers": "传输",
+    "settings": "设置",
+    "me": "我的",
+    "account": "账户",
+    "profile": "个人资料",
+    "toggle_theme": "切换浅色/深色",
+    "collapse": "收起",
+    "expand": "展开侧栏"
+  },
+  "task_center": {
+    "title": "任务中心",
+    "empty": "没有进行中或最近的任务。",
+    "view_all": "查看全部",
+    "running": "{{count}} 个进行中"
+  }
+}

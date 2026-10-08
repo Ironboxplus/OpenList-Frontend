@@ -1,3 +1,4 @@
+import { focusRing } from "~/components/ui/focus"
 import { TbLogout, TbSun, TbUserCircle } from "solid-icons/tb"
 import { createSignal, For, Show } from "solid-js"
 import {
@@ -18,9 +19,11 @@ import { activeNavId, badgeTarget, navItemsFor } from "./nav-items"
 export const TAB_BAR_HEIGHT = "3.5rem"
 
 const tabClass =
-  "relative flex flex-1 flex-col bg-transparent items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground transition-colors"
+  focusRing +
+  " relative flex flex-1 flex-col bg-transparent items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground transition-colors"
 const sheetRow =
-  "flex h-11 items-center gap-3 rounded-lg bg-transparent px-3 text-left text-sm text-foreground hover:bg-accent"
+  focusRing +
+  " flex h-11 items-center gap-3 rounded-lg bg-transparent px-3 text-left text-sm text-foreground hover:bg-accent"
 
 export const BottomTabs = (props: { pathname: string }) => {
   const t = useT()

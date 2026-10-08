@@ -1,3 +1,4 @@
+import { focusRing } from "~/components/ui/focus"
 import {
   TbArrowsMove,
   TbBolt,
@@ -129,6 +130,7 @@ export const TaskCard = (props: TaskCardProps) => {
         role={props.onOpen ? "button" : undefined}
         class={cn(
           "flex flex-col gap-3 p-4",
+          props.onOpen && focusRing,
           props.compact && "gap-2 p-3",
           props.onOpen && "cursor-pointer transition-shadow hover:shadow-md",
         )}
@@ -203,6 +205,7 @@ export const TaskCard = (props: TaskCardProps) => {
                   : t("transfers.card.show_error")
               }
               class={cn(
+                focusRing,
                 "break-words rounded-md bg-destructive/10 px-2 py-1 text-left text-xs text-destructive",
                 !errorOpen() && "line-clamp-2",
               )}

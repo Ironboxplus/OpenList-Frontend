@@ -1,3 +1,4 @@
+import { focusRing } from "~/components/ui/focus"
 import { useSearchParams } from "@solidjs/router"
 import { TbChevronDown, TbChevronRight, TbPlus } from "solid-icons/tb"
 import {
@@ -56,7 +57,10 @@ const Section = (props: {
       >
         <button
           type="button"
-          class="flex items-center gap-1 bg-transparent text-base font-semibold text-foreground"
+          class={cn(
+            focusRing,
+            "flex items-center gap-1 rounded-sm bg-transparent text-base font-semibold text-foreground",
+          )}
           aria-expanded={props.open}
           onClick={props.onToggle}
         >
@@ -177,7 +181,7 @@ const TransfersPage = () => {
       </div>
 
       <div
-        class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+        class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
         role="tablist"
         aria-label="filter"
       >
@@ -189,6 +193,7 @@ const TransfersPage = () => {
               data-chip={k}
               aria-selected={filter() === k}
               class={cn(
+                focusRing,
                 "shrink-0 rounded-full border px-3 py-1 text-sm text-foreground transition-colors",
                 filter() === k
                   ? "border-primary bg-primary text-primary-foreground"

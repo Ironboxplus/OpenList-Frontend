@@ -4,7 +4,7 @@
 
 :root {
   --radius: 0.75rem;
-  --background: hsl(220 20% 97%);
+  --background: hsl(220 20% 97.5%);
   --foreground: hsl(224 71% 4%);
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(224 71% 4%);
@@ -28,26 +28,28 @@
 }
 
 .dark {
-  --background: hsl(224 25% 7%);
+  /* Aligned with hope-ui's dark page background (#151718) so the shell and the
+     legacy pages share one shade. */
+  --background: hsl(200 7% 9%);
   --foreground: hsl(210 20% 96%);
-  --card: hsl(224 22% 10%);
+  --card: hsl(200 7% 12%);
   --card-foreground: hsl(210 20% 96%);
-  --popover: hsl(224 22% 10%);
+  --popover: hsl(200 7% 12%);
   --popover-foreground: hsl(210 20% 96%);
   --primary: hsl(217 91% 62%);
   --primary-foreground: hsl(224 40% 8%);
-  --secondary: hsl(223 18% 16%);
+  --secondary: hsl(200 6% 17%);
   --secondary-foreground: hsl(210 20% 96%);
-  --muted: hsl(223 18% 16%);
-  --muted-foreground: hsl(218 12% 66%);
-  --accent: hsl(223 18% 18%);
+  --muted: hsl(200 6% 17%);
+  --muted-foreground: hsl(200 8% 66%);
+  --accent: hsl(200 6% 19%);
   --accent-foreground: hsl(210 20% 96%);
   --destructive: hsl(0 72% 58%);
   --destructive-foreground: hsl(0 0% 100%);
   --success: hsl(142 60% 52%);
   --warning: hsl(38 92% 56%);
-  --border: hsl(223 16% 20%);
-  --input: hsl(223 16% 24%);
+  --border: hsl(200 6% 21%);
+  --input: hsl(200 6% 25%);
   --ring: hsl(217 91% 62%);
 }
 

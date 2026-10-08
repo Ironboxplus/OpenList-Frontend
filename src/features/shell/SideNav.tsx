@@ -1,3 +1,4 @@
+import { focusRing } from "~/components/ui/focus"
 import {
   TbLayoutSidebarLeftCollapse,
   TbLayoutSidebarLeftExpand,
@@ -44,6 +45,7 @@ export interface SideNavProps {
 }
 
 const rowClass =
+  `${focusRing} ` +
   "flex h-10 items-center gap-3 rounded-lg bg-transparent px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
 
 export const SideNav = (props: SideNavProps) => {

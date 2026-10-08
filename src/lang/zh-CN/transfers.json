@@ -1,0 +1,178 @@
+{
+  "title": "传输",
+  "filter": {
+    "all": "全部",
+    "upload": "上传",
+    "copy": "复制",
+    "move": "移动",
+    "offline": "离线下载",
+    "decompress": "解压",
+    "sync": "同步"
+  },
+  "section": {
+    "active": "进行中",
+    "failed": "失败",
+    "done": "已完成",
+    "history": "历史"
+  },
+  "empty": {
+    "active": "当前没有正在进行的任务。",
+    "failed": "没有失败的任务。",
+    "done": "还没有已完成的任务。",
+    "history": "还没有同步历史。"
+  },
+  "loading_failed": "无法加载任务。",
+  "show_more": "显示全部 {{count}} 项",
+  "state": {
+    "queued": "排队中",
+    "running": "进行中",
+    "waiting_retry": "等待重试",
+    "recovering": "恢复中",
+    "canceling": "取消中",
+    "canceled": "已取消",
+    "failed": "失败",
+    "succeeded": "成功",
+    "partial_success": "部分成功"
+  },
+  "type": {
+    "file": {
+      "upload": "上传",
+      "copy": "复制",
+      "move": "移动"
+    },
+    "offline": {
+      "download": "离线下载",
+      "transfer": "离线转存"
+    },
+    "archive": {
+      "extract": "解压",
+      "upload": "解压上传"
+    },
+    "sync": {
+      "copy": "同步：复制",
+      "sync": "同步：镜像",
+      "bisync": "同步：双向",
+      "check": "同步：校验"
+    }
+  },
+  "action": {
+    "cancel": "取消",
+    "retry": "重试",
+    "delete": "删除",
+    "clear_done": "清除已完成",
+    "clear_succeeded": "清除成功",
+    "retry_failed": "全部重试"
+  },
+  "confirm": {
+    "delete_title": "删除这条任务记录？",
+    "delete_desc": "记录将从列表中移除，已传输的文件不受影响。",
+    "cancel": "保留",
+    "ok": "删除"
+  },
+  "card": {
+    "transferred": "{{done}} / {{total}}",
+    "discovered": "已传 {{done}}，已发现 {{total}}",
+    "total": "共 {{total}}",
+    "files": "{{done}} / {{total}} 个文件",
+    "speed": "{{speed}}/s",
+    "eta": "剩余 {{eta}}",
+    "show_error": "查看完整错误",
+    "hide_error": "收起"
+  },
+  "sync": {
+    "rapid": "秒传 {{count}} 个（节省 {{saved}}）",
+    "uploaded": "实际上传 {{count}} 个（{{bytes}}）",
+    "match": "未变 {{count}}",
+    "errors": "错误 {{count}}",
+    "new_job": "新建同步作业",
+    "bwlimit": "带宽限制"
+  },
+  "detail": {
+    "title": "任务详情",
+    "tab": {
+      "overview": "概览",
+      "transferring": "正在传输",
+      "events": "事件"
+    },
+    "id": "ID",
+    "type": "类型",
+    "state": "状态",
+    "source": "源",
+    "destination": "目标",
+    "creator": "创建者",
+    "started": "开始时间",
+    "ended": "结束时间",
+    "raw_name": "原任务名",
+    "error": "错误",
+    "phase": "阶段",
+    "spec": "作业设置",
+    "counters": "计数",
+    "stats": "实时统计",
+    "mode": "模式",
+    "filters": "过滤规则",
+    "none": "无",
+    "no_transferring": "当前没有正在传输的文件。",
+    "no_events": "没有事件记录。",
+    "events_limit": "显示最近 {{count}} 条事件。",
+    "event_filter_all": "全部",
+    "loading": "加载中…",
+    "bytes": "数据量",
+    "files": "文件数",
+    "speed": "速度 / 剩余时间",
+    "progress": "进度"
+  },
+  "event": {
+    "only_in_src": "仅在源端",
+    "only_in_dst": "仅在目标端",
+    "differ": "有差异",
+    "error": "错误",
+    "uploaded": "已上传",
+    "rapid": "秒传"
+  },
+  "counter": {
+    "match": "未变",
+    "differ": "有差异",
+    "only_in_src": "仅在源端",
+    "only_in_dst": "仅在目标端",
+    "errors": "错误",
+    "uploaded": "已上传",
+    "uploaded_bytes": "上传字节数",
+    "rapid_uploads": "秒传数",
+    "rapid_bytes": "节省字节数"
+  },
+  "form": {
+    "title": "新建同步作业",
+    "mode": "模式",
+    "mode_copy": "复制（新增和更新）",
+    "mode_sync": "同步（镜像，删除多余文件）",
+    "mode_bisync": "双向同步",
+    "mode_check": "校验（仅比较）",
+    "src": "源",
+    "dst": "目标",
+    "path_hint": "/挂载路径 或 local:/绝对路径",
+    "dry_run": "试运行",
+    "size_only": "仅比较大小",
+    "track_renames": "跟踪重命名",
+    "resync": "重新同步",
+    "force": "强制执行",
+    "filters": "过滤规则",
+    "filters_hint": "每行一条，例如：- *.tmp",
+    "transfers": "并行传输数",
+    "checkers": "并行校验数",
+    "max_delete": "最大删除数",
+    "optional": "可选",
+    "submit": "开始",
+    "cancel": "取消",
+    "required": "必须填写源和目标。",
+    "started": "同步作业已开始"
+  },
+  "bw": {
+    "title": "带宽限制",
+    "current": "当前限制",
+    "unlimited": "不限速",
+    "rate": "新的限制",
+    "hint": "例如 10M、10M:2M 或 off",
+    "apply": "应用",
+    "applied": "带宽限制已更新"
+  }
+}

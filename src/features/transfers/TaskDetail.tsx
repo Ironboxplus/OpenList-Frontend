@@ -1,3 +1,4 @@
+import { focusRing } from "~/components/ui/focus"
 import { createMemo, createSignal, For, type JSX, Show } from "solid-js"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
@@ -193,6 +194,7 @@ const SyncDetail = (props: {
                 data-kind={k}
                 aria-pressed={kind() === k}
                 class={cn(
+                  focusRing,
                   "rounded-full border bg-transparent px-2.5 py-0.5 text-xs text-foreground transition-colors",
                   kind() === k
                     ? "border-primary bg-primary text-primary-foreground"

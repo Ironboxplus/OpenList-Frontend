@@ -1,3 +1,4 @@
+import { focusRing } from "~/components/ui/focus"
 import { TbListDetails } from "solid-icons/tb"
 import { Show } from "solid-js"
 import {
@@ -37,7 +38,7 @@ export const TopBar = (props: { pathname: string }) => {
           onClick={() => {
             setTaskCenterOpen(true)
           }}
-          class="relative inline-flex size-9 items-center justify-center rounded-lg bg-transparent text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          class={`${focusRing} relative inline-flex size-9 items-center justify-center rounded-lg bg-transparent text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground`}
         >
           <TbListDetails class="size-5" />
           <NavBadge class="absolute -right-0.5 -top-0.5" />
