@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js"
+import { createResource, createSignal, For, Show } from "solid-js"
 import { Button } from "~/components/ui/button"
 import {
   Dialog,
@@ -29,11 +29,61 @@ import {
 } from "~/components/ui/textfield"
 import { useT } from "~/hooks"
 import type { SyncSnapshot, SyncSpec } from "~/platform/contracts/task"
-import { runSync } from "./api"
+import { fetchPackDefaults, runSync } from "./api"
+import {
+  packAllowed,
+  packFormFrom,
+  SIZE_UNITS,
+  validatePack,
+  type PackForm,
+  type SizeInput,
+  type SizeUnit,
+} from "./pack"
 import { buildSpec } from "./sync-spec"
 
 type Mode = SyncSpec["mode"]
 const MODES: Mode[] = ["copy", "sync", "bisync", "check"]
+
+/** A number with a K / M / G unit picker (native select: it is a one-off pick). */
+const SizeField = (p: {
+  label: string
+  testid: string
+  value: SizeInput
+  onChange: (v: SizeInput) => void
+}) => (
+  <div class="flex flex-col gap-1.5">
+    <label class="text-sm font-medium">{p.label}</label>
+    <div class="flex gap-1.5">
+      <input
+        type="number"
+        min="1"
+        inputmode="decimal"
+        data-testid={p.testid}
+        value={p.value.value}
+        onInput={(e) =>
+          p.onChange({ ...p.value, value: e.currentTarget.value })
+        }
+        class="h-9 min-w-0 flex-1 rounded-md border border-input bg-transparent px-3 text-sm"
+      />
+      <select
+        data-testid={`${p.testid}-unit`}
+        value={p.value.unit}
+        onChange={(e) =>
+          p.onChange({ ...p.value, unit: e.currentTarget.value as SizeUnit })
+        }
+        class="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+      >
+        <For each={SIZE_UNITS}>
+          {(u) => (
+            <option value={u} selected={u === p.value.unit}>
+              {u}B
+            </option>
+          )}
+        </For>
+      </select>
+    </div>
+  </div>
+)
 
 export const NewSyncDialog = (props: {
   open: boolean
@@ -56,12 +106,40 @@ export const NewSyncDialog = (props: {
   const [error, setError] = createSignal<string>()
   const [busy, setBusy] = createSignal(false)
 
+  // The backend's defaults; a server without packing answers 404 and the
+  // options are not offered at all.
+  const [packDefaults] = createResource(fetchPackDefaults)
+  const [pack, setPack] = createSignal(false)
+  const [unpack, setUnpack] = createSignal(false)
+  const [threshold, setThreshold] = createSignal<SizeInput>()
+  const [minFiles, setMinFiles] = createSignal<string>()
+  const [maxPack, setMaxPack] = createSignal<SizeInput>()
+  const packForm = (): PackForm | undefined => {
+    const d = packDefaults()
+    if (!d) return undefined
+    const base = packFormFrom(d)
+    return {
+      pack: pack(),
+      unpack: unpack(),
+      threshold: threshold() ?? base.threshold,
+      minFiles: minFiles() ?? base.minFiles,
+      maxPack: maxPack() ?? base.maxPack,
+    }
+  }
+  const showPack = () => !!packDefaults() && packAllowed(mode())
+
   const modeLabel = (m: Mode) => t(`transfers.form.mode_${m}`)
 
   const submit = async () => {
     setError(undefined)
     if (!src().trim() || !dst().trim()) {
       setError(t("transfers.form.required"))
+      return
+    }
+    const form = showPack() ? packForm() : undefined
+    const bad = form ? validatePack(mode(), form) : undefined
+    if (bad) {
+      setError(t(bad))
       return
     }
     setBusy(true)
@@ -80,6 +158,7 @@ export const NewSyncDialog = (props: {
           transfers: transfers(),
           checkers: checkers(),
           maxDelete: maxDelete(),
+          pack: form,
         }),
       )
       if (resp.code === 200) {
@@ -210,6 +289,66 @@ export const NewSyncDialog = (props: {
               />
             </Show>
           </div>
+
+          <Show when={showPack()}>
+            <div class="flex flex-col gap-3" data-testid="sync-pack-section">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Toggle
+                  testid="sync-pack"
+                  label={t("transfers.form.pack")}
+                  checked={pack()}
+                  onChange={(v) => {
+                    setPack(v)
+                    if (v) setUnpack(false)
+                  }}
+                />
+                <Toggle
+                  testid="sync-unpack"
+                  label={t("transfers.form.unpack")}
+                  checked={unpack()}
+                  onChange={(v) => {
+                    setUnpack(v)
+                    if (v) setPack(false)
+                  }}
+                />
+              </div>
+              <Show when={pack()}>
+                <details data-testid="sync-pack-advanced" class="text-sm">
+                  <summary class="cursor-pointer select-none font-medium">
+                    {t("transfers.form.advanced")}
+                  </summary>
+                  <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <SizeField
+                      testid="sync-pack-threshold"
+                      label={t("transfers.form.pack_threshold")}
+                      value={threshold() ?? packForm()!.threshold}
+                      onChange={setThreshold}
+                    />
+                    <TextFieldRoot
+                      value={minFiles() ?? packForm()!.minFiles}
+                      onChange={setMinFiles}
+                    >
+                      <TextFieldLabel>
+                        {t("transfers.form.pack_min_files")}
+                      </TextFieldLabel>
+                      <TextField
+                        type="number"
+                        min="1"
+                        inputmode="numeric"
+                        data-testid="sync-pack-min-files"
+                      />
+                    </TextFieldRoot>
+                    <SizeField
+                      testid="sync-pack-max"
+                      label={t("transfers.form.pack_max")}
+                      value={maxPack() ?? packForm()!.maxPack}
+                      onChange={setMaxPack}
+                    />
+                  </div>
+                </details>
+              </Show>
+            </div>
+          </Show>
 
           <TextFieldRoot value={filters()} onChange={setFilters}>
             <TextFieldLabel>{t("transfers.form.filters")}</TextFieldLabel>

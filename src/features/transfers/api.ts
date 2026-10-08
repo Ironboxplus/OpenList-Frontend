@@ -2,7 +2,11 @@
 // the legacy /task/* and /admin/sync/* wire formats. Every request goes through
 // the classified api() client; `Result` is its outcome folded back into the
 // {code, message, data} shape the store and dialogs already branch on.
-import type { SyncSnapshot, SyncSpec } from "~/platform/contracts/task"
+import type {
+  PackOptions,
+  SyncSnapshot,
+  SyncSpec,
+} from "~/platform/contracts/task"
 import { api, legacyCode, type ApiResult } from "~/platform/api/client"
 import type { Resp } from "~/types"
 import type { TacheRaw, TacheType, TaskAction } from "./adapter"
@@ -58,6 +62,15 @@ export const runSync = (
   spec: Partial<SyncSpec>,
 ): Promise<Result<SyncSnapshot>> =>
   toResult(api("post", "/admin/sync/run", { body: spec }))
+
+/**
+ * Defaults of the pack options, or undefined when the backend has none (an
+ * older server answers 404): then the feature is simply not offered.
+ */
+export const fetchPackDefaults = async (): Promise<PackOptions | undefined> => {
+  const out = await api<PackOptions>("get", "/admin/sync/pack_defaults")
+  return out.ok ? out.data : undefined
+}
 
 export const cancelSync = (id: string): Promise<Result<unknown>> =>
   toResult(api("post", "/admin/sync/cancel", { params: { id } }))

@@ -82,6 +82,34 @@ export interface SyncSpec {
   transfers: number
   checkers: number
   max_delete?: number
+  /** Zip each directory's small files into packs at dst (copy / sync). */
+  pack?: PackOptions
+  /** Extract packs found at src (copy / sync); not combinable with pack. */
+  unpack?: boolean
+}
+
+/** Mirrors internal/syncjob PackOptions; GET /admin/sync/pack_defaults has the defaults. */
+export interface PackOptions {
+  enabled: boolean
+  threshold: number
+  min_files: number
+  max_pack_bytes: number
+  store_suffixes?: string[]
+}
+
+/** Mirrors internal/syncjob PackStats. */
+export interface PackStats {
+  dirs: number
+  packed_files: number
+  packs: number
+  bytes_in: number
+  bytes_out: number
+  skipped_dirs: number
+  dead_removed: number
+  unpacked_files?: number
+  unpacked_bytes?: number
+  packs_fetched?: number
+  packs_ranged?: number
 }
 
 export interface SyncCounters {
@@ -150,6 +178,9 @@ export interface SyncSnapshot {
   ended_at?: string
   counters: SyncCounters
   stats?: SyncStats
+  /** "packing" / "unpacking" while small files are handled, then "transferring". */
+  stage?: string
+  pack_stats?: PackStats
   events?: SyncEvent[]
 }
 

@@ -1,3 +1,4 @@
+import { packSavedPercent, packStage } from "./pack"
 import { focusRing } from "~/components/ui/focus"
 import { createMemo, createSignal, For, type JSX, Show } from "solid-js"
 import { Badge } from "~/components/ui/badge"
@@ -14,6 +15,7 @@ import { useT } from "~/hooks"
 import type {
   SyncEvent,
   SyncEventKind,
+  PackStats,
   SyncSnapshot,
   UnifiedTask,
 } from "~/platform/contracts/task"
@@ -50,6 +52,78 @@ const Field = (props: { label: string; children: JSX.Element }) => (
     <dd class="min-w-0 break-all">{props.children}</dd>
   </div>
 )
+
+/** Packing / unpacking progress of a job that has either switched on. */
+const PackStatsBlock = (props: { stats: PackStats; stage?: string }) => {
+  const t = useT()
+  const saved = () => packSavedPercent(props.stats)
+  const unpacking = () =>
+    (props.stats.unpacked_files ?? 0) > 0 || props.stage === "unpacking"
+  return (
+    <div data-testid="pack-stats">
+      <h4 class="mb-2 text-sm font-medium">
+        {unpacking()
+          ? t("transfers.detail.unpack")
+          : t("transfers.detail.pack")}
+        <Show when={packStage(props.stage)}>
+          {(st) => (
+            <span
+              data-testid="pack-stage"
+              class="ml-2 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-normal text-primary"
+            >
+              {t(`transfers.detail.stage_${st()}`)}
+            </span>
+          )}
+        </Show>
+      </h4>
+      <dl class="flex flex-col gap-1 text-sm">
+        <Show
+          when={!unpacking()}
+          fallback={
+            <>
+              <Field label={t("transfers.detail.unpacked_files")}>
+                {props.stats.unpacked_files ?? 0} (
+                {formatBytes(props.stats.unpacked_bytes)})
+              </Field>
+              <Field label={t("transfers.detail.packs_fetched")}>
+                {props.stats.packs_fetched ?? 0} /{" "}
+                {props.stats.packs_ranged ?? 0}
+              </Field>
+            </>
+          }
+        >
+          <Field label={t("transfers.detail.pack_dirs")}>
+            {props.stats.dirs}
+            <Show when={props.stats.skipped_dirs > 0}>
+              {" · "}
+              {t("transfers.detail.pack_skipped", {
+                count: props.stats.skipped_dirs,
+              })}
+            </Show>
+          </Field>
+          <Field label={t("transfers.detail.pack_files")}>
+            {props.stats.packed_files} → {props.stats.packs}
+          </Field>
+          <Field label={t("transfers.detail.pack_bytes")}>
+            {formatBytes(props.stats.bytes_in)} →{" "}
+            {formatBytes(props.stats.bytes_out)}
+            <Show when={saved() !== undefined}>
+              <span data-testid="pack-ratio">
+                {" · "}
+                {t("transfers.detail.pack_saved", { percent: saved()! })}
+              </span>
+            </Show>
+          </Field>
+          <Show when={props.stats.dead_removed > 0}>
+            <Field label={t("transfers.detail.pack_dead")}>
+              {props.stats.dead_removed}
+            </Field>
+          </Show>
+        </Show>
+      </dl>
+    </div>
+  )
+}
 
 const SyncDetail = (props: {
   task: UnifiedTask
@@ -102,6 +176,8 @@ const SyncDetail = (props: {
                 `${t("transfers.form.checkers")}: ${spec().checkers}`,
               spec().max_delete !== undefined &&
                 `${t("transfers.form.max_delete")}: ${spec().max_delete}`,
+              spec().pack?.enabled && t("transfers.form.pack"),
+              spec().unpack && t("transfers.form.unpack"),
             ]
               .filter(Boolean)
               .join(" · ") || t("transfers.detail.none")}
@@ -117,6 +193,10 @@ const SyncDetail = (props: {
             </Show>
           </Field>
         </dl>
+
+        <Show when={props.snapshot.pack_stats}>
+          {(ps) => <PackStatsBlock stats={ps()} stage={props.snapshot.stage} />}
+        </Show>
 
         <div>
           <h4 class="mb-2 text-sm font-medium">

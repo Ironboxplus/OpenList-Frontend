@@ -1,3 +1,4 @@
+import { packStage } from "./pack"
 import { focusRing } from "~/components/ui/focus"
 import {
   TbArrowsMove,
@@ -97,6 +98,19 @@ export const TaskCard = (props: TaskCardProps) => {
     sync() !== undefined && running() && props.task.phase === "checking"
   const metaParts = () => {
     const parts: string[] = []
+    const stage = running() ? packStage(sync()?.stage) : undefined
+    if (stage) {
+      const ps = sync()?.pack_stats
+      parts.push(
+        stage === "packing"
+          ? t("transfers.card.packing", {
+              files: ps?.packed_files ?? 0,
+              packs: ps?.packs ?? 0,
+            })
+          : t("transfers.card.unpacking", { files: ps?.unpacked_files ?? 0 }),
+      )
+      return parts
+    }
     if (checking()) {
       // Nothing is queued yet, so bytes/files would read 0 / 0: say what is happening.
       const { checksDone, scanned } = p()

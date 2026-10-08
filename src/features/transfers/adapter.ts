@@ -2,6 +2,7 @@
 // UnifiedTask contract of REFACTOR_PLAN §5.1. Everything above this file only
 // sees UnifiedTask; when the backend serves /api/tasks natively, only this
 // file and ./api.ts are replaced.
+import { packStage } from "./pack"
 import type {
   ObjectRef,
   SyncSnapshot,
@@ -265,7 +266,9 @@ export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
     id: `sync:${snap.id}`,
     type: `sync.${snap.spec.mode}`,
     state: snap.state,
-    phase: finished ? snap.state : syncPhase(snap.stats),
+    phase: finished
+      ? snap.state
+      : (packStage(snap.stage) ?? syncPhase(snap.stats)),
     attempt: 1,
     maxAttempts: 1,
     retryable: false,

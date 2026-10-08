@@ -228,3 +228,85 @@ describe("TaskCard open-folder buttons", () => {
     ).not.toBeNull()
   })
 })
+
+describe("TaskCard: pack stages", () => {
+  const snap = (over: Partial<SyncSnapshot>): UnifiedTask =>
+    mapSyncSnapshot(
+      {
+        id: "p1",
+        spec: {
+          mode: "copy",
+          src: "local:/a",
+          dst: "/b",
+          dry_run: false,
+          size_only: false,
+          track_renames: false,
+          resync: false,
+          force: false,
+          filters: [],
+          transfers: 0,
+          checkers: 0,
+        },
+        state: "running",
+        started_at: "2026-10-08T09:59:00Z",
+        counters: {
+          match: 0,
+          differ: 0,
+          only_in_src: 0,
+          only_in_dst: 0,
+          errors: 0,
+          uploaded: 0,
+          uploaded_bytes: 0,
+          rapid_uploads: 0,
+          rapid_bytes: 0,
+        },
+        ...over,
+      },
+      NOW,
+    )
+
+  it("says packing, with files and packs so far, while that stage runs", () => {
+    render(() => (
+      <TaskCard
+        task={snap({
+          stage: "packing",
+          pack_stats: {
+            dirs: 2,
+            packed_files: 120,
+            packs: 3,
+            bytes_in: 10,
+            bytes_out: 5,
+            skipped_dirs: 0,
+            dead_removed: 0,
+          },
+        })}
+      />
+    ))
+    expect(screen.getByTestId("task-meta").textContent).toBe(
+      "Packing · 120 files into 3 packs",
+    )
+  })
+
+  it("says unpacking while that stage runs", () => {
+    render(() => (
+      <TaskCard
+        task={snap({
+          stage: "unpacking",
+          pack_stats: {
+            dirs: 0,
+            packed_files: 0,
+            packs: 0,
+            bytes_in: 0,
+            bytes_out: 0,
+            skipped_dirs: 0,
+            dead_removed: 0,
+            unpacked_files: 42,
+          },
+        })}
+      />
+    ))
+    expect(screen.getByTestId("task-meta").textContent).toBe(
+      "Unpacking · 42 files",
+    )
+  })
+})

@@ -1,4 +1,5 @@
 import type { SyncSpec } from "~/platform/contracts/task"
+import { packSpecPart, type PackForm } from "./pack"
 
 type Mode = SyncSpec["mode"]
 
@@ -16,6 +17,8 @@ export const buildSpec = (f: {
   transfers: string
   checkers: string
   maxDelete: string
+  /** Absent when the backend has no packing. */
+  pack?: PackForm
 }): Partial<SyncSpec> => {
   const spec: Partial<SyncSpec> = {
     mode: f.mode,
@@ -43,5 +46,5 @@ export const buildSpec = (f: {
   if (checkers !== undefined && checkers > 0) spec.checkers = checkers
   const maxDelete = num(f.maxDelete)
   if (maxDelete !== undefined) spec.max_delete = maxDelete
-  return spec
+  return { ...spec, ...packSpecPart(f.mode, f.pack) }
 }
