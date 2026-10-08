@@ -1,3 +1,4 @@
+import { LibraryMenuItem } from "./LibraryMenuItem"
 import {
   TbArchive,
   TbCheckbox,
@@ -182,6 +183,7 @@ export const ActionBar = () => {
                     {t("media.menu_item")}
                   </DropdownMenuItem>
                 </Show>
+                <LibraryMenuItem />
                 <DropdownMenuItem onSelect={toggleCheckbox} class="gap-2">
                   <TbCheckbox class="size-4" />
                   {tt("toggle_checkbox")}

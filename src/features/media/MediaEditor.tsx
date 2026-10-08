@@ -34,7 +34,14 @@ import { baseName } from "./logic"
 import { closeMediaEditor, invalidateMedia, mediaFs, mediaPath } from "./state"
 import type { MediaItem, MediaKind, SearchCandidate } from "./types"
 
-const KINDS: MediaKind[] = ["movie", "tv", "anime", "collection", "ignore"]
+const KINDS: MediaKind[] = [
+  "movie",
+  "tv",
+  "anime",
+  "collection",
+  "library",
+  "ignore",
+]
 const PROVIDERS = ["tmdb", "bgm"] as const
 type Provider = (typeof PROVIDERS)[number]
 

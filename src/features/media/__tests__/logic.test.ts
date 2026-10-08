@@ -4,10 +4,12 @@ import {
   baseName,
   cardRating,
   cardsByName,
+  cleanTitle,
   createMediaClient,
   episodeLabel,
   episodeMap,
   Lru,
+  nameHue,
   preferPoster,
   ratingBadges,
   readChoice,
@@ -234,5 +236,21 @@ describe("createMediaClient", () => {
     expect(await c.get("/x")).toBeUndefined()
     expect(c.isUnavailable()).toBe(false)
     expect((await c.get("/x"))?.item?.title).toBe("ok")
+  })
+})
+
+describe("library placeholders", () => {
+  it("cleanTitle cuts fansub groups and bracket noise", () => {
+    expect(cleanTitle("[LoliHouse] Frieren [WebRip 1080p]")).toBe("Frieren")
+    expect(cleanTitle("Dune (2021)")).toBe("Dune")
+    expect(cleanTitle("Some.Show.Name")).toBe("Some Show Name")
+    expect(cleanTitle("[only brackets]")).toBe("[only brackets]")
+  })
+
+  it("nameHue is stable and in range", () => {
+    expect(nameHue("abc")).toBe(nameHue("abc"))
+    expect(nameHue("abc")).not.toBe(nameHue("abd"))
+    expect(nameHue("x")).toBeGreaterThanOrEqual(0)
+    expect(nameHue("x")).toBeLessThan(360)
   })
 })

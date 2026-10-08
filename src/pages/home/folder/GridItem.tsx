@@ -10,7 +10,11 @@ import { bus, getFileSize, hoverColor, listItemIn } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
 import type { GridDecor } from "~/features/files/grid-decor"
-import { CardBadge, SelectCheck } from "~/features/files/GridBadges"
+import {
+  CardBadge,
+  PosterPlaceholder,
+  SelectCheck,
+} from "~/features/files/GridBadges"
 import { selectionMode } from "~/features/files/selection-mode"
 import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
 import { createLongPress } from "~/utils/touch"
@@ -117,7 +121,11 @@ export const GridItem = (props: {
       >
         <Center
           class="item-thumbnail"
-          h={cover() ? undefined : `${parseInt(local["grid_item_size"])}px`}
+          h={
+            cover() || decor()?.placeholder
+              ? undefined
+              : `${parseInt(local["grid_item_size"])}px`
+          }
           w="$full"
           cursor={props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"}
           on:click={(e: MouseEvent) => {
@@ -157,16 +165,26 @@ export const GridItem = (props: {
           <Show
             when={cover()}
             fallback={
-              <Show when={props.obj.thumb} fallback={objIcon}>
-                <ImageWithError
-                  maxH="$full"
-                  maxW="$full"
-                  rounded="$lg"
-                  shadow="$md"
-                  fallback={<CenterLoading size="lg" />}
-                  fallbackErr={objIcon}
-                  src={props.obj.thumb}
-                  loading="lazy"
+              <Show
+                when={decor()?.placeholder}
+                fallback={
+                  <Show when={props.obj.thumb} fallback={objIcon}>
+                    <ImageWithError
+                      maxH="$full"
+                      maxW="$full"
+                      rounded="$lg"
+                      shadow="$md"
+                      fallback={<CenterLoading size="lg" />}
+                      fallbackErr={objIcon}
+                      src={props.obj.thumb}
+                      loading="lazy"
+                    />
+                  </Show>
+                }
+              >
+                <PosterPlaceholder
+                  title={decor()!.placeholder!}
+                  seed={props.obj.name}
                 />
               </Show>
             }

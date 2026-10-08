@@ -31,7 +31,16 @@ const mediaChildren = createMemo(
   () => mediaFs()?.children.filter((c) => c.kind !== "ignore") ?? [],
 )
 
-export const hasPosterView = () => mediaChildren().length > 0
+/** The current folder is a video library (an admin marked it as one). */
+export const isLibrary = (): boolean => mediaFs()?.item?.kind === "library"
+
+/** Library numbers for the TopBar: sub-folders in total, and how many are identified. */
+export const libraryCounts = () => ({
+  total: objStore.objs.filter((o) => o.is_dir).length,
+  done: mediaChildren().length,
+})
+
+export const hasPosterView = () => isLibrary() || mediaChildren().length > 0
 
 export const posterActive = (): boolean => {
   const path = mediaPath()
@@ -39,6 +48,7 @@ export const posterActive = (): boolean => {
   rev()
   const saved = readChoice(localStorage, path)
   if (saved) return saved === "poster"
+  if (isLibrary()) return true
   const subdirs = objStore.objs.filter((o) => o.is_dir).length
   return preferPoster(mediaChildren().length, subdirs)
 }
@@ -79,3 +89,13 @@ export const invalidateMedia = (path?: string) => {
 /** Bumped by invalidateMedia so the loader asks again even if nothing else changed. */
 const [tick, setTick] = createSignal(0)
 export const mediaTick = tick
+
+/** Admin: mark this folder as a video library, or take the mark away again. */
+export const toggleLibrary = async (path: string) => {
+  const { setMediaMeta, deleteMedia } = await import("./client")
+  const out = isLibrary()
+    ? await deleteMedia(path)
+    : await setMediaMeta({ path, kind: "library", locked: true })
+  if (out.ok) invalidateMedia(path)
+  return out
+}

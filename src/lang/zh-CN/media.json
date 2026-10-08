@@ -1,10 +1,17 @@
 {
   "view_poster": "海报",
+  "library": {
+    "badge": "视频库",
+    "counts": "共 {{total}} 部，已识别 {{done}} 部",
+    "set": "设为视频库",
+    "unset": "取消视频库"
+  },
   "kind": {
     "movie": "电影",
     "tv": "剧集",
     "anime": "动画",
     "collection": "合集",
+    "library": "视频库",
     "ignore": "已忽略"
   },
   "rating": {

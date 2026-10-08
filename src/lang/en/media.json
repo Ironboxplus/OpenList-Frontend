@@ -1,10 +1,17 @@
 {
   "view_poster": "Posters",
+  "library": {
+    "badge": "Video library",
+    "counts": "{{total}} titles, {{done}} identified",
+    "set": "Set as video library",
+    "unset": "Remove video library"
+  },
   "kind": {
     "movie": "Movie",
     "tv": "TV series",
     "anime": "Anime",
     "collection": "Collection",
+    "library": "Video library",
     "ignore": "Ignored"
   },
   "rating": {

@@ -209,7 +209,10 @@ export const MediaHeader = () => {
   const { pathname } = useRouter()
   const item = () => {
     const it = mediaFs()?.item
-    return it && it.kind !== "ignore" && mediaPath() === pathname()
+    return it &&
+      it.kind !== "ignore" &&
+      it.kind !== "library" &&
+      mediaPath() === pathname()
       ? it
       : undefined
   }

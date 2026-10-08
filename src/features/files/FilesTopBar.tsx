@@ -1,3 +1,4 @@
+import { LibraryBadge, LibraryMenuItem } from "./LibraryMenuItem"
 import {
   TbArrowLeft,
   TbChevronRight,
@@ -244,11 +245,16 @@ const PhoneCrumbs = () => {
 }
 
 export const FilesTopLeft = (props: { phone: boolean }) => (
-  <Show when={props.phone} fallback={<DesktopCrumbs />}>
-    <Show when={!selectionMode()} fallback={<PhoneSelectionHeader />}>
-      <PhoneCrumbs />
+  <div class="flex min-w-0 items-center gap-2">
+    <Show when={props.phone} fallback={<DesktopCrumbs />}>
+      <Show when={!selectionMode()} fallback={<PhoneSelectionHeader />}>
+        <PhoneCrumbs />
+      </Show>
     </Show>
-  </Show>
+    <Show when={!selectionMode()}>
+      <LibraryBadge />
+    </Show>
+  </div>
 )
 
 const pickLayout = (key: LayoutType) => {
@@ -339,6 +345,7 @@ export const FilesTopRight = (props: { phone: boolean }) => {
                   <PosterMenuItem />
                 </Show>
                 <AdminMediaItem />
+                <LibraryMenuItem />
               </DropdownMenuContent>
             </DropdownMenu>
           </Show>

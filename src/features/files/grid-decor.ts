@@ -8,4 +8,6 @@ export interface GridDecor {
   sub?: string
   /** Small badge on the poster's top-right corner (e.g. a rating). */
   badge?: string
+  /** No poster: draw a gradient 2:3 card with this title instead of the folder icon. */
+  placeholder?: string
 }

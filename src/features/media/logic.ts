@@ -233,3 +233,26 @@ export const createMediaClient = (
     size: () => cache.size,
   }
 }
+
+// ---- library ----
+
+/**
+ * A folder name as a poster title: the leading [fansub] group and any
+ * (bracketed) or [bracketed] noise are cut off. Falls back to the raw name
+ * when nothing is left.
+ */
+export const cleanTitle = (name: string): string => {
+  const s = name
+    .replace(/[[(（【][^\])）】]*[\])）】]/g, " ")
+    .replace(/[._]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+  return s || name
+}
+
+/** Stable 0-359 hue per name, so placeholder posters differ but never flicker. */
+export const nameHue = (name: string): number => {
+  let h = 0
+  for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) >>> 0
+  return h % 360
+}

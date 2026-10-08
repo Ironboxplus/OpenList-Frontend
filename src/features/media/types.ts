@@ -1,7 +1,13 @@
 // Wire types of POST /api/fs/media and the admin media endpoints. The source of
 // truth is server/handles/media.go in the backend.
 
-export type MediaKind = "movie" | "tv" | "anime" | "collection" | "ignore"
+export type MediaKind =
+  | "movie"
+  | "tv"
+  | "anime"
+  | "collection"
+  | "library"
+  | "ignore"
 
 export interface MediaCard {
   path: string

@@ -1,7 +1,7 @@
 import { createMemo } from "solid-js"
 import type { GridDecor } from "~/features/files/grid-decor"
-import { assetSrc, cardRating } from "~/features/media/logic"
-import { cardFor } from "~/features/media/state"
+import { assetSrc, cardRating, cleanTitle } from "~/features/media/logic"
+import { cardFor, isLibrary } from "~/features/media/state"
 import { objStore } from "~/store"
 import type { StoreObj } from "~/types"
 import { api } from "~/utils/config"
@@ -15,7 +15,13 @@ import GridLayout from "./Grid"
  */
 const decorate = (obj: StoreObj): GridDecor | undefined => {
   const card = cardFor(obj.name)
-  if (!card || card.kind === "ignore") return undefined
+  if (!card || card.kind === "ignore") {
+    // In a library the folders still waiting for media info get a placeholder
+    // poster, so the wall stays uniform.
+    return isLibrary() && obj.is_dir
+      ? { placeholder: cleanTitle(obj.name) }
+      : undefined
+  }
   return {
     // A collection is a title card: its members are on the wall below it.
     cover:
@@ -32,7 +38,12 @@ const PosterWall = () => {
   const order = createMemo(() => {
     const withInfo: number[] = []
     const rest: number[] = []
-    objStore.objs.forEach((o, i) => (decorate(o) ? withInfo : rest).push(i))
+    objStore.objs.forEach((o, i) =>
+      (cardFor(o.name)?.kind && cardFor(o.name)!.kind !== "ignore"
+        ? withInfo
+        : rest
+      ).push(i),
+    )
     return [...withInfo, ...rest]
   })
   return <GridLayout poster order={order} decorate={decorate} />
