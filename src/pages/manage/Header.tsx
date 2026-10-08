@@ -19,7 +19,6 @@ import { IoExit } from "solid-icons/io"
 import { SwitchColorMode, SwitchLanguageWhite } from "~/components"
 import { useFetch, useRouter, useT } from "~/hooks"
 import { SideMenu } from "./SideMenu"
-import { side_menu_items } from "./sidemenu_items"
 import { changeToken, handleResp, notify, r } from "~/utils"
 import { PResp } from "~/types"
 const { isOpen, onOpen, onClose } = createDisclosure()
@@ -87,7 +86,7 @@ const Header = () => {
           <DrawerCloseButton />
           <DrawerHeader color="$info9">{t("manage.title")}</DrawerHeader>
           <DrawerBody>
-            <SideMenu items={side_menu_items} />
+            <SideMenu />
             <Center>
               <HStack spacing="$4" p="$2" color="$neutral11">
                 <SwitchLanguageWhite />

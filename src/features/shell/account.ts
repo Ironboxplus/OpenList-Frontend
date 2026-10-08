@@ -16,7 +16,7 @@ export const useAccountActions = () => {
     })
   }
   return {
-    profile: () => to("/@manage"),
+    profile: () => to("/@manage/profile"),
     logout,
     toggleTheme: toggleColorMode,
   }

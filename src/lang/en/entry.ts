@@ -13,6 +13,7 @@ import states from "./states.json"
 import transfers from "./transfers.json"
 import settings_other from "./settings_other.json"
 import settings from "./settings.json"
+import settings_center from "./settings_center.json"
 import shares from "./shares.json"
 import storages from "./storages.json"
 import tasks from "./tasks.json"
@@ -30,7 +31,9 @@ export const dict = {
   manage,
   metas,
   settings_other,
-  settings,
+  // settings_center adds settings.groups.* / settings.items.* / settings.home.*
+  // beside the per-setting labels without touching the Crowdin-managed file.
+  settings: { ...settings, ...settings_center },
   shell,
   states,
   shares,

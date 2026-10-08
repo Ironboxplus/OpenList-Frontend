@@ -1,140 +1,137 @@
-import { Box, Flex, Heading, HStack, Icon, VStack } from "@hope-ui/solid"
-import { createMemo, createSignal, For, Match, Show, Switch } from "solid-js"
-import { useRouter, useT } from "~/hooks"
-import { BiSolidRightArrow } from "solid-icons/bi"
-import { onClose } from "./Header"
-import { UserMethods, UserRole } from "~/types"
-import { me } from "~/store"
+import { Box, Heading, Icon, Text, VStack } from "@hope-ui/solid"
+import { Link, useLocation } from "@solidjs/router"
+import { IoHome } from "solid-icons/io"
+import { BsGrid } from "solid-icons/bs"
+import { createMemo, For, Show } from "solid-js"
 import { AnchorWithBase } from "~/components"
-import { Link } from "@solidjs/router"
+import { useRouter, useT } from "~/hooks"
+import {
+  groupSettings,
+  SETTINGS,
+  routePath,
+  visibleSettings,
+  type SettingContribution,
+} from "~/features/settings/registry"
+import { me } from "~/store"
 import { hoverColor, joinBase } from "~/utils"
 import { IconTypes } from "solid-icons"
+import { onClose } from "./Header"
 
-export interface SideMenuItemProps {
-  title: string
+const hashOf = (route: string) =>
+  route.includes("#") ? "#" + route.split("#")[1] : ""
+const KNOWN_HASHES = new Set(
+  SETTINGS.map((s) => hashOf(s.route)).filter((h) => h !== ""),
+)
+
+interface MenuLinkProps {
+  label: string
   to: string
   icon?: IconTypes
-  children?: SideMenuItemProps[]
-  role?: number
-  // Custom visibility predicate; overrides role-based gating when present.
-  // Used for delegated permissions (e.g. a non-admin who may manage user info).
-  show?: () => boolean
+  active: boolean
   external?: true
+  /** Leave the SPA with a full page load (used for "Home"). */
   refresh?: true
 }
 
-const SideMenuItem = (props: SideMenuItemProps) => {
-  const ifShow = createMemo(() => {
-    if (props.show) return props.show()
-    if (!UserMethods.is_admin(me())) {
-      if (props.role === undefined) return false
-      else if (props.role === UserRole.GENERAL && !UserMethods.is_general(me()))
-        return false
-    }
-    return true
-  })
-  return (
-    <Switch fallback={<SideMenuItemWithTo {...props} />}>
-      <Match when={!ifShow()}>{null}</Match>
-      <Match when={props.children}>
-        <SideMenuItemWithChildren {...props} />
-      </Match>
-    </Switch>
-  )
-}
+const MenuLink = (props: MenuLinkProps) => (
+  <AnchorWithBase
+    cancelBase={props.to.startsWith("http")}
+    display="flex"
+    as={Link}
+    href={props.to}
+    onClick={(e: any) => {
+      onClose()
+      if (props.refresh) {
+        e.stopPropagation?.()
+        e.preventDefault?.()
+        window.open(joinBase(props.to), "_self")
+      }
+    }}
+    w="$full"
+    alignItems="center"
+    _hover={{
+      bgColor: props.active ? "$info4" : hoverColor(),
+      textDecoration: "none",
+    }}
+    px="$2"
+    py="$1_5"
+    rounded="$md"
+    cursor="pointer"
+    bgColor={props.active ? "$info4" : ""}
+    color={props.active ? "$info11" : ""}
+    external={props.external}
+    aria-current={props.active ? "page" : undefined}
+  >
+    <Show when={props.icon}>{<Icon mr="$2" as={props.icon} />}</Show>
+    <Heading>{props.label}</Heading>
+  </AnchorWithBase>
+)
 
-const SideMenuItemWithTo = (props: SideMenuItemProps) => {
-  const { pathname } = useRouter()
+/**
+ * Manage sidebar. Generated from the settings registry (the same list the
+ * settings home and the command palette use): one block per group, only the
+ * entries the current user may open.
+ */
+export const SideMenu = () => {
   const t = useT()
-  const isActive = () => pathname() === props.to
-  return (
-    <AnchorWithBase
-      cancelBase={props.to.startsWith("http")}
-      display="flex"
-      as={Link}
-      href={props.to}
-      onClick={(e: any) => {
-        // to(props.to!);
-        onClose()
-        if (props.refresh) {
-          e.stopPropagation?.()
-          e.preventDefault?.()
-          let to = props.to
-          if (!to.startsWith("http")) {
-            to = joinBase(to)
-          }
-          window.open(to, "_self")
-        }
-      }}
-      w="$full"
-      alignItems="center"
-      _hover={{
-        bgColor: isActive() ? "$info4" : hoverColor(),
-        textDecoration: "none",
-      }}
-      px="$2"
-      py="$1_5"
-      rounded="$md"
-      cursor="pointer"
-      bgColor={isActive() ? "$info4" : ""}
-      color={isActive() ? "$info11" : ""}
-      external={props.external}
-      // _active={{ transform: "scale(.95)", transition: "0.1s" }}
-    >
-      <Show when={props.icon}>{<Icon mr="$2" as={props.icon} />}</Show>
-      <Heading>{t(props.title)}</Heading>
-    </AnchorWithBase>
-  )
-}
-
-const SideMenuItemWithChildren = (props: SideMenuItemProps) => {
   const { pathname } = useRouter()
-  const [open, setOpen] = createSignal(pathname().includes(props.to))
-  const t = useT()
-  return (
-    <Box w="$full">
-      <Flex
-        justifyContent="space-between"
-        onClick={() => {
-          setOpen(!open())
-        }}
-        w="$full"
-        alignItems="center"
-        _hover={{
-          bgColor: hoverColor(),
-        }}
-        px="$2"
-        py="$1_5"
-        rounded="$md"
-        cursor="pointer"
-      >
-        <HStack>
-          <Show when={props.icon}>{<Icon mr="$2" as={props.icon} />}</Show>
-          <Heading>{t(props.title)}</Heading>
-        </HStack>
-        <Icon
-          as={BiSolidRightArrow}
-          transform={open() ? "rotate(90deg)" : "none"}
-          transition="transform 0.2s"
-        />
-      </Flex>
-      <Show when={open()}>
-        <Box pl="$2">
-          <SideMenu items={props.children!} />
-        </Box>
-      </Show>
-    </Box>
-  )
-}
+  const location = useLocation()
+  const sections = createMemo(() => groupSettings(visibleSettings(me())))
 
-export const SideMenu = (props: { items: SideMenuItemProps[] }) => {
+  const isActive = (entry: SettingContribution) => {
+    if (entry.external || pathname() !== routePath(entry.route)) return false
+    // Two entries may share a page (plugins / cluster); the hash tells which.
+    const hash = hashOf(entry.route)
+    return hash ? location.hash === hash : !KNOWN_HASHES.has(location.hash)
+  }
+
   return (
-    <VStack p="$2" w="$full" color="$neutral11" spacing="$1">
-      <For each={props.items}>
-        {(item) => {
-          return <SideMenuItem {...item} />
-        }}
+    <VStack p="$2" w="$full" color="$neutral11" spacing="$1" alignItems="stretch">
+      <MenuLink
+        label={t("settings.home.title")}
+        to="/@manage"
+        icon={BsGrid}
+        active={pathname() === "/@manage"}
+      />
+      <For each={sections()}>
+        {(section) => (
+          <Box w="$full" pt="$2">
+            <Text
+              as="h2"
+              px="$2"
+              pb="$1"
+              fontSize="$xs"
+              fontWeight="$semibold"
+              textTransform="uppercase"
+              color="$neutral9"
+            >
+              {t(section.title)}
+            </Text>
+            <VStack w="$full" spacing="$1" alignItems="stretch">
+              <For each={section.items}>
+                {(entry) => (
+                  <MenuLink
+                    label={t(entry.title)}
+                    to={entry.route}
+                    icon={entry.icon}
+                    active={isActive(entry)}
+                    external={entry.external}
+                  />
+                )}
+              </For>
+            </VStack>
+          </Box>
+        )}
       </For>
+      <Box w="$full" pt="$2">
+        <MenuLink
+          label={t("manage.sidemenu.home")}
+          to="/"
+          icon={IoHome}
+          active={false}
+          refresh
+        />
+      </Box>
     </VStack>
   )
 }

@@ -1,10 +1,21 @@
-import { lazy } from "solid-js"
-import { Center, Heading } from "@hope-ui/solid"
-import { trimLeft } from "~/utils"
-import { SideMenuItem, side_menu_items } from "./sidemenu_items"
-import { useManageTitle } from "~/hooks"
+import { Component, lazy, Show } from "solid-js"
+import { Forbidden } from "~/features/shell/states"
+import {
+  canAccess,
+  manageSubPath,
+  SETTINGS,
+  visibleSettings,
+  type SettingPermission,
+} from "~/features/settings/registry"
+import { SettingsHome } from "~/features/settings/SettingsHome"
+import { me } from "~/store"
+import { PROFILE_PATH, routeComponents } from "./route-components"
 
-type Route = Pick<SideMenuItem, "to" | "component">
+interface Route {
+  /** Path below /@manage; "" is the index. */
+  to: string
+  component: Component
+}
 
 const hide_routes: Route[] = [
   {
@@ -49,30 +60,35 @@ const hide_routes: Route[] = [
   },
 ]
 
-const Placeholder = (props: { title: string; to: string }) => {
-  useManageTitle(props.title)
-  return (
-    <Center h="$full">
-      <Heading>{props.title}</Heading>
-    </Center>
-  )
-}
+/** Settings landing page: the registry, filtered to what this user may open. */
+const SettingsIndex = () => <SettingsHome items={visibleSettings(me())} />
 
-const get_routes = (items: SideMenuItem[], acc: Route[] = []) => {
-  items.forEach((item) => {
-    if (item.children) {
-      get_routes(item.children, acc)
-    } else {
-      acc.push({
-        to: trimLeft(item.to!, "/@manage"),
-        component:
-          item.component ||
-          (() => <Placeholder title={item.title} to={item.to || "empty"} />),
-      })
-    }
+/** A page the user lacks permission for shows Forbidden instead of the page. */
+const guarded = (permission: SettingPermission | undefined, Page: Component) => () => (
+  <Show when={canAccess(permission, me())} fallback={<Forbidden />}>
+    <Page />
+  </Show>
+)
+
+const get_routes = (): Route[] => {
+  const acc = new Map<string, Route>()
+  acc.set("", { to: "", component: SettingsIndex })
+  // Profile left the settings list for the account menu but keeps its page.
+  acc.set(PROFILE_PATH, {
+    to: PROFILE_PATH,
+    component: routeComponents[PROFILE_PATH],
   })
-  return acc
+  for (const entry of SETTINGS) {
+    const sub = manageSubPath(entry.route)
+    // Entries that share a page (plugins / cluster) register it once.
+    if (!sub || acc.has(sub)) continue
+    acc.set(sub, {
+      to: sub,
+      component: guarded(entry.permission, routeComponents[sub]),
+    })
+  }
+  return [...acc.values()]
 }
 
-const routes = get_routes(side_menu_items).concat(hide_routes)
+const routes = get_routes().concat(hide_routes)
 export { routes }

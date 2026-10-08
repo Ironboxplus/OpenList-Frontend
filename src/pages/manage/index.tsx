@@ -3,7 +3,6 @@ import { FullLoading, SwitchColorMode, SwitchLanguageWhite } from "~/components"
 import { useT, useTitle } from "~/hooks"
 import { Header } from "./Header"
 import { SideMenu } from "./SideMenu"
-import { side_menu_items } from "./sidemenu_items"
 import { Route, Routes } from "@solidjs/router"
 import { For, Suspense } from "solid-js"
 import { routes } from "./routes"
@@ -31,7 +30,7 @@ const Manage = () => {
           bgColor={useColorModeValue("$background", "$neutral2")()}
           overflowY="auto"
         >
-          <SideMenu items={side_menu_items} />
+          <SideMenu />
           <Center>
             <HStack spacing="$4" p="$2" color="$neutral11">
               <SwitchLanguageWhite />

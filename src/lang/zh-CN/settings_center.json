@@ -1,0 +1,109 @@
+{
+  "home": {
+    "title": "设置",
+    "subtitle": "按你想做的事情分组的全部可配置项。",
+    "search": "搜索设置",
+    "search_placeholder": "搜索设置，例如 限速、SSO、备份",
+    "no_results": "没有找到与“{{query}}”相关的设置。",
+    "clear": "清除搜索",
+    "external": "在新标签页中打开"
+  },
+  "groups": {
+    "site": "站点与外观",
+    "storage": "存储与传输",
+    "indexing": "索引与后台任务",
+    "access": "认证与访问",
+    "extensions": "扩展与集群",
+    "system": "系统维护"
+  },
+  "items": {
+    "site": {
+      "title": "站点",
+      "description": "站点标题、图标、公告与页面注入。"
+    },
+    "style": {
+      "title": "样式",
+      "description": "主题色与自定义外观。"
+    },
+    "preview": {
+      "title": "预览",
+      "description": "文件类型规则、播放器与自动播放。"
+    },
+    "other": {
+      "title": "其他",
+      "description": "离线下载工具与任务线程数。"
+    },
+    "storages": {
+      "title": "存储",
+      "description": "添加、编辑并监控已挂载的存储。"
+    },
+    "shares": {
+      "title": "分享",
+      "description": "管理你创建的分享链接。"
+    },
+    "traffic": {
+      "title": "流量",
+      "description": "客户端与服务端数据流的限速。"
+    },
+    "s3": {
+      "title": "S3",
+      "description": "兼容 S3 的访问密钥与存储桶。"
+    },
+    "ftp": {
+      "title": "FTP",
+      "description": "FTP / SFTP 服务地址、端口与 TLS。"
+    },
+    "transfers": {
+      "title": "传输",
+      "description": "复制、上传、离线下载与同步作业。"
+    },
+    "indexes": {
+      "title": "索引",
+      "description": "搜索索引的构建、更新与忽略规则。"
+    },
+    "users": {
+      "title": "用户",
+      "description": "账户、角色与权限。"
+    },
+    "metas": {
+      "title": "元信息",
+      "description": "目录密码、隐藏文件与说明文件规则。"
+    },
+    "sso": {
+      "title": "单点登录",
+      "description": "OIDC、GitHub 等第三方登录。"
+    },
+    "ldap": {
+      "title": "LDAP",
+      "description": "使用目录服务登录。"
+    },
+    "plugins": {
+      "title": "插件",
+      "description": "安装并管理扩展。"
+    },
+    "cluster": {
+      "title": "集群",
+      "description": "在多个 OpenList 节点之间共享存储。"
+    },
+    "global": {
+      "title": "全局",
+      "description": "链接签名、有效期、隐私等全站开关。"
+    },
+    "dashboard": {
+      "title": "仪表盘",
+      "description": "一眼看清服务器状态与使用情况。"
+    },
+    "backup-restore": {
+      "title": "备份与恢复",
+      "description": "导出与导入完整配置。"
+    },
+    "about": {
+      "title": "关于",
+      "description": "版本、许可与项目链接。"
+    },
+    "docs": {
+      "title": "文档",
+      "description": "OpenList 官网上的使用指南。"
+    }
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "home": {
+    "title": "Settings",
+    "subtitle": "Everything you can configure, grouped by what you want to do.",
+    "search": "Search settings",
+    "search_placeholder": "Search settings, e.g. bandwidth, SSO, backup",
+    "no_results": "No settings match \"{{query}}\".",
+    "clear": "Clear search",
+    "external": "Opens in a new tab"
+  },
+  "groups": {
+    "site": "Site and appearance",
+    "storage": "Storage and transfer",
+    "indexing": "Indexing and background jobs",
+    "access": "Authentication and access",
+    "extensions": "Extensions and cluster",
+    "system": "System maintenance"
+  },
+  "items": {
+    "site": {
+      "title": "Site",
+      "description": "Site title, logo, announcement and page injection."
+    },
+    "style": {
+      "title": "Style",
+      "description": "Theme colour and custom appearance."
+    },
+    "preview": {
+      "title": "Preview",
+      "description": "File type rules, players and autoplay."
+    },
+    "other": {
+      "title": "Other",
+      "description": "Offline download tools and task thread counts."
+    },
+    "storages": {
+      "title": "Storages",
+      "description": "Add, edit and monitor mounted storages."
+    },
+    "shares": {
+      "title": "Shares",
+      "description": "Manage the share links you created."
+    },
+    "traffic": {
+      "title": "Traffic",
+      "description": "Bandwidth limits for client and server streams."
+    },
+    "s3": {
+      "title": "S3",
+      "description": "S3-compatible access keys and buckets."
+    },
+    "ftp": {
+      "title": "FTP",
+      "description": "FTP and SFTP server address, ports and TLS."
+    },
+    "transfers": {
+      "title": "Transfers",
+      "description": "Copy, upload, offline download and sync jobs."
+    },
+    "indexes": {
+      "title": "Indexes",
+      "description": "Search index build, update and ignore rules."
+    },
+    "users": {
+      "title": "Users",
+      "description": "Accounts, roles and permissions."
+    },
+    "metas": {
+      "title": "Metas",
+      "description": "Folder passwords, hidden files and readme rules."
+    },
+    "sso": {
+      "title": "Single Sign-On",
+      "description": "OIDC, GitHub and other third-party login."
+    },
+    "ldap": {
+      "title": "LDAP",
+      "description": "Sign in with a directory server."
+    },
+    "plugins": {
+      "title": "Plugins",
+      "description": "Install and manage extensions."
+    },
+    "cluster": {
+      "title": "Cluster",
+      "description": "Share storages between OpenList nodes."
+    },
+    "global": {
+      "title": "Global",
+      "description": "Link signing, expiry, privacy and other site-wide switches."
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Server status and usage at a glance."
+    },
+    "backup-restore": {
+      "title": "Backup and restore",
+      "description": "Export and import the whole configuration."
+    },
+    "about": {
+      "title": "About",
+      "description": "Version, license and project links."
+    },
+    "docs": {
+      "title": "Documentation",
+      "description": "Official guides on the OpenList website."
+    }
+  }
+}

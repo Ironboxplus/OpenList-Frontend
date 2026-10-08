@@ -278,7 +278,9 @@ const Plugins = () => {
       </VStack>
 
       {/* ---- Cluster storage sharing ---- */}
-      <ClusterConfig />
+      <div id="cluster">
+        <ClusterConfig />
+      </div>
     </VStack>
   )
 }
