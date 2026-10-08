@@ -98,6 +98,24 @@ export const MediaHeaderCard = (props: { item: MediaItem }) => {
             <Show when={props.item.locked}>
               <TbLock class={cn("mt-1 size-4 shrink-0", muted())} />
             </Show>
+            <Show when={admin()}>
+              <button
+                type="button"
+                data-media-edit
+                aria-label={t("media.edit")}
+                title={t("media.edit")}
+                onClick={() => openMediaEditor(mediaPath() ?? "")}
+                class={cn(
+                  focusRing,
+                  "inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-transparent hover:bg-white/15",
+                  backdrop()
+                    ? "text-white"
+                    : "text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <TbEdit class="size-4" />
+              </button>
+            </Show>
           </div>
           <Show
             when={

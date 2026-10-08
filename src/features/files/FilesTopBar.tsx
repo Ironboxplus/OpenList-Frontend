@@ -38,15 +38,23 @@ import {
   getSetting,
   layout,
   LayoutType,
+  me,
   objStore,
   setLayout,
   State,
 } from "~/store"
+import { UserMethods } from "~/types"
 import { bus } from "~/utils/bus"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
 import { fileCrumbs, parentCrumb, type FileCrumb } from "./crumbs"
-import { chooseView, hasPosterView, posterActive } from "../media/state"
+import {
+  chooseView,
+  hasPosterView,
+  mediaReady,
+  openMediaEditor,
+  posterActive,
+} from "../media/state"
 import { PhoneSelectionHeader } from "./PhoneActions"
 import { selectionMode } from "./selection-mode"
 
@@ -264,6 +272,24 @@ const PosterMenuItem = () => {
   )
 }
 
+/** Admin-only: open the media editor for this folder (phone "⋯" menu). */
+const AdminMediaItem = () => {
+  const t = useT()
+  const { pathname } = useRouter()
+  return (
+    <Show when={UserMethods.is_admin(me()) && mediaReady()}>
+      <DropdownMenuItem
+        data-media-info
+        onSelect={() => openMediaEditor(pathname())}
+        class="gap-2"
+      >
+        <TbMovie class="size-4" />
+        {t("media.menu_item")}
+      </DropdownMenuItem>
+    </Show>
+  )
+}
+
 const searchOn = () =>
   objStore.state === State.Folder && getSetting("search_index") !== "none"
 const layoutOn = () => objStore.state === State.Folder
@@ -312,6 +338,7 @@ export const FilesTopRight = (props: { phone: boolean }) => {
                   </For>
                   <PosterMenuItem />
                 </Show>
+                <AdminMediaItem />
               </DropdownMenuContent>
             </DropdownMenu>
           </Show>

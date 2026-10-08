@@ -1,9 +1,15 @@
-import { createEffect, on, onCleanup } from "solid-js"
+import { createEffect, on, onCleanup, Show } from "solid-js"
 import { useRouter } from "~/hooks"
 import { objStore, State } from "~/store"
 import { mediaClient } from "./client"
+import { MediaEditor } from "./MediaEditor"
 import { MediaHeader } from "./MediaHeader"
-import { mediaTick, setMediaFor, setMediaInvalidator } from "./state"
+import {
+  editorPath,
+  mediaTick,
+  setMediaFor,
+  setMediaInvalidator,
+} from "./state"
 
 /**
  * Lazily loaded host of the media view: asks the backend once per directory
@@ -36,6 +42,7 @@ const MediaController = () => {
   return (
     <>
       <MediaHeader />
+      <Show when={editorPath()}>{(p) => <MediaEditor path={p()} />}</Show>
     </>
   )
 }

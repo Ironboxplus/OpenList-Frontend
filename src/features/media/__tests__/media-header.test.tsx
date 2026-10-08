@@ -32,7 +32,7 @@ vi.mock("../client", () => ({
 
 import * as client from "../client"
 import { MediaHeaderCard } from "../MediaHeader"
-import { setMediaFor } from "../state"
+import { setMediaFor, editorPath, openMediaEditor } from "../state"
 
 const item = (over: Partial<MediaItem> = {}): MediaItem => ({
   path: "/lib/Show",
@@ -100,5 +100,17 @@ describe("MediaHeaderCard", () => {
     render(() => <MediaHeaderCard item={item({ kind: "collection" })} />)
     expect(document.querySelector("[data-media-poster]")).toBeNull()
     expect(screen.getByText("A Show")).toBeTruthy()
+  })
+
+  it("the edit button asks for the editor on this folder (admin)", () => {
+    setMediaFor("/lib/Show", {
+      item: item(),
+      children: [],
+      episodes: [],
+    } as MediaFs)
+    render(() => <MediaHeaderCard item={item()} />)
+    fireEvent.click(document.querySelector("[data-media-edit]")!)
+    expect(editorPath()).toBe("/lib/Show")
+    openMediaEditor("") // reset is not needed: afterEach clears the media data only
   })
 })

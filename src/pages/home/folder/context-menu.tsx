@@ -18,6 +18,9 @@ import {
 import { players } from "../previews/video_box"
 import { BsPlayCircleFill } from "solid-icons/bs"
 import { isArchive } from "~/store/archive"
+import { TbMovie } from "solid-icons/tb"
+import { mediaReady, openMediaEditor } from "~/features/media/state"
+import { pathJoin } from "~/utils/path"
 import axios from "axios"
 
 const ItemContent = (props: { name: string }) => {
@@ -45,7 +48,7 @@ export const ContextMenu = () => {
     return UserMethods.is_admin(me()) || getSettingBool("package_download")
   }
   const { rawLink } = useLink()
-  const { isShare } = useRouter()
+  const { isShare, pathname } = useRouter()
   return (
     <Menu
       id={1}
@@ -135,6 +138,19 @@ export const ContextMenu = () => {
         <ItemContent name="offline_download_torrent" />
       </Item>
       <Show when={oneChecked()}>
+        <Item
+          hidden={() =>
+            !UserMethods.is_admin(me()) || !mediaReady() || !objStore.obj
+          }
+          onClick={({ props }) => {
+            openMediaEditor(pathJoin(pathname(), props.name))
+          }}
+        >
+          <HStack spacing="$2">
+            <Icon as={TbMovie} boxSize="$7" p="$0_5" color="$info9" />
+            <Text>{t("media.menu_item")}</Text>
+          </HStack>
+        </Item>
         <Item
           onClick={({ props }) => {
             if (props.is_dir) {

@@ -31,9 +31,17 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu"
 import { focusRing } from "~/components/ui/focus"
-import { usePath, useT } from "~/hooks"
+import { usePath, useRouter, useT } from "~/hooks"
+import { UserMethods } from "~/types"
+import { invalidateMedia, mediaReady, openMediaEditor } from "../media/state"
 import { isTocVisible, setTocDisabled } from "~/components"
-import { haveSelected, selectAll, selectedObjs, toggleCheckbox } from "~/store"
+import {
+  haveSelected,
+  me,
+  selectAll,
+  selectedObjs,
+  toggleCheckbox,
+} from "~/store"
 import { cn } from "~/utils/cn"
 import { CopyLinkItems, DownloadItems } from "./BatchMenus"
 import { runTool, useFileAbilities, type ToolName } from "./file-actions"
@@ -76,6 +84,7 @@ export const ActionBar = () => {
   const t = useT()
   const can = useFileAbilities()
   const { refresh } = usePath()
+  const { pathname } = useRouter()
   const tt = (key: string) => t(`home.toolbar.${key}`)
   return (
     <div
@@ -120,7 +129,10 @@ export const ActionBar = () => {
               name="refresh"
               icon={TbRefresh}
               label={tt("refresh")}
-              onClick={() => refresh(undefined, true)}
+              onClick={() => {
+                invalidateMedia(pathname())
+                void refresh(undefined, true)
+              }}
             />
             <ActionButton
               name="local_settings"
@@ -160,6 +172,14 @@ export const ActionBar = () => {
                 <Show when={isTocVisible()}>
                   <DropdownMenuItem onSelect={() => setTocDisabled((d) => !d)}>
                     {tt("toggle_markdown_toc")}
+                  </DropdownMenuItem>
+                </Show>
+                <Show when={UserMethods.is_admin(me()) && mediaReady()}>
+                  <DropdownMenuItem
+                    data-media-info
+                    onSelect={() => openMediaEditor(pathname())}
+                  >
+                    {t("media.menu_item")}
                   </DropdownMenuItem>
                 </Show>
                 <DropdownMenuItem onSelect={toggleCheckbox} class="gap-2">
