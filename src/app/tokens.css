@@ -1,0 +1,170 @@
+/* shadcn-style design tokens: card surfaces, light and dark. */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 0.75rem;
+  --background: hsl(220 20% 97%);
+  --foreground: hsl(224 71% 4%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(224 71% 4%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(224 71% 4%);
+  --primary: hsl(221 83% 53%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(220 14% 94%);
+  --secondary-foreground: hsl(224 30% 15%);
+  --muted: hsl(220 14% 94%);
+  --muted-foreground: hsl(220 9% 40%);
+  --accent: hsl(220 14% 92%);
+  --accent-foreground: hsl(224 30% 15%);
+  --destructive: hsl(0 72% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --success: hsl(142 64% 32%);
+  --warning: hsl(32 95% 40%);
+  --border: hsl(220 13% 88%);
+  --input: hsl(220 13% 84%);
+  --ring: hsl(221 83% 53%);
+}
+
+.dark {
+  --background: hsl(224 25% 7%);
+  --foreground: hsl(210 20% 96%);
+  --card: hsl(224 22% 10%);
+  --card-foreground: hsl(210 20% 96%);
+  --popover: hsl(224 22% 10%);
+  --popover-foreground: hsl(210 20% 96%);
+  --primary: hsl(217 91% 62%);
+  --primary-foreground: hsl(224 40% 8%);
+  --secondary: hsl(223 18% 16%);
+  --secondary-foreground: hsl(210 20% 96%);
+  --muted: hsl(223 18% 16%);
+  --muted-foreground: hsl(218 12% 66%);
+  --accent: hsl(223 18% 18%);
+  --accent-foreground: hsl(210 20% 96%);
+  --destructive: hsl(0 72% 58%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --success: hsl(142 60% 52%);
+  --warning: hsl(38 92% 56%);
+  --border: hsl(223 16% 20%);
+  --input: hsl(223 16% 24%);
+  --ring: hsl(217 91% 62%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Without preflight, borders would fall back to currentColor. Declared before
+   the utilities import so `border-input` etc. still win. */
+[class*="border"] {
+  border-color: var(--border);
+}
+
+/*
+ * Stand-ins for the tailwindcss-animate utilities the copied shadcn-solid
+ * components use (animate-in / fade-in-0 / zoom-in-95 / slide-in-from-*).
+ */
+@keyframes ui-enter {
+  from {
+    opacity: var(--ui-enter-opacity, 1);
+    transform: translate3d(var(--ui-enter-x, 0), var(--ui-enter-y, 0), 0)
+      scale(var(--ui-enter-scale, 1));
+  }
+}
+
+@keyframes ui-exit {
+  to {
+    opacity: var(--ui-exit-opacity, 1);
+    transform: translate3d(var(--ui-exit-x, 0), var(--ui-exit-y, 0), 0)
+      scale(var(--ui-exit-scale, 1));
+  }
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+@utility animate-in {
+  animation: ui-enter 150ms ease-out;
+}
+@utility animate-out {
+  animation: ui-exit 150ms ease-in forwards;
+}
+@utility fade-in-0 {
+  --ui-enter-opacity: 0;
+}
+@utility fade-out-0 {
+  --ui-exit-opacity: 0;
+}
+@utility zoom-in-95 {
+  --ui-enter-scale: 0.95;
+}
+@utility zoom-out-95 {
+  --ui-exit-scale: 0.95;
+}
+@utility slide-in-from-top {
+  --ui-enter-y: -100%;
+}
+@utility slide-in-from-bottom {
+  --ui-enter-y: 100%;
+}
+@utility slide-in-from-left {
+  --ui-enter-x: -100%;
+}
+@utility slide-in-from-right {
+  --ui-enter-x: 100%;
+}
+@utility slide-out-to-top {
+  --ui-exit-y: -100%;
+}
+@utility slide-out-to-bottom {
+  --ui-exit-y: 100%;
+}
+@utility slide-out-to-left {
+  --ui-exit-x: -100%;
+}
+@utility slide-out-to-right {
+  --ui-exit-x: 100%;
+}
+@utility slide-in-from-top-48 {
+  --ui-enter-y: -48%;
+}
+@utility slide-out-to-top-48 {
+  --ui-exit-y: -48%;
+}
+@utility slide-in-from-left-half {
+  --ui-enter-x: -50%;
+}
+@utility slide-out-to-left-half {
+  --ui-exit-x: -50%;
+}
