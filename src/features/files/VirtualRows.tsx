@@ -48,9 +48,12 @@ export const VirtualRows = (props: {
     const ro = new ResizeObserver(measureMargin)
     ro.observe(document.body)
     onCleanup(() => ro.disconnect())
-    setVirtualScroller((index) =>
-      virtualizer.scrollToIndex(index, { align: "center" }),
-    )
+    // Scroll by offset rather than virtualizer.scrollToIndex: callers retry
+    // every frame while the page settles and need each call to actually move.
+    setVirtualScroller((index) => {
+      const target = virtualizer.getOffsetForIndex(index, "center")
+      if (target) window.scrollTo({ top: target[0] })
+    })
     onCleanup(() => setVirtualScroller(undefined))
   })
 

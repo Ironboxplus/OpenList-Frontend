@@ -57,7 +57,7 @@ export const DirTasksCard = () => {
       <div
         data-dir-tasks
         role="status"
-        class="flex flex-col gap-1.5 rounded-lg border bg-card px-3 py-2 text-sm text-card-foreground"
+        class="flex w-full flex-col gap-1.5 rounded-lg border bg-card px-3 py-2 text-sm text-card-foreground"
       >
         <div class="flex items-center gap-2">
           <TbListDetails class="size-4 shrink-0 text-muted-foreground" />

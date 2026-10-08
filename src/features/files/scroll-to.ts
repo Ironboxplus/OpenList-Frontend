@@ -18,20 +18,6 @@ export const scrollToIndex = (index: number) => {
   else rowAt(index)?.scrollIntoView?.({ block: "center" })
 }
 
-/** Row element for `index`, waiting a few frames for a virtualized row to mount. */
-export const whenRowMounted = (
-  index: number,
-  frames = 30,
-): Promise<HTMLElement | undefined> =>
-  new Promise((resolve) => {
-    const tick = (left: number) => {
-      const el = rowAt(index)
-      if (el || left <= 0) return resolve(el ?? undefined)
-      requestAnimationFrame(() => tick(left - 1))
-    }
-    tick(frames)
-  })
-
 /**
  * Bring the entry called `name` into view and flash it (CSS animation, about
  * two seconds). Returns false when the directory has no such entry.
@@ -42,8 +28,18 @@ export const revealByName = async (
 ): Promise<boolean> => {
   const index = names.indexOf(name)
   if (index < 0) return false
-  scrollToIndex(index)
-  const el = await whenRowMounted(index)
+  // The list may still be mounting (its virtualizer registers late), so keep
+  // asking for the scroll until the row exists.
+  let el: HTMLElement | undefined
+  for (let i = 0; i < 600 && !el; i++) {
+    scrollToIndex(index)
+    await new Promise((r) => requestAnimationFrame(r))
+    const row = rowAt(index)
+    const r = row?.getBoundingClientRect()
+    // Mounted is not enough: an early scroll request can be clamped to the top
+    // while the list is still sizing itself, so wait until the row is on screen.
+    if (row && r && r.bottom > 0 && r.top < window.innerHeight) el = row
+  }
   if (!el) return false
   el.removeAttribute("data-highlight")
   // Restart the animation if the same row is revealed twice in a row.

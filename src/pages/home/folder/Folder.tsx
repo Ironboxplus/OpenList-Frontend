@@ -11,6 +11,7 @@ import {
 import { ActionBar } from "~/features/files/ActionBar"
 import { FilesEmpty } from "~/features/files/FilesState"
 import { PhoneFab } from "~/features/files/PhoneActions"
+import { selectionMode } from "~/features/files/selection-mode"
 import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
 import { layout } from "~/store"
 import { ContextMenu } from "./context-menu"
@@ -78,7 +79,9 @@ const Folder = () => {
     <>
       <Show when={shellActive()}>
         <Show when={phoneShell()} fallback={<ActionBar />}>
-          <PhoneFab />
+          <Show when={!selectionMode()}>
+            <PhoneFab />
+          </Show>
         </Show>
       </Show>
       <Show

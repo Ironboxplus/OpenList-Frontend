@@ -80,7 +80,7 @@ export const ActionBar = () => {
   return (
     <div
       data-files-actionbar
-      class="sticky z-[5] flex h-11 items-center gap-1 border-b bg-card px-2 text-card-foreground"
+      class="sticky z-[5] flex h-11 w-full items-center gap-1 border-b bg-card px-2 text-card-foreground"
       style={{ top: "var(--shell-top)" }}
     >
       <Show

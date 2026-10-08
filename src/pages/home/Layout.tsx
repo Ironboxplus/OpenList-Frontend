@@ -1,6 +1,7 @@
 import { Markdown } from "~/components"
 import { useTitle } from "~/hooks"
-import { getSetting } from "~/store"
+import { getSetting, me } from "~/store"
+import { UserMethods } from "~/types"
 import { notify } from "~/utils"
 import { Body } from "./Body"
 import { Footer } from "./Footer"
@@ -23,7 +24,9 @@ const Index = () => {
   // is a card at the top of the content (see AnnouncementCard).
   const announcement = getSetting("announcement")
   onMount(() => {
-    if (announcement && !shellActive()) {
+    // shellActive() is still false on first mount (the shell flips it in an
+    // effect), so decide from who is signed in: only guests get the toast.
+    if (announcement && UserMethods.is_guest(me())) {
       notify.render(<Markdown children={announcement} />)
     }
   })
