@@ -271,12 +271,10 @@ describe("TaskCard: pack stages", () => {
         task={snap({
           stage: "packing",
           pack_stats: {
-            dirs: 2,
             packed_files: 120,
             packs: 3,
             bytes_in: 10,
             bytes_out: 5,
-            skipped_dirs: 0,
             dead_removed: 0,
           },
         })}
@@ -293,12 +291,10 @@ describe("TaskCard: pack stages", () => {
         task={snap({
           stage: "unpacking",
           pack_stats: {
-            dirs: 0,
             packed_files: 0,
             packs: 0,
             bytes_in: 0,
             bytes_out: 0,
-            skipped_dirs: 0,
             dead_removed: 0,
             unpacked_files: 42,
           },

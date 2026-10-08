@@ -92,22 +92,33 @@ export interface SyncSpec {
 export interface PackOptions {
   enabled: boolean
   threshold: number
-  min_files: number
+  /** Absent on backends that pack per job instead of per folder. */
+  min_files?: number
   max_pack_bytes: number
   store_suffixes?: string[]
 }
 
-/** Mirrors internal/syncjob PackStats. */
+/**
+ * Mirrors internal/syncjob PackStats. Backends differ in which fields they
+ * send (older: dirs, skipped_dirs, packs; job-level packs: small_files,
+ * packs_written, packs_total, ...), so everything is optional and the UI
+ * renders whatever is present.
+ */
 export interface PackStats {
-  dirs: number
-  packed_files: number
-  packs: number
-  bytes_in: number
-  bytes_out: number
-  skipped_dirs: number
-  dead_removed: number
+  small_files?: number
+  packed_files?: number
+  /** Older backends call this `packs`. */
+  packs?: number
+  packs_written?: number
+  packs_total?: number
+  bytes_in?: number
+  bytes_out?: number
+  dead_removed?: number
+  compacted_packs?: number
   /** A loose copy at dst that differs from the packed member; it was kept. */
   conflicts?: number
+  loose_removed?: number
+  v1_migrated_dirs?: number
   unpacked_files?: number
   unpacked_bytes?: number
   packs_fetched?: number

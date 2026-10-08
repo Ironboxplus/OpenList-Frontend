@@ -129,12 +129,10 @@ describe("validatePack", () => {
 describe("stats", () => {
   it("saved percent is the share of bytes the packs spared", () => {
     const s = {
-      dirs: 1,
       packed_files: 10,
       packs: 1,
       bytes_in: 1000,
       bytes_out: 400,
-      skipped_dirs: 0,
       dead_removed: 0,
     }
     expect(packSavedPercent(s)).toBe(60)
@@ -146,5 +144,17 @@ describe("stats", () => {
     expect(packStage("unpacking")).toBe("unpacking")
     expect(packStage("transferring")).toBeUndefined()
     expect(packStage(undefined)).toBeUndefined()
+  })
+})
+
+describe("backends without min_files", () => {
+  const { min_files: _drop, ...noMin } = defaults
+  it("has no min-files field in the form and none in the body", () => {
+    const f = { ...packFormFrom(noMin), pack: true }
+    expect(f.minFiles).toBeUndefined()
+    expect(validatePack("copy", f)).toBeUndefined()
+    expect(packSpecPart("copy", f)).toEqual({
+      pack: { enabled: true, threshold: 8 << 20, max_pack_bytes: 1 << 30 },
+    })
   })
 })

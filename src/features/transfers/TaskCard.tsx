@@ -105,7 +105,7 @@ export const TaskCard = (props: TaskCardProps) => {
         stage === "packing"
           ? t("transfers.card.packing", {
               files: ps?.packed_files ?? 0,
-              packs: ps?.packs ?? 0,
+              packs: ps?.packs_written ?? ps?.packs ?? 0,
             })
           : t("transfers.card.unpacking", { files: ps?.unpacked_files ?? 0 }),
       )

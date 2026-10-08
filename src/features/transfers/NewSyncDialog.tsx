@@ -324,20 +324,22 @@ export const NewSyncDialog = (props: {
                       value={threshold() ?? packForm()!.threshold}
                       onChange={setThreshold}
                     />
-                    <TextFieldRoot
-                      value={minFiles() ?? packForm()!.minFiles}
-                      onChange={setMinFiles}
-                    >
-                      <TextFieldLabel>
-                        {t("transfers.form.pack_min_files")}
-                      </TextFieldLabel>
-                      <TextField
-                        type="number"
-                        min="1"
-                        inputmode="numeric"
-                        data-testid="sync-pack-min-files"
-                      />
-                    </TextFieldRoot>
+                    <Show when={packForm()!.minFiles !== undefined}>
+                      <TextFieldRoot
+                        value={minFiles() ?? packForm()!.minFiles ?? ""}
+                        onChange={setMinFiles}
+                      >
+                        <TextFieldLabel>
+                          {t("transfers.form.pack_min_files")}
+                        </TextFieldLabel>
+                        <TextField
+                          type="number"
+                          min="1"
+                          inputmode="numeric"
+                          data-testid="sync-pack-min-files"
+                        />
+                      </TextFieldRoot>
+                    </Show>
                     <SizeField
                       testid="sync-pack-max"
                       label={t("transfers.form.pack_max")}

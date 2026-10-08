@@ -49,7 +49,8 @@ export interface PackForm {
   pack: boolean
   unpack: boolean
   threshold: SizeInput
-  minFiles: string
+  /** Undefined when the backend has no such option. */
+  minFiles: string | undefined
   maxPack: SizeInput
 }
 
@@ -58,7 +59,7 @@ export const packFormFrom = (d: PackOptions): PackForm => ({
   pack: false,
   unpack: false,
   threshold: splitSize(d.threshold),
-  minFiles: String(d.min_files),
+  minFiles: d.min_files === undefined ? undefined : String(d.min_files),
   maxPack: splitSize(d.max_pack_bytes),
 })
 
@@ -69,7 +70,7 @@ export const validatePack = (mode: Mode, f: PackForm): string | undefined => {
   if (!f.pack) return undefined
   const bad = (s: SizeInput) =>
     s.value.trim() !== "" && sizeBytes(s) === undefined
-  const files = f.minFiles.trim()
+  const files = (f.minFiles ?? "").trim()
   const filesBad =
     files !== "" && !(Number.isInteger(Number(files)) && Number(files) > 0)
   return bad(f.threshold) || bad(f.maxPack) || filesBad
@@ -89,7 +90,12 @@ export const packSpecPart = (
   const threshold = sizeBytes(f.threshold)
   if (threshold !== undefined) pack.threshold = threshold
   const files = Number(f.minFiles)
-  if (f.minFiles.trim() !== "" && Number.isInteger(files) && files > 0) {
+  if (
+    f.minFiles !== undefined &&
+    f.minFiles.trim() !== "" &&
+    Number.isInteger(files) &&
+    files > 0
+  ) {
     pack.min_files = files
   }
   const max = sizeBytes(f.maxPack)
@@ -101,7 +107,15 @@ export const packSpecPart = (
 export const packSavedPercent = (
   s: PackStats | undefined,
 ): number | undefined => {
-  if (!s || !s.bytes_in || s.bytes_in <= 0 || s.bytes_out <= 0) return undefined
+  if (
+    !s ||
+    !s.bytes_in ||
+    s.bytes_in <= 0 ||
+    !s.bytes_out ||
+    s.bytes_out <= 0
+  ) {
+    return undefined
+  }
   return Math.round((1 - s.bytes_out / s.bytes_in) * 100)
 }
 

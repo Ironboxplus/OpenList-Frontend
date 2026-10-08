@@ -53,6 +53,25 @@ const Field = (props: { label: string; children: JSX.Element }) => (
   </div>
 )
 
+/** Counters of a packing job, shown when the backend sends them. */
+const PACK_ROWS: {
+  key: keyof PackStats
+  label: string
+  hideZero?: boolean
+  warn?: boolean
+}[] = [
+  { key: "small_files", label: "pack_small_files" },
+  { key: "packed_files", label: "pack_packed_files" },
+  { key: "packs_written", label: "pack_packs_written" },
+  { key: "packs", label: "pack_packs_written" },
+  { key: "packs_total", label: "pack_packs_total" },
+  { key: "compacted_packs", label: "pack_compacted", hideZero: true },
+  { key: "loose_removed", label: "pack_loose_removed", hideZero: true },
+  { key: "v1_migrated_dirs", label: "pack_v1_migrated", hideZero: true },
+  { key: "dead_removed", label: "pack_dead", hideZero: true },
+  { key: "conflicts", label: "pack_conflicts", hideZero: true, warn: true },
+]
+
 /** Packing / unpacking progress of a job that has either switched on. */
 export const PackStatsBlock = (props: { stats: PackStats; stage?: string }) => {
   const t = useT()
@@ -92,41 +111,38 @@ export const PackStatsBlock = (props: { stats: PackStats; stage?: string }) => {
             </>
           }
         >
-          <Field label={t("transfers.detail.pack_dirs")}>
-            {props.stats.dirs}
-            <Show when={props.stats.skipped_dirs > 0}>
-              {" · "}
-              {t("transfers.detail.pack_skipped", {
-                count: props.stats.skipped_dirs,
-              })}
-            </Show>
-          </Field>
-          <Field label={t("transfers.detail.pack_files")}>
-            {props.stats.packed_files} → {props.stats.packs}
-          </Field>
-          <Field label={t("transfers.detail.pack_bytes")}>
-            {formatBytes(props.stats.bytes_in)} →{" "}
-            {formatBytes(props.stats.bytes_out)}
-            <Show when={saved() !== undefined}>
-              <span data-testid="pack-ratio">
-                {" · "}
-                {t("transfers.detail.pack_saved", { percent: saved()! })}
-              </span>
-            </Show>
-          </Field>
-          <Show when={(props.stats.conflicts ?? 0) > 0}>
-            <Field label={t("transfers.detail.pack_conflicts")}>
-              <span
-                data-testid="pack-conflicts"
-                class="font-medium text-amber-600 dark:text-amber-400"
+          <For each={PACK_ROWS}>
+            {(row) => (
+              <Show
+                when={
+                  props.stats[row.key] !== undefined &&
+                  (!row.hideZero || props.stats[row.key]! > 0)
+                }
               >
-                {props.stats.conflicts}
-              </span>
-            </Field>
-          </Show>
-          <Show when={props.stats.dead_removed > 0}>
-            <Field label={t("transfers.detail.pack_dead")}>
-              {props.stats.dead_removed}
+                <Field label={t(`transfers.detail.${row.label}`)}>
+                  <span
+                    data-testid={`pack-${row.key}`}
+                    class={cn(
+                      row.warn &&
+                        "font-medium text-amber-600 dark:text-amber-400",
+                    )}
+                  >
+                    {props.stats[row.key]}
+                  </span>
+                </Field>
+              </Show>
+            )}
+          </For>
+          <Show when={props.stats.bytes_in !== undefined}>
+            <Field label={t("transfers.detail.pack_bytes")}>
+              {formatBytes(props.stats.bytes_in)} →{" "}
+              {formatBytes(props.stats.bytes_out)}
+              <Show when={saved() !== undefined}>
+                <span data-testid="pack-ratio">
+                  {" · "}
+                  {t("transfers.detail.pack_saved", { percent: saved()! })}
+                </span>
+              </Show>
             </Field>
           </Show>
         </Show>
