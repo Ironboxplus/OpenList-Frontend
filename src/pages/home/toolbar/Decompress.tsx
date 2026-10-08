@@ -95,6 +95,7 @@ export const Decompress = () => {
           overwrite(),
         )
         handleRespWithNotifySuccess(resp, () => {
+          bus.emit("tasks:refresh")
           refresh()
           onClose()
         })

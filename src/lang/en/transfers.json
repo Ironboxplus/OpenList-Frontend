@@ -1,0 +1,178 @@
+{
+  "title": "Transfers",
+  "filter": {
+    "all": "All",
+    "upload": "Upload",
+    "copy": "Copy",
+    "move": "Move",
+    "offline": "Offline download",
+    "decompress": "Extract",
+    "sync": "Sync"
+  },
+  "section": {
+    "active": "In progress",
+    "failed": "Failed",
+    "done": "Completed",
+    "history": "History"
+  },
+  "empty": {
+    "active": "Nothing is running right now.",
+    "failed": "No failed tasks.",
+    "done": "No completed tasks yet.",
+    "history": "No sync history yet."
+  },
+  "loading_failed": "Could not load tasks.",
+  "show_more": "Show all {{count}}",
+  "state": {
+    "queued": "Queued",
+    "running": "Running",
+    "waiting_retry": "Waiting to retry",
+    "recovering": "Recovering",
+    "canceling": "Canceling",
+    "canceled": "Canceled",
+    "failed": "Failed",
+    "succeeded": "Succeeded",
+    "partial_success": "Partly succeeded"
+  },
+  "type": {
+    "file": {
+      "upload": "Upload",
+      "copy": "Copy",
+      "move": "Move"
+    },
+    "offline": {
+      "download": "Offline download",
+      "transfer": "Offline transfer"
+    },
+    "archive": {
+      "extract": "Extract",
+      "upload": "Extract upload"
+    },
+    "sync": {
+      "copy": "Sync: copy",
+      "sync": "Sync: mirror",
+      "bisync": "Sync: two-way",
+      "check": "Sync: check"
+    }
+  },
+  "action": {
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "delete": "Delete",
+    "clear_done": "Clear completed",
+    "clear_succeeded": "Clear succeeded",
+    "retry_failed": "Retry all"
+  },
+  "confirm": {
+    "delete_title": "Delete this task record?",
+    "delete_desc": "The record is removed from the list. Files already transferred are not touched.",
+    "cancel": "Keep",
+    "ok": "Delete"
+  },
+  "card": {
+    "transferred": "{{done}} / {{total}}",
+    "discovered": "Transferred {{done}} of {{total}} found so far",
+    "total": "Total {{total}}",
+    "files": "{{done}} / {{total}} files",
+    "speed": "{{speed}}/s",
+    "eta": "{{eta}} left",
+    "show_error": "Show full error",
+    "hide_error": "Collapse"
+  },
+  "sync": {
+    "rapid": "Instant {{count}} ({{saved}} saved)",
+    "uploaded": "Uploaded {{count}} ({{bytes}})",
+    "match": "Unchanged {{count}}",
+    "errors": "Errors {{count}}",
+    "new_job": "New sync job",
+    "bwlimit": "Bandwidth limit"
+  },
+  "detail": {
+    "title": "Task details",
+    "tab": {
+      "overview": "Overview",
+      "transferring": "Transferring",
+      "events": "Events"
+    },
+    "id": "ID",
+    "type": "Type",
+    "state": "State",
+    "source": "Source",
+    "destination": "Destination",
+    "creator": "Creator",
+    "started": "Started",
+    "ended": "Ended",
+    "raw_name": "Original task name",
+    "error": "Error",
+    "phase": "Phase",
+    "spec": "Job settings",
+    "counters": "Counters",
+    "stats": "Live stats",
+    "mode": "Mode",
+    "filters": "Filters",
+    "none": "None",
+    "no_transferring": "No file is being transferred right now.",
+    "no_events": "No events recorded.",
+    "events_limit": "Showing the latest {{count}} events.",
+    "event_filter_all": "All",
+    "loading": "Loading…",
+    "bytes": "Data",
+    "files": "Files",
+    "speed": "Speed / ETA",
+    "progress": "Progress"
+  },
+  "event": {
+    "only_in_src": "Only in source",
+    "only_in_dst": "Only in destination",
+    "differ": "Differs",
+    "error": "Error",
+    "uploaded": "Uploaded",
+    "rapid": "Instant upload"
+  },
+  "counter": {
+    "match": "Unchanged",
+    "differ": "Differ",
+    "only_in_src": "Only in source",
+    "only_in_dst": "Only in destination",
+    "errors": "Errors",
+    "uploaded": "Uploaded",
+    "uploaded_bytes": "Uploaded bytes",
+    "rapid_uploads": "Instant uploads",
+    "rapid_bytes": "Bytes saved"
+  },
+  "form": {
+    "title": "New sync job",
+    "mode": "Mode",
+    "mode_copy": "Copy (add and update)",
+    "mode_sync": "Sync (mirror, deletes extras)",
+    "mode_bisync": "Bisync (two-way)",
+    "mode_check": "Check (compare only)",
+    "src": "Source",
+    "dst": "Destination",
+    "path_hint": "/mount/path or local:/absolute/path",
+    "dry_run": "Dry run",
+    "size_only": "Compare size only",
+    "track_renames": "Track renames",
+    "resync": "Resync",
+    "force": "Force",
+    "filters": "Filter rules",
+    "filters_hint": "One rule per line, for example: - *.tmp",
+    "transfers": "Parallel transfers",
+    "checkers": "Parallel checkers",
+    "max_delete": "Max deletes",
+    "optional": "Optional",
+    "submit": "Start",
+    "cancel": "Cancel",
+    "required": "Source and destination are required.",
+    "started": "Sync job started"
+  },
+  "bw": {
+    "title": "Bandwidth limit",
+    "current": "Current limit",
+    "unlimited": "Unlimited",
+    "rate": "New limit",
+    "hint": "For example 10M, 10M:2M, or off",
+    "apply": "Apply",
+    "applied": "Bandwidth limit updated"
+  }
+}

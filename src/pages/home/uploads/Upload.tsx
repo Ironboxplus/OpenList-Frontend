@@ -20,7 +20,7 @@ import {
   RiDocumentFolderUploadFill,
   RiDocumentFileUploadFill,
 } from "solid-icons/ri"
-import { getFileSize, notify, pathJoin } from "~/utils"
+import { bus, getFileSize, notify, pathJoin } from "~/utils"
 import { asyncPool } from "~/utils/async_pool"
 import { createStore } from "solid-js/store"
 import { UploadFileProps, StatusBadge } from "./types"
@@ -132,6 +132,7 @@ const Upload = () => {
       if (!err) {
         setUpload(path, "status", "success")
         setUpload(path, "progress", 100)
+        if (uploadConfig.asTask) bus.emit("tasks:refresh")
       } else {
         setUpload(path, "status", "error")
         setUpload(path, "msg", err.message)

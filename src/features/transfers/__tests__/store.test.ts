@@ -39,6 +39,7 @@ const harness = (over: Partial<StoreDeps> = {}, undone: TacheRaw[] = []) => {
     postTache: vi.fn(() => ok(null)) as any,
     fetchSyncList: vi.fn(() => ok([])) as any,
     fetchSyncHistory: vi.fn(() => ok([])) as any,
+    fetchSyncJob: vi.fn(() => ok(null)) as any,
     cancelSync: vi.fn(() => ok(null)) as any,
     isAdmin: () => false,
     isHidden: () => hidden.v,
@@ -202,7 +203,10 @@ describe("sync capability", () => {
     const fetchSyncList = vi.fn(() =>
       Promise.resolve({ code, message: "nope", data: null }),
     )
-    const h = harness({ isAdmin: () => true, fetchSyncList: fetchSyncList as any })
+    const h = harness({
+      isAdmin: () => true,
+      fetchSyncList: fetchSyncList as any,
+    })
     const s = createTransfersStore(h.deps)
     await s.refresh()
     expect(s.syncCapability()).toBe("no")
@@ -328,7 +332,11 @@ describe("failed-unseen count", () => {
   it("counts failed tasks until they are marked seen, and persists that", async () => {
     const h = harness({}, [rawTask({ id: "9", state: 7, error: "x" })])
     ;(h.deps.fetchTache as any) = vi.fn((type: string, done: boolean) =>
-      ok(type === "copy" && done ? [rawTask({ id: "9", state: 7, error: "x" })] : []),
+      ok(
+        type === "copy" && done
+          ? [rawTask({ id: "9", state: 7, error: "x" })]
+          : [],
+      ),
     )
     const s = createTransfersStore(h.deps)
     await s.refresh()

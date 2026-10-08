@@ -11,6 +11,7 @@ export const transfers = createTransfersStore({
   postTache: api.postTache,
   fetchSyncList: api.fetchSyncList,
   fetchSyncHistory: () => api.fetchSyncHistory(50),
+  fetchSyncJob: (id) => api.fetchSyncJob(id, true),
   cancelSync: api.cancelSync,
   isAdmin: () => UserMethods.is_admin(me()),
   isHidden: () => document.hidden,

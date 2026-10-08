@@ -96,6 +96,7 @@ export const Copy = () => {
           merge(),
         )
         handleRespWithNotifySuccess(resp, () => {
+          bus.emit("tasks:refresh")
           refresh()
           onClose()
         })
@@ -165,6 +166,7 @@ export const Move = () => {
           skipExisting(),
         )
         handleRespWithNotifySuccess(resp, () => {
+          bus.emit("tasks:refresh")
           refresh()
           onClose()
         })

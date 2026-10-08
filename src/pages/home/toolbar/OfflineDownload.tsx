@@ -162,6 +162,7 @@ export const OfflineDownload = () => {
           deletePolicy(),
         )
         handleRespWithNotifySuccess(resp, () => {
+          bus.emit("tasks:refresh")
           onClose()
         })
       }}

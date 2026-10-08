@@ -37,15 +37,15 @@ export const fetchSyncJob = (
 ): Promise<Result<SyncSnapshot>> =>
   r.get(`/admin/sync/get?id=${encodeURIComponent(id)}&events=${events}`)
 
-export const runSync = (spec: Partial<SyncSpec>): Promise<Result<SyncSnapshot>> =>
-  r.post("/admin/sync/run", spec)
+export const runSync = (
+  spec: Partial<SyncSpec>,
+): Promise<Result<SyncSnapshot>> => r.post("/admin/sync/run", spec)
 
 export const cancelSync = (id: string): Promise<Result<unknown>> =>
   r.post(`/admin/sync/cancel?id=${encodeURIComponent(id)}`)
 
-export const getBwLimit = (): Promise<
-  Result<{ bytes_per_second: number }>
-> => r.get("/admin/sync/bwlimit")
+export const getBwLimit = (): Promise<Result<{ bytes_per_second: number }>> =>
+  r.get("/admin/sync/bwlimit")
 
 export const setBwLimit = (
   rate: string,

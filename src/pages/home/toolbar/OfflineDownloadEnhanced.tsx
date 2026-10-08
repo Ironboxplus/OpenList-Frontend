@@ -427,6 +427,7 @@ export const OfflineDownloadEnhanced = () => {
       .filter((u) => u.trim())
     const resp = await submitLink(savePath(), urls, tool(), deletePolicy())
     handleRespWithNotifySuccess(resp, () => {
+      bus.emit("tasks:refresh")
       handleClose()
     })
   }
@@ -506,6 +507,7 @@ export const OfflineDownloadEnhanced = () => {
         deletePolicy(),
       )
       handleRespWithNotifySuccess(resp, () => {
+        bus.emit("tasks:refresh")
         handleClose()
       })
     } finally {

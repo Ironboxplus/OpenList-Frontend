@@ -1,6 +1,6 @@
 // The single polling service behind Transfers and the Task Center. The whole
 // app has exactly one timer, owned by this store.
-import { batch, createMemo, createRoot, createSignal } from "solid-js"
+import { batch, createMemo, createRoot, createSignal, untrack } from "solid-js"
 import type { SyncSnapshot, UnifiedTask } from "~/platform/contracts/task"
 import {
   isTacheType,
@@ -42,6 +42,7 @@ export interface StoreDeps {
   ) => Promise<Result<unknown>>
   fetchSyncList: () => Promise<Result<SyncSnapshot[] | null>>
   fetchSyncHistory: () => Promise<Result<SyncSnapshot[] | null>>
+  fetchSyncJob: (id: string) => Promise<Result<SyncSnapshot>>
   cancelSync: (id: string) => Promise<Result<unknown>>
   isAdmin: () => boolean
   isHidden: () => boolean
@@ -63,10 +64,9 @@ const readSeen = (s: StoreDeps["storage"]): string[] => {
 }
 
 const emptyByType = () =>
-  Object.fromEntries(TACHE_TYPES.map((t) => [t, [] as UnifiedTask[]])) as Record<
-    TacheType,
-    UnifiedTask[]
-  >
+  Object.fromEntries(
+    TACHE_TYPES.map((t) => [t, [] as UnifiedTask[]]),
+  ) as Record<TacheType, UnifiedTask[]>
 
 export const createTransfersStore = (deps: StoreDeps) =>
   createRoot((dispose) => {
@@ -77,6 +77,9 @@ export const createTransfersStore = (deps: StoreDeps) =>
     const [capability, setCapability] = createSignal<SyncCapability>("unknown")
     const [seen, setSeen] = createSignal(new Set(readSeen(deps.storage)))
     const [loaded, setLoaded] = createSignal(false)
+    // Full snapshot (with events) of the sync job whose detail is open.
+    const [detailId, setDetailId] = createSignal<string>()
+    const [detail, setDetail] = createSignal<UnifiedTask>()
 
     const tasks = createMemo(() => {
       const all: UnifiedTask[] = []
@@ -173,12 +176,23 @@ export const createTransfersStore = (deps: StoreDeps) =>
         }
         if (resp.code === 200) {
           setCapability("yes")
-          setSyncTasks(
-            (resp.data ?? []).map((s) => mapSyncSnapshot(s, now)),
-          )
+          setSyncTasks((resp.data ?? []).map((s) => mapSyncSnapshot(s, now)))
         }
       } catch {
         // transient: keep what we have
+      }
+    }
+
+    const fetchDetail = async (now: Date) => {
+      const id = detailId()
+      if (!id || capability() !== "yes") return
+      try {
+        const resp = await deps.fetchSyncJob(id)
+        if (resp.code === 200 && detailId() === id) {
+          setDetail(mapSyncSnapshot(resp.data, now))
+        }
+      } catch {
+        // keep the previous detail
       }
     }
 
@@ -206,6 +220,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
         undoneSinceDone++
       }
       await fetchSync(now)
+      await fetchDetail(now)
       batch(() => {
         setUndone(nextUndone)
         if (nextDone) setDone(nextDone)
@@ -288,7 +303,10 @@ export const createTransfersStore = (deps: StoreDeps) =>
       return true
     }
 
-    const act = async (taskId: string, action: TaskAction): Promise<boolean> => {
+    const act = async (
+      taskId: string,
+      action: TaskAction,
+    ): Promise<boolean> => {
       const task = tasks().find((t) => t.id === taskId)
       if (!task) return false
       let ok: boolean
@@ -325,15 +343,39 @@ export const createTransfersStore = (deps: StoreDeps) =>
       return all
     }
 
-    const markFailedSeen = () => {
-      const next = new Set([...seen(), ...failedIds()])
-      const arr = [...next].slice(-SEEN_CAP)
-      setSeen(new Set(arr))
-      try {
-        deps.storage.setItem(SEEN_KEY, JSON.stringify(arr))
-      } catch {
-        // seen-state just doesn't persist
-      }
+    /** Forget everything: used on logout so the next user starts clean. */
+    const reset = () => {
+      batch(() => {
+        setUndone(emptyByType())
+        setDone(emptyByType())
+        setSyncTasks([])
+        setHistory([])
+        setDetail(undefined)
+        setDetailId(undefined)
+        setCapability("unknown")
+        setLoaded(false)
+      })
+      undoneSinceDone = DONE_EVERY - 1
+      infoLogged = false
+    }
+
+    const markFailedSeen = () =>
+      untrack(() => {
+        const next = new Set([...seen(), ...failedIds()])
+        const arr = [...next].slice(-SEEN_CAP)
+        setSeen(new Set(arr))
+        try {
+          deps.storage.setItem(SEEN_KEY, JSON.stringify(arr))
+        } catch {
+          // seen-state just doesn't persist
+        }
+      })
+
+    /** Open (or with undefined, close) the sync job detail; fetches at once. */
+    const openJob = (id: string | undefined) => {
+      setDetail(undefined)
+      setDetailId(id)
+      if (id) void refresh({ full: false })
     }
 
     const loadHistory = async () => {
@@ -359,12 +401,15 @@ export const createTransfersStore = (deps: StoreDeps) =>
       failedUnseenCount,
       loaded,
       history,
+      detail,
+      openJob,
       syncAvailable: () => capability() === "yes",
       syncCapability: capability,
       refresh,
       act,
       actBulk,
       markFailedSeen,
+      reset,
       loadHistory,
       start,
       stop,

@@ -131,9 +131,7 @@ export const parseTaskName = (
     case "upload":
     case "decompress_upload":
       m = name.match(type === "upload" ? UPLOAD_NAME : DECOMPRESS_UPLOAD_NAME)
-      return m
-        ? { source: { path: m[1] }, destination: ref(m[2], m[3]) }
-        : {}
+      return m ? { source: { path: m[1] }, destination: ref(m[2], m[3]) } : {}
     case "offline_download":
       m = name.match(OFFLINE_DOWNLOAD_NAME)
       return m ? { source: { path: m[1] }, destination: { path: m[2] } } : {}
@@ -144,9 +142,7 @@ export const parseTaskName = (
         // "upload" tasks carry the download URL, "transfer" a path in a
         // storage (or a bare local path when the storage part is empty).
         source:
-          m[1] === "transfer" && m[2] !== ""
-            ? ref(m[2], m[3])
-            : { path: m[3] },
+          m[1] === "transfer" && m[2] !== "" ? ref(m[2], m[3]) : { path: m[3] },
         destination: ref(m[5], m[6]),
       }
     case "decompress":
@@ -189,8 +185,7 @@ export const mapTache = (
     creatorId: raw.creator || undefined,
     attempt: 1,
     maxAttempts: 1,
-    retryable:
-      done && state === "failed" && TACHE_OPS[type].includes("retry"),
+    retryable: done && state === "failed" && TACHE_OPS[type].includes("retry"),
     source,
     destination,
     progress,
@@ -299,7 +294,9 @@ export const availableActions = (t: UnifiedTask): TaskAction[] => {
 }
 
 export const bulkActions = (type: TacheType): readonly TaskAction[] =>
-  TACHE_OPS[type].filter((a) => a !== "cancel" && a !== "delete" && a !== "retry")
+  TACHE_OPS[type].filter(
+    (a) => a !== "cancel" && a !== "delete" && a !== "retry",
+  )
 
 /** Newest first; a stable order keeps cards from jumping between polls. */
 export const sortTasks = (tasks: UnifiedTask[]): UnifiedTask[] =>
@@ -375,7 +372,9 @@ export const drawerTasks = (tasks: UnifiedTask[], now: number): UnifiedTask[] =>
 // ---- display ------------------------------------------------------------
 
 /** What a card shows as its title: `source → destination`, else the raw name. */
-export const taskTitle = (t: UnifiedTask): { from?: string; to?: string; text: string } => {
+export const taskTitle = (
+  t: UnifiedTask,
+): { from?: string; to?: string; text: string } => {
   const from = t.source?.path
   const to = t.destination?.path
   if (from && to) return { from, to, text: `${from} → ${to}` }

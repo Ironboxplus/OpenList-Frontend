@@ -1,5 +1,12 @@
 import { Progress, ProgressIndicator } from "@hope-ui/solid"
-import { Route, Routes, useIsRouting } from "@solidjs/router"
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useIsRouting,
+  useParams,
+} from "@solidjs/router"
 import {
   Component,
   createEffect,
@@ -15,15 +22,42 @@ import { useLoading, useRouter, useT } from "~/hooks"
 import { setSettings } from "~/store"
 import { setArchiveExtensions } from "~/store/archive"
 import { Resp } from "~/types"
-import { base_path, bus, handleRespWithoutAuthAndNotify, r } from "~/utils"
+import {
+  base_path,
+  bus,
+  handleRespWithoutAuthAndNotify,
+  joinBase,
+  r,
+} from "~/utils"
 import { MustUser, UserOrGuest } from "./MustUser"
 import "./index.css"
+import "./tailwind.css"
+import { legacyTypeToFilter } from "~/features/transfers/adapter"
 import { globalStyles } from "./theme"
 
 const Home = lazy(() => import("~/pages/home/Layout"))
 const Manage = lazy(() => import("~/pages/manage"))
 const Login = lazy(() => import("~/pages/login"))
 const Test = lazy(() => import("~/pages/test"))
+const AppShell = lazy(() => import("~/features/shell/AppShell"))
+/** Persistent layout route: the shell stays mounted across page changes. */
+const ShellLayout = () => (
+  <AppShell>
+    <Outlet />
+  </AppShell>
+)
+const Transfers = lazy(() => import("~/features/transfers/TransfersPage"))
+
+/** Old `/@manage/tasks[/:type]` addresses now live on the Transfers page. */
+const TasksRedirect = () => {
+  const params = useParams()
+  const key = legacyTypeToFilter(params.type)
+  return (
+    <Navigate
+      href={joinBase("/@transfers") + (key === "all" ? "" : `?type=${key}`)}
+    />
+  )
+}
 
 const App: Component = () => {
   const t = useT()
@@ -83,30 +117,41 @@ const App: Component = () => {
           <Routes base={base_path}>
             <Route path="/@test" component={Test} />
             <Route path="/@login" component={Login} />
-            <Route
-              path="/@manage/*"
-              element={
-                <MustUser>
-                  <Manage />
-                </MustUser>
-              }
-            />
-            <Route
-              path={["/@s/*", "/%40s/*"]}
-              element={
-                <UserOrGuest>
-                  <Home />
-                </UserOrGuest>
-              }
-            />
-            <Route
-              path="*"
-              element={
-                <MustUser>
-                  <Home />
-                </MustUser>
-              }
-            />
+            <Route path="/@manage/tasks/:type?" component={TasksRedirect} />
+            <Route path="/" component={ShellLayout}>
+              <Route
+                path="/@transfers"
+                element={
+                  <MustUser>
+                    <Transfers />
+                  </MustUser>
+                }
+              />
+              <Route
+                path="/@manage/*"
+                element={
+                  <MustUser>
+                    <Manage />
+                  </MustUser>
+                }
+              />
+              <Route
+                path={["/@s/*", "/%40s/*"]}
+                element={
+                  <UserOrGuest>
+                    <Home />
+                  </UserOrGuest>
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <MustUser>
+                    <Home />
+                  </MustUser>
+                }
+              />
+            </Route>
           </Routes>
         }
       >

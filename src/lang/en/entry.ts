@@ -7,6 +7,8 @@ import indexes from "./indexes.json"
 import login from "./login.json"
 import manage from "./manage.json"
 import metas from "./metas.json"
+import shell from "./shell.json"
+import transfers from "./transfers.json"
 import settings_other from "./settings_other.json"
 import settings from "./settings.json"
 import shares from "./shares.json"
@@ -26,8 +28,10 @@ export const dict = {
   metas,
   settings_other,
   settings,
+  shell,
   shares,
   storages,
   tasks,
+  transfers,
   users,
 }

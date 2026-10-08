@@ -137,7 +137,12 @@ describe("name parsing", () => {
   })
 
   it("falls back to the raw name when it cannot be parsed", () => {
-    const t = mapTache(raw({ name: "something unexpected" }), "copy", false, NOW)
+    const t = mapTache(
+      raw({ name: "something unexpected" }),
+      "copy",
+      false,
+      NOW,
+    )
     expect(t.source).toBeUndefined()
     expect(t.destination).toBeUndefined()
     expect(taskTitle(t).text).toBe("something unexpected")
@@ -252,7 +257,10 @@ describe("sync mapping", () => {
     expect(t.endedAt).toBe("2026-10-08T09:05:00Z")
   })
   it("a succeeded job without stats is 100%", () => {
-    const t = mapSyncSnapshot(snap({ state: "succeeded", stats: undefined }), NOW)
+    const t = mapSyncSnapshot(
+      snap({ state: "succeeded", stats: undefined }),
+      NOW,
+    )
     expect(t.progress.percent).toBe(100)
   })
   it("ignores a Go zero ended_at", () => {
