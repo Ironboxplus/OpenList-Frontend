@@ -24,6 +24,8 @@ import {
 } from "~/store"
 import { UserMethods } from "~/types"
 import { loginUrlFor } from "~/utils"
+import { FilesError } from "~/features/files/FilesState"
+import { shellActive } from "~/features/shell/topbar-slot"
 
 const Folder = lazy(() => import("./folder/Folder"))
 const File = lazy(() => import("./file/File"))
@@ -82,6 +84,7 @@ export const Obj = () => {
     <VStack
       ref={(el: HTMLDivElement) => setObjBoxRef(el)}
       class="obj-box"
+      classList={{ "files-card": shellActive() }}
       w="$full"
       rounded="$xl"
       bgColor={cardBg()}
@@ -92,13 +95,28 @@ export const Obj = () => {
       <Suspense fallback={<FullLoading />}>
         <Switch>
           <Match when={objStore.err}>
-            <Error
-              msg={objStore.err}
-              disableColor
-              actions={
-                shouldShowStorageButton() ? storageErrorActions() : undefined
+            <Show
+              when={shellActive()}
+              fallback={
+                <Error
+                  msg={objStore.err}
+                  disableColor
+                  actions={
+                    shouldShowStorageButton()
+                      ? storageErrorActions()
+                      : undefined
+                  }
+                />
               }
-            />
+            >
+              <FilesError
+                msg={objStore.err}
+                onRetry={() => refresh(undefined, true)}
+                actions={
+                  shouldShowStorageButton() ? storageErrorActions() : undefined
+                }
+              />
+            </Show>
           </Match>
           <Match
             when={[State.FetchingObj, State.FetchingObjs].includes(

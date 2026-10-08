@@ -14,6 +14,9 @@ import {
 } from "~/store"
 import { usePath, useRouter } from "~/hooks"
 import { isMobile } from "~/utils/compatibility"
+import { createLongPress } from "~/utils/touch"
+import { selectionMode } from "~/features/files/selection-mode"
+import { phoneShell } from "~/features/shell/topbar-slot"
 import { StoreObj } from "~/types"
 
 let selectedCache: StoreObj[] | null = null
@@ -155,10 +158,21 @@ export function useFileRowInteraction(
     to(pushHref(obj().name))
   }
 
+  // Phone selection mode: a long press selects the row, after which taps
+  // toggle rows instead of opening them.
+  const press = createLongPress(() => {
+    if (!phoneShell()) return
+    if (!obj().selected) selectIndex(index(), true)
+  })
+
   const onClick = (e: MouseEvent) => {
     // The row renders as an anchor for middle-click / copy-link / a11y, but
     // in-app navigation goes through the router instead of a full page load.
     e.preventDefault()
+    if (phoneShell()) {
+      if (press.consumeClick()) return
+      if (selectionMode()) return selectIndex(index(), !obj().selected)
+    }
     if (openWithDoubleClick()) return
     // Let the browser/selection layer own modifier-clicks.
     if (e.ctrlKey || e.metaKey || e.shiftKey) return
@@ -171,6 +185,8 @@ export function useFileRowInteraction(
   const onMouseEnter = () => setPathAs(obj().name, obj().is_dir, true)
 
   const onContextMenu = (e: MouseEvent) => {
+    // On phones the long press is the selection gesture, not a menu.
+    if (phoneShell()) return e.preventDefault()
     batch(() => {
       selectIndex(index(), true, true)
     })
@@ -188,6 +204,9 @@ export function useFileRowInteraction(
     onDblClick,
     onMouseEnter,
     onContextMenu,
+    onPointerDown: press.onPointerDown,
+    onPointerMove: press.onPointerMove,
+    onPointerEnd: press.onPointerEnd,
     onCheckboxChange,
     stopPropagation,
     /**

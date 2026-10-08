@@ -6,9 +6,14 @@ import { CenterLoading, LinkWithPush, ImageWithError } from "~/components"
 import { usePath, useRouter, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, local, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus, hoverColor, listItemIn } from "~/utils"
+import { bus, getFileSize, hoverColor, listItemIn } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
+import { TbCheck } from "solid-icons/tb"
+import { selectionMode } from "~/features/files/selection-mode"
+import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
+import { cn } from "~/utils/cn"
+import { createLongPress } from "~/utils/touch"
 import { GridCover } from "~/features/files/GridCover"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 
@@ -17,6 +22,8 @@ export const GridItem = (props: {
   index: number
   /** Poster image URL; shown 2:3 and lazy, the icon takes over if it fails. */
   cover?: string
+  /** Off for virtualized rows, which mount constantly while scrolling. */
+  animate?: boolean
 }) => {
   const { isHide } = useUtil()
   if (isHide(props.obj)) {
@@ -35,9 +42,15 @@ export const GridItem = (props: {
   const { pushHref, to } = useRouter()
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
+  // Phone: long press selects, then taps toggle (same rule as the list rows).
+  const press = createLongPress(() => {
+    if (phoneShell() && !props.obj.selected) selectIndex(props.index, true)
+  })
   return (
     <Motion.div
-      {...(listItemIn(untrack(() => props.index)) as any)}
+      {...(props.animate === false
+        ? {}
+        : (listItemIn(untrack(() => props.index)) as any))}
       style={{
         width: "100%",
       }}
@@ -66,8 +79,17 @@ export const GridItem = (props: {
           selectIndex(props.index, true, true)
           to(pushHref(props.obj.name))
         }}
+        on:pointerdown={press.onPointerDown}
+        on:pointermove={press.onPointerMove}
+        on:pointerup={press.onPointerEnd}
+        on:pointercancel={press.onPointerEnd}
         on:click={(e: MouseEvent) => {
           e.preventDefault()
+          if (phoneShell()) {
+            if (press.consumeClick()) return
+            if (selectionMode())
+              return selectIndex(props.index, !props.obj.selected)
+          }
           if (openWithDoubleClick()) return
           if (e.ctrlKey || e.metaKey || e.shiftKey) return
           if (!restoreSelectionCache()) return
@@ -79,6 +101,7 @@ export const GridItem = (props: {
           setPathAs(props.obj.name, props.obj.is_dir, true)
         }}
         onContextMenu={(e: MouseEvent) => {
+          if (phoneShell()) return e.preventDefault()
           batch(() => {
             // if (!checkboxOpen()) {
             //   toggleCheckbox();
@@ -103,7 +126,22 @@ export const GridItem = (props: {
           }}
           pos="relative"
         >
-          <Show when={checkboxOpen()}>
+          <Show when={selectionMode()}>
+            <span
+              data-row-check
+              class={cn(
+                "absolute left-1 top-1 z-10 inline-flex size-6 items-center justify-center rounded-full border-2",
+                props.obj.selected
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-white/80 bg-black/20",
+              )}
+            >
+              <Show when={props.obj.selected}>
+                <TbCheck class="size-4" />
+              </Show>
+            </span>
+          </Show>
+          <Show when={checkboxOpen() && !phoneShell()}>
             <ItemCheckbox
               pos="absolute"
               left="$1"
@@ -146,6 +184,7 @@ export const GridItem = (props: {
           </Show>
         </Center>
         <Text
+          class="name"
           css={{
             wordBreak: "break-all",
             whiteSpace: filenameStyle() === "multi_line" ? "unset" : "nowrap",
@@ -165,6 +204,11 @@ export const GridItem = (props: {
         >
           {props.obj.name}
         </Text>
+        <Show when={shellActive() && !props.obj.is_dir && props.obj.size}>
+          <Text class="meta" fontSize="$xs" color="$neutral10">
+            {getFileSize(props.obj.size)}
+          </Text>
+        </Show>
         <ExtraBadges extra={props.obj.extra} maxTags={1} />
       </VStack>
     </Motion.div>

@@ -34,6 +34,8 @@ import {
 } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
+import { PhoneRowBody } from "~/features/files/PhoneRowBody"
+import { phoneShell } from "~/features/shell/topbar-slot"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
 import {
   isMediaPreviewEnabled,
@@ -62,7 +64,12 @@ export const cols: Col[] = [
 
 const PREVIEW_DELAY_MS = 550
 
-export const ListItem = (props: { obj: StoreObj; index: number }) => {
+export const ListItem = (props: {
+  obj: StoreObj
+  index: number
+  /** Off for virtualized rows, which mount constantly while scrolling. */
+  animate?: boolean
+}) => {
   const { isHide } = useUtil()
   if (isHide(props.obj)) {
     return null
@@ -110,7 +117,9 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
 
   return (
     <Motion.div
-      {...(listItemIn(untrack(() => props.index)) as any)}
+      {...(props.animate === false
+        ? {}
+        : (listItemIn(untrack(() => props.index)) as any))}
       style={{
         width: "100%",
         position: "relative",
@@ -137,65 +146,62 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onContextMenu={ix.onContextMenu}
+        on:pointerdown={ix.onPointerDown}
+        on:pointermove={ix.onPointerMove}
+        on:pointerup={ix.onPointerEnd}
+        on:pointercancel={ix.onPointerEnd}
       >
-        <HStack class="name-box" spacing="$1" w={cols[0].w}>
-          <Show when={checkboxOpen()}>
-            <ItemCheckbox
-              on:mousedown={ix.stopPropagation}
-              on:click={ix.stopPropagation}
-              checked={props.obj.selected}
-              onChange={ix.onCheckboxChange}
+        <Show when={phoneShell()}>
+          <PhoneRowBody obj={props.obj} />
+        </Show>
+        <Show when={!phoneShell()}>
+          <HStack class="name-box" spacing="$1" w={cols[0].w}>
+            <Show when={checkboxOpen()}>
+              <ItemCheckbox
+                on:mousedown={ix.stopPropagation}
+                on:click={ix.stopPropagation}
+                checked={props.obj.selected}
+                onChange={ix.onCheckboxChange}
+              />
+            </Show>
+            <Icon
+              class="icon"
+              boxSize="$6"
+              color={getMainColor()}
+              as={getIconByObj(props.obj)}
+              mr="$1"
+              cursor={props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"}
+              on:click={(e: MouseEvent) => {
+                if (props.obj.type !== ObjType.IMAGE) return
+                if (e.ctrlKey || e.metaKey || e.shiftKey) return
+                if (!ix.restoreSelectionCache()) return
+                bus.emit("gallery", props.obj.name)
+                e.preventDefault()
+                e.stopPropagation()
+              }}
             />
-          </Show>
-          <Icon
-            class="icon"
-            boxSize="$6"
-            color={getMainColor()}
-            as={getIconByObj(props.obj)}
-            mr="$1"
-            cursor={props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"}
-            on:click={(e: MouseEvent) => {
-              if (props.obj.type !== ObjType.IMAGE) return
-              if (e.ctrlKey || e.metaKey || e.shiftKey) return
-              if (!ix.restoreSelectionCache()) return
-              bus.emit("gallery", props.obj.name)
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-          />
-          <Text
-            class="name"
-            css={{
-              wordBreak: "break-all",
-              whiteSpace: filenameStyle() === "multi_line" ? "unset" : "nowrap",
-              "overflow-x":
-                filenameStyle() === "scrollable" ? "auto" : "hidden",
-              textOverflow:
-                filenameStyle() === "ellipsis" ? "ellipsis" : "unset",
-              "scrollbar-width": "none", // firefox
-              "&::-webkit-scrollbar": {
-                // webkit
-                display: "none",
-              },
-            }}
-            title={props.obj.name}
-          >
-            {props.obj.name}
-          </Text>
-          <ExtraBadges extra={props.obj.extra} />
-        </HStack>
-        <Show
-          fallback={
             <Text
-              class="size"
-              w={cols[1].w}
-              textAlign={cols[1].textAlign as any}
+              class="name"
+              css={{
+                wordBreak: "break-all",
+                whiteSpace:
+                  filenameStyle() === "multi_line" ? "unset" : "nowrap",
+                "overflow-x":
+                  filenameStyle() === "scrollable" ? "auto" : "hidden",
+                textOverflow:
+                  filenameStyle() === "ellipsis" ? "ellipsis" : "unset",
+                "scrollbar-width": "none", // firefox
+                "&::-webkit-scrollbar": {
+                  // webkit
+                  display: "none",
+                },
+              }}
+              title={props.obj.name}
             >
-              {getFileSize(props.obj.size)}
+              {props.obj.name}
             </Text>
-          }
-          when={showDiskUsage(props.obj.mount_details)}
-        >
+            <ExtraBadges extra={props.obj.extra} />
+          </HStack>
           <Show
             fallback={
               <Text
@@ -203,48 +209,61 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
                 w={cols[1].w}
                 textAlign={cols[1].textAlign as any}
               >
-                {toReadableUsage(props.obj.mount_details!)}
+                {getFileSize(props.obj.size)}
               </Text>
             }
-            when={!getSettingBool("show_disk_usage_in_plain_text")}
+            when={showDiskUsage(props.obj.mount_details)}
           >
-            <Progress
-              w={cols[1].w}
-              class="disk-usage-percentage"
-              trackColor="$info3"
-              rounded="$full"
-              size="md"
-              value={usedPercentage(props.obj.mount_details!)}
+            <Show
+              fallback={
+                <Text
+                  class="size"
+                  w={cols[1].w}
+                  textAlign={cols[1].textAlign as any}
+                >
+                  {toReadableUsage(props.obj.mount_details!)}
+                </Text>
+              }
+              when={!getSettingBool("show_disk_usage_in_plain_text")}
             >
-              <ProgressIndicator
-                color={
-                  nearlyFull(props.obj.mount_details!) ? "$danger6" : "$info6"
-                }
-                rounded="$md"
-              />
-              <ProgressLabel class="disk-usage-text">
-                {toReadableUsage(props.obj.mount_details!)}
-              </ProgressLabel>
-            </Progress>
+              <Progress
+                w={cols[1].w}
+                class="disk-usage-percentage"
+                trackColor="$info3"
+                rounded="$full"
+                size="md"
+                value={usedPercentage(props.obj.mount_details!)}
+              >
+                <ProgressIndicator
+                  color={
+                    nearlyFull(props.obj.mount_details!) ? "$danger6" : "$info6"
+                  }
+                  rounded="$md"
+                />
+                <ProgressLabel class="disk-usage-text">
+                  {toReadableUsage(props.obj.mount_details!)}
+                </ProgressLabel>
+              </Progress>
+            </Show>
           </Show>
+          <Text
+            class="modified"
+            display={{ "@initial": "none", "@md": "inline" }}
+            w={cols[2].w}
+            textAlign={cols[2].textAlign as any}
+            // Keep the compact timestamp on one line; the column is now sized for
+            // exactly 11 characters, so a wrap would silently break the row height.
+            css={{ whiteSpace: "nowrap" }}
+            // Precision is hidden, not lost: the compact form omits seconds (and the
+            // year, when it is the current one) while the full timestamp stays
+            // available on hover.
+            title={
+              props.obj.modified ? formatDate(props.obj.modified) : undefined
+            }
+          >
+            {formatDateCompact(props.obj.modified)}
+          </Text>
         </Show>
-        <Text
-          class="modified"
-          display={{ "@initial": "none", "@md": "inline" }}
-          w={cols[2].w}
-          textAlign={cols[2].textAlign as any}
-          // Keep the compact timestamp on one line; the column is now sized for
-          // exactly 11 characters, so a wrap would silently break the row height.
-          css={{ whiteSpace: "nowrap" }}
-          // Precision is hidden, not lost: the compact form omits seconds (and the
-          // year, when it is the current one) while the full timestamp stays
-          // available on hover.
-          title={
-            props.obj.modified ? formatDate(props.obj.modified) : undefined
-          }
-        >
-          {formatDateCompact(props.obj.modified)}
-        </Text>
       </HStack>
 
       {/* Hover thumbnail preview — desktop only, gated by plugin enabled state */}

@@ -16,7 +16,8 @@ import { NavBadge } from "./NavBadge"
 import { NavLink } from "./NavLink"
 import { activeNavId, badgeTarget, navItemsFor } from "./nav-items"
 
-export const TAB_BAR_HEIGHT = "3.5rem"
+export { TAB_BAR_HEIGHT } from "./viewport"
+import { TAB_BAR_HEIGHT } from "./viewport"
 
 const tabClass =
   focusRing +

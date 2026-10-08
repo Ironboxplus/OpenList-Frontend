@@ -3,5 +3,23 @@
   "full_path": "Path",
   "more": "More",
   "view": "Change view",
-  "dismiss": "Dismiss"
+  "dismiss": "Dismiss",
+  "selected_n": "{{n}} selected",
+  "select_all": "Select all",
+  "download": "Download",
+  "create": "New",
+  "retry": "Retry",
+  "empty": "This folder is empty.",
+  "error": {
+    "network": "Could not reach the server",
+    "forbidden": "You do not have access to this folder",
+    "not_found": "This folder was not found",
+    "storage": "No storage is mounted here",
+    "unknown": "This folder could not be loaded"
+  },
+  "tasks": {
+    "running": "In progress here: {{items}}",
+    "failed": "Failed here: {{items}}",
+    "open": "View in Task Center"
+  }
 }

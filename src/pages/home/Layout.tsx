@@ -7,7 +7,13 @@ import { Footer } from "./Footer"
 import { Header } from "./header/Header"
 import { onMount, Show } from "solid-js"
 import { FilesTopLeft, FilesTopRight } from "~/features/files/FilesTopBar"
-import { shellActive, useTopBarSlots } from "~/features/shell/topbar-slot"
+import { PhoneBatchBar } from "~/features/files/PhoneActions"
+import { selectionMode } from "~/features/files/selection-mode"
+import {
+  shellActive,
+  useBottomBar,
+  useTopBarSlots,
+} from "~/features/shell/topbar-slot"
 import { Toolbar } from "./toolbar/Toolbar"
 
 const Index = () => {
@@ -27,6 +33,11 @@ const Index = () => {
     left: (ctx) => <FilesTopLeft phone={ctx.phone} />,
     right: (ctx) => <FilesTopRight phone={ctx.phone} />,
   }))
+  // On phones, selection mode swaps the tab bar for the batch actions.
+  useBottomBar({
+    when: selectionMode,
+    render: () => <PhoneBatchBar />,
+  })
   return (
     <>
       <Show when={!shellActive()}>

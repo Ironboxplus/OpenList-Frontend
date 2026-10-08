@@ -20,7 +20,7 @@ const GridLayout = () => {
       </Show>
       <Grid
         oncapture:contextmenu={captureContentMenu}
-        class="viselect-container"
+        class="viselect-container files-grid"
         w="$full"
         gap="$1"
         templateColumns={`repeat(auto-fill, minmax(${

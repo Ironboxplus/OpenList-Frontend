@@ -40,7 +40,12 @@ import { ItemCheckbox, useFileRowInteraction } from "./helper"
 const THUMB_W = 64
 const THUMB_H = 36
 
-export const MediaListItem = (props: { obj: StoreObj; index: number }) => {
+export const MediaListItem = (props: {
+  obj: StoreObj
+  index: number
+  /** Off for virtualized rows, which mount constantly while scrolling. */
+  animate?: boolean
+}) => {
   // Selection / open / context-menu behaviour is shared with the table row —
   // see useFileRowInteraction. Only the visuals below are specific to this row.
   const ix = useFileRowInteraction(
@@ -73,7 +78,9 @@ export const MediaListItem = (props: { obj: StoreObj; index: number }) => {
 
   return (
     <Motion.div
-      {...(listItemIn(untrack(() => props.index)) as any)}
+      {...(props.animate === false
+        ? {}
+        : (listItemIn(untrack(() => props.index)) as any))}
       style={{ width: "100%" }}
     >
       <HStack
@@ -97,6 +104,10 @@ export const MediaListItem = (props: { obj: StoreObj; index: number }) => {
         on:click={ix.onClick}
         onMouseEnter={ix.onMouseEnter}
         onContextMenu={ix.onContextMenu}
+        on:pointerdown={ix.onPointerDown}
+        on:pointermove={ix.onPointerMove}
+        on:pointerup={ix.onPointerEnd}
+        on:pointercancel={ix.onPointerEnd}
       >
         <Show when={checkboxOpen()}>
           <ItemCheckbox

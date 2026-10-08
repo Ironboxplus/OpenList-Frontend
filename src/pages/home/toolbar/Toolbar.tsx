@@ -11,7 +11,8 @@ import { RemoveEmptyDirectory } from "./RemoveEmptyDirectory"
 import { BatchRename } from "./BatchRename"
 import { OfflineDownloadEnhanced } from "./OfflineDownloadEnhanced"
 import { PackageDownloadModal } from "./Download"
-import { lazy } from "solid-js"
+import { lazy, Show } from "solid-js"
+import { shellActive } from "~/features/shell/topbar-slot"
 import { ModalWrapper } from "./ModalWrapper"
 import { LocalSettings } from "./LocalSettings"
 import { BackTop } from "./BackTop"
@@ -47,8 +48,12 @@ export const Modal = () => {
 export const Toolbar = () => {
   return (
     <Portal>
-      <Right />
-      <Center />
+      {/* Inside the shell the action bar / phone FAB / batch bar replace the
+          floating toolbars; guests keep them. */}
+      <Show when={!shellActive()}>
+        <Right />
+        <Center />
+      </Show>
       <Modal />
       <BackTop />
     </Portal>

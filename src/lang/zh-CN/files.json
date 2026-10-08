@@ -3,5 +3,23 @@
   "full_path": "完整路径",
   "more": "更多",
   "view": "切换视图",
-  "dismiss": "关闭"
+  "dismiss": "关闭",
+  "selected_n": "已选 {{n}} 项",
+  "select_all": "全选",
+  "download": "下载",
+  "create": "新建",
+  "retry": "重试",
+  "empty": "这个文件夹是空的。",
+  "error": {
+    "network": "无法连接到服务器",
+    "forbidden": "没有权限访问这个文件夹",
+    "not_found": "找不到这个文件夹",
+    "storage": "这里没有挂载存储",
+    "unknown": "无法加载这个文件夹"
+  },
+  "tasks": {
+    "running": "此处进行中：{{items}}",
+    "failed": "此处失败：{{items}}",
+    "open": "在任务中心查看"
+  }
 }

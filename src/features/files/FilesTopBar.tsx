@@ -45,6 +45,8 @@ import { bus } from "~/utils/bus"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
 import { fileCrumbs, parentCrumb, type FileCrumb } from "./crumbs"
+import { PhoneSelectionHeader } from "./PhoneActions"
+import { selectionMode } from "./selection-mode"
 
 const LAYOUTS: Record<LayoutType, IconTypes> = {
   list: TbLayoutList,
@@ -233,7 +235,9 @@ const PhoneCrumbs = () => {
 
 export const FilesTopLeft = (props: { phone: boolean }) => (
   <Show when={props.phone} fallback={<DesktopCrumbs />}>
-    <PhoneCrumbs />
+    <Show when={!selectionMode()} fallback={<PhoneSelectionHeader />}>
+      <PhoneCrumbs />
+    </Show>
   </Show>
 )
 
@@ -252,7 +256,7 @@ export const FilesTopRight = (props: { phone: boolean }) => {
       <Show
         when={!props.phone}
         fallback={
-          <Show when={searchOn() || layoutOn()}>
+          <Show when={(searchOn() || layoutOn()) && !selectionMode()}>
             <DropdownMenu placement="bottom-end">
               <DropdownMenuTrigger
                 aria-label={t("files.more")}

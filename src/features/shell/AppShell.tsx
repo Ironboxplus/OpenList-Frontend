@@ -16,7 +16,7 @@ import { BottomTabs, TAB_BAR_HEIGHT } from "./BottomTabs"
 import { readCollapsed, writeCollapsed } from "./nav-items"
 import { FULL_WIDTH, RAIL_WIDTH, SideNav } from "./SideNav"
 import { TOP_BAR_HEIGHT, TopBar } from "./TopBar"
-import { setShellActive } from "./topbar-slot"
+import { bottomBarOverride, setPhoneShell, setShellActive } from "./topbar-slot"
 import { createViewport } from "./viewport"
 
 const TaskCenter = lazy(() => import("../transfers/TaskCenter"))
@@ -84,6 +84,9 @@ const AppShell = (props: ParentProps) => {
   const wide = () => shown() && viewport() !== "phone"
   const phone = () => shown() && viewport() === "phone"
 
+  createEffect(() => setPhoneShell(phone()))
+  onCleanup(() => setPhoneShell(false))
+
   createEffect(() => {
     document.documentElement.classList.toggle("shell-phone", phone())
     onCleanup(() => document.documentElement.classList.remove("shell-phone"))
@@ -118,7 +121,12 @@ const AppShell = (props: ParentProps) => {
         {props.children}
       </div>
       <Show when={phone()}>
-        <BottomTabs pathname={pathname()} />
+        <Show
+          when={bottomBarOverride()?.when()}
+          fallback={<BottomTabs pathname={pathname()} />}
+        >
+          {bottomBarOverride()!.render()}
+        </Show>
       </Show>
       <Show when={shown() && paletteUsed()}>
         <CommandPalette />

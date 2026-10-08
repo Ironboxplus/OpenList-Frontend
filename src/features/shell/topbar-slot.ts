@@ -37,3 +37,27 @@ export const useTopBarSlots = (get: () => TopBarSlots) => {
 
 /** True while the shell (TopBar, nav) is around the page; false for guests. */
 export const [shellActive, setShellActive] = createSignal(false)
+
+/** True while the signed-in shell is in its phone layout. */
+export const [phoneShell, setPhoneShell] = createSignal(false)
+
+export interface BottomBarOverride {
+  /** While true the override replaces the bottom tab bar. */
+  when: () => boolean
+  render: () => JSX.Element
+}
+
+const [bottomBar, setBottomBar] = createSignal<
+  BottomBarOverride & { owner: number }
+>()
+export const bottomBarOverride = (): BottomBarOverride | undefined =>
+  bottomBar()
+
+/** Let a page temporarily replace the phone tab bar (e.g. a selection bar). */
+export const useBottomBar = (override: BottomBarOverride) => {
+  const owner = ++seq
+  setBottomBar({ owner, ...override })
+  onCleanup(() => {
+    if (bottomBar()?.owner === owner) setBottomBar(undefined)
+  })
+}

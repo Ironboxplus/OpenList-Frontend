@@ -26,3 +26,5 @@ export const createViewport = (): Accessor<Viewport> => {
   }
   return vp
 }
+
+export const TAB_BAR_HEIGHT = "3.5rem"
