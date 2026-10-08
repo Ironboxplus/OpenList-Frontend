@@ -51,6 +51,41 @@ export function formatDate(dateStr: string) {
   )
 }
 
+/**
+ * Compact variant of {@link formatDate} for dense list rows.
+ *
+ * `formatDate` always renders 19 characters (`2026-01-03 04:58:30`), which in the
+ * file list forces the `modified` column to reserve a third of the row width for
+ * information the user rarely reads at that precision. This drops the seconds
+ * (never meaningful for a directory listing) and drops the year for dates in the
+ * current year, giving at most 11 characters:
+ *
+ *   this year → `01-03 04:58`
+ *   past year → `2025-12-29`
+ *
+ * Callers should keep the full timestamp reachable (e.g. a `title` attribute) so
+ * precision is hidden, not lost.
+ *
+ * Returns `"-"` for a missing or unparseable date. Several drivers omit
+ * `modified` entirely, and `new Date("")` yields an Invalid Date whose getters
+ * are all `NaN` — `formatDate` renders that as `NaN-NaN-NaN NaN:NaN:NaN`.
+ */
+export function formatDateCompact(dateStr?: string, now = new Date()) {
+  if (!dateStr) return "-"
+  const date = new Date(dateStr)
+  const time = date.getTime()
+  if (Number.isNaN(time)) return "-"
+  // Some drivers use a zero/epoch sentinel for "unknown"; showing 1970 is noise.
+  if (time <= 0) return "-"
+
+  const mon = full(date.getMonth() + 1)
+  const day = full(date.getDate())
+  if (date.getFullYear() !== now.getFullYear()) {
+    return date.getFullYear() + "-" + mon + "-" + day
+  }
+  return mon + "-" + day + " " + full(date.getHours()) + ":" + full(date.getMinutes())
+}
+
 export type ConvertURLArgs = {
   raw_url: string
   name: string

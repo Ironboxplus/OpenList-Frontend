@@ -1,5 +1,5 @@
 import { Checkbox, hope } from "@hope-ui/solid"
-import { createEffect, onCleanup } from "solid-js"
+import { batch, createEffect, onCleanup } from "solid-js"
 import { useContextMenu } from "solid-contextmenu"
 import SelectionArea from "@viselect/vanilla"
 import {
@@ -12,6 +12,7 @@ import {
   selectedObjs,
   selectIndex,
 } from "~/store"
+import { usePath, useRouter } from "~/hooks"
 import { isMobile } from "~/utils/compatibility"
 import { StoreObj } from "~/types"
 
@@ -118,6 +119,83 @@ export function useSelectWithMouse() {
     restoreSelectionCache,
     registerSelectContainer,
     captureContentMenu,
+  }
+}
+
+/**
+ * Row behaviour shared by every file-list row, regardless of how it looks.
+ *
+ * `ListItem` (table row) and `MediaListItem` (two-line media row) differ only in
+ * presentation; selection, open-on-click vs open-on-dblclick, modifier-key
+ * handling, the context menu and path prefetch are identical. Keeping them here
+ * means a change to "how clicking a row behaves" is one edit, not two that must
+ * stay in sync (REFACTOR_PLAN §3 principle 8, §7.13).
+ *
+ * Returns handlers rather than a spreadable props object on purpose: Solid's
+ * `on:click` / `on:dblclick` are compile-time namespaced directives and do not
+ * work when spread from an object, so the row must bind them literally.
+ */
+export function useFileRowInteraction(
+  obj: () => StoreObj,
+  index: () => number,
+) {
+  const { setPathAs } = usePath()
+  const { pushHref, to } = useRouter()
+  const { show } = useContextMenu({ id: 1 })
+  const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
+    useSelectWithMouse()
+
+  /** Rows are links, so the pointer only becomes a hand when a click navigates. */
+  const cursor = () =>
+    openWithDoubleClick() || toggleWithClick() ? "default" : "pointer"
+
+  const onDblClick = () => {
+    if (!openWithDoubleClick()) return
+    selectIndex(index(), true, true)
+    to(pushHref(obj().name))
+  }
+
+  const onClick = (e: MouseEvent) => {
+    // The row renders as an anchor for middle-click / copy-link / a11y, but
+    // in-app navigation goes through the router instead of a full page load.
+    e.preventDefault()
+    if (openWithDoubleClick()) return
+    // Let the browser/selection layer own modifier-clicks.
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return
+    if (!restoreSelectionCache()) return
+    if (toggleWithClick()) return selectIndex(index(), !obj().selected)
+    to(pushHref(obj().name))
+  }
+
+  /** Warms the path store so the next view has its parent context already. */
+  const onMouseEnter = () => setPathAs(obj().name, obj().is_dir, true)
+
+  const onContextMenu = (e: MouseEvent) => {
+    batch(() => {
+      selectIndex(index(), true, true)
+    })
+    show(e, { props: obj() })
+  }
+
+  const onCheckboxChange = (e: any) => selectIndex(index(), e.target.checked)
+
+  /** Checkbox clicks must not bubble into the row's navigate-on-click. */
+  const stopPropagation = (e: MouseEvent) => e.stopPropagation()
+
+  return {
+    cursor,
+    onClick,
+    onDblClick,
+    onMouseEnter,
+    onContextMenu,
+    onCheckboxChange,
+    stopPropagation,
+    /**
+     * Exposed for row-specific affordances that also need to settle the pending
+     * drag-selection first (e.g. the table row's image-icon opens the gallery
+     * rather than navigating).
+     */
+    restoreSelectionCache,
   }
 }
 

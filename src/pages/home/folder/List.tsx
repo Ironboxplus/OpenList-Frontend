@@ -1,5 +1,13 @@
 import { Box, HStack, VStack, Text } from "@hope-ui/solid"
-import { batch, createEffect, createSignal, For, Show, onMount } from "solid-js"
+import {
+  batch,
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Show,
+  onMount,
+} from "solid-js"
 import { AiOutlineArrowUp } from "solid-icons/ai"
 import { useT, useRouter } from "~/hooks"
 import {
@@ -15,6 +23,8 @@ import {
 } from "~/store"
 import { OrderBy } from "~/store"
 import { Col, cols, ListItem } from "./ListItem"
+import { MediaListItem } from "./MediaListItem"
+import { shouldUseMediaRows } from "./row-layout"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 import { bus } from "~/utils"
 
@@ -49,6 +59,14 @@ export const ListTitle = (props: {
   disableCheckbox?: boolean
   initialOrder?: OrderBy
   initialReverse?: boolean
+  /**
+   * Media rows are a single flex line, so the percentage columns below would
+   * label nothing. `compact` keeps the same sort state and handlers and only
+   * changes how they are laid out — sorting is a header-only affordance, so
+   * hiding the header would remove it entirely (REFACTOR_PLAN §7.13: one
+   * behaviour, one implementation, differences at the outermost layer).
+   */
+  compact?: boolean
 }) => {
   const t = useT()
   const { pathname } = useRouter()
@@ -110,6 +128,53 @@ export const ListTitle = (props: {
       </Box>
     </Show>
   )
+  // Compact header: the selection controls stay on the left and the three sort
+  // keys collapse into chips on the right, so they no longer pretend to be
+  // column labels for a layout that has no columns.
+  const SortChip = (p: { col: Col }) => (
+    <HStack
+      spacing="$0_5"
+      px="$1_5"
+      py="$0_5"
+      rounded="$sm"
+      cursor="pointer"
+      fontSize="$xs"
+      fontWeight="$medium"
+      color={p.col.name === orderBy() ? "$accent11" : "$neutral10"}
+      bgColor={p.col.name === orderBy() ? "$accent3" : "transparent"}
+      _hover={{ bgColor: p.col.name === orderBy() ? "$accent3" : "$neutral4" }}
+      onClick={() => onSort(p.col)}
+    >
+      <Text>{t(`home.obj.${p.col.name}`)}</Text>
+      <SortArrow col={p.col} />
+    </HStack>
+  )
+
+  if (props.compact) {
+    return (
+      <HStack class="title title-compact" w="$full" px="$2" py="$1" spacing="$2">
+        <Show when={!props.disableCheckbox && checkboxOpen()}>
+          <ItemCheckbox
+            checked={allChecked()}
+            indeterminate={isIndeterminate()}
+            onChange={(e: any) => {
+              selectAll(e.target.checked as boolean)
+            }}
+          />
+        </Show>
+        <Show when={selectedMsg()}>
+          <Text fontSize="$xs" color="$neutral11">
+            {selectedMsg()}
+          </Text>
+        </Show>
+        <Box flex={1} />
+        <SortChip col={cols[0]} />
+        <SortChip col={cols[1]} />
+        <SortChip col={cols[2]} />
+      </HStack>
+    )
+  }
+
   return (
     <HStack class="title" w="$full" p="$2">
       <HStack w={cols[0].w} spacing="$1">
@@ -169,6 +234,12 @@ const ListLayout = () => {
   const { registerSelectContainer, captureContentMenu } = useSelectWithMouse()
   registerSelectContainer()
 
+  // Media rows are chosen from the driver *and* the directory's actual contents —
+  // see ./row-layout for why the provider alone isn't enough.
+  const useMediaRows = createMemo(() =>
+    shouldUseMediaRows(objStore.provider, objStore.objs),
+  )
+
   onMount(() => {
     const saved = loadSortState(pathname())
     if (saved) {
@@ -202,10 +273,18 @@ const ListLayout = () => {
         sortCallback={sortObjs}
         initialOrder={initialOrder()}
         initialReverse={initialReverse()}
+        compact={useMediaRows()}
       />
       <For each={objStore.objs}>
         {(obj, i) => {
-          return <ListItem obj={obj} index={i()} />
+          return (
+            <Show
+              when={useMediaRows()}
+              fallback={<ListItem obj={obj} index={i()} />}
+            >
+              <MediaListItem obj={obj} index={i()} />
+            </Show>
+          )
         }}
       </For>
       <Show when={local["show_count_msg"] === "visible"}>

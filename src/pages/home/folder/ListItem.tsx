@@ -8,22 +8,21 @@ import {
   Text,
 } from "@hope-ui/solid"
 import { Motion } from "solid-motionone"
-import { useContextMenu } from "solid-contextmenu"
-import { batch, createSignal, onCleanup, Show, untrack } from "solid-js"
+import { createSignal, onCleanup, Show, untrack } from "solid-js"
 import { LinkWithPush } from "~/components"
-import { usePath, useRouter, useUtil } from "~/hooks"
+import { useUtil } from "~/hooks"
 import {
   checkboxOpen,
   getMainColor,
   getSettingBool,
   local,
   OrderBy,
-  selectIndex,
 } from "~/store"
 import { MountDetails, ObjType, StoreObj } from "~/types"
 import {
   bus,
   formatDate,
+  formatDateCompact,
   getFileSize,
   hoverColor,
   isTouchDevice,
@@ -35,7 +34,7 @@ import {
 } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
-import { ItemCheckbox, useSelectWithMouse } from "./helper"
+import { ItemCheckbox, useFileRowInteraction } from "./helper"
 import {
   isMediaPreviewEnabled,
   shouldShowPreview,
@@ -47,10 +46,18 @@ export interface Col {
   w: any
 }
 
+// Shared with the `ListTitle` header in ./List.tsx, so header and rows stay
+// aligned by construction rather than by copy.
+//
+// The `@md` split was 50/17/33: a third of every row was reserved for a
+// 19-character timestamp. `formatDateCompact` caps `modified` at 11 characters,
+// so that reserve is no longer needed and the freed width goes to `name`, which
+// is what users actually scan. `size` keeps 17% because mount points render a
+// disk-usage progress bar in that slot, not just a short byte count.
 export const cols: Col[] = [
-  { name: "name", textAlign: "left", w: { "@initial": "76%", "@md": "50%" } },
+  { name: "name", textAlign: "left", w: { "@initial": "76%", "@md": "63%" } },
   { name: "size", textAlign: "right", w: { "@initial": "24%", "@md": "17%" } },
-  { name: "modified", textAlign: "right", w: { "@initial": 0, "@md": "33%" } },
+  { name: "modified", textAlign: "right", w: { "@initial": 0, "@md": "20%" } },
 ]
 
 const PREVIEW_DELAY_MS = 550
@@ -60,11 +67,11 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
   if (isHide(props.obj)) {
     return null
   }
-  const { setPathAs } = usePath()
-  const { show } = useContextMenu({ id: 1 })
-  const { pushHref, to } = useRouter()
-  const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
-    useSelectWithMouse()
+  // Shared with MediaListItem — see useFileRowInteraction.
+  const ix = useFileRowInteraction(
+    () => props.obj,
+    () => props.index,
+  )
   const filenameStyle = () => local["list_item_filename_overflow"]
 
   // Hover preview state — desktop/non-touch only
@@ -79,7 +86,7 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
   }
 
   const handleMouseEnter = () => {
-    setPathAs(props.obj.name, props.obj.is_dir, true)
+    ix.onMouseEnter()
     if (
       shouldShowPreview({
         thumb: props.obj.thumb,
@@ -123,50 +130,21 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
         }}
         as={LinkWithPush}
         href={props.obj.name}
-        cursor={
-          openWithDoubleClick() || toggleWithClick() ? "default" : "pointer"
-        }
+        cursor={ix.cursor()}
         bgColor={props.obj.selected ? hoverColor() : undefined}
-        on:dblclick={() => {
-          if (!openWithDoubleClick()) return
-          selectIndex(props.index, true, true)
-          to(pushHref(props.obj.name))
-        }}
-        on:click={(e: MouseEvent) => {
-          e.preventDefault()
-          if (openWithDoubleClick()) return
-          if (e.ctrlKey || e.metaKey || e.shiftKey) return
-          if (!restoreSelectionCache()) return
-          if (toggleWithClick())
-            return selectIndex(props.index, !props.obj.selected)
-          to(pushHref(props.obj.name))
-        }}
+        on:dblclick={ix.onDblClick}
+        on:click={ix.onClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onContextMenu={(e: MouseEvent) => {
-          batch(() => {
-            // if (!checkboxOpen()) {
-            //   toggleCheckbox();
-            // }
-            selectIndex(props.index, true, true)
-          })
-          show(e, { props: props.obj })
-        }}
+        onContextMenu={ix.onContextMenu}
       >
         <HStack class="name-box" spacing="$1" w={cols[0].w}>
           <Show when={checkboxOpen()}>
             <ItemCheckbox
-              // colorScheme="neutral"
-              on:mousedown={(e: MouseEvent) => {
-                e.stopPropagation()
-              }}
-              on:click={(e: MouseEvent) => {
-                e.stopPropagation()
-              }}
+              on:mousedown={ix.stopPropagation}
+              on:click={ix.stopPropagation}
               checked={props.obj.selected}
-              onChange={(e: any) => {
-                selectIndex(props.index, e.target.checked)
-              }}
+              onChange={ix.onCheckboxChange}
             />
           </Show>
           <Icon
@@ -179,7 +157,7 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
             on:click={(e: MouseEvent) => {
               if (props.obj.type !== ObjType.IMAGE) return
               if (e.ctrlKey || e.metaKey || e.shiftKey) return
-              if (!restoreSelectionCache()) return
+              if (!ix.restoreSelectionCache()) return
               bus.emit("gallery", props.obj.name)
               e.preventDefault()
               e.stopPropagation()
@@ -255,8 +233,17 @@ export const ListItem = (props: { obj: StoreObj; index: number }) => {
           display={{ "@initial": "none", "@md": "inline" }}
           w={cols[2].w}
           textAlign={cols[2].textAlign as any}
+          // Keep the compact timestamp on one line; the column is now sized for
+          // exactly 11 characters, so a wrap would silently break the row height.
+          css={{ whiteSpace: "nowrap" }}
+          // Precision is hidden, not lost: the compact form omits seconds (and the
+          // year, when it is the current one) while the full timestamp stays
+          // available on hover.
+          title={
+            props.obj.modified ? formatDate(props.obj.modified) : undefined
+          }
         >
-          {formatDate(props.obj.modified)}
+          {formatDateCompact(props.obj.modified)}
         </Text>
       </HStack>
 
