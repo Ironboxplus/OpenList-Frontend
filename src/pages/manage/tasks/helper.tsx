@@ -2,6 +2,12 @@ import { createSignal, JSX } from "solid-js"
 import { me } from "~/store"
 import { TaskNameAnalyzer } from "./Tasks"
 import { useT } from "~/hooks"
+import {
+  DECOMPRESS_NAME,
+  DECOMPRESS_UPLOAD_NAME,
+  OFFLINE_DOWNLOAD_NAME,
+  OFFLINE_TRANSFER_NAME,
+} from "~/features/transfers/task-names"
 
 export const getPath = (
   device: string,
@@ -30,7 +36,7 @@ export const getOfflineDownloadNameAnalyzer = (): TaskNameAnalyzer => {
   const t = useT()
   const [underline, setUnderline] = createSignal(false)
   return {
-    regex: /^download (.+) to \((.+)\)$/,
+    regex: OFFLINE_DOWNLOAD_NAME,
     title: (matches) => matches[1],
     attrs: {
       [t(`tasks.attr.offline_download.url`)]: (matches) => (
@@ -54,7 +60,7 @@ export const getOfflineDownloadTransferNameAnalyzer = (): TaskNameAnalyzer => {
   const t = useT()
   const [underline, setUnderline] = createSignal(false)
   return {
-    regex: /^(transfer|upload) \[(.*)]\((.*\/([^\/]+))\) to \[(.+)]\((.+)\)$/,
+    regex: OFFLINE_TRANSFER_NAME,
     title: (matches) => (matches[1] === "upload" ? matches[2] : matches[4]),
     attrs: {
       [t(`tasks.attr.offline_download.transfer_src`)]: (matches) => {
@@ -87,8 +93,7 @@ export const getOfflineDownloadTransferNameAnalyzer = (): TaskNameAnalyzer => {
 export const getDecompressNameAnalyzer = (): TaskNameAnalyzer => {
   const t = useT()
   return {
-    regex:
-      /^decompress \[(.+)]\((.*\/([^\/]+))\)\[(.+)] to \[(.+)]\((.+)\) with password <(.*)>$/,
+    regex: DECOMPRESS_NAME,
     title: (matches) => matches[3],
     attrs: {
       [t(`tasks.attr.decompress.src`)]: (matches) =>
@@ -104,7 +109,7 @@ export const getDecompressNameAnalyzer = (): TaskNameAnalyzer => {
 export const getDecompressUploadNameAnalyzer = (): TaskNameAnalyzer => {
   const t = useT()
   return {
-    regex: /^upload (.+) to \[(.+)]\((.+)\)$/,
+    regex: DECOMPRESS_UPLOAD_NAME,
     title: (matches) => matches[1],
     attrs: {
       [t(`tasks.attr.decompress.dst`)]: (matches) =>
