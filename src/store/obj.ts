@@ -2,6 +2,7 @@ import naturalSort from "typescript-natural-sort"
 import { cookieStorage, createStorageSignal } from "@solid-primitives/storage"
 import { createMemo, createSignal } from "solid-js"
 import { createStore, produce } from "solid-js/store"
+import { withoutNulls } from "./without-nulls"
 import { Obj, ObjType, StoreObj, MountDetails } from "~/types"
 import { bus, log } from "~/utils"
 import { keyPressed } from "./key-event"
@@ -47,7 +48,7 @@ const [objStore, setObjStore] = createStore<
 const setObjs = (objs: Obj[]) => {
   lastChecked.start = -1
   lastChecked.end = -1
-  setObjStore("objs", objs)
+  setObjStore("objs", withoutNulls(objs))
   setObjStore("obj", "is_dir", true)
 }
 
