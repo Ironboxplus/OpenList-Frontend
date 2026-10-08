@@ -12,6 +12,8 @@ import { ExtraBadges } from "./ExtraBadges"
 import type { GridDecor } from "~/features/files/grid-decor"
 import {
   CardBadge,
+  CardTag,
+  PosterMosaic,
   PosterPlaceholder,
   SelectCheck,
 } from "~/features/files/GridBadges"
@@ -122,7 +124,7 @@ export const GridItem = (props: {
         <Center
           class="item-thumbnail"
           h={
-            cover() || decor()?.placeholder
+            cover() || decor()?.placeholder || decor()?.mosaic?.length
               ? undefined
               : `${parseInt(local["grid_item_size"])}px`
           }
@@ -140,6 +142,9 @@ export const GridItem = (props: {
         >
           <Show when={decor()?.badge}>
             <CardBadge text={decor()!.badge!} />
+          </Show>
+          <Show when={decor()?.tag}>
+            <CardTag text={decor()!.tag!} />
           </Show>
           <Show when={selectionMode()}>
             <SelectCheck selected={props.obj.selected} />
@@ -163,33 +168,44 @@ export const GridItem = (props: {
             />
           </Show>
           <Show
-            when={cover()}
+            when={decor()?.mosaic?.length}
             fallback={
               <Show
-                when={decor()?.placeholder}
+                when={cover()}
                 fallback={
-                  <Show when={props.obj.thumb} fallback={objIcon}>
-                    <ImageWithError
-                      maxH="$full"
-                      maxW="$full"
-                      rounded="$lg"
-                      shadow="$md"
-                      fallback={<CenterLoading size="lg" />}
-                      fallbackErr={objIcon}
-                      src={props.obj.thumb}
-                      loading="lazy"
+                  <Show
+                    when={decor()?.placeholder}
+                    fallback={
+                      <Show when={props.obj.thumb} fallback={objIcon}>
+                        <ImageWithError
+                          maxH="$full"
+                          maxW="$full"
+                          rounded="$lg"
+                          shadow="$md"
+                          fallback={<CenterLoading size="lg" />}
+                          fallbackErr={objIcon}
+                          src={props.obj.thumb}
+                          loading="lazy"
+                        />
+                      </Show>
+                    }
+                  >
+                    <PosterPlaceholder
+                      title={decor()!.placeholder!}
+                      seed={props.obj.name}
                     />
                   </Show>
                 }
               >
-                <PosterPlaceholder
-                  title={decor()!.placeholder!}
-                  seed={props.obj.name}
+                <GridCover
+                  src={cover()}
+                  fallback={objIcon}
+                  alt={props.obj.name}
                 />
               </Show>
             }
           >
-            <GridCover src={cover()} fallback={objIcon} alt={props.obj.name} />
+            <PosterMosaic urls={decor()!.mosaic!} />
           </Show>
         </Center>
         <Text

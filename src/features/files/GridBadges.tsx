@@ -45,3 +45,52 @@ export const PosterPlaceholder = (props: { title: string; seed: string }) => (
     <span class="line-clamp-4 break-words">{props.title}</span>
   </div>
 )
+
+/** Small label on a poster's bottom-left corner (the collection tag). */
+export const CardTag = (props: { text: string }) => (
+  <span
+    data-card-tag
+    class="absolute bottom-1 left-1 z-10 rounded-md bg-black/70 px-1.5 py-0.5 text-xs font-medium text-white"
+  >
+    {props.text}
+  </span>
+)
+
+/**
+ * 2:3 mosaic of up to four posters: one fills the card, two or three split it
+ * (two side by side, three as a tall one plus two stacked), four make a 2x2.
+ */
+export const PosterMosaic = (props: { urls: string[] }) => {
+  const urls = () => props.urls.slice(0, 4)
+  const cell = (u: string, extra = "") => (
+    <img
+      src={u}
+      alt=""
+      loading="lazy"
+      class={cn("size-full object-cover", extra)}
+    />
+  )
+  return (
+    <div
+      data-poster-mosaic
+      data-count={urls().length}
+      class="grid aspect-[2/3] w-full gap-px overflow-hidden rounded-lg bg-muted"
+      classList={{
+        "grid-cols-1": urls().length === 1,
+        "grid-cols-2": urls().length > 1,
+        "grid-rows-2": urls().length > 2,
+      }}
+    >
+      {urls().map((u, i) => (
+        <div
+          class={cn(
+            "min-h-0 overflow-hidden",
+            urls().length === 3 && i === 0 && "row-span-2",
+          )}
+        >
+          {cell(u)}
+        </div>
+      ))}
+    </div>
+  )
+}

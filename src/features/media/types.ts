@@ -16,6 +16,8 @@ export interface MediaCard {
   year: number
   ratings: Record<string, number | string>
   poster_url: string
+  /** Collections: up to 4 thumb URLs of the members, for the mosaic. */
+  child_posters?: string[]
 }
 
 export interface MediaCandidate {

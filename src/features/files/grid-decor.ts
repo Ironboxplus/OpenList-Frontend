@@ -8,6 +8,10 @@ export interface GridDecor {
   sub?: string
   /** Small badge on the poster's top-right corner (e.g. a rating). */
   badge?: string
+  /** Several posters shown as one 2:3 mosaic (a collection); wins over `cover`. */
+  mosaic?: string[]
+  /** Small tag on the poster's bottom-left corner (e.g. "Collection"). */
+  tag?: string
   /** No poster: draw a gradient 2:3 card with this title instead of the folder icon. */
   placeholder?: string
 }

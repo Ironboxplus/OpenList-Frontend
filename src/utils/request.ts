@@ -33,7 +33,9 @@ instance.interceptors.response.use(
   },
   (error) => {
     // response error
-    console.error(error) // for debug
+    // A request the page itself superseded (usePath cancels the previous
+    // fetch on every path change) is not an error worth a console line.
+    if (!axios.isCancel(error)) console.error(error) // for debug
     // notificationService.show({
     //   status: "danger",
     //   title: error.code,
