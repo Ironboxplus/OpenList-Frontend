@@ -105,5 +105,11 @@
       "title": "文档",
       "description": "OpenList 官网上的使用指南。"
     }
+  },
+  "nav": {
+    "label": "设置页面",
+    "collapse": "收起",
+    "expand": "展开设置菜单",
+    "back": "返回设置"
   }
 }

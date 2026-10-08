@@ -16,6 +16,7 @@ import { BottomTabs, TAB_BAR_HEIGHT } from "./BottomTabs"
 import { readCollapsed, writeCollapsed } from "./nav-items"
 import { FULL_WIDTH, RAIL_WIDTH, SideNav } from "./SideNav"
 import { TOP_BAR_HEIGHT, TopBar } from "./TopBar"
+import { setShellActive } from "./topbar-slot"
 import { createViewport } from "./viewport"
 
 const TaskCenter = lazy(() => import("../transfers/TaskCenter"))
@@ -76,6 +77,9 @@ const AppShell = (props: ParentProps) => {
   createEffect(() => {
     if (paletteOpen()) setPaletteUsed(true)
   })
+
+  createEffect(() => setShellActive(shown()))
+  onCleanup(() => setShellActive(false))
 
   const wide = () => shown() && viewport() !== "phone"
   const phone = () => shown() && viewport() === "phone"

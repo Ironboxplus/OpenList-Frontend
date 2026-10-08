@@ -11,12 +11,14 @@ import { NavBadge } from "./NavBadge"
 import { activeNavId, NAV_ITEMS } from "./nav-items"
 import { hotkeyLabel, setPaletteOpen } from "../palette/state"
 import { setTaskCenterOpen, taskCenterOpen } from "./task-center"
+import { topBarSlots } from "./topbar-slot"
 
 export const TOP_BAR_HEIGHT = "2.75rem"
 
 /**
- * Page title on the left; search and (tablet/desktop only, the phone has the
- * Task Center in its tab bar flow) Task Center buttons on the right.
+ * One slim bar above every signed-in page. Left: whatever the page registered
+ * (breadcrumb, back button) or the section title. Right: the page's own
+ * actions, then the shell's search and (tablet/desktop) Task Center buttons.
  */
 export const TopBar = (props: { pathname: string; phone?: boolean }) => {
   const t = useT()
@@ -25,15 +27,27 @@ export const TopBar = (props: { pathname: string; phone?: boolean }) => {
     const item = NAV_ITEMS.find((i) => i.id === id)
     return item ? t(item.labelKey) : ""
   }
+  const ctx = () => ({ phone: !!props.phone })
   return (
     <header
-      class="flex items-center justify-between px-4"
+      data-topbar
+      class="sticky top-0 z-[1100] flex items-center justify-between gap-2 border-b bg-background/95 px-3 backdrop-blur sm:px-4"
       style={{ height: TOP_BAR_HEIGHT }}
     >
-      <Show when={title()} fallback={<span />}>
-        <span class="text-sm font-medium text-muted-foreground">{title()}</span>
-      </Show>
-      <div class="flex items-center gap-1">
+      <div class="flex min-w-0 flex-1 items-center">
+        <Show
+          when={topBarSlots()?.left}
+          fallback={
+            <span class="text-sm font-medium text-muted-foreground">
+              {title()}
+            </span>
+          }
+        >
+          {(left) => left()(ctx())}
+        </Show>
+      </div>
+      <div class="flex shrink-0 items-center gap-1">
+        <Show when={topBarSlots()?.right}>{(right) => right()(ctx())}</Show>
         <Tooltip placement="bottom">
           <TooltipTrigger
             as="button"

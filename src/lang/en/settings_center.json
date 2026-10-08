@@ -105,5 +105,11 @@
       "title": "Documentation",
       "description": "Official guides on the OpenList website."
     }
+  },
+  "nav": {
+    "label": "Settings pages",
+    "collapse": "Collapse",
+    "expand": "Expand settings menu",
+    "back": "Back to settings"
   }
 }
