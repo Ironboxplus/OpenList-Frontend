@@ -10,3 +10,14 @@
 
 @source "../features";
 @source "../components/ui";
+
+/*
+ * Phone shell: the bottom tab bar is `position: fixed`, so Home's own fixed
+ * toolbars (right-hand toggle, selection bar) must sit above it.
+ */
+html.shell-phone .left-toolbar-box {
+  bottom: calc(1.25rem + 3.5rem + env(safe-area-inset-bottom)) !important;
+}
+html.shell-phone .center-toolbar {
+  bottom: calc(1rem + 3.5rem + env(safe-area-inset-bottom)) !important;
+}

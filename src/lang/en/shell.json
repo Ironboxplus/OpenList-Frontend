@@ -1,0 +1,19 @@
+{
+  "nav": {
+    "files": "Files",
+    "transfers": "Transfers",
+    "settings": "Settings",
+    "me": "Me",
+    "account": "Account",
+    "profile": "Profile",
+    "toggle_theme": "Switch light/dark",
+    "collapse": "Collapse",
+    "expand": "Expand sidebar"
+  },
+  "task_center": {
+    "title": "Task Center",
+    "empty": "No running or recent tasks.",
+    "view_all": "View all",
+    "running": "{{count}} running"
+  }
+}

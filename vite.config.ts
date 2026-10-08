@@ -43,6 +43,7 @@ export default defineConfig({
   },
   plugins: [
     solidPlugin(),
+    tailwindcss(),
     legacy({
       targets: ["defaults"],
     }),
