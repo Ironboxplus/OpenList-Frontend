@@ -9,6 +9,7 @@ import {
   Show,
 } from "solid-js"
 import { ActionBar } from "~/features/files/ActionBar"
+import { posterActive } from "~/features/media/state"
 import { FilesEmpty } from "~/features/files/FilesState"
 import { PhoneFab } from "~/features/files/PhoneActions"
 import { selectionMode } from "~/features/files/selection-mode"
@@ -34,6 +35,7 @@ const ListLayout = lazy(() => import("./List"))
 const GridLayout = lazy(() => import("./Grid"))
 const ImageLayout = lazy(() => import("./Images"))
 const MasonryLayout = lazy(() => import("./Masonry"))
+const PosterWall = lazy(() => import("./PosterWall"))
 
 const Folder = () => {
   const { rawLink } = useLink()
@@ -89,6 +91,9 @@ const Folder = () => {
         fallback={<FilesEmpty />}
       >
         <Switch>
+          <Match when={posterActive()}>
+            <PosterWall />
+          </Match>
           <Match when={layout() === "list"}>
             <ListLayout />
           </Match>

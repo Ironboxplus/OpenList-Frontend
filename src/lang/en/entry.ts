@@ -8,6 +8,7 @@ import index from "./index.json"
 import indexes from "./indexes.json"
 import login from "./login.json"
 import manage from "./manage.json"
+import media from "./media.json"
 import metas from "./metas.json"
 import palette from "./palette.json"
 import shell from "./shell.json"
@@ -32,6 +33,7 @@ export const dict = {
   indexes,
   login,
   manage,
+  media,
   metas,
   palette,
   settings_other,

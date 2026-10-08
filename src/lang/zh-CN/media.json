@@ -1,0 +1,48 @@
+{
+  "view_poster": "海报",
+  "kind": {
+    "movie": "电影",
+    "tv": "剧集",
+    "anime": "动画",
+    "collection": "合集",
+    "ignore": "已忽略"
+  },
+  "rating": {
+    "douban": "豆瓣",
+    "imdb": "IMDb",
+    "rt": "烂番茄",
+    "tmdb": "TMDB",
+    "bgm": "Bangumi"
+  },
+  "expand": "展开",
+  "collapse": "收起",
+  "edit": "编辑媒体信息",
+  "menu_item": "媒体信息…",
+  "poster_alt": "{{title}} 的海报",
+  "editor": {
+    "title": "媒体信息",
+    "kind": "类型",
+    "provider": "数据源",
+    "query": "搜索标题",
+    "query_placeholder": "要搜索的标题",
+    "search": "搜索",
+    "searching": "搜索中…",
+    "no_results": "没有找到结果。",
+    "suggested": "推荐匹配",
+    "results": "搜索结果",
+    "apply": "使用",
+    "applying": "应用中…",
+    "lock": "锁定",
+    "lock_hint": "锁定后，之后的刮削不会覆盖这条信息。",
+    "clear": "清除媒体信息",
+    "clear_confirm": "确定清除这个文件夹的媒体信息吗？",
+    "saved": "已保存",
+    "cleared": "已清除",
+    "failed": "失败：{{message}}",
+    "close": "关闭",
+    "year": "{{year}}",
+    "network_hint": "服务器无法访问 {{provider}}，请在能访问的 PC 上运行下面的命令写入，之后这里就会显示：",
+    "copy": "复制",
+    "copied": "已复制"
+  }
+}

@@ -6,6 +6,7 @@ import {
   TbHome,
   TbLayoutGrid,
   TbLayoutList,
+  TbMovie,
   TbPhoto,
   TbShare,
   TbColumns,
@@ -45,6 +46,7 @@ import { bus } from "~/utils/bus"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
 import { fileCrumbs, parentCrumb, type FileCrumb } from "./crumbs"
+import { chooseView, hasPosterView, posterActive } from "../media/state"
 import { PhoneSelectionHeader } from "./PhoneActions"
 import { selectionMode } from "./selection-mode"
 
@@ -241,6 +243,27 @@ export const FilesTopLeft = (props: { phone: boolean }) => (
   </Show>
 )
 
+const pickLayout = (key: LayoutType) => {
+  chooseView("other")
+  setLayout(key)
+}
+
+const PosterMenuItem = () => {
+  const t = useT()
+  return (
+    <Show when={hasPosterView()}>
+      <DropdownMenuItem
+        data-view-poster
+        onSelect={() => chooseView("poster")}
+        class={cn("gap-2", posterActive() && "font-medium")}
+      >
+        <TbMovie class="size-4" />
+        {t("media.view_poster")}
+      </DropdownMenuItem>
+    </Show>
+  )
+}
+
 const searchOn = () =>
   objStore.state === State.Folder && getSetting("search_index") !== "none"
 const layoutOn = () => objStore.state === State.Folder
@@ -276,14 +299,18 @@ export const FilesTopRight = (props: { phone: boolean }) => {
                   <For each={Object.keys(LAYOUTS) as LayoutType[]}>
                     {(key) => (
                       <DropdownMenuItem
-                        onSelect={() => setLayout(key)}
-                        class={cn("gap-2", layout() === key && "font-medium")}
+                        onSelect={() => pickLayout(key)}
+                        class={cn(
+                          "gap-2",
+                          !posterActive() && layout() === key && "font-medium",
+                        )}
                       >
                         <Dynamic component={LAYOUTS[key]} class="size-4" />
                         {t(`home.layouts.${key}`)}
                       </DropdownMenuItem>
                     )}
                   </For>
+                  <PosterMenuItem />
                 </Show>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -312,20 +339,27 @@ export const FilesTopRight = (props: { phone: boolean }) => {
               data-files-view
               class={iconButton}
             >
-              <Dynamic component={LAYOUTS[layout()]} class="size-5" />
+              <Dynamic
+                component={posterActive() ? TbMovie : LAYOUTS[layout()]}
+                class="size-5"
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <For each={Object.keys(LAYOUTS) as LayoutType[]}>
                 {(key) => (
                   <DropdownMenuItem
-                    onSelect={() => setLayout(key)}
-                    class={cn("gap-2", layout() === key && "font-medium")}
+                    onSelect={() => pickLayout(key)}
+                    class={cn(
+                      "gap-2",
+                      !posterActive() && layout() === key && "font-medium",
+                    )}
                   >
                     <Dynamic component={LAYOUTS[key]} class="size-4" />
                     {t(`home.layouts.${key}`)}
                   </DropdownMenuItem>
                 )}
               </For>
+              <PosterMenuItem />
             </DropdownMenuContent>
           </DropdownMenu>
         </Show>

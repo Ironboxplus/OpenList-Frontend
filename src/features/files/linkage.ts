@@ -5,6 +5,7 @@ import { createEffect, onCleanup, untrack } from "solid-js"
 import { usePath, useRouter } from "~/hooks"
 import { objStore, State } from "~/store"
 import { onTaskSucceeded } from "../transfers/service"
+import { invalidateMedia } from "../media/state"
 import { revealByName } from "./scroll-to"
 import { norm, treePath } from "./tasks-for-path"
 
@@ -22,7 +23,10 @@ export const useFilesLinkage = () => {
     onTaskSucceeded((task) => {
       const dst = treePath(task.destination?.path)
       if (!dst || objStore.state !== State.Folder) return
-      if (norm(dst) === norm(pathname())) void refresh(undefined, true)
+      if (norm(dst) === norm(pathname())) {
+        invalidateMedia(pathname())
+        void refresh(undefined, true)
+      }
     }),
   )
 

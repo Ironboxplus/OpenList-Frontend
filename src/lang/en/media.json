@@ -1,0 +1,48 @@
+{
+  "view_poster": "Posters",
+  "kind": {
+    "movie": "Movie",
+    "tv": "TV series",
+    "anime": "Anime",
+    "collection": "Collection",
+    "ignore": "Ignored"
+  },
+  "rating": {
+    "douban": "Douban",
+    "imdb": "IMDb",
+    "rt": "Rotten Tomatoes",
+    "tmdb": "TMDB",
+    "bgm": "Bangumi"
+  },
+  "expand": "Show more",
+  "collapse": "Show less",
+  "edit": "Edit media info",
+  "menu_item": "Media info…",
+  "poster_alt": "Poster of {{title}}",
+  "editor": {
+    "title": "Media info",
+    "kind": "Type",
+    "provider": "Data source",
+    "query": "Search title",
+    "query_placeholder": "Title to search for",
+    "search": "Search",
+    "searching": "Searching…",
+    "no_results": "Nothing found.",
+    "suggested": "Suggested matches",
+    "results": "Search results",
+    "apply": "Use this",
+    "applying": "Applying…",
+    "lock": "Lock",
+    "lock_hint": "A locked item is not overwritten by later scrapes.",
+    "clear": "Clear media info",
+    "clear_confirm": "Remove the media info of this folder?",
+    "saved": "Saved",
+    "cleared": "Cleared",
+    "failed": "Failed: {{message}}",
+    "close": "Close",
+    "year": "{{year}}",
+    "network_hint": "The server cannot reach {{provider}}. Run this on a PC that can, then it will show up here:",
+    "copy": "Copy",
+    "copied": "Copied"
+  }
+}

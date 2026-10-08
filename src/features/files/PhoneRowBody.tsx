@@ -6,6 +6,7 @@ import type { StoreObj } from "~/types"
 import { cn } from "~/utils/cn"
 import { formatDateCompact, getFileSize, toReadableUsage } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
+import { episodeFor } from "../media/state"
 import { selectionMode } from "./selection-mode"
 
 /**
@@ -21,7 +22,7 @@ export const PhoneRowBody = (props: { obj: StoreObj }) => {
         ? ""
         : getFileSize(props.obj.size)
   const meta = () =>
-    [size(), props.obj.modified ? formatDateCompact(props.obj.modified) : ""]
+    [episodeFor(props.obj.name)?.text, size(), props.obj.modified ? formatDateCompact(props.obj.modified) : ""]
       .filter(Boolean)
       .join(" · ")
   return (

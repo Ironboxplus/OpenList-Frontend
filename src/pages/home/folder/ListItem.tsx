@@ -34,6 +34,7 @@ import {
 } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
+import { episodeFor } from "~/features/media/state"
 import { PhoneRowBody } from "~/features/files/PhoneRowBody"
 import { phoneShell } from "~/features/shell/topbar-slot"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
@@ -200,6 +201,19 @@ export const ListItem = (props: {
             >
               {props.obj.name}
             </Text>
+            <Show when={episodeFor(props.obj.name)}>
+              {(ep) => (
+                <Text
+                  class="episode"
+                  flexShrink={0}
+                  fontSize="$xs"
+                  color="$neutral10"
+                  css={{ whiteSpace: "nowrap" }}
+                >
+                  {ep().text}
+                </Text>
+              )}
+            </Show>
             <ExtraBadges extra={props.obj.extra} />
           </HStack>
           <Show

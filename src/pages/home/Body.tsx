@@ -1,5 +1,5 @@
 import { VStack } from "@hope-ui/solid"
-import { Show } from "solid-js"
+import { lazy, Show } from "solid-js"
 import { AnnouncementCard } from "~/features/files/AnnouncementCard"
 import { DirTasksCard } from "~/features/files/DirTasksCard"
 import { FilesFrame } from "~/features/files/FilesFrame"
@@ -9,6 +9,9 @@ import { Nav } from "./Nav"
 import { Obj } from "./Obj"
 import { Readme } from "./Readme"
 import { Sidebar } from "./Sidebar"
+
+// The media view is its own chunk; a backend without the API leaves it idle.
+const MediaController = lazy(() => import("~/features/media/MediaController"))
 
 export const Body = () => (
   <Show
@@ -45,6 +48,7 @@ export const Body = () => (
       <VStack class="body" py="$3" minH="70vh" w="$full" gap="$4">
         <AnnouncementCard />
         <Readme files={["header.md", "top.md", "index.md"]} fromMeta="header" />
+        <MediaController />
         <DirTasksCard />
         <Obj />
         <Readme

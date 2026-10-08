@@ -15,6 +15,7 @@ import {
 import { getIconByObj } from "~/utils/icon"
 import { readExtra } from "./extra-meta"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
+import { episodeFor } from "~/features/media/state"
 
 /**
  * Two-line media row, used instead of {@link ListItem} inside storages whose
@@ -69,6 +70,7 @@ export const MediaListItem = (props: {
    */
   const secondary = () =>
     [
+      episodeFor(props.obj.name)?.text,
       meta().duration,
       props.obj.is_dir ? "" : getFileSize(props.obj.size),
       formatDateCompact(props.obj.modified),

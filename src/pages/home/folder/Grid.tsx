@@ -8,10 +8,21 @@ import { VirtualRows } from "~/features/files/VirtualRows"
 import { gridColumns, shouldVirtualize } from "~/features/files/virtualize"
 import { createViewport } from "~/features/shell/viewport"
 import { shellActive } from "~/features/shell/topbar-slot"
+import type { GridDecor } from "~/features/files/grid-decor"
+import type { StoreObj } from "~/types"
 
 const GRID_GAP = 8
 
-const GridLayout = () => {
+export interface GridLayoutProps {
+  /** Which store indices to show, in which order (default: all, as stored). */
+  order?: () => number[]
+  /** Per-card overrides (poster, title, year, badge). */
+  decorate?: (obj: StoreObj) => GridDecor | undefined
+  /** 2:3 posters: rows are taller than icon cards. */
+  poster?: boolean
+}
+
+const GridLayout = (props: GridLayoutProps) => {
   const { isMouseSupported, registerSelectContainer, captureContentMenu } =
     useSelectWithMouse()
   registerSelectContainer()
@@ -20,12 +31,30 @@ const GridLayout = () => {
   const virtual = createMemo(() =>
     shouldVirtualize(pagerType, objStore.objs.length),
   )
+  const order = createMemo(
+    () => props.order?.() ?? objStore.objs.map((_, i) => i),
+  )
   const viewport = createViewport()
   const [width, setWidth] = createSignal(0)
   const columns = createMemo(() => gridColumns(width(), viewport()))
   // Thumbnail box + two name lines + padding; measured after first render.
-  const rowEstimate = () => parseInt(local["grid_item_size"]) + 84
-  const rowCount = () => Math.ceil(objStore.objs.length / columns())
+  const rowEstimate = () =>
+    props.poster
+      ? Math.round(((width() || 800) / columns()) * 1.5) + 84
+      : parseInt(local["grid_item_size"]) + 84
+  const rowCount = () => Math.ceil(order().length / columns())
+  const card = (i: number, animate: boolean) => (
+    <Show when={objStore.objs[i]} keyed>
+      {(obj) => (
+        <GridItem
+          obj={obj}
+          index={i}
+          animate={animate}
+          decor={props.decorate ? () => props.decorate!(obj) : undefined}
+        />
+      )}
+    </Show>
+  )
 
   const watchWidth = (el: HTMLElement) => {
     const ro = new ResizeObserver(() => setWidth(el.clientWidth))
@@ -55,11 +84,7 @@ const GridLayout = () => {
               parseInt(local["grid_item_size"]) + 20
             }px,1fr))`}
           >
-            <For each={objStore.objs}>
-              {(obj, i) => {
-                return <GridItem obj={obj} index={i()} />
-              }}
-            </For>
+            <For each={order()}>{(i) => card(i, true)}</For>
           </Grid>
         }
       >
@@ -83,18 +108,9 @@ const GridLayout = () => {
                 }}
               >
                 <For
-                  each={objStore.objs.slice(
-                    row * columns(),
-                    (row + 1) * columns(),
-                  )}
+                  each={order().slice(row * columns(), (row + 1) * columns())}
                 >
-                  {(obj, k) => (
-                    <GridItem
-                      obj={obj}
-                      index={row * columns() + k()}
-                      animate={false}
-                    />
-                  )}
+                  {(i) => card(i, false)}
                 </For>
               </div>
             )}

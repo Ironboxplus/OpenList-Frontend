@@ -9,10 +9,10 @@ import { ObjType, StoreObj } from "~/types"
 import { bus, getFileSize, hoverColor, listItemIn } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
-import { TbCheck } from "solid-icons/tb"
+import type { GridDecor } from "~/features/files/grid-decor"
+import { CardBadge, SelectCheck } from "~/features/files/GridBadges"
 import { selectionMode } from "~/features/files/selection-mode"
 import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
-import { cn } from "~/utils/cn"
 import { createLongPress } from "~/utils/touch"
 import { GridCover } from "~/features/files/GridCover"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
@@ -24,7 +24,11 @@ export const GridItem = (props: {
   cover?: string
   /** Off for virtualized rows, which mount constantly while scrolling. */
   animate?: boolean
+  /** Media view: replaces the name, size line and poster of this card. */
+  decor?: () => GridDecor | undefined
 }) => {
+  const decor = () => props.decor?.()
+  const cover = () => props.cover ?? decor()?.cover
   const { isHide } = useUtil()
   if (isHide(props.obj)) {
     return null
@@ -113,7 +117,7 @@ export const GridItem = (props: {
       >
         <Center
           class="item-thumbnail"
-          h={props.cover ? undefined : `${parseInt(local["grid_item_size"])}px`}
+          h={cover() ? undefined : `${parseInt(local["grid_item_size"])}px`}
           w="$full"
           cursor={props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"}
           on:click={(e: MouseEvent) => {
@@ -126,20 +130,11 @@ export const GridItem = (props: {
           }}
           pos="relative"
         >
+          <Show when={decor()?.badge}>
+            <CardBadge text={decor()!.badge!} />
+          </Show>
           <Show when={selectionMode()}>
-            <span
-              data-row-check
-              class={cn(
-                "absolute left-1 top-1 z-10 inline-flex size-6 items-center justify-center rounded-full border-2",
-                props.obj.selected
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-white/80 bg-black/20",
-              )}
-            >
-              <Show when={props.obj.selected}>
-                <TbCheck class="size-4" />
-              </Show>
-            </span>
+            <SelectCheck selected={props.obj.selected} />
           </Show>
           <Show when={checkboxOpen() && !phoneShell()}>
             <ItemCheckbox
@@ -160,7 +155,7 @@ export const GridItem = (props: {
             />
           </Show>
           <Show
-            when={props.cover}
+            when={cover()}
             fallback={
               <Show when={props.obj.thumb} fallback={objIcon}>
                 <ImageWithError
@@ -176,11 +171,7 @@ export const GridItem = (props: {
               </Show>
             }
           >
-            <GridCover
-              src={props.cover}
-              fallback={objIcon}
-              alt={props.obj.name}
-            />
+            <GridCover src={cover()} fallback={objIcon} alt={props.obj.name} />
           </Show>
         </Center>
         <Text
@@ -200,13 +191,22 @@ export const GridItem = (props: {
           w="$full"
           textAlign="center"
           fontSize="$sm"
-          title={props.obj.name}
+          title={decor()?.label ?? props.obj.name}
         >
-          {props.obj.name}
+          {decor()?.label ?? props.obj.name}
         </Text>
-        <Show when={shellActive() && !props.obj.is_dir && props.obj.size}>
+        <Show
+          when={decor()?.sub}
+          fallback={
+            <Show when={shellActive() && !props.obj.is_dir && props.obj.size}>
+              <Text class="meta" fontSize="$xs" color="$neutral10">
+                {getFileSize(props.obj.size)}
+              </Text>
+            </Show>
+          }
+        >
           <Text class="meta" fontSize="$xs" color="$neutral10">
-            {getFileSize(props.obj.size)}
+            {decor()!.sub}
           </Text>
         </Show>
         <ExtraBadges extra={props.obj.extra} maxTags={1} />
