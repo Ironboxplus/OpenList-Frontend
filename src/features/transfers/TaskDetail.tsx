@@ -18,7 +18,7 @@ import type {
   UnifiedTask,
 } from "~/platform/contracts/task"
 import { cn } from "~/utils/cn"
-import { availableActions, type TaskAction } from "./adapter"
+import { availableActions, syncPhase, type TaskAction } from "./adapter"
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog"
 import { formatBytes, formatEta, formatTime } from "./format"
 import { StateBadge } from "./StateBadge"
@@ -64,6 +64,9 @@ const SyncDetail = (props: {
   const transferring = () => props.snapshot.stats?.transferring ?? []
   const spec = () => props.snapshot.spec
   const stats = () => props.snapshot.stats ?? {}
+  const checking = () =>
+    props.snapshot.state === "running" &&
+    syncPhase(props.snapshot.stats) === "checking"
 
   return (
     <Tabs defaultValue="overview" class="mt-4">
@@ -138,21 +141,41 @@ const SyncDetail = (props: {
             {t("transfers.detail.stats")}
           </h4>
           <dl class="flex flex-col gap-1 text-sm">
-            <Field label={t("transfers.detail.bytes")}>
-              {formatBytes(stats().bytes)} / {formatBytes(stats().totalBytes)}
-            </Field>
-            <Field label={t("transfers.detail.files")}>
-              {stats().transfers ?? "-"} / {stats().totalTransfers ?? "-"}
-            </Field>
-            <Field label={t("transfers.detail.speed")}>
-              {stats().speed ? `${formatBytes(stats().speed)}/s` : "-"}
-              {" · "}
-              {formatEta(
-                typeof stats().eta === "number"
-                  ? stats().eta! * 1000
-                  : undefined,
-              ) ?? "-"}
-            </Field>
+            <Show when={checking() || (stats().checks ?? 0) > 0}>
+              <Field label={t("transfers.detail.checks")}>
+                {stats().checks ?? 0} / {stats().totalChecks ?? "-"}
+              </Field>
+            </Show>
+            <Show when={(stats().listed ?? 0) > 0}>
+              <Field label={t("transfers.detail.scanned")}>
+                {stats().listed}
+              </Field>
+            </Show>
+            <Show when={!checking() && (stats().totalBytes || stats().bytes)}>
+              <Field label={t("transfers.detail.bytes")}>
+                {formatBytes(stats().bytes)} / {formatBytes(stats().totalBytes)}
+              </Field>
+            </Show>
+            <Show
+              when={
+                !checking() && (stats().totalTransfers || stats().transfers)
+              }
+            >
+              <Field label={t("transfers.detail.files")}>
+                {stats().transfers ?? "-"} / {stats().totalTransfers ?? "-"}
+              </Field>
+            </Show>
+            <Show when={!checking()}>
+              <Field label={t("transfers.detail.speed")}>
+                {stats().speed ? `${formatBytes(stats().speed)}/s` : "-"}
+                {" · "}
+                {formatEta(
+                  typeof stats().eta === "number"
+                    ? stats().eta! * 1000
+                    : undefined,
+                ) ?? "-"}
+              </Field>
+            </Show>
           </dl>
         </div>
       </TabsContent>

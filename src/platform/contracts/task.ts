@@ -23,6 +23,10 @@ export interface TaskProgress {
   bytesTotal?: number
   itemsDone?: number
   itemsTotal?: number
+  /** Sync only: files compared so far / expected, and entries listed. */
+  checksDone?: number
+  checksTotal?: number
+  scanned?: number
   percent?: number
   speedBytesPerSecond?: number
   etaMs?: number
@@ -126,6 +130,7 @@ export interface SyncStats {
   totalTransfers?: number
   checks?: number
   totalChecks?: number
+  listed?: number
   speed?: number
   /** seconds; null/absent when unknown */
   eta?: number | null

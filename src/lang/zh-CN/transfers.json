@@ -77,7 +77,9 @@
     "speed": "{{speed}}/s",
     "eta": "剩余 {{eta}}",
     "show_error": "查看完整错误",
-    "hide_error": "收起"
+    "hide_error": "收起",
+    "checking": "核对中 · 已核对 {{checked}} 项 · 已扫描 {{scanned}} 项",
+    "checking_short": "核对中 · 已核对 {{checked}} 项"
   },
   "sync": {
     "rapid": "秒传 {{count}} 个（节省 {{saved}}）",
@@ -119,7 +121,9 @@
     "bytes": "数据量",
     "files": "文件数",
     "speed": "速度 / 剩余时间",
-    "progress": "进度"
+    "progress": "进度",
+    "checks": "已核对",
+    "scanned": "已扫描"
   },
   "event": {
     "only_in_src": "仅在源端",

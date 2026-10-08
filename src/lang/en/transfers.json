@@ -77,7 +77,9 @@
     "speed": "{{speed}}/s",
     "eta": "{{eta}} left",
     "show_error": "Show full error",
-    "hide_error": "Collapse"
+    "hide_error": "Collapse",
+    "checking": "Checking · {{checked}} checked · {{scanned}} scanned",
+    "checking_short": "Checking · {{checked}} checked"
   },
   "sync": {
     "rapid": "Instant {{count}} ({{saved}} saved)",
@@ -119,7 +121,9 @@
     "bytes": "Data",
     "files": "Files",
     "speed": "Speed / ETA",
-    "progress": "Progress"
+    "progress": "Progress",
+    "checks": "Checked",
+    "scanned": "Scanned"
   },
   "event": {
     "only_in_src": "Only in source",

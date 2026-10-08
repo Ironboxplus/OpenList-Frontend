@@ -9,6 +9,7 @@ import {
   mapSyncSnapshot,
   mapTache,
   mapTacheState,
+  syncPhase,
   parseTaskName,
   sectionOf,
   taskTitle,
@@ -339,5 +340,54 @@ describe("drawerTasks", () => {
   it("caps at ten", () => {
     const list = Array.from({ length: 12 }, (_, i) => mk(i, 1, null))
     expect(drawerTasks(list, now)).toHaveLength(10)
+  })
+})
+
+describe("sync phase", () => {
+  const checkingStats = {
+    checks: 3133,
+    totalChecks: 3133,
+    listed: 7290,
+    transfers: 0,
+    totalTransfers: 0,
+    bytes: 0,
+    totalBytes: 0,
+  }
+  it("is checking while comparisons exist and nothing is queued", () => {
+    expect(syncPhase(checkingStats)).toBe("checking")
+    const t = mapSyncSnapshot(
+      snap({
+        stats: checkingStats,
+        counters: { ...snap().counters, match: 3640 },
+      }),
+      NOW,
+    )
+    expect(t.phase).toBe("checking")
+    expect(t.progress.checksDone).toBe(3133)
+    expect(t.progress.checksTotal).toBe(3133)
+    expect(t.progress.scanned).toBe(7290)
+    expect(t.progress.percent).toBeUndefined()
+  })
+  it("is transferring once something is queued or moving", () => {
+    expect(syncPhase({ ...checkingStats, totalTransfers: 2 })).toBe(
+      "transferring",
+    )
+    expect(
+      syncPhase({ ...checkingStats, transfers: 1, totalTransfers: 1 }),
+    ).toBe("transferring")
+    expect(mapSyncSnapshot(snap(), NOW).phase).toBe("transferring")
+  })
+  it("with no stats or no checks it is not checking", () => {
+    expect(syncPhase(undefined)).toBe("transferring")
+    expect(syncPhase({})).toBe("transferring")
+    expect(syncPhase({ checks: 0, transfers: 0, totalTransfers: 0 })).toBe(
+      "transferring",
+    )
+  })
+  it("a finished job reports its state as phase", () => {
+    expect(
+      mapSyncSnapshot(snap({ state: "succeeded", stats: checkingStats }), NOW)
+        .phase,
+    ).toBe("succeeded")
   })
 })

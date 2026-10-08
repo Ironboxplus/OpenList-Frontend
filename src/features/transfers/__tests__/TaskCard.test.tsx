@@ -168,6 +168,31 @@ describe("TaskCard", () => {
     ).toBe(true)
   })
 
+  it("a checking sync says so instead of showing 0 B / 0 files", () => {
+    const task = mapSyncSnapshot(
+      snap({
+        stats: {
+          checks: 3133,
+          totalChecks: 3133,
+          listed: 7290,
+          transfers: 0,
+          totalTransfers: 0,
+          bytes: 0,
+          totalBytes: 0,
+        },
+      }),
+      NOW,
+    )
+    render(() => <TaskCard task={task} />)
+    const meta = screen.getByTestId("task-meta").textContent!
+    expect(meta).toBe("Checking · 3133 checked · 7290 scanned")
+    expect(meta).not.toContain("0 B")
+    expect(meta).not.toContain("files")
+    expect(
+      screen.getByRole("progressbar").hasAttribute("data-indeterminate"),
+    ).toBe(true)
+  })
+
   it("compact cards drop the stats and buttons", () => {
     render(() => <TaskCard task={tache({})} compact />)
     expect(screen.queryByTestId("task-meta")).toBeNull()

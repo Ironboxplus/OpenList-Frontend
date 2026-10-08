@@ -89,11 +89,23 @@ export const TaskCard = (props: TaskCardProps) => {
     }
     return undefined
   }
+  const checking = () =>
+    sync() !== undefined && running() && props.task.phase === "checking"
   const metaParts = () => {
     const parts: string[] = []
+    if (checking()) {
+      // Nothing is queued yet, so bytes/files would read 0 / 0: say what is happening.
+      const { checksDone, scanned } = p()
+      parts.push(
+        scanned
+          ? t("transfers.card.checking", { checked: checksDone ?? 0, scanned })
+          : t("transfers.card.checking_short", { checked: checksDone ?? 0 }),
+      )
+      return parts
+    }
     const size = sizeText()
     if (size) parts.push(size)
-    if (p().itemsTotal !== undefined && p().itemsDone !== undefined) {
+    if (p().itemsTotal && p().itemsDone !== undefined) {
       parts.push(
         t("transfers.card.files", {
           done: p().itemsDone!,

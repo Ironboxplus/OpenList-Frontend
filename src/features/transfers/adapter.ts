@@ -5,6 +5,7 @@
 import type {
   ObjectRef,
   SyncSnapshot,
+  SyncStats,
   TaskProgress,
   TaskState,
   UnifiedError,
@@ -209,6 +210,23 @@ export const mapTache = (
 const finite = (v: unknown): number | undefined =>
   typeof v === "number" && Number.isFinite(v) ? v : undefined
 
+export type SyncPhase = "checking" | "transferring"
+
+/**
+ * A running sync first lists and compares both sides; until the first byte is
+ * queued, bytes/files are legitimately 0. Nothing queued yet while comparisons
+ * exist means we are still checking.
+ */
+export const syncPhase = (stats: SyncStats | undefined): SyncPhase => {
+  const s = stats ?? {}
+  const checks = finite(s.checks) ?? 0
+  const transfers = finite(s.transfers) ?? 0
+  const totalTransfers = finite(s.totalTransfers) ?? 0
+  return transfers === 0 && totalTransfers === 0 && checks > 0
+    ? "checking"
+    : "transferring"
+}
+
 export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
   const nowIso = now.toISOString()
   const stats = snap.stats ?? {}
@@ -224,6 +242,12 @@ export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
   if (itemsTotal !== undefined) progress.itemsTotal = itemsTotal
   const speed = finite(stats.speed)
   if (speed !== undefined) progress.speedBytesPerSecond = speed
+  const checksDone = finite(stats.checks)
+  const checksTotal = finite(stats.totalChecks)
+  const scanned = finite(stats.listed)
+  if (checksDone !== undefined) progress.checksDone = checksDone
+  if (checksTotal !== undefined) progress.checksTotal = checksTotal
+  if (scanned !== undefined) progress.scanned = scanned
   const eta = finite(stats.eta)
   if (eta !== undefined) progress.etaMs = eta * 1000
   // rclone grows totalBytes while it is still scanning, so a percentage taken
@@ -241,7 +265,7 @@ export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
     id: `sync:${snap.id}`,
     type: `sync.${snap.spec.mode}`,
     state: snap.state,
-    phase: snap.state,
+    phase: finished ? snap.state : syncPhase(snap.stats),
     attempt: 1,
     maxAttempts: 1,
     retryable: false,
