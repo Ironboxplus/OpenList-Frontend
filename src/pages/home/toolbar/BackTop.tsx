@@ -4,6 +4,8 @@ import { FiArrowUp } from "solid-icons/fi"
 import { Motion } from "solid-motionone"
 import { isMobile } from "~/utils/compatibility"
 import { getMainColor } from "~/store"
+import { BackToTop } from "~/features/files/BackToTop"
+import { shellActive } from "~/features/shell/topbar-slot"
 
 export const useScrollListener = (
   callback: (e?: Event) => void,
@@ -14,7 +16,13 @@ export const useScrollListener = (
   onCleanup(() => window.removeEventListener("scroll", callback))
 }
 
-export const BackTop = () => {
+export const BackTop = () => (
+  <Show when={shellActive()} fallback={<ClassicBackTop />}>
+    <BackToTop />
+  </Show>
+)
+
+const ClassicBackTop = () => {
   if (isMobile) return null
 
   const [visible, setVisible] = createSignal(false)
