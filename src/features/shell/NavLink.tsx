@@ -1,6 +1,6 @@
 import type { JSX } from "solid-js"
 import { useRouter } from "~/hooks"
-import { joinBase } from "~/utils"
+import { joinBase } from "~/utils/path"
 
 /** Anchor that navigates through the app router but keeps real-link semantics. */
 export const NavLink = (

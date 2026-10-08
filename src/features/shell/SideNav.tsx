@@ -23,9 +23,7 @@ import { useT } from "~/hooks"
 import { me } from "~/store"
 import { cn } from "~/utils/cn"
 import { useAccountActions } from "./account"
-import { NavIconView } from "./icons"
-import { NavBadge } from "./NavBadge"
-import { NavLink } from "./NavLink"
+import { SideNavEntry, navRowClass } from "./SideNavEntry"
 import {
   activeNavId,
   badgeTarget,
@@ -44,48 +42,10 @@ export interface SideNavProps {
   onToggle?: () => void
 }
 
-const rowClass =
-  `${focusRing} ` +
-  "flex h-10 items-center gap-3 rounded-lg bg-transparent px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-
 export const SideNav = (props: SideNavProps) => {
   const t = useT()
   const account = useAccountActions()
   const active = () => activeNavId(props.pathname)
-
-  const Entry = (p: { item: NavItem }) => {
-    const link = (
-      <NavLink
-        path={p.item.path}
-        aria-current={active() === p.item.id ? "page" : undefined}
-        aria-label={props.rail ? t(p.item.labelKey) : undefined}
-        class={cn(
-          rowClass,
-          "relative",
-          props.rail && "justify-center px-0",
-          active() === p.item.id && "bg-accent text-foreground",
-        )}
-      >
-        <NavIconView icon={p.item.icon} />
-        <Show when={!props.rail}>
-          <span class="flex-1 truncate">{t(p.item.labelKey)}</span>
-        </Show>
-        <Show when={badgeTarget(p.item.id)}>
-          <NavBadge class={props.rail ? "absolute right-2 top-1.5" : ""} />
-        </Show>
-      </NavLink>
-    )
-    return (
-      <Show when={props.rail} fallback={link}>
-        <Tooltip placement="right">
-          <TooltipTrigger as="div" class="block">
-            {link}
-          </TooltipTrigger>
-          <TooltipContent>{t(p.item.labelKey)}</TooltipContent>
-        </Tooltip>
-      </Show>
-    )
-  }
 
   return (
     <nav
@@ -94,16 +54,32 @@ export const SideNav = (props: SideNavProps) => {
       style={{ width: props.rail ? RAIL_WIDTH : FULL_WIDTH }}
     >
       <div class="flex flex-1 flex-col gap-1">
-        <For each={navItemsFor(me(), "main")}>{(i) => <Entry item={i} />}</For>
+        <For each={navItemsFor(me(), "main")}>
+          {(i) => (
+            <SideNavEntry
+              item={i}
+              active={active() === i.id}
+              rail={props.rail}
+              label={t(i.labelKey)}
+            />
+          )}
+        </For>
       </div>
       <div class="flex flex-col gap-1 border-t pt-2">
         <For each={navItemsFor(me(), "secondary")}>
-          {(i) => <Entry item={i} />}
+          {(i) => (
+            <SideNavEntry
+              item={i}
+              active={active() === i.id}
+              rail={props.rail}
+              label={t(i.labelKey)}
+            />
+          )}
         </For>
         <DropdownMenu placement="right-end">
           <DropdownMenuTrigger
             aria-label={t("shell.nav.account")}
-            class={cn(rowClass, props.rail && "justify-center px-0")}
+            class={cn(navRowClass, props.rail && "justify-center px-0")}
           >
             <TbUserCircle class="size-5 shrink-0" />
             <Show when={!props.rail}>
@@ -136,7 +112,7 @@ export const SideNav = (props: SideNavProps) => {
             aria-label={t(
               props.rail ? "shell.nav.expand" : "shell.nav.collapse",
             )}
-            class={cn(rowClass, props.rail && "justify-center px-0")}
+            class={cn(navRowClass, props.rail && "justify-center px-0")}
           >
             <Show
               when={props.rail}
