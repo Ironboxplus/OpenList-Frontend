@@ -91,11 +91,15 @@ const [tick, setTick] = createSignal(0)
 export const mediaTick = tick
 
 /** Admin: mark this folder as a video library, or take the mark away again. */
-export const toggleLibrary = async (path: string) => {
+export const toggleLibrary = async (path: string, marked: boolean) => {
   const { setMediaMeta, deleteMedia } = await import("./client")
-  const out = isLibrary()
+  const out = marked
     ? await deleteMedia(path)
     : await setMediaMeta({ path, kind: "library", locked: true })
-  if (out.ok) invalidateMedia(path)
+  if (out.ok) {
+    // The parent folder's cards carry this folder's kind too.
+    invalidateMedia(path.slice(0, path.lastIndexOf("/")) || "/")
+    invalidateMedia(path)
+  }
   return out
 }

@@ -18,8 +18,13 @@ import {
 import { players } from "../previews/video_box"
 import { BsPlayCircleFill } from "solid-icons/bs"
 import { isArchive } from "~/store/archive"
-import { TbMovie } from "solid-icons/tb"
-import { mediaReady, openMediaEditor } from "~/features/media/state"
+import { TbBooks, TbMovie } from "solid-icons/tb"
+import {
+  cardFor,
+  mediaReady,
+  openMediaEditor,
+  toggleLibrary,
+} from "~/features/media/state"
 import { pathJoin } from "~/utils/path"
 import axios from "axios"
 
@@ -149,6 +154,38 @@ export const ContextMenu = () => {
           <HStack spacing="$2">
             <Icon as={TbMovie} boxSize="$7" p="$0_5" color="$info9" />
             <Text>{t("media.menu_item")}</Text>
+          </HStack>
+        </Item>
+        <Item
+          hidden={({ props }) =>
+            !UserMethods.is_admin(me()) ||
+            !mediaReady() ||
+            !props?.is_dir ||
+            (cardFor(props.name)?.kind === "library") !== false
+          }
+          onClick={({ props }) => {
+            void toggleLibrary(pathJoin(pathname(), props.name), false)
+          }}
+        >
+          <HStack spacing="$2">
+            <Icon as={TbBooks} boxSize="$7" p="$0_5" color="$info9" />
+            <Text>{t("media.library.set")}</Text>
+          </HStack>
+        </Item>
+        <Item
+          hidden={({ props }) =>
+            !UserMethods.is_admin(me()) ||
+            !mediaReady() ||
+            !props?.is_dir ||
+            (cardFor(props.name)?.kind === "library") !== true
+          }
+          onClick={({ props }) => {
+            void toggleLibrary(pathJoin(pathname(), props.name), true)
+          }}
+        >
+          <HStack spacing="$2">
+            <Icon as={TbBooks} boxSize="$7" p="$0_5" color="$info9" />
+            <Text>{t("media.library.unset")}</Text>
           </HStack>
         </Item>
         <Item

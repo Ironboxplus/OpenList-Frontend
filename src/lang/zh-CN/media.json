@@ -2,7 +2,7 @@
   "view_poster": "海报",
   "library": {
     "badge": "视频库",
-    "counts": "共 {{total}} 部，已识别 {{done}} 部",
+    "counts": "共 {{total}} 部 · 已识别 {{done}} 部",
     "set": "设为视频库",
     "unset": "取消视频库"
   },

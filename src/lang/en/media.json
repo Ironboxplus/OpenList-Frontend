@@ -2,7 +2,7 @@
   "view_poster": "Posters",
   "library": {
     "badge": "Video library",
-    "counts": "{{total}} titles, {{done}} identified",
+    "counts": "{{total}} titles · {{done}} identified",
     "set": "Set as video library",
     "unset": "Remove video library"
   },

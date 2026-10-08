@@ -19,7 +19,7 @@ export const LibraryMenuItem = () => {
     <Show when={UserMethods.is_admin(me()) && mediaReady()}>
       <DropdownMenuItem
         data-library-toggle
-        onSelect={() => void toggleLibrary(pathname())}
+        onSelect={() => void toggleLibrary(pathname(), isLibrary())}
         class="gap-2"
       >
         <TbBooks class="size-4" />
