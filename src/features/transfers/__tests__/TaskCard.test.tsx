@@ -199,3 +199,32 @@ describe("TaskCard", () => {
     expect(document.querySelector("[data-action]")).toBeNull()
   })
 })
+
+describe("TaskCard open-folder buttons", () => {
+  it("offers source and destination and reports where they lead", () => {
+    const open = vi.fn()
+    render(() => <TaskCard task={tache({})} onOpenPath={open} />)
+    fireEvent.click(document.querySelector('[data-action="open_source"]')!)
+    expect(open).toHaveBeenLastCalledWith({ dir: "/a/dir", highlight: "x.mkv" })
+    fireEvent.click(document.querySelector('[data-action="open_destination"]')!)
+    expect(open).toHaveBeenLastCalledWith({ dir: "/b/out", highlight: "x.mkv" })
+  })
+
+  it("has none without a handler or in the compact drawer", () => {
+    const { unmount } = render(() => <TaskCard task={tache({})} />)
+    expect(document.querySelector('[data-action="open_source"]')).toBeNull()
+    unmount()
+    render(() => <TaskCard task={tache({})} compact onOpenPath={vi.fn()} />)
+    expect(document.querySelector('[data-action="open_source"]')).toBeNull()
+  })
+
+  it("a sync job hides the local: end and opens the tree end", () => {
+    render(() => (
+      <TaskCard task={mapSyncSnapshot(snap(), NOW)} onOpenPath={vi.fn()} />
+    ))
+    expect(document.querySelector('[data-action="open_source"]')).toBeNull()
+    expect(
+      document.querySelector('[data-action="open_destination"]'),
+    ).not.toBeNull()
+  })
+})

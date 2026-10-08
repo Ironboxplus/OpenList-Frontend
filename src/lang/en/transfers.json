@@ -61,7 +61,13 @@
     "delete": "Delete",
     "clear_done": "Clear completed",
     "clear_succeeded": "Clear succeeded",
-    "retry_failed": "Retry all"
+    "retry_failed": "Retry all",
+    "open_source": "Open source folder",
+    "open_destination": "Open destination folder"
+  },
+  "path_filter": {
+    "showing": "Tasks for {{path}}",
+    "clear": "Show all"
   },
   "confirm": {
     "delete_title": "Delete this task record?",

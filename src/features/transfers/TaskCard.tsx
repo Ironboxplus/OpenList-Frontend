@@ -17,7 +17,9 @@ import { useT } from "~/hooks"
 import type { UnifiedTask } from "~/platform/contracts/task"
 import { cn } from "~/utils/cn"
 import { availableActions, sectionOf, type TaskAction } from "./adapter"
+import type { OpenTarget } from "../files/tasks-for-path"
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog"
+import { OpenFolderButtons } from "./OpenFolderButtons"
 import { formatBytes, formatEta } from "./format"
 import { StateBadge } from "./StateBadge"
 import { TaskTitle } from "./TaskTitle"
@@ -48,6 +50,8 @@ export interface TaskCardProps {
   compact?: boolean
   onOpen?: (task: UnifiedTask) => void
   onAction?: (task: UnifiedTask, action: TaskAction) => void
+  /** Open a folder in the Files page; enables the open source/destination buttons. */
+  onOpenPath?: (target: OpenTarget) => void
 }
 
 export const TaskCard = (props: TaskCardProps) => {
@@ -229,6 +233,10 @@ export const TaskCard = (props: TaskCardProps) => {
               {err().message}
             </button>
           )}
+        </Show>
+
+        <Show when={!props.compact}>
+          <OpenFolderButtons task={props.task} onOpenPath={props.onOpenPath} />
         </Show>
 
         <Show when={actions().length > 0}>

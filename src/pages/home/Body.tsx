@@ -1,6 +1,7 @@
 import { VStack } from "@hope-ui/solid"
 import { Show } from "solid-js"
 import { AnnouncementCard } from "~/features/files/AnnouncementCard"
+import { DirTasksCard } from "~/features/files/DirTasksCard"
 import { FilesFrame } from "~/features/files/FilesFrame"
 import { shellActive } from "~/features/shell/topbar-slot"
 import { Container } from "./Container"
@@ -44,6 +45,7 @@ export const Body = () => (
       <VStack class="body" py="$3" minH="70vh" w="$full" gap="$4">
         <AnnouncementCard />
         <Readme files={["header.md", "top.md", "index.md"]} fromMeta="header" />
+        <DirTasksCard />
         <Obj />
         <Readme
           files={["readme.md", "footer.md", "bottom.md"]}

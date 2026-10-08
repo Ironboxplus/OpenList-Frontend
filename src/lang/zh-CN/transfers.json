@@ -61,7 +61,13 @@
     "delete": "删除",
     "clear_done": "清除已完成",
     "clear_succeeded": "清除成功",
-    "retry_failed": "全部重试"
+    "retry_failed": "全部重试",
+    "open_source": "打开源目录",
+    "open_destination": "打开目标目录"
+  },
+  "path_filter": {
+    "showing": "{{path}} 相关的任务",
+    "clear": "显示全部"
   },
   "confirm": {
     "delete_title": "删除这条任务记录？",

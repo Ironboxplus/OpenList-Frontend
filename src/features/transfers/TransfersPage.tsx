@@ -13,7 +13,12 @@ import {
 } from "solid-js"
 import { Button } from "~/components/ui/button"
 import { Skeleton } from "~/components/ui/skeleton"
-import { useT, useTitle } from "~/hooks"
+import { useRouter, useT, useTitle } from "~/hooks"
+import {
+  filesLinkFor,
+  touchesPath,
+  type OpenTarget,
+} from "../files/tasks-for-path"
 import { me } from "~/store"
 import { UserMethods } from "~/types"
 import type { UnifiedTask } from "~/platform/contracts/task"
@@ -83,6 +88,7 @@ const TransfersPage = () => {
   const t = useT()
   useTitle(() => t("transfers.title"))
   const [params, setParams] = useSearchParams()
+  const { to } = useRouter()
   const [newOpen, setNewOpen] = createSignal(false)
   const [doneOpen, setDoneOpen] = createSignal(false)
   const [selectedId, setSelectedId] = createSignal<string>()
@@ -112,8 +118,20 @@ const TransfersPage = () => {
   })
   const chips = () => FILTER_KEYS.filter((k) => k !== "sync" || syncOn())
 
+  // ?path=/dir narrows the list to tasks that touch that folder (the Files
+  // page links here from its status card).
+  const pathFilter = createMemo(() => {
+    const v = Array.isArray(params.path) ? params.path[0] : params.path
+    return v && v.startsWith("/") ? v : undefined
+  })
   const inFilter = createMemo(() =>
-    transfers.tasks().filter((tk) => matchesFilter(tk, filter())),
+    transfers
+      .tasks()
+      .filter(
+        (tk) =>
+          matchesFilter(tk, filter()) &&
+          (!pathFilter() || touchesPath(tk, pathFilter()!)),
+      ),
   )
   const bySection = (s: "active" | "failed" | "done") =>
     inFilter().filter((tk) => sectionOf(tk.state) === s)
@@ -148,6 +166,19 @@ const TransfersPage = () => {
     setSelectedId(undefined)
     transfers.openJob(undefined)
   }
+  // ?task=<id> opens that task's detail once the list has loaded, then drops
+  // the parameter so closing the detail does not reopen it.
+  createEffect(() => {
+    const raw = Array.isArray(params.task) ? params.task[0] : params.task
+    if (!raw || !transfers.loaded()) return
+    const tk = transfers.tasks().find((x) => x.id === raw)
+    if (tk) open(tk)
+    setParams({ task: undefined }, { replace: true })
+  })
+  const openPath = (target: OpenTarget) => {
+    close()
+    to(filesLinkFor(target))
+  }
   const onAction = (tk: UnifiedTask, a: TaskAction) => {
     void transfers.act(tk.id, a)
   }
@@ -159,7 +190,14 @@ const TransfersPage = () => {
   const cards = (list: UnifiedTask[]) => (
     <div class={GRID}>
       <For each={list}>
-        {(tk) => <TaskCard task={tk} onOpen={open} onAction={onAction} />}
+        {(tk) => (
+          <TaskCard
+            task={tk}
+            onOpen={open}
+            onAction={onAction}
+            onOpenPath={openPath}
+          />
+        )}
       </For>
     </div>
   )
@@ -187,6 +225,27 @@ const TransfersPage = () => {
           </div>
         </Show>
       </div>
+
+      <Show when={pathFilter()}>
+        {(p) => (
+          <div
+            data-testid="path-filter"
+            class="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm"
+          >
+            <span class="min-w-0 break-all">
+              {t("transfers.path_filter.showing", { path: p() })}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              class="ml-auto"
+              onClick={() => setParams({ path: undefined })}
+            >
+              {t("transfers.path_filter.clear")}
+            </Button>
+          </div>
+        )}
+      </Show>
 
       <div
         class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
@@ -315,6 +374,7 @@ const TransfersPage = () => {
         syncDetail={transfers.detail()}
         onClose={close}
         onAction={onAction}
+        onOpenPath={openPath}
       />
       <Show when={syncOn()}>
         <NewSyncDialog

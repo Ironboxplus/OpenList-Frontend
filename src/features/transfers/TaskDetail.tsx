@@ -19,7 +19,9 @@ import type {
 } from "~/platform/contracts/task"
 import { cn } from "~/utils/cn"
 import { availableActions, syncPhase, type TaskAction } from "./adapter"
+import type { OpenTarget } from "../files/tasks-for-path"
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog"
+import { OpenFolderButtons } from "./OpenFolderButtons"
 import { formatBytes, formatEta, formatTime } from "./format"
 import { StateBadge } from "./StateBadge"
 import { TaskTitle } from "./TaskTitle"
@@ -296,6 +298,8 @@ export interface TaskDetailProps {
   syncDetail: UnifiedTask | undefined
   onClose: () => void
   onAction: (task: UnifiedTask, action: TaskAction) => void
+  /** Open a folder in the Files page; enables the open source/destination buttons. */
+  onOpenPath?: (target: OpenTarget) => void
 }
 
 export const TaskDetail = (props: TaskDetailProps) => {
@@ -413,7 +417,13 @@ export const TaskDetail = (props: TaskDetailProps) => {
                   />
                 </Show>
 
-                <div class="mt-auto flex justify-end gap-2 pt-6">
+                <div class="mt-auto pt-6">
+                  <OpenFolderButtons
+                    task={tk()}
+                    onOpenPath={props.onOpenPath}
+                  />
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
                   <For each={availableActions(tk())}>
                     {(a) => (
                       <Button

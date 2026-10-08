@@ -1,4 +1,5 @@
 // The app-wide transfers store instance, wired to the real HTTP API.
+import type { UnifiedTask } from "~/platform/contracts/task"
 import { me } from "~/store/user"
 import { UserMethods } from "~/types"
 import { bus } from "~/utils/bus"
@@ -6,7 +7,16 @@ import { notify } from "~/utils/notify"
 import * as api from "./api"
 import { createTransfersStore } from "./store"
 
+const succeededListeners = new Set<(task: UnifiedTask) => void>()
+
+/** Subscribe to "a task just finished successfully"; returns an unsubscribe. */
+export const onTaskSucceeded = (cb: (task: UnifiedTask) => void) => {
+  succeededListeners.add(cb)
+  return () => void succeededListeners.delete(cb)
+}
+
 export const transfers = createTransfersStore({
+  onSucceeded: (task) => succeededListeners.forEach((cb) => cb(task)),
   fetchTache: api.fetchTache,
   postTache: api.postTache,
   fetchSyncList: api.fetchSyncList,

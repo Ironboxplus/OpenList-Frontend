@@ -23,6 +23,8 @@ export const DONE_EVERY = 4
 
 const SEEN_KEY = "transfers-seen-failed"
 const SEEN_CAP = 500
+/** A finished task older than this is history, not something that just happened. */
+const RECENT_MS = 2 * 60 * 1000
 
 interface Result<T> {
   code: number
@@ -50,6 +52,12 @@ export interface StoreDeps {
   info: (msg: string) => void
   now: () => Date
   storage: Pick<Storage, "getItem" | "setItem">
+  /**
+   * Called once per task when it finishes successfully while this store is
+   * watching (tasks that were already finished at the first load are not
+   * reported). The Files page uses it to refresh the open directory.
+   */
+  onSucceeded?: (task: UnifiedTask) => void
 }
 
 export type SyncCapability = "unknown" | "yes" | "no"
@@ -109,6 +117,35 @@ export const createTransfersStore = (deps: StoreDeps) =>
     const failedUnseenCount = createMemo(
       () => failedIds().filter((id) => !seen().has(id)).length,
     )
+
+    // ---- completion detection ---------------------------------------------
+    // A task counts as "just succeeded" the first time it is seen succeeded
+    // after the initial load. Remembering reported ids makes it once per task
+    // however many polls or lists it appears in.
+    const lastState = new Map<string, string>()
+    const reported = new Set<string>()
+    let baselined = false
+    const detectSucceeded = () => {
+      const list = untrack(tasks)
+      for (const t of list) {
+        const prev = lastState.get(t.id)
+        lastState.set(t.id, t.state)
+        if (!baselined || t.state !== "succeeded" || prev === "succeeded")
+          continue
+        if (reported.has(t.id)) continue
+        // A listing that failed on the first load can surface old finished
+        // tasks later; only tasks that ended recently count as news.
+        const age = deps.now().getTime() - Date.parse(t.endedAt ?? "")
+        if (age >= RECENT_MS) continue
+        reported.add(t.id)
+        try {
+          deps.onSucceeded?.(t)
+        } catch {
+          // a listener must not break polling
+        }
+      }
+      baselined = true
+    }
 
     // ---- polling ----------------------------------------------------------
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -226,6 +263,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
         if (nextDone) setDone(nextDone)
         setLoaded(true)
       })
+      detectSucceeded()
     }
 
     const refresh = (opts: { full?: boolean } = {}): Promise<void> => {
@@ -357,6 +395,9 @@ export const createTransfersStore = (deps: StoreDeps) =>
       })
       undoneSinceDone = DONE_EVERY - 1
       infoLogged = false
+      lastState.clear()
+      reported.clear()
+      baselined = false
     }
 
     const markFailedSeen = () =>

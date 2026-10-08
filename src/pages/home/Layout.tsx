@@ -7,6 +7,7 @@ import { Footer } from "./Footer"
 import { Header } from "./header/Header"
 import { onMount, Show } from "solid-js"
 import { FilesTopLeft, FilesTopRight } from "~/features/files/FilesTopBar"
+import { useFilesLinkage } from "~/features/files/linkage"
 import { PhoneBatchBar } from "~/features/files/PhoneActions"
 import { selectionMode } from "~/features/files/selection-mode"
 import {
@@ -33,6 +34,8 @@ const Index = () => {
     left: (ctx) => <FilesTopLeft phone={ctx.phone} />,
     right: (ctx) => <FilesTopRight phone={ctx.phone} />,
   }))
+  // Refresh on finished transfers; scroll to ?highlight= files.
+  useFilesLinkage()
   // On phones, selection mode swaps the tab bar for the batch actions.
   useBottomBar({
     when: selectionMode,

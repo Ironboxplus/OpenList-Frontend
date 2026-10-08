@@ -350,3 +350,80 @@ describe("failed-unseen count", () => {
     s2.dispose()
   })
 })
+
+describe("completion reporting", () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  // A mutable copy list: tasks move from undone to done as a test advances.
+  const world = (initial: { undone: TacheRaw[]; done: TacheRaw[] }) => {
+    const lists = { ...initial }
+    const succeeded = vi.fn()
+    const h = harness({
+      fetchTache: ((type: string, done: boolean) =>
+        ok(type === "copy" ? (done ? lists.done : lists.undone) : [])) as any,
+      onSucceeded: succeeded,
+    })
+    return { lists, succeeded, deps: h.deps }
+  }
+
+  const finished = (id: string) =>
+    rawTask({ id, state: 2, end_time: "2026-10-08T09:59:50Z" })
+
+  it("reports a running task once when it succeeds", async () => {
+    const w = world({ undone: [rawTask({ id: "a" })], done: [] })
+    const s = createTransfersStore(w.deps)
+    s.start()
+    await settle()
+    expect(w.succeeded).not.toHaveBeenCalled()
+    w.lists.undone = []
+    w.lists.done = [finished("a")]
+    await s.refresh({ full: true })
+    expect(w.succeeded).toHaveBeenCalledTimes(1)
+    expect(w.succeeded.mock.calls[0][0].id).toBe("copy:a")
+    await s.refresh({ full: true })
+    await s.refresh({ full: true })
+    expect(w.succeeded).toHaveBeenCalledTimes(1)
+    s.stop()
+    s.dispose()
+  })
+
+  it("does not report tasks that were already finished at the first load", async () => {
+    const w = world({ undone: [], done: [finished("old")] })
+    const s = createTransfersStore(w.deps)
+    s.start()
+    await settle()
+    await s.refresh({ full: true })
+    expect(w.succeeded).not.toHaveBeenCalled()
+    s.stop()
+    s.dispose()
+  })
+
+  it("reports a task that finished between two polls (never seen running)", async () => {
+    const w = world({ undone: [], done: [] })
+    const s = createTransfersStore(w.deps)
+    s.start()
+    await settle()
+    w.lists.done = [finished("quick")]
+    await s.refresh({ full: true })
+    expect(w.succeeded).toHaveBeenCalledTimes(1)
+    s.stop()
+    s.dispose()
+  })
+
+  it("ignores failures and long-finished history surfacing late", async () => {
+    const w = world({ undone: [rawTask({ id: "f" })], done: [] })
+    const s = createTransfersStore(w.deps)
+    s.start()
+    await settle()
+    w.lists.undone = []
+    w.lists.done = [
+      rawTask({ id: "f", state: 7, end_time: "2026-10-08T09:59:50Z" }),
+      rawTask({ id: "ancient", state: 2, end_time: "2026-10-01T00:00:00Z" }),
+    ]
+    await s.refresh({ full: true })
+    expect(w.succeeded).not.toHaveBeenCalled()
+    s.stop()
+    s.dispose()
+  })
+})
