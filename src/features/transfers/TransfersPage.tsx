@@ -102,6 +102,14 @@ const TransfersPage = () => {
     const k = isFilterKey(v) ? v : "all"
     return k === "sync" && !syncOn() ? "all" : k
   })
+  // The command palette opens the new-job dialog through ?new=sync.
+  createEffect(() => {
+    if (params.new === undefined) return
+    const cap = transfers.syncCapability()
+    if (cap === "unknown") return
+    if (params.new === "sync" && syncOn()) setNewOpen(true)
+    setParams({ new: undefined }, { replace: true })
+  })
   const chips = () => FILTER_KEYS.filter((k) => k !== "sync" || syncOn())
 
   const inFilter = createMemo(() =>

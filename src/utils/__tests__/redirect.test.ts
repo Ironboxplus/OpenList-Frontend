@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest"
 import { isSafeRedirect, loginUrlFor, resolveRedirect } from "../redirect"
 
 describe("isSafeRedirect", () => {
-  const safe = ["/", "/a", "/a/b?type=copy", "/a?x=1#h", "/@manage/settings/site", "/dir%20name/f.txt"]
+  const safe = [
+    "/",
+    "/a",
+    "/a/b?type=copy",
+    "/a?x=1#h",
+    "/@manage/settings/site",
+    "/dir%20name/f.txt",
+  ]
   const unsafe: [string, unknown][] = [
     ["empty", ""],
     ["undefined", undefined],
@@ -21,12 +28,16 @@ describe("isSafeRedirect", () => {
     ["nul", "/a\u0000"],
   ]
   it.each(safe)("accepts %s", (v) => expect(isSafeRedirect(v)).toBe(true))
-  it.each(unsafe)("rejects %s", (_n, v) => expect(isSafeRedirect(v)).toBe(false))
+  it.each(unsafe)("rejects %s", (_n, v) =>
+    expect(isSafeRedirect(v)).toBe(false),
+  )
 })
 
 describe("resolveRedirect", () => {
   it("passes safe values through untouched, query and hash included", () => {
-    expect(resolveRedirect("/a/b?type=copy&x=1#frag")).toBe("/a/b?type=copy&x=1#frag")
+    expect(resolveRedirect("/a/b?type=copy&x=1#frag")).toBe(
+      "/a/b?type=copy&x=1#frag",
+    )
   })
   it("falls back to / (or the given fallback) for unsafe ones", () => {
     expect(resolveRedirect("//evil.com")).toBe("/")
@@ -42,7 +53,11 @@ describe("resolveRedirect", () => {
 
 describe("loginUrlFor", () => {
   it("keeps pathname, search and hash and round-trips", () => {
-    const url = loginUrlFor({ pathname: "/a b/c", search: "?type=copy&q=1%202", hash: "#h" })
+    const url = loginUrlFor({
+      pathname: "/a b/c",
+      search: "?type=copy&q=1%202",
+      hash: "#h",
+    })
     const redirect = new URL(url, "http://x").searchParams.get("redirect")
     expect(redirect).toBe("/a b/c?type=copy&q=1%202#h")
     expect(resolveRedirect(redirect)).toBe(redirect)

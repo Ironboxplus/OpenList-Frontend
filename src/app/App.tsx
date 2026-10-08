@@ -72,7 +72,11 @@ const CatchAll = () => {
   return (
     <Show
       when={!pathname().startsWith("/@")}
-      fallback={<NotFound />}
+      fallback={
+        <MustUser>
+          <NotFound />
+        </MustUser>
+      }
     >
       <MustUser>
         <Home />

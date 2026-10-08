@@ -59,7 +59,10 @@ describe("Offline", () => {
 
   it("disables the button while retrying", () => {
     render(() => <Offline onRetry={() => {}} retrying />)
-    expect((screen.getByRole("button", { name: "Retry" }) as HTMLButtonElement).disabled).toBe(true)
+    expect(
+      (screen.getByRole("button", { name: "Retry" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true)
   })
 })
 
@@ -67,7 +70,10 @@ describe("BackendUnavailable", () => {
   it("shows request id and error code when present", () => {
     const onRetry = vi.fn()
     render(() => (
-      <BackendUnavailable error={{ code: "http_502", requestId: "req-9" }} onRetry={onRetry} />
+      <BackendUnavailable
+        error={{ code: "http_502", requestId: "req-9" }}
+        onRetry={onRetry}
+      />
     ))
     expect(screen.getByText(/http_502/)).toBeTruthy()
     expect(screen.getByText(/req-9/)).toBeTruthy()

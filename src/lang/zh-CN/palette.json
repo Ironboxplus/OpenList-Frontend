@@ -1,0 +1,20 @@
+{
+  "title": "命令面板",
+  "placeholder": "搜索页面、设置和操作",
+  "open": "搜索",
+  "close": "关闭",
+  "empty": "没有找到与“{{query}}”相关的内容。",
+  "count": "{{count}} 个结果",
+  "groups": {
+    "recent": "最近",
+    "nav": "页面",
+    "setting": "设置",
+    "action": "操作"
+  },
+  "actions": {
+    "new_sync": "新建同步作业",
+    "task_center": "打开 Task Center",
+    "toggle_theme": "切换深色模式",
+    "toggle_language": "切换语言"
+  }
+}

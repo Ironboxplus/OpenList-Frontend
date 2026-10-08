@@ -39,10 +39,34 @@ beforeEach(() => {
 
 describe("handleResp transport awareness", () => {
   const table: [string, Partial<Resp<null>>, string | undefined][] = [
-    ["network", { code: undefined as any, message: "Network Error", transport: "network" }, "Network error"],
-    ["timeout", { code: undefined as any, message: "timeout of 5000ms exceeded", transport: "timeout" }, "Request timed out"],
-    ["canceled", { code: -1, message: "canceled", transport: "canceled" }, undefined],
-    ["http 500 keeps the backend text", { code: 500, message: "disk full", transport: "internal" }, "disk full"],
+    [
+      "network",
+      {
+        code: undefined as any,
+        message: "Network Error",
+        transport: "network",
+      },
+      "Network error",
+    ],
+    [
+      "timeout",
+      {
+        code: undefined as any,
+        message: "timeout of 5000ms exceeded",
+        transport: "timeout",
+      },
+      "Request timed out",
+    ],
+    [
+      "canceled",
+      { code: -1, message: "canceled", transport: "canceled" },
+      undefined,
+    ],
+    [
+      "http 500 keeps the backend text",
+      { code: 500, message: "disk full", transport: "internal" },
+      "disk full",
+    ],
     ["business error", { code: 400, message: "bad input" }, "bad input"],
   ]
   it.each(table)("%s", (_n, resp, shown) => {
@@ -71,7 +95,9 @@ describe("401 recovery", () => {
     window.history.pushState({}, "", "/some/dir?type=copy&x=1#frag")
     handleResp(fail({ code: 401, message: "expired" }))
     expect(emitted).toHaveLength(1)
-    const redirect = new URL(emitted[0], "http://x").searchParams.get("redirect")
+    const redirect = new URL(emitted[0], "http://x").searchParams.get(
+      "redirect",
+    )
     expect(emitted[0].startsWith("/@login?redirect=")).toBe(true)
     expect(redirect).toBe("/some/dir?type=copy&x=1#frag")
   })

@@ -9,7 +9,10 @@ export const isSafeRedirect = (raw: unknown): raw is string => {
   // URL parser, so `/\t/host` would become `//host` too.
   if (/[\u0000-\u001f\u007f\\]/.test(raw)) return false
   try {
-    return new URL(raw, "http://redirect.invalid").origin === "http://redirect.invalid"
+    return (
+      new URL(raw, "http://redirect.invalid").origin ===
+      "http://redirect.invalid"
+    )
   } catch {
     return false
   }

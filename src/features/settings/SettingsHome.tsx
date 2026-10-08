@@ -15,14 +15,13 @@ const SettingCard = (props: { entry: SettingContribution }) => {
   const { to } = useRouter()
   return (
     <a
-      href={props.entry.external ? props.entry.route : joinBase(props.entry.route)}
+      href={
+        props.entry.external ? props.entry.route : joinBase(props.entry.route)
+      }
       target={props.entry.external ? "_blank" : undefined}
       rel={props.entry.external ? "noopener noreferrer" : undefined}
       data-setting={props.entry.id}
-      class={cn(
-        "block rounded-xl no-underline hover:no-underline",
-        focusRing,
-      )}
+      class={cn("block rounded-xl no-underline hover:no-underline", focusRing)}
       onClick={(e) => {
         if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return
         e.preventDefault()

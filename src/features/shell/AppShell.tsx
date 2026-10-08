@@ -10,6 +10,7 @@ import {
 import { useRouter } from "~/hooks"
 import { me } from "~/store"
 import { UserMethods } from "~/types"
+import { isPaletteHotkey, paletteOpen, setPaletteOpen } from "../palette/state"
 import { transfers } from "../transfers/service"
 import { BottomTabs, TAB_BAR_HEIGHT } from "./BottomTabs"
 import { readCollapsed, writeCollapsed } from "./nav-items"
@@ -18,6 +19,8 @@ import { TOP_BAR_HEIGHT, TopBar } from "./TopBar"
 import { createViewport } from "./viewport"
 
 const TaskCenter = lazy(() => import("../transfers/TaskCenter"))
+// Loaded on first use; the hotkey and the buttons only touch ../palette/state.
+const CommandPalette = lazy(() => import("../palette/CommandPalette"))
 
 /** Keep the Tailwind `dark` class on <html> in step with hope-ui's color mode. */
 const useDarkClass = () => {
@@ -58,6 +61,22 @@ const AppShell = (props: ParentProps) => {
     })
   })
 
+  // Ctrl/Cmd+K toggles the palette anywhere in the signed-in shell.
+  createEffect(() => {
+    if (!shown()) return
+    const onKey = (e: KeyboardEvent) => {
+      if (!isPaletteHotkey(e)) return
+      e.preventDefault()
+      setPaletteOpen(!paletteOpen())
+    }
+    window.addEventListener("keydown", onKey)
+    onCleanup(() => window.removeEventListener("keydown", onKey))
+  })
+  const [paletteUsed, setPaletteUsed] = createSignal(false)
+  createEffect(() => {
+    if (paletteOpen()) setPaletteUsed(true)
+  })
+
   const wide = () => shown() && viewport() !== "phone"
   const phone = () => shown() && viewport() === "phone"
 
@@ -86,16 +105,19 @@ const AppShell = (props: ParentProps) => {
             ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
             : "0",
           // Pages that size themselves to the viewport subtract this.
-          "--shell-top": wide() ? TOP_BAR_HEIGHT : "0px",
+          "--shell-top": shown() ? TOP_BAR_HEIGHT : "0px",
         }}
       >
-        <Show when={wide()}>
-          <TopBar pathname={pathname()} />
+        <Show when={shown()}>
+          <TopBar pathname={pathname()} phone={phone()} />
         </Show>
         {props.children}
       </div>
       <Show when={phone()}>
         <BottomTabs pathname={pathname()} />
+      </Show>
+      <Show when={shown() && paletteUsed()}>
+        <CommandPalette />
       </Show>
       <Show when={wide()}>
         <TaskCenter />

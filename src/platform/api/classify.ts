@@ -67,7 +67,10 @@ interface AxiosLike {
 
 const headerOf = (headers: unknown, name: string): string | undefined => {
   if (!headers || typeof headers !== "object") return undefined
-  const h = headers as { get?: (n: string) => unknown } & Record<string, unknown>
+  const h = headers as { get?: (n: string) => unknown } & Record<
+    string,
+    unknown
+  >
   const v = typeof h.get === "function" ? h.get(name) : h[name]
   return typeof v === "string" && v ? v : undefined
 }

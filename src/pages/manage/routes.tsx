@@ -64,11 +64,12 @@ const hide_routes: Route[] = [
 const SettingsIndex = () => <SettingsHome items={visibleSettings(me())} />
 
 /** A page the user lacks permission for shows Forbidden instead of the page. */
-const guarded = (permission: SettingPermission | undefined, Page: Component) => () => (
-  <Show when={canAccess(permission, me())} fallback={<Forbidden />}>
-    <Page />
-  </Show>
-)
+const guarded =
+  (permission: SettingPermission | undefined, Page: Component) => () => (
+    <Show when={canAccess(permission, me())} fallback={<Forbidden />}>
+      <Page />
+    </Show>
+  )
 
 const get_routes = (): Route[] => {
   const acc = new Map<string, Route>()

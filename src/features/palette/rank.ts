@@ -19,7 +19,8 @@ const SUBSEQUENCE = 20
 /** A keyword hit counts for less than the same hit in the title. */
 const KEYWORD_WEIGHT = 0.7
 
-const normalize = (s: string): string => s.normalize("NFKC").toLowerCase().trim()
+const normalize = (s: string): string =>
+  s.normalize("NFKC").toLowerCase().trim()
 
 const isWordBoundary = (text: string, i: number): boolean => {
   if (i === 0) return true
@@ -40,7 +41,10 @@ const scoreField = (token: string, field: string): number => {
     }
     return SUBSTRING
   }
-  if (token.length < 2) return 0
+  // Latin letters match too easily to be fuzzy over a couple of characters;
+  // a Chinese character carries enough meaning on its own.
+  const minLength = /[^\u0000-\u007f]/.test(token) ? 2 : 3
+  if ([...token].length < minLength) return 0
   // Subsequence: every char of the token, in order. Gaps cost points.
   let pos = -1
   let gaps = 0
@@ -53,7 +57,11 @@ const scoreField = (token: string, field: string): number => {
   return Math.max(1, SUBSEQUENCE - Math.min(gaps, SUBSEQUENCE - 1))
 }
 
-const scoreToken = (token: string, title: string, keywords: string[]): number => {
+const scoreToken = (
+  token: string,
+  title: string,
+  keywords: string[],
+): number => {
   let best = scoreField(token, title)
   for (const k of keywords) {
     const s = scoreField(token, k) * KEYWORD_WEIGHT
@@ -81,7 +89,10 @@ export const rank = (query: string, item: Rankable): number => {
 }
 
 /** Matching items, best first; ties keep their input order. */
-export const rankAll = <T extends Rankable>(query: string, items: readonly T[]): T[] =>
+export const rankAll = <T extends Rankable>(
+  query: string,
+  items: readonly T[],
+): T[] =>
   items
     .map((item, index) => ({ item, index, score: rank(query, item) }))
     .filter((r) => r.score > 0)

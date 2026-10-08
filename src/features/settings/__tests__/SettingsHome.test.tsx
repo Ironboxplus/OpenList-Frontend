@@ -59,9 +59,9 @@ describe("SettingsHome", () => {
     )
     expect(ids).toContain("traffic")
     expect(ids).not.toContain("users")
-    expect(container.querySelectorAll("section[data-group]").length).toBeLessThan(
-      6,
-    )
+    expect(
+      container.querySelectorAll("section[data-group]").length,
+    ).toBeLessThan(6)
   })
 
   it("explains an empty result and clears it", () => {

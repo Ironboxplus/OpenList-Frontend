@@ -13,11 +13,31 @@ const httpErr = (status: number, data?: unknown, headers?: unknown) => ({
 
 describe("classifyAxiosError", () => {
   const cases: [string, unknown, string, number | undefined][] = [
-    ["axios cancel", { code: "ERR_CANCELED", name: "CanceledError", message: "canceled" }, "canceled", -1],
+    [
+      "axios cancel",
+      { code: "ERR_CANCELED", name: "CanceledError", message: "canceled" },
+      "canceled",
+      -1,
+    ],
     ["abort", { name: "AbortError", message: "aborted" }, "canceled", -1],
-    ["timeout code", { code: "ECONNABORTED", message: "timeout of 100ms exceeded" }, "timeout", undefined],
-    ["etimedout", { code: "ETIMEDOUT", message: "connect ETIMEDOUT" }, "timeout", undefined],
-    ["network error", { code: "ERR_NETWORK", message: "Network Error" }, "network", undefined],
+    [
+      "timeout code",
+      { code: "ECONNABORTED", message: "timeout of 100ms exceeded" },
+      "timeout",
+      undefined,
+    ],
+    [
+      "etimedout",
+      { code: "ETIMEDOUT", message: "connect ETIMEDOUT" },
+      "timeout",
+      undefined,
+    ],
+    [
+      "network error",
+      { code: "ERR_NETWORK", message: "Network Error" },
+      "network",
+      undefined,
+    ],
     ["no response, unknown", { message: "boom" }, "network", undefined],
     ["401", httpErr(401), "auth", 401],
     ["403", httpErr(403), "permission", 403],
@@ -34,13 +54,15 @@ describe("classifyAxiosError", () => {
   })
 
   it("keeps the backend message from an error body", () => {
-    expect(classifyAxiosError(httpErr(500, { message: "disk full" })).message).toBe(
-      "disk full",
-    )
+    expect(
+      classifyAxiosError(httpErr(500, { message: "disk full" })).message,
+    ).toBe("disk full")
   })
 
   it("reads request id from headers", () => {
-    const out = classifyAxiosError(httpErr(500, undefined, { "x-request-id": "r-1" }))
+    const out = classifyAxiosError(
+      httpErr(500, undefined, { "x-request-id": "r-1" }),
+    )
     expect(out.requestId).toBe("r-1")
   })
 
@@ -61,7 +83,10 @@ describe("classifyAxiosError", () => {
 
 describe("classifyStatus / classifyBusinessCode", () => {
   it("maps http statuses", () => {
-    expect(classifyStatus(404)).toMatchObject({ category: "validation", code: "not_found" })
+    expect(classifyStatus(404)).toMatchObject({
+      category: "validation",
+      code: "not_found",
+    })
     expect(classifyStatus(503).category).toBe("internal")
     expect(classifyStatus(418).category).toBe("validation")
   })

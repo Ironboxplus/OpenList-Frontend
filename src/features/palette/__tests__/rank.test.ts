@@ -3,10 +3,23 @@ import { rank, rankAll } from "../rank"
 
 const traffic = {
   title: "流量",
-  keywords: ["限速", "带宽", "bandwidth", "rate limit", "traffic", "download speed"],
+  keywords: [
+    "限速",
+    "带宽",
+    "bandwidth",
+    "rate limit",
+    "traffic",
+    "download speed",
+  ],
 }
-const sso = { title: "Single Sign-On", keywords: ["oidc", "github", "单点登录", "oauth"] }
-const newSync = { title: "新建同步作业", keywords: ["sync", "new sync job", "同步"] }
+const sso = {
+  title: "Single Sign-On",
+  keywords: ["oidc", "github", "单点登录", "oauth"],
+}
+const newSync = {
+  title: "新建同步作业",
+  keywords: ["sync", "new sync job", "同步"],
+}
 const files = { title: "文件", keywords: ["files", "browse"] }
 
 describe("rank", () => {
@@ -63,6 +76,12 @@ describe("rank", () => {
     const inTitle = rank("traffic", { title: "traffic", keywords: [] })
     const inKeyword = rank("traffic", { title: "流量", keywords: ["traffic"] })
     expect(inTitle).toBeGreaterThan(inKeyword)
+  })
+
+  it("needs three Latin letters but only two Chinese characters to go fuzzy", () => {
+    expect(rank("tf", { title: "traffic", keywords: [] })).toBe(0)
+    expect(rank("tfc", { title: "traffic", keywords: [] })).toBeGreaterThan(0)
+    expect(rank("新同", { title: "新建同步", keywords: [] })).toBeGreaterThan(0)
   })
 
   it("rewards a tighter subsequence", () => {

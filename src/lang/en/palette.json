@@ -1,0 +1,20 @@
+{
+  "title": "Command palette",
+  "placeholder": "Search pages, settings and actions",
+  "open": "Search",
+  "close": "Close",
+  "empty": "Nothing matches \"{{query}}\".",
+  "count": "{{count}} results",
+  "groups": {
+    "recent": "Recent",
+    "nav": "Page",
+    "setting": "Setting",
+    "action": "Action"
+  },
+  "actions": {
+    "new_sync": "New sync job",
+    "task_center": "Open Task Center",
+    "toggle_theme": "Toggle dark mode",
+    "toggle_language": "Switch language"
+  }
+}

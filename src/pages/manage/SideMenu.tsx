@@ -86,7 +86,13 @@ export const SideMenu = () => {
   }
 
   return (
-    <VStack p="$2" w="$full" color="$neutral11" spacing="$1" alignItems="stretch">
+    <VStack
+      p="$2"
+      w="$full"
+      color="$neutral11"
+      spacing="$1"
+      alignItems="stretch"
+    >
       <MenuLink
         label={t("settings.home.title")}
         to="/@manage"

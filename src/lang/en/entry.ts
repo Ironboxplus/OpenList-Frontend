@@ -8,6 +8,7 @@ import indexes from "./indexes.json"
 import login from "./login.json"
 import manage from "./manage.json"
 import metas from "./metas.json"
+import palette from "./palette.json"
 import shell from "./shell.json"
 import states from "./states.json"
 import transfers from "./transfers.json"
@@ -30,6 +31,7 @@ export const dict = {
   login,
   manage,
   metas,
+  palette,
   settings_other,
   // settings_center adds settings.groups.* / settings.items.* / settings.home.*
   // beside the per-setting labels without touching the Crowdin-managed file.
