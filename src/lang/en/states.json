@@ -1,0 +1,22 @@
+{
+  "retry": "Retry",
+  "not_found": {
+    "title": "Page not found",
+    "description": "This address does not match any page. It may have moved or never existed.",
+    "action": "Back to files"
+  },
+  "forbidden": {
+    "title": "No permission",
+    "description": "Your account cannot open this page. Ask an administrator, or sign in with a different account.",
+    "back": "Go back",
+    "switch_account": "Switch account"
+  },
+  "offline": {
+    "title": "You are offline",
+    "description": "This device has no network connection. The page will reload by itself as soon as the connection is back."
+  },
+  "backend": {
+    "title": "Server unavailable",
+    "description": "OpenList could not reach the server. It may be restarting or temporarily down."
+  }
+}

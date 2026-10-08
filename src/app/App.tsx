@@ -14,21 +14,25 @@ import {
   lazy,
   Match,
   onCleanup,
+  Show,
   Switch,
 } from "solid-js"
 import { Portal } from "solid-js/web"
-import { Error, FullScreenLoading } from "~/components"
-import { useLoading, useRouter, useT } from "~/hooks"
+import { FullScreenLoading } from "~/components"
+import { useRouter } from "~/hooks"
+import { api } from "~/platform/api/client"
+import type { UnifiedError } from "~/platform/contracts/task"
+import {
+  BackendUnavailable,
+  Forbidden,
+  NotFound,
+  Offline,
+  startupStateFor,
+  type StartupState,
+} from "~/features/shell/states"
 import { setSettings } from "~/store"
 import { setArchiveExtensions } from "~/store/archive"
-import { Resp } from "~/types"
-import {
-  base_path,
-  bus,
-  handleRespWithoutAuthAndNotify,
-  joinBase,
-  r,
-} from "~/utils"
+import { base_path, bus, joinBase } from "~/utils"
 import { MustUser, UserOrGuest } from "./MustUser"
 import "./index.css"
 import "./tailwind.css"
@@ -59,8 +63,25 @@ const TasksRedirect = () => {
   )
 }
 
+/**
+ * The `*` route is the file browser, so only addresses in the reserved `/@`
+ * namespace can be unknown routes; everything else is a (maybe missing) path.
+ */
+const CatchAll = () => {
+  const { pathname } = useRouter()
+  return (
+    <Show
+      when={!pathname().startsWith("/@")}
+      fallback={<NotFound />}
+    >
+      <MustUser>
+        <Home />
+      </MustUser>
+    </Show>
+  )
+}
+
 const App: Component = () => {
-  const t = useT()
   globalStyles()
   const isRouting = useIsRouting()
   const { to, pathname } = useRouter()
@@ -76,26 +97,36 @@ const App: Component = () => {
     bus.emit("pathname", pathname())
   })
 
-  const [err, setErr] = createSignal<string[]>([])
-  const [loading, data] = useLoading(() =>
-    Promise.all([
-      (async () => {
-        handleRespWithoutAuthAndNotify(
-          (await r.get("/public/settings")) as Resp<Record<string, string>>,
-          setSettings,
-          (e) => setErr(err().concat(e)),
-        )
-      })(),
-      (async () => {
-        handleRespWithoutAuthAndNotify(
-          (await r.get("/public/archive_extensions")) as Resp<string[]>,
-          setArchiveExtensions,
-          (e) => setErr(err().concat(e)),
-        )
-      })(),
-    ]),
-  )
-  data()
+  const [booting, setBooting] = createSignal(true)
+  const [retrying, setRetrying] = createSignal(false)
+  const [startup, setStartup] = createSignal<{
+    state: StartupState
+    error: UnifiedError
+  }>()
+  // Startup needs /public/settings; without it the app cannot render at all.
+  // The archive extension list only enables a few menu entries, so it may fail.
+  const boot = async () => {
+    if (retrying()) return
+    setRetrying(true)
+    const [settings, archive] = await Promise.all([
+      api<Record<string, string>>("get", "/public/settings"),
+      api<string[]>("get", "/public/archive_extensions"),
+    ])
+    if (settings.ok) {
+      setSettings(settings.data)
+      setStartup(undefined)
+    } else {
+      setStartup({
+        state: startupStateFor(settings.error, navigator.onLine),
+        error: settings.error,
+      })
+    }
+    if (archive.ok) setArchiveExtensions(archive.data)
+    else console.warn("archive_extensions unavailable", archive.error)
+    setRetrying(false)
+    setBooting(false)
+  }
+  void boot()
   return (
     <>
       <Portal>
@@ -143,30 +174,35 @@ const App: Component = () => {
                   </UserOrGuest>
                 }
               />
-              <Route
-                path="*"
-                element={
-                  <MustUser>
-                    <Home />
-                  </MustUser>
-                }
-              />
+              <Route path="*" component={CatchAll} />
             </Route>
           </Routes>
         }
       >
-        <Match when={err().length > 0}>
-          <Error
-            h="100vh"
-            msg={
-              t("home.fetching_settings_failed") +
-              err()
-                .map((e) => t("home." + e))
-                .join(", ")
-            }
-          />
+        <Match when={startup()}>
+          {(failure) => (
+            <Switch>
+              <Match when={failure().state === "offline"}>
+                <Offline fullscreen onRetry={boot} retrying={retrying()} />
+              </Match>
+              <Match when={failure().state === "forbidden"}>
+                <Forbidden fullscreen />
+              </Match>
+              <Match when={failure().state === "backend"}>
+                <BackendUnavailable
+                  fullscreen
+                  error={{
+                    code: failure().error.code,
+                    requestId: failure().error.requestId,
+                  }}
+                  onRetry={boot}
+                  retrying={retrying()}
+                />
+              </Match>
+            </Switch>
+          )}
         </Match>
-        <Match when={loading()}>
+        <Match when={booting()}>
           <FullScreenLoading />
         </Match>
       </Switch>

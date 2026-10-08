@@ -9,6 +9,7 @@ import login from "./login.json"
 import manage from "./manage.json"
 import metas from "./metas.json"
 import shell from "./shell.json"
+import states from "./states.json"
 import transfers from "./transfers.json"
 import settings_other from "./settings_other.json"
 import settings from "./settings.json"
@@ -31,6 +32,7 @@ export const dict = {
   settings_other,
   settings,
   shell,
+  states,
   shares,
   storages,
   tasks,

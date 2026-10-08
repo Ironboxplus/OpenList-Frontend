@@ -8,6 +8,7 @@ import { Route, Routes } from "@solidjs/router"
 import { For, Suspense } from "solid-js"
 import { routes } from "./routes"
 import { StorageLoadingBar } from "./StorageLoadingBar"
+import { NotFound } from "~/features/shell/states"
 
 const Manage = () => {
   const t = useT()
@@ -53,6 +54,7 @@ const Manage = () => {
                 return <Route path={route.to!} component={route.component} />
               }}
             </For>
+            <Route path="*" component={NotFound} />
           </Routes>
         </Box>
       </Flex>

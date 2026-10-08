@@ -1,0 +1,22 @@
+{
+  "retry": "重试",
+  "not_found": {
+    "title": "页面不存在",
+    "description": "这个地址没有对应的页面，可能已被移动，或从未存在。",
+    "action": "返回文件"
+  },
+  "forbidden": {
+    "title": "没有权限",
+    "description": "当前账户无法打开此页面。请联系管理员，或换一个账户登录。",
+    "back": "返回",
+    "switch_account": "切换账号"
+  },
+  "offline": {
+    "title": "网络已断开",
+    "description": "此设备没有网络连接。网络恢复后会自动重新加载。"
+  },
+  "backend": {
+    "title": "服务器暂不可用",
+    "description": "OpenList 无法连接到服务器，它可能正在重启或暂时不可用。"
+  }
+}
