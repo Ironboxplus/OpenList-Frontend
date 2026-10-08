@@ -1,6 +1,7 @@
 import br from "./br.json"
 import drivers from "./drivers.json"
 import errors from "./errors.json"
+import files from "./files.json"
 import global from "./global.json"
 import home from "./home.json"
 import index from "./index.json"
@@ -24,6 +25,7 @@ export const dict = {
   br,
   drivers,
   errors,
+  files,
   global,
   home,
   index,

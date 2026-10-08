@@ -44,6 +44,7 @@ import {
   hoverColor,
   pathJoin,
 } from "~/utils"
+import { shellActive } from "~/features/shell/topbar-slot"
 import { isMac } from "~/utils/compatibility"
 import { getIconByObj } from "~/utils/icon"
 
@@ -189,7 +190,13 @@ const Search = () => {
   }
   bus.on("tool", handler)
   const searchEvent = (e: KeyboardEvent) => {
-    if ((e.ctrlKey || (isMac && e.metaKey)) && e.key.toLowerCase() === "k") {
+    // Inside the shell Ctrl/Cmd+K belongs to the command palette; file search
+    // moves to Ctrl/Cmd+Shift+K. Guests (no shell) keep Ctrl/Cmd+K.
+    if (
+      (e.ctrlKey || (isMac && e.metaKey)) &&
+      e.shiftKey === shellActive() &&
+      e.key.toLowerCase() === "k"
+    ) {
       e.preventDefault()
       onToggle()
     }
