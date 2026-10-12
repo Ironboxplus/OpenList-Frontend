@@ -11,5 +11,8 @@
   "copy": "Copy",
   "status": "Status",
   "view": "View",
-  "error": "Error"
+  "error": "Error",
+  "show_value": "Show value",
+  "hide_value": "Hide value",
+  "slots": "Slots"
 }

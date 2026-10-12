@@ -84,9 +84,9 @@ export const PublicKeys = (props: PublicKeysProps) => {
   })
 
   return (
-    <section class="flex flex-col gap-2" data-section="ssh-keys">
-      <h2 class="text-base font-semibold">{t("users.ssh_keys.heading")}</h2>
+    <>
       <ResourceList
+        title={t("users.ssh_keys.heading")}
         rows={keys()}
         rowKey={(k) => k.id}
         loading={loading()}
@@ -189,6 +189,6 @@ export const PublicKeys = (props: PublicKeysProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </section>
+    </>
   )
 }

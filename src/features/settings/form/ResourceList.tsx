@@ -80,6 +80,9 @@ export interface ResourceListProps<T> {
   toolbarActions?: ToolbarAction[]
   /** Left side of the toolbar (filters, search). */
   toolbar?: JSX.Element
+  /** Heading (and what the list is for) when the list is one part of a larger page. */
+  title?: string
+  description?: string
   class?: string
 }
 
@@ -163,9 +166,19 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
 
   return (
     <div class={cn("flex w-full flex-col gap-3", props.class)}>
+      <Show when={props.title}>
+        <div>
+          <h2 class="text-base font-semibold leading-tight">{props.title}</h2>
+          <Show when={props.description}>
+            <p class="mt-1 text-sm text-muted-foreground">
+              {props.description}
+            </p>
+          </Show>
+        </div>
+      </Show>
       <div
         data-testid="resource-toolbar"
-        class="flex flex-wrap items-center gap-2"
+        class="flex flex-wrap items-center gap-2 empty:hidden"
       >
         <For each={props.toolbarActions}>
           {(a) => (

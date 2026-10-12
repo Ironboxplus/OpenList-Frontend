@@ -1,6 +1,7 @@
-import { TbRefresh, TbTrash } from "solid-icons/tb"
+import { TbEye, TbEyeOff, TbRefresh, TbTrash } from "solid-icons/tb"
 import {
   createMemo,
+  createSignal,
   type JSX,
   Match,
   Show,
@@ -41,6 +42,11 @@ export interface FieldRendererProps {
   hideLabel?: boolean
   /** Label above the control at every width (dialogs and narrow cards). */
   stacked?: boolean
+  /**
+   * Makes a secret field revealable: an eye button shows the text, awaiting
+   * this first (e.g. to fetch the real value behind a redacted one).
+   */
+  reveal?: () => void | Promise<void>
   /** Extra control belonging to this field, drawn under it (e.g. "apply to subfolders"). */
   after?: JSX.Element
   class?: string
@@ -73,12 +79,27 @@ export const FieldRenderer = (props: FieldRendererProps) => {
   })
   const invalid = () => (f().invalid ? true : undefined)
 
+  const [revealed, setRevealed] = createSignal(false)
+  const [revealing, setRevealing] = createSignal(false)
+  const toggleReveal = async () => {
+    if (!revealed() && props.reveal) {
+      setRevealing(true)
+      try {
+        await props.reveal()
+      } finally {
+        setRevealing(false)
+      }
+    }
+    setRevealed((v) => !v)
+  }
+
   const Text = () => (
     <div class="flex w-full gap-2">
       <Input
         id={f().id}
+        class={f().mono ? "font-mono" : undefined}
         type={
-          f().secret
+          f().secret && !revealed()
             ? "password"
             : f().type === Type.Number || f().type === Type.Float
               ? "number"
@@ -93,6 +114,21 @@ export const FieldRenderer = (props: FieldRendererProps) => {
         aria-invalid={invalid()}
         onInput={(e) => emit(e.currentTarget.value)}
       />
+      <Show when={f().secret && props.reveal}>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          class="shrink-0"
+          disabled={revealing()}
+          aria-label={t(revealed() ? "common.hide_value" : "common.show_value")}
+          onClick={toggleReveal}
+        >
+          <Show when={revealed()} fallback={<TbEye class="size-4" />}>
+            <TbEyeOff class="size-4" />
+          </Show>
+        </Button>
+      </Show>
       <Show when={f().generate && !f().readonly}>
         <Button
           type="button"
@@ -247,6 +283,9 @@ export const FieldRenderer = (props: FieldRendererProps) => {
           <Match when={f().type === Type.Text}>
             <Textarea
               id={f().id}
+              rows={f().rows}
+              spellcheck={f().mono ? false : undefined}
+              class={f().mono ? "font-mono text-sm" : undefined}
               value={display(props.value)}
               readOnly={f().readonly}
               placeholder={f().placeholder}

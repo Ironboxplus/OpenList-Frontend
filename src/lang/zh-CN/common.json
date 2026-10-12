@@ -11,5 +11,8 @@
   "copy": "复制",
   "status": "状态",
   "view": "查看",
-  "error": "错误"
+  "error": "错误",
+  "show_value": "显示内容",
+  "hide_value": "隐藏内容",
+  "slots": "插槽"
 }

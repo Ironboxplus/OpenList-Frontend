@@ -1,18 +1,26 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Heading,
-  HStack,
-  Input,
-  Switch as HopeSwitch,
-  Text,
-  Textarea,
-  VStack,
-} from "@hope-ui/solid"
+import { TbPlus } from "solid-icons/tb"
 import { createSignal, For, onMount, Show } from "solid-js"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
+import { Switch, SwitchControl, SwitchThumb } from "~/components/ui/switch"
+import {
+  createDeleteConfirm,
+  FieldRenderer,
+  ResourceList,
+  StatusBadge,
+  type StatusTone,
+} from "~/features/settings/form"
 import { useManageTitle, useT } from "~/hooks"
 import { plugins, setPluginEnabled } from "~/plugins"
+import { Type } from "~/types"
 import { handleResp, notify } from "~/utils"
 import {
   deleteBackendPlugin,
@@ -25,6 +33,22 @@ import {
 } from "./api"
 import ClusterConfig from "./ClusterConfig"
 
+const RowSwitch = (props: {
+  checked: boolean
+  label: string
+  onChange: (on: boolean) => void
+}) => (
+  <Switch
+    checked={props.checked}
+    onChange={props.onChange}
+    aria-label={props.label}
+  >
+    <SwitchControl>
+      <SwitchThumb />
+    </SwitchControl>
+  </Switch>
+)
+
 const Plugins = () => {
   const t = useT()
   useManageTitle("manage.sidemenu.plugins")
@@ -32,7 +56,7 @@ const Plugins = () => {
   const [backend, setBackend] = createSignal<GoPlugin[]>([])
   const [loading, setLoading] = createSignal(true)
 
-  // Editor state. editing="" with isNew=true → creating; editing=name → editing.
+  // Editor state. isNew: creating (the name is typed); otherwise editing the named plugin.
   const [editorOpen, setEditorOpen] = createSignal(false)
   const [isNew, setIsNew] = createSignal(false)
   const [name, setName] = createSignal("")
@@ -73,14 +97,16 @@ const Plugins = () => {
     setBusy(false)
   }
 
-  const remove = async (p: GoPlugin) => {
-    if (!window.confirm(t("manage.plugin_delete_confirm", { name: p.name })))
-      return
-    handleResp(await deleteBackendPlugin(p.name), (data) => {
-      setBackend(data ?? [])
-      notify.success(t("manage.plugin_deleted"))
-    })
-  }
+  const removal = createDeleteConfirm<GoPlugin>({
+    name: (p) => p.name,
+    description: (p) => t("manage.plugin_delete_confirm", { name: p.name }),
+    run: async (p) => {
+      handleResp(await deleteBackendPlugin(p.name), (data) => {
+        setBackend(data ?? [])
+        notify.success(t("manage.plugin_deleted"))
+      })
+    },
+  })
 
   const toggle = async (p: GoPlugin, enabled: boolean) => {
     handleResp(await enableBackendPlugin(p.name, enabled), (data) =>
@@ -88,200 +114,211 @@ const Plugins = () => {
     )
   }
 
+  const state = (p: GoPlugin): { tone: StatusTone; label: string } =>
+    !p.enabled
+      ? { tone: "neutral", label: t("manage.plugin_disabled") }
+      : p.loaded
+        ? { tone: "success", label: t("manage.plugin_loaded") }
+        : { tone: "warning", label: t("manage.plugin_not_loaded") }
+  // The compile error is shown in full: it is what the author needs to fix.
+  const StateChip = (props: { plugin: GoPlugin }) => (
+    <div class="flex flex-col items-start gap-1">
+      <StatusBadge {...state(props.plugin)} />
+      <Show when={props.plugin.error}>
+        <p class="break-all font-mono text-xs text-destructive">
+          {t("manage.plugin_load_error")}: {props.plugin.error}
+        </p>
+      </Show>
+    </div>
+  )
+
   return (
-    <VStack spacing="$5" alignItems="start" w="$full">
-      <Heading size="xl">{t("manage.sidemenu.plugins")}</Heading>
-
+    <div class="flex w-full flex-col gap-8">
       {/* ---- Backend (server) plugins ---- */}
-      <VStack spacing="$2" alignItems="start" w="$full">
-        <HStack w="$full" justifyContent="space-between" alignItems="center">
-          <Heading size="lg">{t("manage.plugins_backend_title")}</Heading>
-          <Button size="sm" onClick={openNew}>
-            {t("manage.plugin_new")}
-          </Button>
-        </HStack>
-        <Text color="$neutral10" fontSize="$sm">
-          {t("manage.plugins_backend_intro")}
-        </Text>
-
-        <Show when={editorOpen()}>
-          <VStack
-            w="$full"
-            spacing="$2"
-            p="$4"
-            rounded="$lg"
-            bgColor="$neutral2"
-            alignItems="stretch"
-          >
-            <Text fontWeight="$medium">{t("manage.plugin_name")}</Text>
-            <Input
-              value={name()}
-              disabled={!isNew()}
-              placeholder={t("manage.plugin_name_placeholder")}
-              onInput={(e) => setName(e.currentTarget.value)}
+      <ResourceList
+        title={t("manage.plugins_backend_title")}
+        description={t("manage.plugins_backend_intro")}
+        rows={backend()}
+        rowKey={(p) => p.name}
+        loading={loading()}
+        emptyText={t("manage.plugins_backend_empty")}
+        toolbarActions={[
+          {
+            id: "new-plugin",
+            label: t("manage.plugin_new"),
+            icon: <TbPlus class="mr-1.5 size-4" />,
+            onSelect: openNew,
+          },
+        ]}
+        columns={[
+          {
+            id: "name",
+            header: t("manage.plugin_name"),
+            cell: (p) => <span class="font-medium">{p.name}</span>,
+            sort: (p) => p.name,
+          },
+          {
+            id: "state",
+            header: t("common.status"),
+            cell: (p) => <StateChip plugin={p} />,
+          },
+          {
+            id: "enabled",
+            header: t("global.enable"),
+            cell: (p) => (
+              <RowSwitch
+                checked={p.enabled}
+                label={`${t("global.enable")} ${p.name}`}
+                onChange={(on) => toggle(p, on)}
+              />
+            ),
+          },
+        ]}
+        card={{
+          title: (p) => p.name,
+          badges: (p) => <StateChip plugin={p} />,
+          body: (p) => (
+            <RowSwitch
+              checked={p.enabled}
+              label={`${t("global.enable")} ${p.name}`}
+              onChange={(on) => toggle(p, on)}
             />
-            <Text fontWeight="$medium">{t("manage.plugin_source")}</Text>
-            <Textarea
-              value={source()}
-              rows={18}
-              spellcheck={false}
-              fontFamily="$mono"
-              fontSize="$sm"
-              onInput={(e) => setSource(e.currentTarget.value)}
-            />
-            <HStack spacing="$2" justifyContent="end">
-              <Button
-                variant="subtle"
-                colorScheme="neutral"
-                onClick={() => setEditorOpen(false)}
-              >
-                {t("global.cancel")}
-              </Button>
-              <Button loading={busy()} onClick={save}>
-                {t("manage.plugin_save")}
-              </Button>
-            </HStack>
-          </VStack>
-        </Show>
-
-        <Show
-          when={backend().length > 0}
-          fallback={
-            <Show when={!loading()}>
-              <Text color="$neutral9">{t("manage.plugins_backend_empty")}</Text>
-            </Show>
-          }
-        >
-          <VStack w="$full" spacing="$2">
-            <For each={backend()}>
-              {(p) => (
-                <VStack
-                  w="$full"
-                  p="$3"
-                  rounded="$lg"
-                  bgColor="$neutral2"
-                  alignItems="stretch"
-                  spacing="$1"
-                >
-                  <HStack w="$full" justifyContent="space-between">
-                    <HStack spacing="$2" alignItems="center">
-                      <Text fontWeight="$medium">{p.name}</Text>
-                      <Show
-                        when={p.enabled}
-                        fallback={
-                          <Badge colorScheme="neutral">
-                            {t("manage.plugin_disabled")}
-                          </Badge>
-                        }
-                      >
-                        <Badge colorScheme={p.loaded ? "success" : "warning"}>
-                          {p.loaded
-                            ? t("manage.plugin_loaded")
-                            : t("manage.plugin_not_loaded")}
-                        </Badge>
-                      </Show>
-                    </HStack>
-                    <HStack spacing="$2" alignItems="center">
-                      <HopeSwitch
-                        checked={p.enabled}
-                        onChange={(e: Event) =>
-                          toggle(
-                            p,
-                            (e.currentTarget as HTMLInputElement).checked,
-                          )
-                        }
-                      />
-                      <Button
-                        size="sm"
-                        variant="subtle"
-                        onClick={() => openEdit(p)}
-                      >
-                        {t("manage.plugin_edit")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="subtle"
-                        colorScheme="danger"
-                        onClick={() => remove(p)}
-                      >
-                        {t("manage.plugin_delete")}
-                      </Button>
-                    </HStack>
-                  </HStack>
-                  <Show when={p.error}>
-                    <Text fontSize="$sm" color="$danger9" fontFamily="$mono">
-                      {t("manage.plugin_load_error")}: {p.error}
-                    </Text>
-                  </Show>
-                </VStack>
-              )}
-            </For>
-          </VStack>
-        </Show>
-      </VStack>
+          ),
+        }}
+        primary={(p) => ({
+          id: "edit",
+          label: t("manage.plugin_edit"),
+          onSelect: openEdit,
+        })}
+        actions={() => [
+          {
+            id: "delete",
+            label: t("manage.plugin_delete"),
+            destructive: true,
+            onSelect: removal.ask,
+          },
+        ]}
+      />
+      {removal.dialog()}
+      <Dialog open={editorOpen()} onOpenChange={setEditorOpen}>
+        <DialogContent class="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {t(isNew() ? "manage.plugin_new" : "manage.plugin_edit")}
+            </DialogTitle>
+            <DialogDescription class="sr-only">
+              {t("manage.plugins_backend_title")}
+            </DialogDescription>
+          </DialogHeader>
+          <FieldRenderer
+            stacked
+            field={{
+              id: "plugin_name",
+              type: Type.String,
+              labelKey: "manage.plugin_name",
+              placeholder: t("manage.plugin_name_placeholder"),
+              readonly: !isNew(),
+            }}
+            value={name()}
+            onChange={(raw) => setName(String(raw))}
+          />
+          <FieldRenderer
+            stacked
+            field={{
+              id: "plugin_source",
+              type: Type.Text,
+              labelKey: "manage.plugin_source",
+              mono: true,
+              rows: 18,
+            }}
+            value={source()}
+            onChange={(raw) => setSource(String(raw))}
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setEditorOpen(false)}
+            >
+              {t("global.cancel")}
+            </Button>
+            <Button type="button" disabled={busy()} onClick={save}>
+              {t("manage.plugin_save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ---- Frontend (UI) plugins ---- */}
-      <VStack spacing="$2" alignItems="start" w="$full">
-        <Heading size="lg">{t("manage.plugins_frontend_title")}</Heading>
-        <Text color="$neutral10" fontSize="$sm">
-          {t("manage.plugins_intro")}
-        </Text>
-        <Show
-          when={plugins().length > 0}
-          fallback={<Text color="$neutral9">{t("manage.plugins_empty")}</Text>}
-        >
-          <VStack w="$full" spacing="$2">
-            <For each={plugins()}>
-              {(p) => (
-                <HStack
-                  w="$full"
-                  p="$3"
-                  rounded="$lg"
-                  bgColor="$neutral2"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Box>
-                    <HStack spacing="$2" alignItems="center">
-                      <Text fontWeight="$medium">{p.name ?? p.id}</Text>
-                      <Show when={p.version}>
-                        <Badge colorScheme="neutral">v{p.version}</Badge>
-                      </Show>
-                    </HStack>
-                    <Text fontSize="$sm" color="$neutral9">
-                      {p.id}
-                    </Text>
-                    <HStack spacing="$1" mt="$1" wrap="wrap">
-                      <For each={p.contributions}>
-                        {(c) => (
-                          <Badge colorScheme="info" variant="subtle">
-                            {c.slot}
-                          </Badge>
-                        )}
-                      </For>
-                    </HStack>
-                  </Box>
-                  <HopeSwitch
-                    checked={p.enabled !== false}
-                    onChange={(e: Event) =>
-                      setPluginEnabled(
-                        p.id,
-                        (e.currentTarget as HTMLInputElement).checked,
-                      )
-                    }
-                  />
-                </HStack>
-              )}
+      <ResourceList
+        title={t("manage.plugins_frontend_title")}
+        description={t("manage.plugins_intro")}
+        rows={plugins()}
+        rowKey={(p) => p.id}
+        emptyText={t("manage.plugins_empty")}
+        columns={[
+          {
+            id: "name",
+            header: t("manage.plugin_name"),
+            cell: (p) => (
+              <div class="flex flex-col">
+                <span class="font-medium">
+                  {p.name ?? p.id}
+                  {p.version ? (
+                    <Badge variant="secondary" class="ml-2">
+                      v{p.version}
+                    </Badge>
+                  ) : null}
+                </span>
+                <span class="text-xs text-muted-foreground">{p.id}</span>
+              </div>
+            ),
+          },
+          {
+            id: "slots",
+            header: t("common.slots"),
+            cell: (p) => (
+              <div class="flex flex-wrap gap-1">
+                <For each={p.contributions}>
+                  {(c) => <Badge variant="outline">{c.slot}</Badge>}
+                </For>
+              </div>
+            ),
+          },
+          {
+            id: "enabled",
+            header: t("global.enable"),
+            cell: (p) => (
+              <RowSwitch
+                checked={p.enabled !== false}
+                label={`${t("global.enable")} ${p.name ?? p.id}`}
+                onChange={(on) => setPluginEnabled(p.id, on)}
+              />
+            ),
+          },
+        ]}
+        card={{
+          title: (p) => p.name ?? p.id,
+          badges: (p) => (
+            <For each={p.contributions}>
+              {(c) => <Badge variant="outline">{c.slot}</Badge>}
             </For>
-          </VStack>
-        </Show>
-      </VStack>
+          ),
+          body: (p) => (
+            <RowSwitch
+              checked={p.enabled !== false}
+              label={`${t("global.enable")} ${p.name ?? p.id}`}
+              onChange={(on) => setPluginEnabled(p.id, on)}
+            />
+          ),
+        }}
+      />
 
       {/* ---- Cluster storage sharing ---- */}
       <div id="cluster">
         <ClusterConfig />
       </div>
-    </VStack>
+    </div>
   )
 }
 

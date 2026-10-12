@@ -1,99 +1,28 @@
+import { createSignal, onCleanup, onMount, Show } from "solid-js"
+import { Button } from "~/components/ui/button"
 import {
-  Badge,
-  Box,
-  Button,
-  Heading,
-  HStack,
-  IconButton,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
-  Switch as HopeSwitch,
-  Text,
-  Textarea,
-  VStack,
-} from "@hope-ui/solid"
-import { createMemo, createSignal, For, Index, onMount, Show } from "solid-js"
-import { AiOutlineEye, AiOutlineEyeInvisible } from "solid-icons/ai"
+  DataState,
+  FieldRenderer,
+  SettingsSection,
+} from "~/features/settings/form"
 import { useT } from "~/hooks"
+import { Type } from "~/types"
 import { handleResp, notify } from "~/utils"
 import {
   ClusterConfig as ClusterConfigT,
   ClusterGroupSpec,
-  ClusterGroupView,
   ClusterStatus,
   getClusterConfig,
   getClusterKey,
   setClusterConfig,
   setClusterGroups,
 } from "./api"
-import ClusterGraph from "./ClusterGraph"
+import { ClusterGroups } from "./ClusterGroups"
+import { ClusterOverview, ClusterStats } from "./ClusterOverview"
+import { splitLines } from "./cluster-util"
 
-const splitLines = (s: string) =>
-  s
-    .split("\n")
-    .map((x) => x.trim())
-    .filter(Boolean)
-
-const rid = () => {
-  try {
-    return crypto.randomUUID().slice(0, 8)
-  } catch {
-    return Math.random().toString(36).slice(2, 10)
-  }
-}
-
-const ago = (t: number) => {
-  if (!t) return "—"
-  const d = Math.max(0, Math.floor(Date.now() / 1000) - t)
-  if (d < 60) return `${d}s`
-  if (d < 3600) return `${Math.floor(d / 60)}m`
-  if (d < 86400) return `${Math.floor(d / 3600)}h`
-  return `${Math.floor(d / 86400)}d`
-}
-
-const Field = (props: { label: string; hint?: string; children: any }) => (
-  <VStack w="$full" spacing="$1" alignItems="stretch">
-    <Text fontWeight="$medium">{props.label}</Text>
-    <Show when={props.hint}>
-      <Text fontSize="$xs" color="$neutral10">
-        {props.hint}
-      </Text>
-    </Show>
-    {props.children}
-  </VStack>
-)
-
-const Stat = (props: {
-  label: string
-  value: string | number
-  accent?: string
-}) => (
-  <VStack
-    spacing="0"
-    px="$4"
-    py="$2"
-    rounded="$lg"
-    bgColor="$neutral2"
-    minW="92px"
-    alignItems="start"
-  >
-    <Text
-      fontSize="$xl"
-      fontWeight="$bold"
-      color={props.accent ?? "$neutral12"}
-    >
-      {props.value}
-    </Text>
-    <Text fontSize="$xs" color="$neutral10">
-      {props.label}
-    </Text>
-  </VStack>
-)
+const REDACTED_KEY = "********"
+const POLL_MS = 5000
 
 const ClusterConfig = () => {
   const t = useT()
@@ -102,34 +31,23 @@ const ClusterConfig = () => {
   const [loading, setLoading] = createSignal(true)
   const [busy, setBusy] = createSignal(false)
   const [savingGroups, setSavingGroups] = createSignal(false)
-  // The key is redacted ("********") on read; reveal fetches the plaintext once.
-  const [showKey, setShowKey] = createSignal(false)
-  const [revealing, setRevealing] = createSignal(false)
-
   const [seeds, setSeeds] = createSignal("")
   const [groups, setGroups] = createSignal<ClusterGroupSpec[]>([])
 
+  const groupsFromStatus = (s: ClusterStatus): ClusterGroupSpec[] =>
+    (s.groups ?? []).map((g) => ({
+      id: g.id,
+      name: g.name,
+      members: g.members.map((m) => ({
+        node_id: m.node_id,
+        mount_path: m.mount_path,
+      })),
+    }))
   const applyData = (d: { config: ClusterConfigT; status: ClusterStatus }) => {
     setCfg(d.config)
     setStatus(d.status)
     setSeeds((d.config.seeds ?? []).join("\n"))
-    syncGroupsFromStatus(d.status)
-  }
-  const applyStatus = (s: ClusterStatus) => {
-    setStatus(s)
-    syncGroupsFromStatus(s)
-  }
-  const syncGroupsFromStatus = (s: ClusterStatus) => {
-    setGroups(
-      (s.groups ?? []).map((g) => ({
-        id: g.id,
-        name: g.name,
-        members: g.members.map((m) => ({
-          node_id: m.node_id,
-          mount_path: m.mount_path,
-        })),
-      })),
-    )
+    setGroups(groupsFromStatus(d.status))
   }
 
   const refresh = async () => {
@@ -139,15 +57,16 @@ const ClusterConfig = () => {
   }
   onMount(() => {
     refresh()
-    // Live-ish refresh of the status panel while the page is open.
+    // Live-ish refresh of the status panels while the page is open. Only the
+    // status is taken: it must not overwrite what is being edited.
     const timer = setInterval(async () => {
       if (busy() || savingGroups()) return
       handleResp(await getClusterConfig(), (d) => {
         setCfg((prev) => prev ?? d.config)
         setStatus(d.status)
       })
-    }, 5000)
-    return () => clearInterval(timer)
+    }, POLL_MS)
+    onCleanup(() => clearInterval(timer))
   })
 
   const patch = (p: Partial<ClusterConfigT>) => {
@@ -155,16 +74,11 @@ const ClusterConfig = () => {
     if (c) setCfg({ ...c, ...p })
   }
 
-  // Toggle key visibility. When revealing a still-redacted key, fetch the real
-  // value from the dedicated endpoint so the field shows the plaintext (rather
-  // than the "********" placeholder). Edited keys are shown as-typed.
-  const toggleShowKey = async () => {
-    if (!showKey() && cfg()?.key === "********") {
-      setRevealing(true)
-      handleResp(await getClusterKey(), (d) => patch({ key: d.key }))
-      setRevealing(false)
-    }
-    setShowKey((v) => !v)
+  // The key is redacted on read; revealing it fetches the plaintext once.
+  // A key the user has typed is shown as-is.
+  const revealKey = async () => {
+    if (cfg()?.key !== REDACTED_KEY) return
+    handleResp(await getClusterKey(), (d) => patch({ key: d.key }))
   }
 
   const save = async () => {
@@ -185,7 +99,7 @@ const ClusterConfig = () => {
 
   const saveGroups = async () => {
     setSavingGroups(true)
-    // drop empty groups / members before saving
+    // Drop empty groups / members before saving.
     const clean = groups()
       .map((g) => ({
         ...g,
@@ -193,596 +107,127 @@ const ClusterConfig = () => {
       }))
       .filter((g) => g.members.length > 0)
     handleResp(await setClusterGroups(clean), (s) => {
-      applyStatus(s)
+      setStatus(s)
+      setGroups(groupsFromStatus(s))
       notify.success(t("manage.cluster.saved"))
     })
     setSavingGroups(false)
   }
 
-  // ---- group editing helpers ----
-  const addGroup = () =>
-    setGroups([...groups(), { id: rid(), name: "", members: [] }])
-  const removeGroup = (id: string) =>
-    setGroups(groups().filter((g) => g.id !== id))
-  const renameGroup = (id: string, name: string) =>
-    setGroups(groups().map((g) => (g.id === id ? { ...g, name } : g)))
-  const addMember = (id: string, value: string) => {
-    if (!value) return
-    const [node_id, mount_path] = value.split(" ")
-    setGroups(
-      groups().map((g) =>
-        g.id === id
-          ? {
-              ...g,
-              members: g.members.some(
-                (m) => m.node_id === node_id && m.mount_path === mount_path,
-              )
-                ? g.members
-                : [...g.members, { node_id, mount_path }],
-            }
-          : g,
-      ),
-    )
-  }
-  const removeMember = (id: string, node_id: string, mount_path: string) =>
-    setGroups(
-      groups().map((g) =>
-        g.id === id
-          ? {
-              ...g,
-              members: g.members.filter(
-                (m) => !(m.node_id === node_id && m.mount_path === mount_path),
-              ),
-            }
-          : g,
-      ),
-    )
-
-  const nodeLabel = (nodeID: string) => {
-    const n = status()?.nodes.find((x) => x.node_id === nodeID)
-    return n?.label || nodeID.slice(0, 8)
-  }
-  // saved server-side view of a group (for sync state badges).
-  const savedGroup = (id: string): ClusterGroupView | undefined =>
-    status()?.groups.find((g) => g.id === id)
-  const memberView = (gid: string, nodeID: string, mount: string) =>
-    savedGroup(gid)?.members.find(
-      (m) => m.node_id === nodeID && m.mount_path === mount,
-    )
-
-  // Live graph preview from the (possibly unsaved) edits.
-  const graphGroups = createMemo<ClusterGroupView[]>(() =>
-    groups().map((g) => ({
-      id: g.id,
-      name: g.name || g.id,
-      members: g.members.map((m) => ({
-        node_id: m.node_id,
-        mount_path: m.mount_path,
-        label: nodeLabel(m.node_id),
-        online: true,
-        present: true,
-        is_origin: false,
-        self: false,
-      })),
-      fields: [],
-      cred_hash: "",
-      version: 0,
-      origin: "",
-      updated_at: 0,
-      has_cred: false,
-    })),
-  )
-
-  // candidate storages to add to a group (all nodes' storages).
-  const candidates = (g: ClusterGroupSpec) => {
-    const out: { value: string; label: string }[] = []
-    for (const n of status()?.nodes ?? []) {
-      for (const s of n.storages) {
-        const taken = g.members.some(
-          (m) => m.node_id === n.node_id && m.mount_path === s.mount_path,
-        )
-        if (taken) continue
-        out.push({
-          value: n.node_id + " " + s.mount_path,
-          label: `${n.label || n.node_id.slice(0, 8)} · ${s.mount_path}`,
-        })
-      }
-    }
-    return out
-  }
-
-  const st = () => status()
-  const stats = () => st()?.stats
-
   return (
-    <VStack spacing="$3" alignItems="start" w="$full">
-      <Heading size="lg">{t("manage.cluster.title")}</Heading>
-      <Text color="$neutral10" fontSize="$sm">
-        {t("manage.cluster.intro")}
-      </Text>
+    <div class="flex w-full flex-col gap-4">
+      <div>
+        <h2 class="text-base font-semibold leading-tight">
+          {t("manage.cluster.title")}
+        </h2>
+        <p class="mt-1 text-sm text-muted-foreground">
+          {t("manage.cluster.intro")}
+        </p>
+      </div>
 
-      <Show when={!loading() && cfg() && st()}>
-        {/* ---- stats row ---- */}
-        <HStack wrap="wrap" gap="$3" w="$full">
-          <Stat
-            label={t("manage.cluster.stats_nodes")}
-            value={`${stats()!.nodes_online}/${stats()!.nodes_total}`}
-            accent="$success10"
-          />
-          <Stat
-            label={t("manage.cluster.stats_groups")}
-            value={stats()!.groups_total}
-          />
-          <Stat
-            label={t("manage.cluster.stats_creds")}
-            value={stats()!.creds_total}
-          />
-          <Stat
-            label={t("manage.cluster.stats_connections")}
-            value={stats()!.connections}
-          />
-          <Box flex={1} />
-          <VStack alignItems="end" spacing="$1">
-            <Badge colorScheme={st()!.active ? "success" : "neutral"}>
-              {st()!.active
-                ? t("manage.cluster.active")
-                : t("manage.cluster.inactive")}
-            </Badge>
-            <Text fontSize="$xs" color="$neutral10" fontFamily="$mono">
-              {st()!.node_id}
-            </Text>
-          </VStack>
-        </HStack>
+      <DataState loading={loading() && !cfg()}>
+        <Show when={cfg() && status()}>
+          <ClusterStats status={status()!} />
 
-        {/* ---- settings ---- */}
-        <VStack
-          w="$full"
-          spacing="$3"
-          p="$4"
-          rounded="$lg"
-          bgColor="$neutral2"
-          alignItems="stretch"
-        >
-          <HStack spacing="$2" alignItems="center">
-            <HopeSwitch
-              checked={cfg()!.enabled}
-              onChange={(e: Event) =>
-                patch({
-                  enabled: (e.currentTarget as HTMLInputElement).checked,
-                })
-              }
-            />
-            <Text fontWeight="$medium">{t("manage.cluster.enabled")}</Text>
-          </HStack>
-
-          {/* cluster key with its OWN save button */}
-          <Field
-            label={t("manage.cluster.key")}
-            hint={t("manage.cluster.key_hint")}
-          >
-            <HStack spacing="$2">
-              <InputGroup flex={1}>
-                <Input
-                  type={showKey() ? "text" : "password"}
-                  value={cfg()!.key}
-                  placeholder={t("manage.cluster.key_placeholder")}
-                  fontFamily={showKey() ? "$mono" : undefined}
-                  onInput={(e) => patch({ key: e.currentTarget.value })}
-                />
-                <InputRightElement>
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    color="$neutral10"
-                    loading={revealing()}
-                    aria-label={showKey() ? "hide key" : "show key"}
-                    icon={
-                      showKey() ? <AiOutlineEyeInvisible /> : <AiOutlineEye />
-                    }
-                    onClick={toggleShowKey}
-                  />
-                </InputRightElement>
-              </InputGroup>
-              <Button loading={busy()} onClick={save}>
-                {t("manage.cluster.save_key")}
+          <SettingsSection
+            id="cluster-config"
+            title={t("settings.form.cluster_config")}
+            actions={
+              <Button type="button" disabled={busy()} onClick={save}>
+                {t("global.save")}
               </Button>
-            </HStack>
-          </Field>
-
-          <HStack spacing="$3" wrap="wrap" w="$full">
-            <Box flex={1} minW="200px">
-              <Field
-                label={t("manage.cluster.label")}
-                hint={t("manage.cluster.label_hint")}
-              >
-                <Input
-                  value={cfg()!.label}
-                  placeholder="cfscan"
-                  onInput={(e) => patch({ label: e.currentTarget.value })}
-                />
-              </Field>
-            </Box>
-            <Box flex={1} minW="200px">
-              <Field
-                label={t("manage.cluster.addr")}
-                hint={t("manage.cluster.addr_hint")}
-              >
-                <Input
-                  value={cfg()!.addr}
-                  placeholder="https://node1.example.com"
-                  onInput={(e) => patch({ addr: e.currentTarget.value })}
-                />
-              </Field>
-            </Box>
-          </HStack>
-
-          <Field
-            label={t("manage.cluster.seeds")}
-            hint={t("manage.cluster.seeds_hint")}
+            }
           >
-            <Textarea
-              value={seeds()}
-              rows={2}
-              spellcheck={false}
-              fontFamily="$mono"
-              fontSize="$sm"
-              placeholder={"https://node2.example.com"}
-              onInput={(e) => setSeeds(e.currentTarget.value)}
-            />
-          </Field>
-
-          <HStack spacing="$2" alignItems="center">
-            <HopeSwitch
-              checked={cfg()!.apply_remote}
-              onChange={(e: Event) =>
-                patch({
-                  apply_remote: (e.currentTarget as HTMLInputElement).checked,
-                })
-              }
-            />
-            <VStack spacing="0" alignItems="start">
-              <Text fontWeight="$medium">
-                {t("manage.cluster.apply_remote")}
-              </Text>
-              <Text fontSize="$xs" color="$neutral10">
-                {t("manage.cluster.apply_remote_hint")}
-              </Text>
-            </VStack>
-          </HStack>
-
-          <HStack spacing="$4" wrap="wrap" alignItems="end">
-            <Field label={t("manage.cluster.announce_interval")}>
-              <Input
-                type="number"
-                w="120px"
-                value={cfg()!.announce_interval_sec}
-                onInput={(e) =>
-                  patch({
-                    announce_interval_sec: Number(e.currentTarget.value),
-                  })
-                }
-              />
-            </Field>
-            <Box flex={1} />
-            <Button loading={busy()} onClick={save}>
-              {t("global.save")}
-            </Button>
-          </HStack>
-        </VStack>
-
-        {/* ---- sync groups editor ---- */}
-        <HStack w="$full" justifyContent="space-between" alignItems="center">
-          <Heading size="lg">{t("manage.cluster.groups_title")}</Heading>
-          <HStack spacing="$2">
-            <Button variant="outline" size="sm" onClick={addGroup}>
-              + {t("manage.cluster.new_group")}
-            </Button>
-            <Button size="sm" loading={savingGroups()} onClick={saveGroups}>
-              {t("manage.cluster.save_groups")}
-            </Button>
-          </HStack>
-        </HStack>
-        <Text fontSize="$xs" color="$neutral10">
-          {t("manage.cluster.groups_hint")}
-        </Text>
-
-        <Show
-          when={groups().length > 0}
-          fallback={
-            <Text color="$neutral9" fontSize="$sm">
-              {t("manage.cluster.no_groups")}
-            </Text>
-          }
-        >
-          <VStack w="$full" spacing="$3" alignItems="stretch">
-            {/* Index (not For) keeps each group row's DOM stable across edits, so
-                typing in the name input doesn't recreate the row and drop focus. */}
-            <Index each={groups()}>
-              {(g) => {
-                const saved = () => savedGroup(g().id)
-                return (
-                  <VStack
-                    w="$full"
-                    spacing="$2"
-                    p="$3"
-                    rounded="$lg"
-                    bgColor="$neutral2"
-                    alignItems="stretch"
-                    border="1px solid $neutral4"
-                  >
-                    <HStack spacing="$2" alignItems="center">
-                      <Input
-                        flex={1}
-                        size="sm"
-                        value={g().name}
-                        placeholder={t("manage.cluster.group_name")}
-                        onInput={(e) =>
-                          renameGroup(g().id, e.currentTarget.value)
-                        }
-                      />
-                      <Show when={saved()?.has_cred}>
-                        <Badge colorScheme="success" variant="subtle">
-                          v{saved()!.version} · {saved()!.cred_hash}
-                        </Badge>
-                      </Show>
-                      <Show when={saved() && !saved()!.has_cred}>
-                        <Badge colorScheme="warning" variant="subtle">
-                          {t("manage.cluster.not_synced")}
-                        </Badge>
-                      </Show>
-                      <Button
-                        size="xs"
-                        colorScheme="danger"
-                        variant="ghost"
-                        onClick={() => removeGroup(g().id)}
-                      >
-                        {t("manage.cluster.delete_group")}
-                      </Button>
-                    </HStack>
-
-                    {/* member chips */}
-                    <HStack wrap="wrap" gap="$2">
-                      <For each={g().members}>
-                        {(m) => {
-                          const mv = () =>
-                            memberView(g().id, m.node_id, m.mount_path)
-                          return (
-                            <HStack
-                              spacing="$1"
-                              px="$2"
-                              py="$1"
-                              rounded="$md"
-                              bgColor="$neutral4"
-                              alignItems="center"
-                            >
-                              <Box
-                                w="8px"
-                                h="8px"
-                                rounded="$full"
-                                bgColor={
-                                  mv()?.online ? "$success9" : "$neutral8"
-                                }
-                              />
-                              <Show when={mv()?.is_origin}>
-                                <Text fontSize="$xs" title="credential source">
-                                  ★
-                                </Text>
-                              </Show>
-                              <Text fontSize="$sm">{nodeLabel(m.node_id)}</Text>
-                              <Text
-                                fontSize="$sm"
-                                color="$neutral10"
-                                fontFamily="$mono"
-                              >
-                                {m.mount_path}
-                              </Text>
-                              <Show when={mv() && !mv()!.present}>
-                                <Text
-                                  fontSize="$xs"
-                                  color="$warning9"
-                                  title="mount not found on node"
-                                >
-                                  ?
-                                </Text>
-                              </Show>
-                              <Box
-                                as="button"
-                                ml="$1"
-                                color="$neutral10"
-                                onClick={() =>
-                                  removeMember(g().id, m.node_id, m.mount_path)
-                                }
-                              >
-                                ✕
-                              </Box>
-                            </HStack>
-                          )
-                        }}
-                      </For>
-
-                      {/* add member */}
-                      <Menu>
-                        <MenuTrigger
-                          as={Button}
-                          size="xs"
-                          variant="outline"
-                          disabled={candidates(g()).length === 0}
-                        >
-                          + {t("manage.cluster.add_storage")}
-                        </MenuTrigger>
-                        <MenuContent maxH="320px" overflowY="auto">
-                          <For
-                            each={candidates(g())}
-                            fallback={
-                              <MenuItem disabled>
-                                {t("manage.cluster.no_storage_left")}
-                              </MenuItem>
-                            }
-                          >
-                            {(c) => (
-                              <MenuItem
-                                onSelect={() => addMember(g().id, c.value)}
-                              >
-                                {c.label}
-                              </MenuItem>
-                            )}
-                          </For>
-                        </MenuContent>
-                      </Menu>
-                    </HStack>
-
-                    <Show
-                      when={saved()?.has_cred && saved()!.fields.length > 0}
-                    >
-                      <Text fontSize="$xs" color="$neutral10">
-                        {t("manage.cluster.synced_fields")}:{" "}
-                        {saved()!.fields.join(", ")} ·{" "}
-                        {t("manage.cluster.last_update")}{" "}
-                        {ago(saved()!.updated_at)}
-                      </Text>
-                    </Show>
-                  </VStack>
-                )
+            <FieldRenderer
+              field={{
+                id: "cluster_enabled",
+                type: Type.Bool,
+                labelKey: "manage.cluster.enabled",
               }}
-            </Index>
-          </VStack>
+              value={cfg()!.enabled}
+              onChange={(raw) => patch({ enabled: raw === true })}
+            />
+            <FieldRenderer
+              field={{
+                id: "cluster_key",
+                type: Type.String,
+                labelKey: "manage.cluster.key",
+                helpKey: "manage.cluster.key_hint",
+                placeholder: t("manage.cluster.key_placeholder"),
+                secret: true,
+                mono: true,
+              }}
+              value={cfg()!.key}
+              onChange={(raw) => patch({ key: String(raw) })}
+              reveal={revealKey}
+            />
+            <FieldRenderer
+              field={{
+                id: "cluster_label",
+                type: Type.String,
+                labelKey: "manage.cluster.label",
+                helpKey: "manage.cluster.label_hint",
+                placeholder: "cfscan",
+              }}
+              value={cfg()!.label}
+              onChange={(raw) => patch({ label: String(raw) })}
+            />
+            <FieldRenderer
+              field={{
+                id: "cluster_addr",
+                type: Type.String,
+                labelKey: "manage.cluster.addr",
+                helpKey: "manage.cluster.addr_hint",
+                placeholder: "https://node1.example.com",
+              }}
+              value={cfg()!.addr}
+              onChange={(raw) => patch({ addr: String(raw) })}
+            />
+            <FieldRenderer
+              field={{
+                id: "cluster_seeds",
+                type: Type.Text,
+                labelKey: "manage.cluster.seeds",
+                helpKey: "manage.cluster.seeds_hint",
+                placeholder: "https://node2.example.com",
+                mono: true,
+                rows: 2,
+              }}
+              value={seeds()}
+              onChange={(raw) => setSeeds(String(raw))}
+            />
+            <FieldRenderer
+              field={{
+                id: "cluster_apply_remote",
+                type: Type.Bool,
+                labelKey: "manage.cluster.apply_remote",
+                helpKey: "manage.cluster.apply_remote_hint",
+              }}
+              value={cfg()!.apply_remote}
+              onChange={(raw) => patch({ apply_remote: raw === true })}
+            />
+            <FieldRenderer
+              field={{
+                id: "cluster_announce_interval",
+                type: Type.Number,
+                labelKey: "manage.cluster.announce_interval",
+              }}
+              value={cfg()!.announce_interval_sec}
+              onChange={(raw) => patch({ announce_interval_sec: Number(raw) })}
+            />
+          </SettingsSection>
+
+          <ClusterGroups
+            status={status()!}
+            groups={groups()}
+            onChange={setGroups}
+            saving={savingGroups()}
+            onSave={saveGroups}
+          />
+          <ClusterOverview status={status()!} />
         </Show>
-
-        {/* ---- visual graph mirror ---- */}
-        <Heading size="lg">{t("manage.cluster.graph_title")}</Heading>
-        <Box w="$full" p="$3" rounded="$lg" bgColor="$neutral2">
-          <ClusterGraph nodes={st()!.nodes} groups={graphGroups()} />
-        </Box>
-
-        {/* ---- nodes ---- */}
-        <Heading size="lg">{t("manage.cluster.nodes_title")}</Heading>
-        <VStack w="$full" spacing="$2" alignItems="stretch">
-          <For each={st()!.nodes}>
-            {(n) => (
-              <HStack
-                w="$full"
-                p="$2"
-                px="$3"
-                rounded="$md"
-                bgColor="$neutral2"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <HStack spacing="$2" alignItems="center">
-                  <Box
-                    w="10px"
-                    h="10px"
-                    rounded="$full"
-                    bgColor={n.online ? "$success9" : "$neutral8"}
-                  />
-                  <Text fontWeight="$medium">
-                    {n.label || n.node_id.slice(0, 8)}
-                  </Text>
-                  <Show when={n.self}>
-                    <Badge colorScheme="info" variant="subtle">
-                      {t("manage.cluster.self")}
-                    </Badge>
-                  </Show>
-                  <Show when={n.addr}>
-                    <Text fontSize="$xs" color="$neutral10" fontFamily="$mono">
-                      {n.addr}
-                    </Text>
-                  </Show>
-                </HStack>
-                <Text fontSize="$xs" color="$neutral10">
-                  {n.storages.length} {t("manage.cluster.storages")} ·{" "}
-                  {n.online ? t("manage.cluster.online") : ago(n.last_seen)}
-                </Text>
-              </HStack>
-            )}
-          </For>
-        </VStack>
-
-        {/* ---- connections + events ---- */}
-        <HStack w="$full" gap="$4" alignItems="start" wrap="wrap">
-          <VStack flex={1} minW="260px" spacing="$2" alignItems="stretch">
-            <Heading size="sm">{t("manage.cluster.connections_title")}</Heading>
-            <Show
-              when={(st()!.connections?.length ?? 0) > 0}
-              fallback={
-                <Text fontSize="$sm" color="$neutral9">
-                  {t("manage.cluster.no_connections")}
-                </Text>
-              }
-            >
-              <For each={st()!.connections}>
-                {(c) => (
-                  <HStack
-                    spacing="$2"
-                    p="$2"
-                    rounded="$md"
-                    bgColor="$neutral2"
-                    justifyContent="space-between"
-                  >
-                    <HStack spacing="$2">
-                      <Badge
-                        colorScheme={c.outbound ? "primary" : "neutral"}
-                        variant="subtle"
-                      >
-                        {c.outbound ? "→" : "←"}
-                      </Badge>
-                      <Text fontSize="$sm">{nodeLabel(c.node_id)}</Text>
-                    </HStack>
-                    <Text fontSize="$xs" color="$neutral10">
-                      {ago(c.since)}
-                    </Text>
-                  </HStack>
-                )}
-              </For>
-            </Show>
-          </VStack>
-
-          <VStack flex={1} minW="260px" spacing="$2" alignItems="stretch">
-            <Heading size="sm">{t("manage.cluster.events_title")}</Heading>
-            <Show
-              when={(st()!.events?.length ?? 0) > 0}
-              fallback={
-                <Text fontSize="$sm" color="$neutral9">
-                  {t("manage.cluster.no_events")}
-                </Text>
-              }
-            >
-              <VStack
-                spacing="$1"
-                alignItems="stretch"
-                maxH="240px"
-                overflowY="auto"
-              >
-                <For each={st()!.events}>
-                  {(e) => (
-                    <HStack spacing="$2" alignItems="baseline">
-                      <Text fontSize="$xs" color="$neutral9" w="36px">
-                        {ago(e.time)}
-                      </Text>
-                      <Badge
-                        variant="subtle"
-                        colorScheme={
-                          e.kind === "apply"
-                            ? "success"
-                            : e.kind === "share"
-                              ? "primary"
-                              : "neutral"
-                        }
-                      >
-                        {e.kind}
-                      </Badge>
-                      <Text fontSize="$xs" color="$neutral11">
-                        {e.detail}
-                      </Text>
-                    </HStack>
-                  )}
-                </For>
-              </VStack>
-            </Show>
-          </VStack>
-        </HStack>
-      </Show>
-    </VStack>
+      </DataState>
+    </div>
   )
 }
 

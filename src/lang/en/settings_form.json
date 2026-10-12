@@ -16,7 +16,8 @@
     "share_options": "Options",
     "share_content": "Page content",
     "meta_access": "Access",
-    "meta_content": "Content"
+    "meta_content": "Content",
+    "cluster_config": "This node"
   },
   "s3_generate": "Generate keys",
   "s3_restart_to_apply": "Changes to the S3 server take effect after a restart.",

@@ -16,7 +16,8 @@
     "share_options": "选项",
     "share_content": "页面内容",
     "meta_access": "访问",
-    "meta_content": "内容"
+    "meta_content": "内容",
+    "cluster_config": "本节点"
   },
   "s3_generate": "生成密钥",
   "s3_restart_to_apply": "S3 服务的修改需要重启后生效。",

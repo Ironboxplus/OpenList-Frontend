@@ -7,6 +7,8 @@ export interface DeleteConfirmProps {
   onOpenChange: (open: boolean) => void
   /** What is about to go; shown in the question. */
   name: string
+  /** Replaces the standard question when the deletion needs a warning of its own. */
+  description?: string
   loading?: boolean
   onConfirm: () => void
 }
@@ -19,7 +21,9 @@ export const DeleteConfirm = (props: DeleteConfirmProps) => {
       open={props.open}
       onOpenChange={props.onOpenChange}
       title={t("global.delete")}
-      description={t("global.delete_confirm", { name: props.name })}
+      description={
+        props.description ?? t("global.delete_confirm", { name: props.name })
+      }
       destructive
       loading={props.loading}
       onConfirm={props.onConfirm}
@@ -34,6 +38,7 @@ export const DeleteConfirm = (props: DeleteConfirmProps) => {
  */
 export const createDeleteConfirm = <T,>(opts: {
   name: (row: T) => string
+  description?: (row: T) => string
   run: (row: T) => Promise<void>
 }): { ask: (row: T) => void; dialog: () => JSX.Element } => {
   const [target, setTarget] = createSignal<{ row: T }>()
@@ -45,6 +50,7 @@ export const createDeleteConfirm = <T,>(opts: {
         open={target() !== undefined}
         onOpenChange={(open) => !open && !busy() && setTarget(undefined)}
         name={target() ? opts.name(target()!.row) : ""}
+        description={target() ? opts.description?.(target()!.row) : undefined}
         loading={busy()}
         onConfirm={async () => {
           const hit = target()

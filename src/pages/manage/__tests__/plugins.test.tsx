@@ -21,10 +21,12 @@ vi.mock("~/plugins", () => ({
 import Plugins from "../plugins/Plugins"
 import {
   buttonByText,
+  chooseMenuItem,
   clickButton,
   expectGolden,
   lastCall,
   mockApi,
+  openRowMenu,
   renderPage,
   settle,
   setValue,
@@ -124,7 +126,6 @@ const CLUSTER = {
 beforeEach(() => {
   resetRouter()
   setPluginEnabled.mockClear()
-  vi.spyOn(window, "confirm").mockReturnValue(true)
   mockApi({
     "GET /admin/plugin/list": () => ({ go: structuredClone(GO), frontend: [] }),
     "GET /admin/plugin/get": (c) => ({
@@ -164,8 +165,8 @@ describe("backend plugins", () => {
     renderPage(() => <Plugins />)
     await settle()
     await clickButton("New plugin")
-    setValue(textInputs()[0], "  mine ")
-    setValue(document.querySelector("textarea")!, "package main // mine")
+    setValue(document.getElementById("plugin_name")!, "  mine ")
+    setValue(document.getElementById("plugin_source")!, "package main // mine")
     await clickButton("Save & load")
     expectGolden("plugin-save", lastCall("POST", "/admin/plugin/save")!.body)
   })
@@ -176,16 +177,13 @@ describe("backend plugins", () => {
     fireEvent.click(buttons("Edit")[0])
     await settle()
     expect(
-      (document.querySelector("textarea") as HTMLTextAreaElement).value,
+      (document.getElementById("plugin_source") as HTMLTextAreaElement).value,
     ).toBe("package main // src")
     fireEvent.click(document.querySelectorAll("input[type=checkbox]")[2]) // "off"
     await settle()
-    fireEvent.click(buttons("Delete")[1])
-    await settle()
-    // the new UI uses a dialog; the old one window.confirm
-    const confirm = buttons("Confirm")[0]
-    if (confirm) fireEvent.click(confirm)
-    await settle()
+    await openRowMenu(1)
+    await chooseMenuItem("Delete")
+    await clickButton("Confirm")
     expectGolden(
       "plugin-writes",
       writes().map((c) => [c.path, c.body ?? null]),
@@ -211,7 +209,7 @@ describe("cluster config", () => {
     ) as HTMLInputElement
     expect(key.value).toBe("********")
     expect(lastCall("GET", "/admin/cluster/key")).toBeUndefined()
-    fireEvent.click(document.querySelector("button[aria-label='show key']")!)
+    fireEvent.click(document.querySelector("button[aria-label='Show value']")!)
     await settle()
     expect(lastCall("GET", "/admin/cluster/key")).toBeTruthy()
     expect(textInputs().some((i) => i.value === "REALKEY")).toBe(true)
@@ -241,7 +239,7 @@ describe("cluster config", () => {
   it("groups: new empty groups are dropped, existing ones saved as specs", async () => {
     renderPage(() => <Plugins />)
     await settle()
-    await clickButton("+ New group")
+    await clickButton("New group")
     const names = textInputs().filter((i) =>
       i.placeholder?.startsWith("Group name"),
     )

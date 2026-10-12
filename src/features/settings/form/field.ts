@@ -36,6 +36,10 @@ export interface FieldSpec {
   basePath?: string
   /** String: a button that fills the field with a generated value. */
   generate?: () => string
+  /** Text / String: fixed-width font (source code, keys). */
+  mono?: boolean
+  /** Text: visible lines. */
+  rows?: number
   /** String: text with a folder chooser (`folder`: pick only, no typing). */
   picker?: "path" | "folder"
 }
