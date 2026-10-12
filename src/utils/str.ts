@@ -83,7 +83,15 @@ export function formatDateCompact(dateStr?: string, now = new Date()) {
   if (date.getFullYear() !== now.getFullYear()) {
     return date.getFullYear() + "-" + mon + "-" + day
   }
-  return mon + "-" + day + " " + full(date.getHours()) + ":" + full(date.getMinutes())
+  return (
+    mon +
+    "-" +
+    day +
+    " " +
+    full(date.getHours()) +
+    ":" +
+    full(date.getMinutes())
+  )
 }
 
 export type ConvertURLArgs = {
@@ -248,3 +256,8 @@ export const validateFilename = (
 
   return { valid: true }
 }
+
+/** Markup in a message from the backend, as the plain text a reader sees. */
+export const plainText = (html: string): string =>
+  new DOMParser().parseFromString(html, "text/html").documentElement
+    .textContent ?? html

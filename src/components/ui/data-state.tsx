@@ -1,15 +1,8 @@
 import { TbAlertCircle, TbRefresh } from "solid-icons/tb"
 import { type JSX, Match, Show, Switch } from "solid-js"
 import { Skeleton } from "~/components/ui/skeleton"
-import { focusRing } from "~/components/ui/focus"
+import { Button } from "~/components/ui/button"
 import { useT } from "~/hooks"
-import { cn } from "~/utils/cn"
-
-/** The outlined "Retry"-style button of a failed load (also used by the files page). */
-export const retryButtonClass = cn(
-  focusRing,
-  "inline-flex h-9 items-center gap-1.5 rounded-lg border bg-background px-3 text-sm font-medium text-foreground hover:bg-accent",
-)
 
 export interface DataStateProps {
   loading?: boolean
@@ -48,14 +41,14 @@ export const DataState = (props: DataStateProps) => {
             {props.error}
           </p>
           <Show when={props.onRetry}>
-            <button
-              type="button"
-              class={retryButtonClass}
+            <Button
+              variant="outline"
+              class="gap-1.5"
               onClick={() => props.onRetry?.()}
             >
               <TbRefresh class="size-4" />
               {t("common.retry")}
-            </button>
+            </Button>
           </Show>
         </div>
       </Match>

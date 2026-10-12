@@ -1,6 +1,6 @@
 import { TbAlertTriangle, TbFolderOff, TbRefresh } from "solid-icons/tb"
 import { createSignal, onCleanup, Show, type JSX } from "solid-js"
-import { retryButtonClass } from "~/components/ui/data-state"
+import { Button } from "~/components/ui/button"
 import { useT } from "~/hooks"
 import { canRetry, classifyFilesError } from "./files-state"
 
@@ -29,15 +29,15 @@ export const FilesError = (props: {
       </p>
       <div class="flex gap-2">
         <Show when={canRetry(kind())}>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            class="gap-1.5"
             data-files-retry
-            class={retryButtonClass}
             onClick={props.onRetry}
           >
             <TbRefresh class="size-4" />
             {t("files.retry")}
-          </button>
+          </Button>
         </Show>
         {props.actions}
       </div>
@@ -83,15 +83,15 @@ export const SlowLoadNotice = (props: { onRetry: () => void }) => {
       >
         <span data-slow-text>{t("files.slow", { n: secs() })}</span>
         <Show when={secs() >= RETRY_AFTER_S}>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            class="gap-1.5"
             data-files-retry
-            class={retryButtonClass}
             onClick={props.onRetry}
           >
             <TbRefresh class="size-4" />
             {t("files.retry")}
-          </button>
+          </Button>
         </Show>
       </div>
     </Show>

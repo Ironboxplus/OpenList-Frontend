@@ -1,12 +1,11 @@
 import { TbPlus } from "solid-icons/tb"
 import { createSignal } from "solid-js"
 import { Badge } from "~/components/ui/badge"
+import { StatusBadge, type StatusTone } from "~/components/ui/status-badge"
 import {
   createDeleteConfirm,
   ResourceList,
-  StatusBadge,
   type RowAction,
-  type StatusTone,
 } from "~/features/settings/form"
 import { useFetch, useManageTitle, useRouter, useT, useUtil } from "~/hooks"
 import { getSetting, me } from "~/store"

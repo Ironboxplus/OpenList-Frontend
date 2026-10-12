@@ -2,6 +2,7 @@ import { TbPlus } from "solid-icons/tb"
 import { createSignal, For, onMount, Show } from "solid-js"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
+import { StatusBadge, type StatusTone } from "~/components/ui/status-badge"
 import {
   Dialog,
   DialogContent,
@@ -15,8 +16,6 @@ import {
   createDeleteConfirm,
   FieldRenderer,
   ResourceList,
-  StatusBadge,
-  type StatusTone,
 } from "~/features/settings/form"
 import { useManageTitle, useT } from "~/hooks"
 import { plugins, setPluginEnabled } from "~/plugins"

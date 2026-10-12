@@ -1,8 +1,9 @@
 import { Show } from "solid-js"
 import { Progress } from "~/components/ui/progress"
-import { plainText, StatusBadge } from "~/features/settings/form"
+import { StatusBadge } from "~/components/ui/status-badge"
 import { useT } from "~/hooks"
 import { MountDetails, Storage } from "~/types"
+import { plainText } from "~/utils/str"
 import { nearlyFull, toReadableUsage, usedPercentage } from "~/utils"
 
 /** "work" is healthy, "disabled" is off; anything else is the failure text. */

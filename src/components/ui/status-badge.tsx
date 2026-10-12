@@ -3,13 +3,15 @@ import { Badge } from "~/components/ui/badge"
 import { useT } from "~/hooks"
 import { cn } from "~/utils/cn"
 
-export type StatusTone = "success" | "warning" | "error" | "neutral"
+/** `info` is for work in progress. */
+export type StatusTone = "success" | "warning" | "error" | "neutral" | "info"
 
 const VARIANT = {
   success: "success",
   warning: "warning",
   error: "destructive",
   neutral: "secondary",
+  info: "info",
 } as const
 
 export interface StatusBadgeProps {
@@ -57,8 +59,3 @@ export const StatusBadge = (props: StatusBadgeProps) => {
     </div>
   )
 }
-
-/** Markup in a message from the backend, as the plain text a reader sees. */
-export const plainText = (html: string): string =>
-  new DOMParser().parseFromString(html, "text/html").documentElement
-    .textContent ?? html
