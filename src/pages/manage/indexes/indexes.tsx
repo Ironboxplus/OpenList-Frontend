@@ -77,7 +77,7 @@ const Indexes = () => {
 
   return (
     <>
-      <CommonSettings group={Group.INDEX} />
+      <CommonSettings group={Group.INDEX} title={t("indexes.index_header")} />
       <SettingsSection
         id="index-progress"
         title={t("indexes.current")}

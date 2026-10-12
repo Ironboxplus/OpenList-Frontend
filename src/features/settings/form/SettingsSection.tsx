@@ -32,9 +32,11 @@ export const SettingsSection = (props: SettingsSectionProps) => (
         </Show>
       </div>
       <Show when={props.actions}>
-        <div class="flex shrink-0 items-center gap-2">{props.actions}</div>
+        <div class="flex flex-wrap items-center gap-2">{props.actions}</div>
       </Show>
     </header>
-    <div class="flex flex-col divide-y px-4 pb-2 sm:px-6">{props.children}</div>
+    <div class="flex flex-col divide-y divide-border px-4 pb-2 sm:px-6">
+      {props.children}
+    </div>
   </Card>
 )

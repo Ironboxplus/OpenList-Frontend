@@ -10,6 +10,9 @@
 
 @source "../features";
 @source "../components/ui";
+/* The settings area is built on the same components and styled with utilities. */
+@source "../pages/manage";
+@source not "../pages/manage/__tests__";
 
 /*
  * Phone shell: the bottom tab bar is `position: fixed`, so Home's own fixed
