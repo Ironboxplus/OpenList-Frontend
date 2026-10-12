@@ -18,7 +18,7 @@ vi.mock("~/hooks", async () => {
 
 import { UserRole } from "~/types"
 import { SettingsHome } from "../SettingsHome"
-import { SETTINGS, visibleSettings } from "../registry"
+import { settingsForBackend, visibleSettings } from "../registry"
 
 afterEach(() => {
   to.mockClear()
@@ -33,7 +33,7 @@ describe("SettingsHome", () => {
     ))
     expect(container.querySelectorAll("section[data-group]")).toHaveLength(6)
     expect(container.querySelectorAll("a[data-setting]")).toHaveLength(
-      SETTINGS.length,
+      settingsForBackend().length,
     )
   })
 

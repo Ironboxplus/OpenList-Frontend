@@ -2,14 +2,19 @@ import * as i18n from "@solid-primitives/i18n"
 import { describe, expect, it } from "vitest"
 import { dict } from "~/lang/en/entry"
 import zhCenter from "~/lang/zh-CN/settings_center.json"
-import { routeComponents } from "~/pages/manage/route-components"
+import {
+  entryComponents,
+  routeComponents,
+} from "~/pages/manage/route-components"
 import { UserRole } from "~/types"
 import {
+  availableOn,
   canAccess,
   groupSettings,
   manageSubPath,
   SETTING_GROUPS,
   SETTINGS,
+  settingsForBackend,
   visibleSettings,
 } from "../registry"
 
@@ -67,11 +72,13 @@ describe("registry integrity", () => {
     expect(SETTINGS.some((s) => s.route === "/@manage")).toBe(false)
   })
 
-  it("has unique ids and unique routes", () => {
+  it("has unique ids, and unique routes on each backend", () => {
     const ids = SETTINGS.map((s) => s.id)
     expect(new Set(ids).size).toBe(ids.length)
-    const routes = SETTINGS.map((s) => s.route)
-    expect(new Set(routes).size).toBe(routes.length)
+    for (const kind of ["go", "ts-worker"] as const) {
+      const routes = settingsForBackend(kind).map((s) => s.route)
+      expect(new Set(routes).size, kind).toBe(routes.length)
+    }
   })
 
   it("uses six groups, all non-empty, every item in a known group", () => {
@@ -98,8 +105,8 @@ describe("registry integrity", () => {
     expect(["users", "metas", "sso", "ldap"].map(group)).toEqual(
       Array(4).fill("access"),
     )
-    expect(["plugins", "cluster"].map(group)).toEqual(
-      Array(2).fill("extensions"),
+    expect(["plugins", "plugins-ts", "cluster"].map(group)).toEqual(
+      Array(3).fill("extensions"),
     )
     expect(
       ["global", "dashboard", "backup-restore", "about", "docs"].map(group),
@@ -116,7 +123,9 @@ describe("registry integrity", () => {
   it("every /@manage route has a page component", () => {
     for (const s of SETTINGS) {
       const sub = manageSubPath(s.route)
-      if (sub) expect(routeComponents[sub], s.route).toBeTypeOf("function")
+      if (!sub) continue
+      const page = entryComponents[s.id] ?? routeComponents[sub]
+      expect(page, s.route).toBeTypeOf("function")
     }
   })
 
@@ -155,8 +164,8 @@ describe("permission filter", () => {
       .map((s) => s.id)
       .sort()
 
-  it("admin sees everything", () => {
-    expect(visibleSettings(ADMIN)).toHaveLength(SETTINGS.length)
+  it("admin sees everything the backend provides", () => {
+    expect(visibleSettings(ADMIN)).toHaveLength(settingsForBackend().length)
   })
 
   it("a normal user sees only shares, transfers, about and docs", () => {
@@ -197,5 +206,33 @@ describe("manageSubPath", () => {
     expect(manageSubPath("/@manage/settings/site")).toBe("/settings/site")
     expect(manageSubPath("/@transfers")).toBeUndefined()
     expect(manageSubPath("https://doc.oplist.org")).toBeUndefined()
+  })
+})
+
+describe("backend filter", () => {
+  const ids = (kind: "go" | "ts-worker") =>
+    visibleSettings(ADMIN, SETTINGS, kind).map((s) => s.id)
+
+  it("shows our plugin page, cluster and S3 on the Go backend only", () => {
+    const go = ids("go")
+    expect(go).toEqual(expect.arrayContaining(["plugins", "cluster", "s3"]))
+    expect(go).not.toContain("plugins-ts")
+  })
+
+  it("shows the upstream plugin page on the TS backend only", () => {
+    const ts = ids("ts-worker")
+    expect(ts).toContain("plugins-ts")
+    for (const id of ["plugins", "cluster", "s3"]) expect(ts).not.toContain(id)
+  })
+
+  it("keeps entries without a backend on both", () => {
+    for (const kind of ["go", "ts-worker"] as const)
+      expect(ids(kind), kind).toContain("storages")
+  })
+
+  it("defaults to the connected backend", () => {
+    expect(availableOn(["ts-worker"])).toBe(false)
+    expect(availableOn(["go"])).toBe(true)
+    expect(availableOn(undefined)).toBe(true)
   })
 })

@@ -81,6 +81,10 @@
       "title": "插件",
       "description": "安装并管理扩展。"
     },
+    "plugins-ts": {
+      "title": "插件",
+      "description": "安装并管理扩展。"
+    },
     "cluster": {
       "title": "集群",
       "description": "在多个 OpenList 节点之间共享存储。"

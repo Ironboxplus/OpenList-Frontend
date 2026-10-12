@@ -12,7 +12,7 @@ import { groupSettings, visibleSettings } from "~/features/settings/registry"
 import { NotFound } from "~/features/shell/states"
 import { useTopBarSlots } from "~/features/shell/topbar-slot"
 import { me } from "~/store"
-import { routes } from "./routes"
+import { getRoutes } from "./routes"
 import { StorageLoadingBar } from "./StorageLoadingBar"
 
 /**
@@ -25,6 +25,7 @@ const Manage = () => {
   useTitle(() => t("manage.title"))
   const { pathname } = useRouter()
   const location = useLocation()
+  const routes = getRoutes()
   const sections = createMemo(() => groupSettings(visibleSettings(me())))
   const [collapsed, setCollapsed] = createSignal(readNavCollapsed(localStorage))
   const toggle = () => {

@@ -1,5 +1,9 @@
 // Breadcrumb for pages under /@manage: Settings > group > page.
-import { SETTINGS, routePath, type SettingContribution } from "./registry"
+import {
+  routePath,
+  settingsForBackend,
+  type SettingContribution,
+} from "./registry"
 
 export interface Crumb {
   /** i18n key for the label. */
@@ -22,7 +26,7 @@ export const entryFor = (
 ): SettingContribution | undefined => {
   let best: SettingContribution | undefined
   let bestScore = -1
-  for (const e of SETTINGS) {
+  for (const e of settingsForBackend()) {
     if (e.external) continue
     const base = routePath(e.route)
     if (!base.startsWith("/@manage/")) continue

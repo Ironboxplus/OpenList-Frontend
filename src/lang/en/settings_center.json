@@ -81,6 +81,10 @@
       "title": "Plugins",
       "description": "Install and manage extensions."
     },
+    "plugins-ts": {
+      "title": "Plugins",
+      "description": "Install and manage extensions."
+    },
     "cluster": {
       "title": "Cluster",
       "description": "Share storages between OpenList nodes."

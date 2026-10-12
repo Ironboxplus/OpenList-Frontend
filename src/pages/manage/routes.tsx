@@ -1,16 +1,21 @@
 import { Component, lazy, Show } from "solid-js"
 import { Forbidden } from "~/features/shell/states"
 import {
+  availableOn,
   canAccess,
   manageSubPath,
-  SETTINGS,
+  settingsForBackend,
   visibleSettings,
   type SettingPermission,
 } from "~/features/settings/registry"
 import { SettingsHome } from "~/features/settings/SettingsHome"
 import { me } from "~/store"
 import type { BackendKind } from "~/utils/backend"
-import { PROFILE_PATH, routeComponents } from "./route-components"
+import {
+  entryComponents,
+  PROFILE_PATH,
+  routeComponents,
+} from "./route-components"
 
 interface Route {
   /** Path below /@manage; "" is the index. */
@@ -84,7 +89,8 @@ const guarded =
     </Show>
   )
 
-const get_routes = (): Route[] => {
+/** Built when the settings area mounts: the backend is known only after boot. */
+export const getRoutes = (): Route[] => {
   const acc = new Map<string, Route>()
   acc.set("", { to: "", component: SettingsIndex })
   // Profile left the settings list for the account menu but keeps its page.
@@ -92,17 +98,17 @@ const get_routes = (): Route[] => {
     to: PROFILE_PATH,
     component: routeComponents[PROFILE_PATH],
   })
-  for (const entry of SETTINGS) {
+  for (const entry of settingsForBackend()) {
     const sub = manageSubPath(entry.route)
     // Entries that share a page (plugins / cluster) register it once.
     if (!sub || acc.has(sub)) continue
     acc.set(sub, {
       to: sub,
-      component: guarded(entry.permission, routeComponents[sub]),
+      component: guarded(
+        entry.permission,
+        entryComponents[entry.id] ?? routeComponents[sub],
+      ),
     })
   }
-  return [...acc.values()]
+  return [...acc.values(), ...hide_routes.filter((r) => availableOn(r.backend))]
 }
-
-const routes = get_routes().concat(hide_routes)
-export { routes }

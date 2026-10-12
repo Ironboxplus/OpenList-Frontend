@@ -23,14 +23,10 @@ import { SiMetabase } from "solid-icons/si"
 import { TbArrowsUpDown, TbTopologyStar3 } from "solid-icons/tb"
 import type { IconTypes } from "solid-icons"
 import { UserMethods, UserRole, type User } from "~/types"
+import { getBackendKind, type BackendKind } from "~/utils/backend"
 
 export type SettingGroupId =
-  | "site"
-  | "storage"
-  | "indexing"
-  | "access"
-  | "extensions"
-  | "system"
+  "site" | "storage" | "indexing" | "access" | "extensions" | "system"
 
 /**
  * Who may see an entry, mirroring the old sidebar's `role`/`show` rules:
@@ -52,6 +48,8 @@ export interface SettingContribution {
   permission?: SettingPermission
   icon: IconTypes
   external?: true
+  /** Backends that provide this page; unset means every backend. */
+  backend?: BackendKind[]
 }
 
 export const SETTING_GROUPS: { id: SettingGroupId; title: string }[] = [
@@ -69,7 +67,9 @@ const item = (
   route: string,
   icon: IconTypes,
   keywords: string[],
-  extra: Partial<Pick<SettingContribution, "permission" | "external">> = {},
+  extra: Partial<
+    Pick<SettingContribution, "permission" | "external" | "backend">
+  > = {},
 ): SettingContribution => ({
   id,
   group,
@@ -179,15 +179,22 @@ export const SETTINGS: SettingContribution[] = [
     "upload speed",
     "stream",
   ]),
-  item("s3", "storage", "/@manage/settings/s3", BsBucket, [
-    "对象存储",
-    "存储桶",
+  item(
     "s3",
-    "bucket",
-    "buckets",
-    "access key",
-    "secret key",
-  ]),
+    "storage",
+    "/@manage/settings/s3",
+    BsBucket,
+    [
+      "对象存储",
+      "存储桶",
+      "s3",
+      "bucket",
+      "buckets",
+      "access key",
+      "secret key",
+    ],
+    { backend: ["go"] },
+  ),
   item("ftp", "storage", "/@manage/settings/ftp", BsHddNetwork, [
     "ftp",
     "sftp",
@@ -304,25 +311,48 @@ export const SETTINGS: SettingContribution[] = [
   ]),
 
   // Extensions and cluster
-  item("plugins", "extensions", "/@manage/plugins", BsPlugin, [
-    "插件",
-    "扩展",
+  // Same address on both backends, each with its own page (see route-components).
+  item(
     "plugins",
-    "plugin",
-    "extension",
-    "wasm",
-    "install plugin",
-  ]),
-  item("cluster", "extensions", "/@manage/plugins#cluster", TbTopologyStar3, [
-    "集群",
-    "节点",
-    "存储共享",
+    "extensions",
+    "/@manage/plugins",
+    BsPlugin,
+    [
+      "插件",
+      "扩展",
+      "plugins",
+      "plugin",
+      "extension",
+      "wasm",
+      "install plugin",
+    ],
+    { backend: ["go"] },
+  ),
+  item(
+    "plugins-ts",
+    "extensions",
+    "/@manage/plugins",
+    BsPlugin,
+    ["插件", "扩展", "plugins", "plugin", "extension", "install plugin"],
+    { backend: ["ts-worker"] },
+  ),
+  item(
     "cluster",
-    "node",
-    "peer",
-    "storage sharing",
-    "replication",
-  ]),
+    "extensions",
+    "/@manage/plugins#cluster",
+    TbTopologyStar3,
+    [
+      "集群",
+      "节点",
+      "存储共享",
+      "cluster",
+      "node",
+      "peer",
+      "storage sharing",
+      "replication",
+    ],
+    { backend: ["go"] },
+  ),
 
   // System maintenance
   item("global", "system", "/@manage/settings/global", BsJoystick, [
@@ -401,10 +431,28 @@ export const canAccess = (
   }
 }
 
+/** True when something marked `backend` exists on the connected backend. */
+export const availableOn = (
+  backend: readonly BackendKind[] | undefined,
+  kind: BackendKind = getBackendKind(),
+): boolean => !backend || backend.includes(kind)
+
+/**
+ * The entries the connected backend provides. Navigation, the settings home,
+ * the command palette, breadcrumbs and the routes all start from this list,
+ * so a page is hidden on a backend in exactly one place.
+ */
+export const settingsForBackend = (
+  kind: BackendKind = getBackendKind(),
+  all: readonly SettingContribution[] = SETTINGS,
+): SettingContribution[] => all.filter((s) => availableOn(s.backend, kind))
+
 export const visibleSettings = (
   user: Subject,
   all: readonly SettingContribution[] = SETTINGS,
-): SettingContribution[] => all.filter((s) => canAccess(s.permission, user))
+  kind: BackendKind = getBackendKind(),
+): SettingContribution[] =>
+  settingsForBackend(kind, all).filter((s) => canAccess(s.permission, user))
 
 export interface SettingsSection {
   id: SettingGroupId

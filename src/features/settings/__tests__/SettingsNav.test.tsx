@@ -16,7 +16,7 @@ vi.mock("~/hooks", async () => {
 import { UserRole } from "~/types"
 import { SettingsNav } from "../SettingsNav"
 import { SettingsTopLeft } from "../SettingsTopLeft"
-import { groupSettings, SETTINGS, visibleSettings } from "../registry"
+import { groupSettings, settingsForBackend, visibleSettings } from "../registry"
 
 afterEach(() => to.mockClear())
 
@@ -41,7 +41,7 @@ describe("SettingsNav", () => {
     const { container } = nav()
     expect(container.querySelectorAll("section")).toHaveLength(6)
     expect(container.querySelectorAll("[data-settings-nav-item]")).toHaveLength(
-      SETTINGS.length,
+      settingsForBackend().length,
     )
     const labels = [...container.querySelectorAll("a")].map((a) =>
       a.textContent?.trim(),

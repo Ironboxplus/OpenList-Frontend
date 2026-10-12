@@ -8,6 +8,14 @@ const CommonSettings = lazy(() => import("./settings/Common"))
 
 export const PROFILE_PATH = "/profile"
 
+/**
+ * Pages whose address is shared by several registry entries, one per backend
+ * (the settings registry picks the entry); keyed by the entry id.
+ */
+export const entryComponents: Record<string, Component> = {
+  "plugins-ts": lazy(() => import("./plugins")),
+}
+
 /** Keyed by the path below /@manage. */
 export const routeComponents: Record<string, Component> = {
   [PROFILE_PATH]: lazy(() => import("./users/Profile")),
