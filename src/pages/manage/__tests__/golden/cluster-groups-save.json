@@ -1,0 +1,14 @@
+{
+  "groups": [
+    {
+      "id": "g1",
+      "name": "main",
+      "members": [
+        {
+          "node_id": "n1aaaaaaaa",
+          "mount_path": "/s1"
+        }
+      ]
+    }
+  ]
+}

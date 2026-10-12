@@ -1,0 +1,18 @@
+{
+  "form": {
+    "unsaved": "有尚未保存的修改",
+    "reset": "重置"
+  },
+  "s3_generate": "生成密钥",
+  "s3_restart_to_apply": "S3 服务的修改需要重启后生效。",
+  "s3_buckets_empty": "每个存储桶都需要填写名称和路径。",
+  "s3_buckets_duplicate_name": "存储桶名称不能重复。",
+  "s3_credentials": "访问密钥",
+  "s3_server": "S3 服务",
+  "s3_bucket_name": "存储桶名称",
+  "s3_bucket_path": "挂载路径",
+  "s3_no_buckets": "还没有存储桶。",
+  "other_download_tools": "离线下载工具",
+  "other_temp_dirs": "离线下载临时目录",
+  "other_token": "API 令牌"
+}

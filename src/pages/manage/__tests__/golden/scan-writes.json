@@ -1,0 +1,13 @@
+[
+  [
+    "/admin/scan/start",
+    {
+      "path": "/",
+      "limit": 0.5
+    }
+  ],
+  [
+    "/admin/scan/stop",
+    null
+  ]
+]

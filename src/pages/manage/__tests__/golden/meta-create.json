@@ -1,0 +1,18 @@
+{
+  "id": 0,
+  "path": "/pub",
+  "read_users": [],
+  "read_users_sub": false,
+  "write_users": [],
+  "write_users_sub": false,
+  "password": "pw",
+  "p_sub": true,
+  "write": true,
+  "w_sub": true,
+  "hide": "x\ny",
+  "h_sub": false,
+  "readme": "# r",
+  "r_sub": false,
+  "header": "# h",
+  "header_sub": false
+}

@@ -1,0 +1,23 @@
+[
+  [
+    "POST",
+    "/share/disable",
+    {
+      "id": "abc"
+    }
+  ],
+  [
+    "POST",
+    "/share/enable",
+    {
+      "id": "off"
+    }
+  ],
+  [
+    "POST",
+    "/share/delete",
+    {
+      "id": "off"
+    }
+  ]
+]

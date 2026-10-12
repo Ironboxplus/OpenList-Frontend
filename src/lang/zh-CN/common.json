@@ -1,0 +1,14 @@
+{
+  "retry": "重试",
+  "empty": "这里还没有内容。",
+  "load_failed": "页面加载失败。",
+  "more_actions": "更多操作",
+  "generate_value": "生成随机值",
+  "show": "显示",
+  "hide": "隐藏",
+  "show_full": "展开全文",
+  "hide_full": "收起",
+  "copy": "复制",
+  "status": "状态",
+  "view": "查看"
+}

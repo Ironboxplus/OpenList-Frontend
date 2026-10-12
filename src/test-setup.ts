@@ -20,6 +20,9 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   }
 }
 
+// jsdom: not implemented, and scroll-lock helpers call it on cleanup.
+window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
+
 HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   clearRect: vi.fn(),
   drawImage: vi.fn(),

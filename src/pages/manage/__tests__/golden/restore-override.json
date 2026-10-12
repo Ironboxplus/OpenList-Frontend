@@ -1,0 +1,92 @@
+[
+  [
+    "/admin/setting/save",
+    [
+      {
+        "key": "site_title",
+        "value": "Restored",
+        "type": "string"
+      }
+    ]
+  ],
+  [
+    "/admin/user/update",
+    {
+      "id": 11,
+      "username": "alice",
+      "password": "",
+      "base_path": "/alice",
+      "role": 0,
+      "permission": 5,
+      "sso_id": "",
+      "disabled": false,
+      "allow_ldap": false
+    }
+  ],
+  [
+    "/admin/storage/create",
+    {
+      "id": 12,
+      "mount_path": "/local",
+      "order": 2,
+      "driver": "Local",
+      "status": "work",
+      "addition": "{\"root_folder_path\":\"/data\",\"thumbnail\":true,\"show_hidden\":false,\"mkdir_perm\":\"755\",\"chunk\":4,\"ratio\":2.5,\"recycle_bin_path\":\"delete permanently\"}",
+      "remark": "note",
+      "modified": "2026-01-01T00:00:00Z",
+      "cache_expiration": 30,
+      "web_proxy": false,
+      "webdav_policy": "native_proxy",
+      "down_proxy_url": "",
+      "enable_sign": false,
+      "disabled": false
+    }
+  ],
+  [
+    "/admin/meta/create",
+    {
+      "id": 13,
+      "path": "/secret",
+      "password": "pw",
+      "read_users": [
+        5
+      ],
+      "read_users_sub": true,
+      "write_users": [],
+      "write_users_sub": false,
+      "p_sub": true,
+      "write": false,
+      "w_sub": false,
+      "hide": "a\nb",
+      "h_sub": false,
+      "readme": "",
+      "r_sub": false,
+      "header": "",
+      "header_sub": false
+    }
+  ],
+  [
+    "/share/create",
+    {
+      "id": "sh1",
+      "expires": null,
+      "pwd": "pw",
+      "max_accessed": 3,
+      "disabled": false,
+      "order_by": "name",
+      "order_direction": "asc",
+      "extract_folder": "front",
+      "files": [
+        "/docs/a.txt",
+        "/docs/b.txt"
+      ],
+      "remark": "note",
+      "readme": "",
+      "header": "",
+      "accessed": 1,
+      "new_id": "",
+      "creator": "admin",
+      "creator_role": 2
+    }
+  ]
+]

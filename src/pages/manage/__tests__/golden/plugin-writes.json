@@ -1,0 +1,15 @@
+[
+  [
+    "/admin/plugin/enable",
+    {
+      "name": "off",
+      "enabled": true
+    }
+  ],
+  [
+    "/admin/plugin/delete",
+    {
+      "name": "broken"
+    }
+  ]
+]

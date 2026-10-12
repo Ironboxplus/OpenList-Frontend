@@ -1,0 +1,11 @@
+{
+  "id": 0,
+  "username": "bob",
+  "password": "s3cret",
+  "base_path": "/bob",
+  "role": 0,
+  "permission": 65545,
+  "disabled": true,
+  "sso_id": "",
+  "allow_ldap": true
+}

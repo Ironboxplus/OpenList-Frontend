@@ -1,0 +1,12 @@
+{
+  "mount_path": "/imported",
+  "order": 2,
+  "remark": "note",
+  "cache_expiration": 30,
+  "web_proxy": false,
+  "webdav_policy": "native_proxy",
+  "down_proxy_url": "",
+  "enable_sign": false,
+  "driver": "Local",
+  "addition": "{\"root_folder_path\":\"/data\",\"thumbnail\":true,\"show_hidden\":false,\"mkdir_perm\":\"755\",\"chunk\":4,\"ratio\":2.5,\"recycle_bin_path\":\"delete permanently\"}"
+}

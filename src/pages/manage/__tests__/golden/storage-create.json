@@ -1,0 +1,12 @@
+{
+  "mount_path": "",
+  "order": 5,
+  "remark": "",
+  "cache_expiration": 30,
+  "web_proxy": true,
+  "webdav_policy": "native_proxy",
+  "down_proxy_url": "",
+  "enable_sign": false,
+  "driver": "Local",
+  "addition": "{\"root_folder_path\":\"/srv2\",\"thumbnail\":false,\"show_hidden\":true,\"mkdir_perm\":\"777\",\"chunk\":8,\"ratio\":1.5,\"recycle_bin_path\":\"delete permanently\"}"
+}

@@ -1,0 +1,9 @@
+[
+  [
+    "POST",
+    "/admin/meta/delete",
+    {
+      "id": "3"
+    }
+  ]
+]

@@ -1,0 +1,20 @@
+{
+  "id": "abc",
+  "expires": null,
+  "pwd": "pw",
+  "max_accessed": 3,
+  "disabled": false,
+  "order_by": "name",
+  "order_direction": "asc",
+  "extract_folder": "front",
+  "files": [
+    "/only"
+  ],
+  "remark": "note",
+  "readme": "",
+  "header": "",
+  "accessed": 0,
+  "new_id": "renamed",
+  "creator": "admin",
+  "creator_role": 2
+}

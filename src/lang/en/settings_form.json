@@ -1,0 +1,18 @@
+{
+  "form": {
+    "unsaved": "You have unsaved changes",
+    "reset": "Reset"
+  },
+  "s3_generate": "Generate keys",
+  "s3_restart_to_apply": "Changes to the S3 server take effect after a restart.",
+  "s3_buckets_empty": "Every bucket needs a name and a path.",
+  "s3_buckets_duplicate_name": "Bucket names must be unique.",
+  "s3_credentials": "Access keys",
+  "s3_server": "S3 server",
+  "s3_bucket_name": "Bucket name",
+  "s3_bucket_path": "Mounted path",
+  "s3_no_buckets": "No buckets yet.",
+  "other_download_tools": "Offline download tools",
+  "other_temp_dirs": "Temporary folders for offline download",
+  "other_token": "API token"
+}

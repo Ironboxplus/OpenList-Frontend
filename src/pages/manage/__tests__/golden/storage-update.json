@@ -1,0 +1,16 @@
+{
+  "id": 7,
+  "mount_path": "/local",
+  "order": 2,
+  "driver": "Local",
+  "status": "work",
+  "addition": "{\"root_folder_path\":\"/data\",\"thumbnail\":false,\"show_hidden\":false,\"mkdir_perm\":\"755\",\"chunk\":16,\"ratio\":0.25,\"recycle_bin_path\":\"delete permanently\"}",
+  "remark": "changed",
+  "modified": "2026-01-01T00:00:00Z",
+  "cache_expiration": 30,
+  "web_proxy": false,
+  "webdav_policy": "native_proxy",
+  "down_proxy_url": "",
+  "enable_sign": false,
+  "disabled": false
+}

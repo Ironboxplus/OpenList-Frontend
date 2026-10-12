@@ -113,6 +113,10 @@ const AppShell = (props: ParentProps) => {
             : "0",
           // Pages that size themselves to the viewport subtract this.
           "--shell-top": shown() ? TOP_BAR_HEIGHT : "0px",
+          // What pinned bars must stay above (the phone tab bar).
+          "--shell-bottom": phone()
+            ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
+            : "0px",
         }}
       >
         <Show when={shown()}>

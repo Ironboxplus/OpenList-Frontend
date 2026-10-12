@@ -1,0 +1,16 @@
+[
+  [
+    "POST",
+    "/admin/user/delete",
+    {
+      "id": "5"
+    }
+  ],
+  [
+    "POST",
+    "/admin/user/cancel_2fa",
+    {
+      "id": "5"
+    }
+  ]
+]

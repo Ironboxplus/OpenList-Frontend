@@ -1,0 +1,11 @@
+{
+  "id": 5,
+  "username": "alice",
+  "password": "",
+  "base_path": "/alice",
+  "role": 0,
+  "permission": 6,
+  "disabled": false,
+  "sso_id": "",
+  "allow_ldap": false
+}

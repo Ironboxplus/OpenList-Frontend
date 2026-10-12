@@ -1,0 +1,20 @@
+{
+  "id": 3,
+  "path": "/secret",
+  "read_users": [
+    5
+  ],
+  "read_users_sub": true,
+  "write_users": [],
+  "write_users_sub": false,
+  "password": "newpw",
+  "p_sub": true,
+  "write": false,
+  "w_sub": false,
+  "hide": "a\nb",
+  "h_sub": false,
+  "readme": "",
+  "r_sub": false,
+  "header": "",
+  "header_sub": false
+}

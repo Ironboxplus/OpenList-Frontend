@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "key": "********",
+  "label": "node-z",
+  "addr": "https://a.example.com",
+  "seeds": [
+    "https://c.example.com",
+    "https://d.example.com"
+  ],
+  "apply_remote": true,
+  "announce_interval_sec": 45
+}

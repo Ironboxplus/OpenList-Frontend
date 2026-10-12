@@ -1,0 +1,28 @@
+[
+  [
+    "POST",
+    "/admin/storage/disable",
+    {
+      "id": "1"
+    }
+  ],
+  [
+    "POST",
+    "/admin/storage/enable",
+    {
+      "id": "2"
+    }
+  ],
+  [
+    "POST",
+    "/admin/storage/delete",
+    {
+      "id": "2"
+    }
+  ],
+  [
+    "POST",
+    "/admin/storage/load_all",
+    {}
+  ]
+]

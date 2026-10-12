@@ -1,0 +1,16 @@
+{
+  "id": "mine",
+  "files": [
+    "/x",
+    "/y"
+  ],
+  "remark": "r",
+  "extract_folder": "back",
+  "order_by": "size",
+  "order_direction": "desc",
+  "pwd": "abcde",
+  "max_accessed": 7,
+  "expires": "2030-01-01T00:00:00.000Z",
+  "readme": "# hi",
+  "header": "# head"
+}

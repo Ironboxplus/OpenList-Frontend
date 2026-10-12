@@ -1,0 +1,14 @@
+{
+  "retry": "Retry",
+  "empty": "Nothing here yet.",
+  "load_failed": "Could not load this page.",
+  "more_actions": "More actions",
+  "generate_value": "Generate a random value",
+  "show": "Show",
+  "hide": "Hide",
+  "show_full": "Show full text",
+  "hide_full": "Show less",
+  "copy": "Copy",
+  "status": "Status",
+  "view": "View"
+}

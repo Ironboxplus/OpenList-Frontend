@@ -1,0 +1,19 @@
+[
+  [
+    "POST",
+    "/me/sshkey/add",
+    {},
+    {
+      "title": "desk",
+      "key": "ssh-ed25519 AAAA"
+    }
+  ],
+  [
+    "POST",
+    "/me/sshkey/delete",
+    {
+      "id": "k1"
+    },
+    null
+  ]
+]
