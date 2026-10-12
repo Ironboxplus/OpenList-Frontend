@@ -16,7 +16,7 @@ import { BackendUnavailable } from "../BackendUnavailable"
 import { Forbidden } from "../Forbidden"
 import { NotFound } from "../NotFound"
 import { Offline } from "../Offline"
-import { startupStateFor } from "../startup"
+import { initializedFrom, startupStateFor } from "../startup"
 
 afterEach(() => {
   to.mockClear()
@@ -89,6 +89,7 @@ describe("BackendUnavailable", () => {
 })
 
 describe("startupStateFor", () => {
+  const fail = (category: string) => ({ category }) as never
   const table = [
     ["offline browser beats everything", "network", false, "offline"],
     ["refused connection while online", "network", true, "backend"],
@@ -98,6 +99,60 @@ describe("startupStateFor", () => {
     ["anything else", "provider", true, "backend"],
   ] as const
   it.each(table)("%s", (_n, category, online, expected) => {
-    expect(startupStateFor({ category }, online)).toBe(expected)
+    expect(startupStateFor({ settingsError: fail(category), online })).toBe(
+      expected,
+    )
+  })
+
+  it("is ready when settings loaded", () => {
+    expect(startupStateFor({ online: true })).toBe("ready")
+  })
+
+  // The four init_status outcomes, with the settings request failing the way
+  // an uninitialized backend makes it fail (503).
+  const settings503 = fail("internal")
+  it("goes to the wizard only when init_status says initialized:false", () => {
+    expect(
+      startupStateFor({
+        settingsError: settings503,
+        online: true,
+        initialized: false,
+      }),
+    ).toBe("uninitialized")
+  })
+  it("keeps the settings failure a startup failure when init_status is unknown or true", () => {
+    for (const initialized of [undefined, true])
+      expect(
+        startupStateFor({
+          settingsError: settings503,
+          online: true,
+          initialized,
+        }),
+      ).toBe("backend")
+  })
+  it("treats uninitialized with working settings as uninitialized too", () => {
+    expect(startupStateFor({ online: true, initialized: false })).toBe(
+      "uninitialized",
+    )
+    expect(startupStateFor({ online: true, initialized: true })).toBe("ready")
+  })
+})
+
+describe("initializedFrom", () => {
+  const ok = (data: unknown) => ({ ok: true as const, data }) as never
+  const failed = (category: string) =>
+    ({ ok: false as const, error: { category } }) as never
+
+  it("reads an explicit answer", () => {
+    expect(initializedFrom(ok({ initialized: false }))).toBe(false)
+    expect(initializedFrom(ok({ initialized: true }))).toBe(true)
+  })
+  it("is unknown for a 404 (backend without the endpoint) and network errors", () => {
+    expect(initializedFrom(failed("validation"))).toBeUndefined()
+    expect(initializedFrom(failed("network"))).toBeUndefined()
+  })
+  it("is unknown for a malformed body", () => {
+    expect(initializedFrom(ok(null))).toBeUndefined()
+    expect(initializedFrom(ok({}))).toBeUndefined()
   })
 })

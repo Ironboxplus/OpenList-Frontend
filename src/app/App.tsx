@@ -21,14 +21,17 @@ import { Portal } from "solid-js/web"
 import { FullScreenLoading } from "~/components"
 import { useRouter } from "~/hooks"
 import { api } from "~/platform/api/client"
+import type { InitStatus } from "~/types"
 import type { UnifiedError } from "~/platform/contracts/task"
 import {
   BackendUnavailable,
   Forbidden,
+  initializedFrom,
+  isStartupFailure,
   NotFound,
   Offline,
   startupStateFor,
-  type StartupState,
+  type StartupFailure,
 } from "~/features/shell/states"
 import { setArchiveExtensions } from "~/store/archive"
 import { base_path, bus, joinBase } from "~/utils"
@@ -105,26 +108,33 @@ const App: Component = () => {
   const [booting, setBooting] = createSignal(true)
   const [retrying, setRetrying] = createSignal(false)
   const [startup, setStartup] = createSignal<{
-    state: StartupState
+    state: StartupFailure
     error: UnifiedError
   }>()
+  const [uninitialized, setUninitialized] = createSignal(false)
   // Startup needs /public/settings; without it the app cannot render at all.
   // The archive extension list only enables a few menu entries, so it may fail.
+  // init_status tells an uninitialized backend (which refuses settings with a
+  // 503) from a broken one; backends without the endpoint answer 404.
   const boot = async () => {
     if (retrying()) return
     setRetrying(true)
-    const [settings, archive] = await Promise.all([
+    const [settings, archive, init] = await Promise.all([
       api<Record<string, string>>("get", "/public/settings"),
       api<string[]>("get", "/public/archive_extensions"),
+      api<InitStatus>("get", "/public/init_status"),
     ])
-    if (settings.ok) {
-      onSettingsLoaded(settings.data)
-      setStartup(undefined)
+    if (settings.ok) onSettingsLoaded(settings.data)
+    const state = startupStateFor({
+      settingsError: settings.ok ? undefined : settings.error,
+      online: navigator.onLine,
+      initialized: initializedFrom(init),
+    })
+    setUninitialized(state === "uninitialized")
+    if (!settings.ok && isStartupFailure(state)) {
+      setStartup({ state, error: settings.error })
     } else {
-      setStartup({
-        state: startupStateFor(settings.error, navigator.onLine),
-        error: settings.error,
-      })
+      setStartup(undefined)
     }
     if (archive.ok) setArchiveExtensions(archive.data)
     else console.warn("archive_extensions unavailable", archive.error)
@@ -132,6 +142,11 @@ const App: Component = () => {
     setBooting(false)
   }
   void boot()
+
+  // An uninitialized backend has nothing to show but the setup wizard.
+  createEffect(() => {
+    if (uninitialized() && !pathname().startsWith("/@init")) to("/@init", true)
+  })
   return (
     <>
       <Portal>
@@ -153,6 +168,7 @@ const App: Component = () => {
           <Routes base={base_path}>
             <Route path="/@test" component={Test} />
             <Route path="/@login" component={Login} />
+            <Route path="/@init" component={Init} />
             <Route path="/@manage/tasks/:type?" component={TasksRedirect} />
             <Route path="/" component={ShellLayout}>
               <Route
