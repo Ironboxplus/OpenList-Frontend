@@ -30,9 +30,9 @@ import {
   startupStateFor,
   type StartupState,
 } from "~/features/shell/states"
-import { setSettings } from "~/store"
 import { setArchiveExtensions } from "~/store/archive"
 import { base_path, bus, joinBase } from "~/utils"
+import { onSettingsLoaded } from "./boot"
 import { MustUser, UserOrGuest } from "./MustUser"
 import "./index.css"
 import "./tailwind.css"
@@ -118,7 +118,7 @@ const App: Component = () => {
       api<string[]>("get", "/public/archive_extensions"),
     ])
     if (settings.ok) {
-      setSettings(settings.data)
+      onSettingsLoaded(settings.data)
       setStartup(undefined)
     } else {
       setStartup({
