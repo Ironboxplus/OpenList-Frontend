@@ -1,5 +1,11 @@
 import { TbRefresh, TbTrash } from "solid-icons/tb"
-import { createMemo, Match, Show, Switch as SwitchBlock } from "solid-js"
+import {
+  createMemo,
+  type JSX,
+  Match,
+  Show,
+  Switch as SwitchBlock,
+} from "solid-js"
 import { FolderChooseInput } from "~/components/FolderTree"
 import { MultiPathInput } from "~/components/MultiPathInput"
 import { Button } from "~/components/ui/button"
@@ -35,6 +41,8 @@ export interface FieldRendererProps {
   hideLabel?: boolean
   /** Label above the control at every width (dialogs and narrow cards). */
   stacked?: boolean
+  /** Extra control belonging to this field, drawn under it (e.g. "apply to subfolders"). */
+  after?: JSX.Element
   class?: string
 }
 
@@ -212,7 +220,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
       </Show>
       <div
         class={cn(
-          "min-w-0",
+          "flex min-w-0 flex-col gap-2",
           props.hideLabel && !props.stacked && "md:col-span-2",
         )}
       >
@@ -281,6 +289,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
             <Text />
           </Match>
         </SwitchBlock>
+        {props.after}
       </div>
     </div>
   )

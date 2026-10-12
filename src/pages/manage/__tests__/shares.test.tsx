@@ -11,12 +11,14 @@ import Shares from "../shares/Shares"
 import { ADMIN_ME, SHARE } from "./fixtures"
 import {
   buttonByText,
+  chooseMenuItem,
   chooseOption,
   clickButton,
   expectGolden,
   failure,
   lastCall,
   mockApi,
+  openRowMenu,
   renderPage,
   settle,
   setValue,
@@ -112,12 +114,12 @@ describe("share list", () => {
   it("enable / disable / delete (confirmed) hit the share endpoints", async () => {
     renderPage(() => <Shares />)
     await settle()
-    fireEvent.click(nth("Disable", 0))
-    await settle()
-    fireEvent.click(nth("Enable", 0))
-    await settle()
-    fireEvent.click(nth("Delete", 1))
-    await settle()
+    await openRowMenu(0)
+    await chooseMenuItem("Disable")
+    await openRowMenu(1)
+    await chooseMenuItem("Enable")
+    await openRowMenu(1)
+    await chooseMenuItem("Delete")
     await clickButton("Confirm")
     expectGolden(
       "shares-list-writes",
@@ -128,7 +130,8 @@ describe("share list", () => {
   it("copy message uses the summary template", async () => {
     renderPage(() => <Shares />)
     await settle()
-    fireEvent.click(nth("Copy link", 0))
+    await openRowMenu(0)
+    await chooseMenuItem("Copy link")
     expect(clipboard.copy).toHaveBeenCalledTimes(1)
   })
 

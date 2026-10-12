@@ -1,112 +1,105 @@
-import {
-  Box,
-  Button,
-  HStack,
-  Table,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-  VStack,
-} from "@hope-ui/solid"
-import { createSignal, For } from "solid-js"
-import {
-  useFetch,
-  useListFetch,
-  useManageTitle,
-  useRouter,
-  useT,
-} from "~/hooks"
-import { handleResp, notify, r } from "~/utils"
-import { Meta, PEmptyResp, PPageResp } from "~/types"
-import { DeletePopover } from "../common/DeletePopover"
+import { TbPlus } from "solid-icons/tb"
+import { createSignal } from "solid-js"
 import { Wether } from "~/components"
+import { createDeleteConfirm, ResourceList } from "~/features/settings/form"
+import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
+import { Meta, PEmptyResp, PPageResp } from "~/types"
+import { handleResp, notify, r } from "~/utils"
 
 const Metas = () => {
   const t = useT()
   useManageTitle("manage.sidemenu.metas")
   const { to } = useRouter()
-  const [getMetasLoading, getMetas] = useFetch((): PPageResp<Meta> =>
-    r.get("/admin/meta/list"),
+  const [loading, fetchList] = useFetch(
+    (): PPageResp<Meta> => r.get("/admin/meta/list"),
+    true,
   )
   const [metas, setMetas] = createSignal<Meta[]>([])
+  const [error, setError] = createSignal<string>()
   const refresh = async () => {
-    const resp = await getMetas()
-    handleResp(resp, (data) => setMetas(data.content))
+    handleResp(
+      await fetchList(),
+      (data) => {
+        setError(undefined)
+        setMetas(data.content)
+      },
+      setError,
+    )
   }
   refresh()
 
-  const [deleting, deleteMeta] = useListFetch((id: number): PEmptyResp =>
-    r.post(`/admin/meta/delete?id=${id}`),
-  )
+  const removal = createDeleteConfirm<Meta>({
+    name: (m) => m.path,
+    run: async (m) => {
+      const resp: Awaited<PEmptyResp> = await r.post(
+        `/admin/meta/delete?id=${m.id}`,
+      )
+      handleResp(resp, () => {
+        notify.success(t("global.delete_success"))
+        refresh()
+      })
+    },
+  })
+
   return (
-    <VStack spacing="$2" alignItems="start" w="$full">
-      <HStack spacing="$2">
-        <Button
-          colorScheme="accent"
-          loading={getMetasLoading()}
-          onClick={refresh}
-        >
-          {t("global.refresh")}
-        </Button>
-        <Button
-          onClick={() => {
-            to("/@manage/metas/add")
-          }}
-        >
-          {t("global.add")}
-        </Button>
-      </HStack>
-      <Box w="$full" overflowX="auto">
-        <Table highlightOnHover dense>
-          <Thead>
-            <Tr>
-              <For each={["path", "password", "write"]}>
-                {(title) => <Th>{t(`metas.${title}`)}</Th>}
-              </For>
-              <Th>{t("global.operations")}</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            <For each={metas()}>
-              {(meta) => (
-                <Tr>
-                  <Td>{meta.path}</Td>
-                  <Td>{meta.password}</Td>
-                  <Td>
-                    <Wether yes={meta.write} />
-                  </Td>
-                  {/* <Td>{meta.hide}</Td> */}
-                  <Td>
-                    <HStack spacing="$2">
-                      <Button
-                        onClick={() => {
-                          to(`/@manage/metas/edit/${meta.id}`)
-                        }}
-                      >
-                        {t("global.edit")}
-                      </Button>
-                      <DeletePopover
-                        name={meta.path}
-                        loading={deleting() === meta.id}
-                        onClick={async () => {
-                          const resp = await deleteMeta(meta.id)
-                          handleResp(resp, () => {
-                            notify.success(t("global.delete_success"))
-                            refresh()
-                          })
-                        }}
-                      />
-                    </HStack>
-                  </Td>
-                </Tr>
-              )}
-            </For>
-          </Tbody>
-        </Table>
-      </Box>
-    </VStack>
+    <>
+      <ResourceList
+        rows={metas()}
+        rowKey={(m) => m.id}
+        loading={loading()}
+        error={error()}
+        onRefresh={refresh}
+        toolbarActions={[
+          {
+            id: "add",
+            label: t("global.add"),
+            icon: <TbPlus class="mr-1.5 size-4" />,
+            onSelect: () => to("/@manage/metas/add"),
+          },
+        ]}
+        columns={[
+          {
+            id: "path",
+            header: t("metas.path"),
+            cell: (m) => <span class="break-all font-medium">{m.path}</span>,
+            sort: (m) => m.path,
+          },
+          {
+            id: "password",
+            header: t("metas.password"),
+            cell: (m) => <span class="break-all">{m.password}</span>,
+          },
+          {
+            id: "write",
+            header: t("metas.write"),
+            cell: (m) => <Wether yes={m.write} />,
+          },
+        ]}
+        card={{
+          title: (m) => <span class="break-all">{m.path}</span>,
+          badges: (m) => (m.write ? <Wether yes={m.write} /> : null),
+          body: (m) => (
+            <span class="break-all">
+              {t("metas.password")}: {m.password}
+            </span>
+          ),
+        }}
+        primary={(m) => ({
+          id: "edit",
+          label: t("global.edit"),
+          onSelect: () => to(`/@manage/metas/edit/${m.id}`),
+        })}
+        actions={() => [
+          {
+            id: "delete",
+            label: t("global.delete"),
+            destructive: true,
+            onSelect: removal.ask,
+          },
+        ]}
+      />
+      {removal.dialog()}
+    </>
   )
 }
 

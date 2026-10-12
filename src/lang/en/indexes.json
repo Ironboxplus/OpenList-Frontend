@@ -19,5 +19,6 @@
   "idle": "Idle",
   "path_to_scan": "Path to scan",
   "rate_limit": "Rate limit",
-  "start": "Start"
+  "start": "Start",
+  "clear_confirm": "Clear all indexes? Search finds nothing until they are built again."
 }

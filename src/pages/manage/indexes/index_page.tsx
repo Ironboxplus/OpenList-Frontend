@@ -1,13 +1,12 @@
 import Indexes from "./indexes"
 import Scan from "~/pages/manage/indexes/scan"
-import { VStack } from "@hope-ui/solid"
 
 const IndexPage = () => {
   return (
-    <VStack spacing="$2" w="$full" alignItems="start">
+    <div class="flex w-full flex-col gap-4">
       <Indexes />
       <Scan />
-    </VStack>
+    </div>
   )
 }
 

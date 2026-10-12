@@ -1,19 +1,15 @@
-import {
-  Badge,
-  Button,
-  FormControl,
-  FormLabel,
-  Heading,
-  Input,
-  Text,
-  useColorModeValue,
-  VStack,
-} from "@hope-ui/solid"
-import { useFetch, useT } from "~/hooks"
 import { createSignal, Show } from "solid-js"
-import { Flag, PEmptyResp, PResp, Type } from "~/types"
-import { formatDate, handleResp, handleRespWithNotifySuccess, r } from "~/utils"
-import { FolderChooseInput } from "~/components"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import {
+  driverFromRaw,
+  FieldRenderer,
+  SettingsSection,
+} from "~/features/settings/form"
+import { useFetch, useT } from "~/hooks"
+import { PEmptyResp, Type } from "~/types"
+import { handleRespWithNotifySuccess, r } from "~/utils"
+import { createProgressPoll } from "./progress"
 
 type Progress = {
   obj_count: number
@@ -22,113 +18,91 @@ type Progress = {
 
 const Scan = () => {
   const t = useT()
-  const [progress, setProgress] = createSignal<Progress>()
-  const [progressLoading, getProgressReq] = useFetch((): PResp<Progress> =>
-    r.get("/admin/scan/progress"),
+  const { progress, loading, refresh } = createProgressPoll<Progress>(
+    "/admin/scan/progress",
   )
-  const [refreshTimeout, setRefreshTimeout] = createSignal<number | undefined>()
-  const resetRefreshTimeout = (run: boolean) => {
-    if (refreshTimeout()) {
-      clearTimeout(refreshTimeout())
-    }
-    if (run) {
-      setRefreshTimeout(window.setTimeout(refreshProgress, 5000))
-    } else {
-      setRefreshTimeout(undefined)
-    }
-  }
-  const refreshProgress = async () => {
-    const resp = await getProgressReq()
-    handleResp(
-      resp,
-      (data) => {
-        setProgress(data)
-        resetRefreshTimeout(!data.is_done)
-      },
-      () => {
-        resetRefreshTimeout(true)
-      },
-    )
-  }
-  refreshProgress()
   const [stopLoading, stopReq] = useFetch((): PEmptyResp =>
     r.post("/admin/scan/stop"),
   )
   const stop = async () => {
-    const resp = await stopReq()
-    handleRespWithNotifySuccess(resp)
-    refreshProgress()
+    handleRespWithNotifySuccess(await stopReq())
+    refresh()
   }
-  const [scanPath, setScanPath] = createSignal<string>("/")
-  const [rateLimit, setRateLimit] = createSignal<number>(0.0)
+  const [scanPath, setScanPath] = createSignal("/")
+  const [rateLimit, setRateLimit] = createSignal(0.0)
   const [startLoading, startReq] = useFetch((): PEmptyResp =>
     r.post("/admin/scan/start", { path: scanPath(), limit: rateLimit() }),
   )
   const start = async () => {
-    const resp = await startReq()
-    handleRespWithNotifySuccess(resp)
-    refreshProgress()
+    handleRespWithNotifySuccess(await startReq())
+    refresh()
   }
   return (
-    <>
-      <Heading>{t("indexes.scan_header")}</Heading>
-      <Show when={progress()}>
-        <VStack
-          alignItems="start"
-          spacing="$2"
-          w="fit-content"
-          p="$2"
-          shadow="$md"
-          rounded="$lg"
-          bg={useColorModeValue("", "$neutral3")()}
-        >
-          <Text>
-            {t("indexes.task_status")}:
-            <Badge
-              colorScheme={progress()?.is_done ? "accent" : "success"}
-              ml="$2"
-            >
-              {progress()?.is_done ? t("indexes.idle") : t("indexes.running")}
-            </Badge>
-          </Text>
-          <Text>
-            {t("indexes.obj_count")}:
-            <Badge colorScheme="info" ml="$2">
-              {progress()?.obj_count}
-            </Badge>
-          </Text>
+    <SettingsSection
+      id="scan"
+      title={t("indexes.scan_header")}
+      actions={
+        <>
           <Button
-            colorScheme="danger"
+            type="button"
+            variant="outline"
+            disabled={loading()}
+            onClick={refresh}
+          >
+            {t("global.refresh")}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={stopLoading() || progress()?.is_done}
             onClick={stop}
-            loading={stopLoading()}
-            disabled={progress()?.is_done}
           >
             {t("indexes.stop")}
           </Button>
-        </VStack>
+          <Button type="button" disabled={startLoading()} onClick={start}>
+            {t("indexes.start")}
+          </Button>
+        </>
+      }
+    >
+      <Show when={progress()}>
+        {(p) => (
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 text-sm">
+            <span>
+              {t("indexes.task_status")}:{" "}
+              <Badge variant={p().is_done ? "secondary" : "success"}>
+                {p().is_done ? t("indexes.idle") : t("indexes.running")}
+              </Badge>
+            </span>
+            <span>
+              {t("indexes.obj_count")}:{" "}
+              <Badge variant="outline">{p().obj_count}</Badge>
+            </span>
+          </div>
+        )}
       </Show>
-      <FormControl w="100%" display="flex" flexDirection="column">
-        <FormLabel display="flex" alignItems="center">
-          {t("indexes.path_to_scan")}
-        </FormLabel>
-        <FolderChooseInput
-          value={scanPath()}
-          onChange={(path) => setScanPath(path)}
-        />
-        <FormLabel display="flex" alignItems="center">
-          {t("indexes.rate_limit")}
-        </FormLabel>
-        <Input
-          type="number"
-          value={rateLimit()}
-          step={0.1}
-          onInput={(e) => setRateLimit(parseFloat(e.currentTarget.value))}
-        />
-      </FormControl>
-      <Button colorScheme="info" onClick={start} loading={startLoading()}>
-        {t("indexes.start")}
-      </Button>
-    </>
+      <FieldRenderer
+        field={{
+          id: "scan_path",
+          type: Type.String,
+          labelKey: "indexes.path_to_scan",
+          picker: "path",
+        }}
+        value={scanPath()}
+        onChange={(raw) => setScanPath(String(raw))}
+      />
+      <FieldRenderer
+        field={{
+          id: "scan_rate_limit",
+          type: Type.Float,
+          labelKey: "indexes.rate_limit",
+        }}
+        value={rateLimit()}
+        onChange={(raw) =>
+          setRateLimit(driverFromRaw(Type.Float, raw) as number)
+        }
+      />
+    </SettingsSection>
   )
 }
 

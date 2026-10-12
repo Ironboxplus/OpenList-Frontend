@@ -11,13 +11,16 @@ import Metas from "../metas/Metas"
 import { ADMIN_ME, META, USER } from "./fixtures"
 import {
   buttonByText,
+  chooseMenuItem,
   clickButton,
   expectGolden,
   lastCall,
   mockApi,
+  openRowMenu,
   renderPage,
   settle,
   setValue,
+  toggleField,
   writes,
 } from "./harness"
 import { resetRouter, router } from "./mocks"
@@ -47,9 +50,9 @@ describe("meta editor payloads", () => {
     await settle()
     setValue(document.getElementById("path")!, "/pub")
     setValue(document.getElementById("password")!, "pw")
-    fireEvent.click(document.getElementById("password_sub")!)
-    fireEvent.click(document.getElementById("write")!)
-    fireEvent.click(document.getElementById("write_sub")!)
+    toggleField("password_sub")
+    toggleField("write")
+    toggleField("write_sub")
     setValue(document.getElementById("hide")!, "x\ny")
     setValue(document.getElementById("header")!, "# h")
     setValue(document.getElementById("readme")!, "# r")
@@ -85,8 +88,8 @@ describe("meta list", () => {
     expect(router.to).toHaveBeenCalledWith("/@manage/metas/edit/3")
     fireEvent.click(buttonByText("Add"))
     expect(router.to).toHaveBeenCalledWith("/@manage/metas/add")
-    fireEvent.click(buttonByText("Delete"))
-    await settle()
+    await openRowMenu(0)
+    await chooseMenuItem("Delete")
     expect(writes()).toHaveLength(0)
     await clickButton("Confirm")
     expectGolden(

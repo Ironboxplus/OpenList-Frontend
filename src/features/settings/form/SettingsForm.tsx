@@ -6,6 +6,8 @@ export interface SettingsFormProps {
   /** Anything differs from what was loaded: Save and Reset wake up. */
   dirty: boolean
   saving?: boolean
+  /** The form holds a value that cannot be saved (bad format, missing required part): Save stays off. */
+  invalid?: boolean
   /** Reset is reloading from the server. */
   resetting?: boolean
   onSave: () => void
@@ -31,7 +33,7 @@ export const SettingsForm = (props: SettingsFormProps) => {
       class="flex w-full flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault()
-        if (props.dirty && !props.saving) props.onSave()
+        if (props.dirty && !props.saving && !props.invalid) props.onSave()
       }}
     >
       {props.children}
@@ -53,7 +55,10 @@ export const SettingsForm = (props: SettingsFormProps) => {
           >
             {t("settings.form.reset")}
           </Button>
-          <Button type="submit" disabled={!props.dirty || props.saving}>
+          <Button
+            type="submit"
+            disabled={!props.dirty || props.saving || props.invalid}
+          >
             {props.saveLabel ?? t("global.save")}
           </Button>
         </div>

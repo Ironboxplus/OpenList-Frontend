@@ -1,36 +1,32 @@
-import {
-  Badge,
-  Button,
-  createDisclosure,
-  Heading,
-  HStack,
-  Icon,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-  Textarea,
-  useColorModeValue,
-  VStack,
-} from "@hope-ui/solid"
 import { createSignal, Show } from "solid-js"
+import { Alert, AlertDescription } from "~/components/ui/alert"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
+import {
+  ConfirmDialog,
+  FieldRenderer,
+  SettingsSection,
+} from "~/features/settings/form"
 import { useFetch, useT } from "~/hooks"
-import { Group, PEmptyResp, PResp } from "~/types"
+import { Group, PEmptyResp, Type } from "~/types"
 import {
   buildIndex,
-  updateIndex,
   formatDate,
-  handleResp,
   handleRespWithNotifySuccess,
   r,
+  updateIndex,
 } from "~/utils"
 import CommonSettings from "../settings/Common"
 import { LineMdConfirmCircleTwotone, LineMdLoadingTwotoneLoop } from "./icons"
+import { createProgressPoll } from "./progress"
 
 type Progress = {
   obj_count: number
@@ -39,172 +35,175 @@ type Progress = {
   error: string
 }
 
+const DEFAULT_MAX_DEPTH = 20
+
 const Indexes = () => {
   const t = useT()
-  const [progress, setProgress] = createSignal<Progress>()
-  const [progressLoading, getProgressReq] = useFetch((): PResp<Progress> =>
-    r.get("/admin/index/progress"),
+  const { progress, loading, refresh } = createProgressPoll<Progress>(
+    "/admin/index/progress",
+    // No index configured (404) is a steady state, not worth polling.
+    (code) => code !== 404,
   )
-  const [refreshTimeout, setRefreshTimeout] = createSignal<number | undefined>()
-  const resetRefreshTimeout = (run: boolean) => {
-    if (refreshTimeout()) {
-      clearTimeout(refreshTimeout())
-    }
-    if (run) {
-      setRefreshTimeout(window.setTimeout(refreshProgress, 5000))
-    } else {
-      setRefreshTimeout(undefined)
-    }
+
+  /** Run a job request, report its outcome, then show the new progress. */
+  const job = (request: () => Promise<Awaited<PEmptyResp>>) => async () => {
+    handleRespWithNotifySuccess(await request())
+    refresh()
   }
-  const refreshProgress = async () => {
-    const resp = await getProgressReq()
-    handleResp(
-      resp,
-      (data) => {
-        setProgress(data)
-        resetRefreshTimeout(!data.is_done)
-      },
-      (_, code) => {
-        resetRefreshTimeout(code !== 404)
-      },
-    )
-  }
-  refreshProgress()
   const [rebuildLoading, rebuildReq] = useFetch(buildIndex)
-  const rebuild = async () => {
-    const resp = await rebuildReq()
-    handleRespWithNotifySuccess(resp)
-    refreshProgress()
-  }
-  const [clearIndexLoading, clearIndexReq] = useFetch((): PEmptyResp =>
+  const [clearLoading, clearReq] = useFetch((): PEmptyResp =>
     r.post("/admin/index/clear"),
   )
-  const clearIndex = async () => {
-    const resp = await clearIndexReq()
-    handleRespWithNotifySuccess(resp)
-    refreshProgress()
-  }
-  const [stopBuildLoading, stopBuildReq] = useFetch((): PEmptyResp =>
+  const [stopLoading, stopReq] = useFetch((): PEmptyResp =>
     r.post("/admin/index/stop"),
   )
-  const stopBuild = async () => {
-    const resp = await stopBuildReq()
-    handleRespWithNotifySuccess(resp)
-    refreshProgress()
+  const [updateLoading, updateReq] = useFetch(updateIndex)
+
+  const [clearOpen, setClearOpen] = createSignal(false)
+  const clear = async () => {
+    await job(clearReq)()
+    setClearOpen(false)
   }
 
-  let updatePathsRef: HTMLTextAreaElement
-  let updateMaxDepthRef: HTMLInputElement
-  const [updateLoading, updateReq] = useFetch(updateIndex)
+  const [updateOpen, setUpdateOpen] = createSignal(false)
+  const [updatePaths, setUpdatePaths] = createSignal("")
+  const [updateDepth, setUpdateDepth] = createSignal(`${DEFAULT_MAX_DEPTH}`)
   const update = async () => {
-    let updatePaths: string[] = []
-    if (updatePathsRef!.value) {
-      updatePaths = updatePathsRef!.value.split("\n")
-    }
-    let updateMaxDepth = 20
-    if (updateMaxDepthRef!.value) {
-      updateMaxDepth = parseInt(updateMaxDepthRef!.value)
-    }
-    const resp = await updateReq(updatePaths, updateMaxDepth)
-    handleRespWithNotifySuccess(resp)
-    refreshProgress()
+    const paths = updatePaths() ? updatePaths().split("\n") : []
+    const depth = updateDepth() ? parseInt(updateDepth()) : DEFAULT_MAX_DEPTH
+    handleRespWithNotifySuccess(await updateReq(paths, depth))
+    refresh()
   }
-  const { isOpen, onOpen, onClose } = createDisclosure()
+
   return (
     <>
-      <Heading>{t("indexes.index_header")}</Heading>
       <CommonSettings group={Group.INDEX} />
-      <Heading>{t("indexes.current")}</Heading>
-      <Show when={progress()}>
-        <HStack
-          spacing="$2"
-          // w="$full"
-          w="fit-content"
-          shadow="$md"
-          rounded="$lg"
-          bg={useColorModeValue("", "$neutral3")()}
-        >
-          <Icon
-            boxSize="$28"
-            color="$accent9"
-            p="$2"
-            as={
-              progress()?.is_done
-                ? LineMdConfirmCircleTwotone
-                : LineMdLoadingTwotoneLoop
-            }
-          />
-          <VStack spacing="$2" flex="1" alignItems="start" mr="$2">
-            <Text>
-              {t("indexes.obj_count")}:
-              <Badge colorScheme="info" ml="$2">
-                {progress()?.obj_count}
-              </Badge>
-            </Text>
-            <Text>
-              {t("indexes.last_done_time")}:
-              <Badge colorScheme="accent" ml="$2">
-                {progress()!.last_done_time
-                  ? formatDate(progress()!.last_done_time)
-                  : t("indexes.unknown")}
-              </Badge>
-            </Text>
-            <Show when={progress()?.error}>
-              <Text css={{ wordBreak: "break-all" }}>
-                {t("indexes.error")}:
-                <Badge colorScheme="danger" ml="$2">
-                  {progress()!.error}
-                </Badge>
-              </Text>
-            </Show>
-          </VStack>
-        </HStack>
-      </Show>
-      <HStack spacing="$2">
-        <Button
-          colorScheme="accent"
-          onClick={[refreshProgress, undefined]}
-          loading={progressLoading()}
-        >
-          {t("global.refresh")}
-        </Button>
-        <Button
-          colorScheme="danger"
-          onClick={[clearIndex, undefined]}
-          loading={clearIndexLoading()}
-        >
-          {t("indexes.clear")}
-        </Button>
-        <Button
-          colorScheme="warning"
-          onClick={[stopBuild, undefined]}
-          loading={stopBuildLoading()}
-        >
-          {t("indexes.stop")}
-        </Button>
-        <Button onClick={[rebuild, undefined]} loading={rebuildLoading()}>
-          {t(`indexes.${progress()?.is_done ? "rebuild" : "build"}`)}
-        </Button>
-      </HStack>
-      <Button onClick={onOpen}>{t(`indexes.update`)}</Button>
-      <Modal opened={isOpen()} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalCloseButton />
-          <ModalHeader>{t(`indexes.update`)}</ModalHeader>
-          <ModalBody>
-            <Heading>{t("indexes.paths_to_update")}</Heading>
-            <Textarea ref={updatePathsRef!}></Textarea>
-            <Heading>{t("indexes.max_depth")}</Heading>
-            <Input value={20} type="number" ref={updateMaxDepthRef!} />
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={[update, undefined]} loading={updateLoading()}>
-              {t(`indexes.update`)}
+      <SettingsSection
+        id="index-progress"
+        title={t("indexes.current")}
+        actions={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={loading()}
+              onClick={refresh}
+            >
+              {t("global.refresh")}
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={clearLoading()}
+              onClick={() => setClearOpen(true)}
+            >
+              {t("indexes.clear")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={stopLoading()}
+              onClick={job(stopReq)}
+            >
+              {t("indexes.stop")}
+            </Button>
+            <Button
+              type="button"
+              disabled={rebuildLoading()}
+              onClick={job(rebuildReq)}
+            >
+              {t(`indexes.${progress()?.is_done ? "rebuild" : "build"}`)}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setUpdateOpen(true)}
+            >
+              {t("indexes.update")}
+            </Button>
+          </>
+        }
+      >
+        <Show when={progress()}>
+          {(p) => (
+            <div class="flex flex-col gap-3 py-3 text-sm">
+              <div class="flex items-center gap-3">
+                {p().is_done ? (
+                  <LineMdConfirmCircleTwotone class="size-8 shrink-0 text-primary" />
+                ) : (
+                  <LineMdLoadingTwotoneLoop class="size-8 shrink-0 text-primary" />
+                )}
+                <div class="flex flex-col gap-1">
+                  <span>
+                    {t("indexes.obj_count")}:{" "}
+                    <Badge variant="outline">{p().obj_count}</Badge>
+                  </span>
+                  <span>
+                    {t("indexes.last_done_time")}:{" "}
+                    <Badge variant="secondary">
+                      {p().last_done_time
+                        ? formatDate(p().last_done_time)
+                        : t("indexes.unknown")}
+                    </Badge>
+                  </span>
+                </div>
+              </div>
+              <Show when={p().error}>
+                <Alert variant="destructive">
+                  <AlertDescription class="break-all">
+                    {t("indexes.error")}: {p().error}
+                  </AlertDescription>
+                </Alert>
+              </Show>
+            </div>
+          )}
+        </Show>
+      </SettingsSection>
+
+      <ConfirmDialog
+        open={clearOpen()}
+        onOpenChange={setClearOpen}
+        title={t("indexes.clear")}
+        description={t("indexes.clear_confirm")}
+        destructive
+        loading={clearLoading()}
+        onConfirm={clear}
+      />
+      <Dialog open={updateOpen()} onOpenChange={setUpdateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("indexes.update")}</DialogTitle>
+            <DialogDescription class="sr-only">
+              {t("indexes.update")}
+            </DialogDescription>
+          </DialogHeader>
+          <FieldRenderer
+            stacked
+            field={{
+              id: "update_paths",
+              type: Type.Text,
+              labelKey: "indexes.paths_to_update",
+            }}
+            value={updatePaths()}
+            onChange={(raw) => setUpdatePaths(String(raw))}
+          />
+          <FieldRenderer
+            stacked
+            field={{
+              id: "update_max_depth",
+              type: Type.Number,
+              labelKey: "indexes.max_depth",
+            }}
+            value={updateDepth()}
+            onChange={(raw) => setUpdateDepth(String(raw))}
+          />
+          <DialogFooter>
+            <Button type="button" disabled={updateLoading()} onClick={update}>
+              {t("indexes.update")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

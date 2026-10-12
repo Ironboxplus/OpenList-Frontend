@@ -1,4 +1,4 @@
-import { Badge } from "@hope-ui/solid"
+import { Badge } from "~/components/ui/badge"
 import { useT } from "~/hooks"
 
 export interface WetherProps {
@@ -8,7 +8,7 @@ export interface WetherProps {
 export const Wether = (props: WetherProps) => {
   const t = useT()
   return (
-    <Badge colorScheme={props.yes ? "success" : "danger"}>
+    <Badge variant={props.yes ? "success" : "destructive"}>
       {t(`global.${props.yes ? "yes" : "no"}`)}
     </Badge>
   )
