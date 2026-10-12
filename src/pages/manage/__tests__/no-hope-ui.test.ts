@@ -11,8 +11,6 @@ const EXEMPT = [
   // Used only by the upstream plugin page above.
   "common/DeletePopover.tsx",
 ]
-// The task pages belong to the transfers rewrite.
-const EXEMPT_DIRS = ["tasks/"]
 
 const files = import.meta.glob("../**/*.{ts,tsx}", {
   query: "?raw",
@@ -22,8 +20,7 @@ const files = import.meta.glob("../**/*.{ts,tsx}", {
 
 const usesHope = (src: string) => src.includes("@hope-ui/solid")
 const rel = (path: string) => path.replace(/^\.\.\//, "")
-const exempt = (path: string) =>
-  EXEMPT.includes(path) || EXEMPT_DIRS.some((d) => path.startsWith(d))
+const exempt = (path: string) => EXEMPT.includes(path)
 
 describe("hope-ui in pages/manage", () => {
   const pages = Object.entries(files)

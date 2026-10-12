@@ -1,7 +1,7 @@
 // Legacy task names are free text built by the backend, e.g.
 // `copy [/a](/a/x) to [/b](/b)`. These patterns are the only place that knows
-// the formats; the manage/tasks helper imports them from here, and the
-// adapter turns the matches into ObjectRefs so the UI never sees a raw name.
+// the formats; the adapter turns the matches into ObjectRefs so the UI never
+// sees a raw name.
 
 export const COPY_NAME =
   /^(?:copy|merge) \[(.*\/([^\/]*))]\((.*\/([^\/]*))\) to \[(.+)]\((.+)\)$/
