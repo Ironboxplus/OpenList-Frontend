@@ -1,45 +1,15 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Badge,
-  Button,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  Heading,
-  HStack,
-  Input,
-  SimpleGrid,
-  VStack,
-  Text,
-} from "@hope-ui/solid"
-import { createSignal, For, JSXElement, onCleanup, Show } from "solid-js"
-import { LinkWithBase, MaybeLoading } from "~/components"
+import { createSignal, For, onCleanup, Show } from "solid-js"
+import { LinkWithBase } from "~/components"
+import { Alert, AlertDescription } from "~/components/ui/alert"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { FieldRenderer, SettingsSection } from "~/features/settings/form"
 import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
-import { setMe, me, getSettingBool } from "~/store"
-import { PEmptyResp, UserMethods, UserPermissions, PResp } from "~/types"
-import {
-  handleResp,
-  handleRespWithoutNotify,
-  loginUrlFor,
-  notify,
-  r,
-} from "~/utils"
-import { WebauthnItem } from "./Webauthnitems"
+import { getSettingBool, me, setMe } from "~/store"
+import { PEmptyResp, Type, UserMethods, UserPermissions } from "~/types"
+import { handleResp, loginUrlFor, notify, r } from "~/utils"
 import { PublicKeys } from "./PublicKeys"
-
-const supported = () =>
-  !!globalThis.PublicKeyCredential?.parseCreationOptionsFromJSON
-
-const PermissionBadge = (props: { can: boolean; children: JSXElement }) => {
-  return (
-    <Badge colorScheme={props.can ? "success" : "danger"}>
-      {props.children}
-    </Badge>
-  )
-}
+import { WebauthnCredentials } from "./Webauthnitems"
 
 const Profile = () => {
   const t = useT()
@@ -57,283 +27,198 @@ const Profile = () => {
     }),
   )
 
-  interface WebauthnItem {
-    fingerprint: string
-    id: string
-  }
-
-  interface Webauthntemp {
-    session: string
-    options: { publicKey: PublicKeyCredentialCreationOptionsJSON }
-  }
-
-  const [getauthncredentialsloading, getauthncredentials] = useFetch(
-    (): PResp<WebauthnItem[]> => r.get("/authn/getcredentials"),
-  )
-  const [, getauthntemp] = useFetch((): PResp<Webauthntemp> =>
-    r.get("/authn/webauthn_begin_registration"),
-  )
-  const [postregistrationloading, postregistration] = useFetch(
-    (session: string, credentials: PublicKeyCredential): PEmptyResp =>
-      r.post(
-        "/authn/webauthn_finish_registration",
-        JSON.stringify(credentials.toJSON()),
-        {
-          headers: {
-            session: session,
-          },
-        },
-      ),
-  )
   const saveMe = async (ssoID?: boolean) => {
     if (password() && password() !== confirmPassword()) {
       notify.warning(t("users.confirm_password_not_same"))
       return
     }
-    const resp = await save(ssoID)
-    handleResp(resp, () => {
+    handleResp(await save(ssoID), () => {
       setMe({ ...me(), username: username() })
       if (!ssoID) {
         notify.success(t("users.update_profile_success"))
+        // The session ends with a credential change: sign in again.
         to(loginUrlFor(location))
       } else {
         to("")
       }
     })
   }
+
+  // Returning from the SSO provider, by redirect or by popup message.
   const ssoID = searchParams["sso_id"]
   if (ssoID) {
     setMe({ ...me(), sso_id: ssoID })
     saveMe(true)
   }
-  function messageEvent(event: MessageEvent) {
+  const onMessage = (event: MessageEvent) => {
     const data = event.data
     if (data.sso_id) {
       setMe({ ...me(), sso_id: data.sso_id })
       saveMe(true)
     }
   }
-  window.addEventListener("message", messageEvent)
-  onCleanup(() => {
-    window.removeEventListener("message", messageEvent)
-  })
-  const [credentials, setcredentials] = createSignal<WebauthnItem[]>([])
-  const initauthnEdit = async () => {
-    const resp = await getauthncredentials()
-    handleRespWithoutNotify(resp, setcredentials)
+  window.addEventListener("message", onMessage)
+  onCleanup(() => window.removeEventListener("message", onMessage))
+
+  const connectSso = () => {
+    const url = r.getUri() + "/auth/sso?method=get_sso_id"
+    if (usecompatibility) {
+      window.location.href = url
+      return
+    }
+    window.open(url, "authPopup", "width=500,height=600")
   }
-  if (
-    supported() &&
-    !UserMethods.is_guest(me()) &&
-    getSettingBool("webauthn_login_enabled")
-  ) {
-    initauthnEdit()
-  }
+
   return (
-    <VStack w="$full" spacing="$4" alignItems="start">
+    <div class="flex w-full flex-col gap-4">
       <Show
         when={!UserMethods.is_guest(me())}
         fallback={
           <>
-            <Alert
-              status="warning"
-              flexDirection={{
-                "@initial": "column",
-                "@lg": "row",
-              }}
-            >
-              <AlertIcon mr="$2_5" />
-              <AlertTitle mr="$2_5">{t("users.guest-tips")}</AlertTitle>
-              <AlertDescription>{t("users.modify_nothing")}</AlertDescription>
+            <Alert variant="warning">
+              <AlertDescription>
+                <span class="font-medium">{t("users.guest-tips")}</span>{" "}
+                {t("users.modify_nothing")}
+              </AlertDescription>
             </Alert>
-            <HStack spacing="$2">
-              <Text>{t("global.have_account")}</Text>
-              <Text
-                color="$info9"
-                as={LinkWithBase}
+            <p class="text-sm">
+              {t("global.have_account")}{" "}
+              <LinkWithBase
+                class="text-primary underline"
                 href={loginUrlFor(location)}
               >
                 {t("global.go_login")}
-              </Text>
-            </HStack>
+              </LinkWithBase>
+            </p>
           </>
         }
       >
-        <Heading>{t("users.update_profile")}</Heading>
         {/* Editing your own username/password requires the manage-user-info
             permission (admins always have it). Without it, the fields are hidden
             and the backend rejects the change too. 2FA stays available below. */}
-        <Show
-          when={UserMethods.can_manage_user_info(me())}
-          fallback={
-            <Text color="$neutral10" fontSize="$sm">
-              {t("users.no_modify_permission")}
-            </Text>
+        <SettingsSection
+          id="profile-account"
+          title={t("users.update_profile")}
+          actions={
+            <Show when={UserMethods.can_manage_user_info(me())}>
+              <Button
+                type="button"
+                disabled={loading()}
+                onClick={() => saveMe(false)}
+              >
+                {t("global.save")}
+              </Button>
+            </Show>
           }
         >
-          <SimpleGrid gap="$2" columns={{ "@initial": 1, "@md": 2 }}>
-            <FormControl>
-              <FormLabel for="username">{t("users.change_username")}</FormLabel>
-              <Input
-                id="username"
-                value={username()}
-                onInput={(e) => {
-                  setUsername(e.currentTarget.value)
-                }}
-              />
-            </FormControl>
-          </SimpleGrid>
-          <SimpleGrid gap="$2" columns={{ "@initial": 1, "@md": 2 }}>
-            <FormControl>
-              <FormLabel for="password">{t("users.change_password")}</FormLabel>
-              <Input
-                id="password"
-                type="password"
-                placeholder="********"
-                value={password()}
-                onInput={(e) => {
-                  setPassword(e.currentTarget.value)
-                }}
-              />
-              <FormHelperText>{t("users.change_password-tips")}</FormHelperText>
-            </FormControl>
-            <FormControl>
-              <FormLabel for="confirm-password">
-                {t("users.confirm_password")}
-              </FormLabel>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="********"
-                value={confirmPassword()}
-                onInput={(e) => {
-                  setConfirmPassword(e.currentTarget.value)
-                }}
-              />
-              <FormHelperText>
-                {t("users.confirm_password-tips")}
-              </FormHelperText>
-            </FormControl>
-          </SimpleGrid>
-          <HStack spacing="$2">
-            <Button loading={loading()} onClick={[saveMe, false]}>
-              {t("global.save")}
-            </Button>
-          </HStack>
-        </Show>
-        <Show when={!me().otp}>
-          <Button
-            colorScheme="accent"
-            onClick={() => {
-              to("/@manage/2fa")
-            }}
-          >
-            {t("users.enable_2fa")}
-          </Button>
-        </Show>
-      </Show>
-      <Show
-        when={
-          getSettingBool("sso_login_enabled") && !UserMethods.is_guest(me())
-        }
-      >
-        <Heading>{t("users.sso_login")}</Heading>
-        <HStack spacing="$2">
           <Show
-            when={me().sso_id}
+            when={UserMethods.can_manage_user_info(me())}
             fallback={
-              <Button
-                onClick={() => {
-                  const url = r.getUri() + "/auth/sso?method=get_sso_id"
-                  if (usecompatibility) {
-                    window.location.href = url
-                    return
-                  }
-                  window.open(url, "authPopup", "width=500,height=600")
-                }}
-              >
-                {t("users.connect_sso")}
-              </Button>
+              <p class="py-3 text-sm text-muted-foreground">
+                {t("users.no_modify_permission")}
+              </p>
             }
           >
-            <Button
-              colorScheme="danger"
-              loading={loading()}
-              onClick={() => {
-                setMe({ ...me(), sso_id: "" })
-                saveMe(true)
+            <FieldRenderer
+              field={{
+                id: "username",
+                type: Type.String,
+                labelKey: "users.change_username",
               }}
-            >
-              {t("users.disconnect_sso")}
-            </Button>
+              value={username()}
+              onChange={(raw) => setUsername(String(raw))}
+            />
+            <FieldRenderer
+              field={{
+                id: "password",
+                type: Type.String,
+                labelKey: "users.change_password",
+                helpKey: "users.change_password-tips",
+                secret: true,
+                placeholder: "********",
+              }}
+              value={password()}
+              onChange={(raw) => setPassword(String(raw))}
+            />
+            <FieldRenderer
+              field={{
+                id: "confirm-password",
+                type: Type.String,
+                labelKey: "users.confirm_password",
+                helpKey: "users.confirm_password-tips",
+                secret: true,
+                placeholder: "********",
+              }}
+              value={confirmPassword()}
+              onChange={(raw) => setConfirmPassword(String(raw))}
+            />
           </Show>
-        </HStack>
+          <Show when={!me().otp}>
+            <div class="py-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => to("/@manage/2fa")}
+              >
+                {t("users.enable_2fa")}
+              </Button>
+            </div>
+          </Show>
+        </SettingsSection>
+
+        <Show when={getSettingBool("sso_login_enabled")}>
+          <SettingsSection id="profile-sso" title={t("users.sso_login")}>
+            <div class="py-3">
+              <Show
+                when={me().sso_id}
+                fallback={
+                  <Button type="button" onClick={connectSso}>
+                    {t("users.connect_sso")}
+                  </Button>
+                }
+              >
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={loading()}
+                  onClick={() => {
+                    setMe({ ...me(), sso_id: "" })
+                    saveMe(true)
+                  }}
+                >
+                  {t("users.disconnect_sso")}
+                </Button>
+              </Show>
+            </div>
+          </SettingsSection>
+        </Show>
+
+        <Show when={getSettingBool("webauthn_login_enabled")}>
+          <section class="flex flex-col gap-2" data-section="webauthn">
+            <h2 class="text-base font-semibold">{t("users.webauthn")}</h2>
+            <WebauthnCredentials />
+          </section>
+        </Show>
       </Show>
-      <Show
-        when={
-          !UserMethods.is_guest(me()) &&
-          getSettingBool("webauthn_login_enabled")
-        }
-      >
-        <Heading>{t("users.webauthn")}</Heading>
-        <HStack wrap="wrap" gap="$2" mt="$2">
-          <MaybeLoading loading={getauthncredentialsloading()}>
-            <For each={credentials()}>
-              {(item) => (
-                <WebauthnItem id={item.id} fingerprint={item.fingerprint} />
-              )}
-            </For>
-          </MaybeLoading>
-        </HStack>
-        <Button
-          loading={postregistrationloading()}
-          onClick={async () => {
-            if (!supported()) {
-              notify.error(t("users.webauthn_not_supported"))
-              return
-            }
-            const resp = await getauthntemp()
-            handleResp(resp, async (data) => {
-              const session = data.session
-              try {
-                const browserresponse = (await navigator.credentials.create({
-                  publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(
-                    data.options.publicKey,
-                  ),
-                })) as PublicKeyCredential
-                handleResp(
-                  await postregistration(session, browserresponse),
-                  () => {
-                    notify.success(t("users.add_webauthn_success"))
-                  },
-                )
-              } catch (error: unknown) {
-                if (error instanceof Error) notify.error(error.message)
-              }
-            })
-          }}
-        >
-          {t("users.add_webauthn")}
-        </Button>
-      </Show>
-      <HStack wrap="wrap" gap="$2" mt="$2">
-        <For each={UserPermissions}>
-          {(item, i) => (
-            <PermissionBadge can={UserMethods.can(me(), i())}>
-              {t(`users.permissions.${item}`)}
-            </PermissionBadge>
-          )}
-        </For>
-      </HStack>
-      <Show
-        when={UserMethods.can(
-          me(),
-          UserPermissions.findIndex((p) => p === "ftp_read"),
-        )}
-      >
+
+      <SettingsSection id="profile-permissions" title={t("users.permission")}>
+        <div class="flex flex-wrap gap-2 py-3">
+          <For each={UserPermissions}>
+            {(item, i) => (
+              <Badge
+                variant={UserMethods.can(me(), i()) ? "success" : "destructive"}
+              >
+                {t(`users.permissions.${item}`)}
+              </Badge>
+            )}
+          </For>
+        </div>
+      </SettingsSection>
+
+      <Show when={UserMethods.can(me(), UserPermissions.indexOf("ftp_read"))}>
         <PublicKeys isMine={true} userId={me().id} />
       </Show>
-    </VStack>
+    </div>
   )
 }
 

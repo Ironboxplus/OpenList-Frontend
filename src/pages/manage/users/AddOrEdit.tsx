@@ -1,192 +1,242 @@
+import { createMemo, createSignal, For, Show } from "solid-js"
+import { createStore, reconcile } from "solid-js/store"
 import {
-  Button,
   Checkbox,
-  Flex,
-  FormControl,
-  FormLabel,
-  Heading,
-  Input,
-  VStack,
-} from "@hope-ui/solid"
-import { MaybeLoading, FolderChooseInput } from "~/components"
+  CheckboxControl,
+  CheckboxLabel,
+} from "~/components/ui/checkbox"
+import {
+  DataState,
+  FieldRenderer,
+  SettingsForm,
+  SettingsSection,
+} from "~/features/settings/form"
 import { useFetch, useRouter, useT } from "~/hooks"
-import { handleResp, notify, r } from "~/utils"
-import { PEmptyResp, PResp, User, UserMethods, UserPermissions } from "~/types"
-import { createStore } from "solid-js/store"
-import { For, Show } from "solid-js"
 import { Me, me, setMe } from "~/store"
+import {
+  PEmptyResp,
+  PResp,
+  Type,
+  User,
+  UserMethods,
+  UserPermissions,
+} from "~/types"
+import { getTarget, handleResp, notify, r } from "~/utils"
 import { PublicKeys } from "./PublicKeys"
 
-const Permission = (props: {
-  can: boolean
-  onChange: (val: boolean) => void
-  name: string
-}) => {
-  const t = useT()
-  return (
-    <FormControl
-      display="inline-flex"
-      flexDirection="row"
-      alignItems="center"
-      gap="$2"
-      rounded="$md"
-      shadow="$md"
-      p="$2"
-      w="fit-content"
-    >
-      <FormLabel mb="0">{t(`users.permissions.${props.name}`)}</FormLabel>
-      <Checkbox
-        checked={props.can}
-        onChange={() => props.onChange(!props.can)}
-      />
-    </FormControl>
-  )
+type PermissionName = (typeof UserPermissions)[number]
+
+/**
+ * How the permission bits are laid out on screen. The bit of a permission is
+ * its position in UserPermissions; this only decides which box it sits in.
+ * Anything not listed (a permission added later) lands in "other".
+ */
+export const PERMISSION_GROUPS: { id: string; names: PermissionName[] }[] = [
+  {
+    id: "browse",
+    names: ["see_hides", "access_without_password", "read_archives"],
+  },
+  {
+    id: "files",
+    names: ["write_content", "rename", "move", "copy", "delete", "decompress"],
+  },
+  { id: "download", names: ["offline_download"] },
+  { id: "share", names: ["share", "customize_share_id"] },
+  {
+    id: "protocol",
+    names: ["webdav_read", "webdav_manage", "ftp_read", "ftp_manage"],
+  },
+  { id: "account", names: ["manage_user_info"] },
+]
+
+export const permissionGroups = () => {
+  const placed = new Set(PERMISSION_GROUPS.flatMap((g) => g.names))
+  const rest = UserPermissions.filter((p) => !placed.has(p))
+  return rest.length > 0
+    ? [...PERMISSION_GROUPS, { id: "other", names: rest }]
+    : PERMISSION_GROUPS
 }
+
+const blankUser = (): User => ({
+  id: 0,
+  username: "",
+  password: "",
+  base_path: "",
+  role: 0,
+  permission: 0,
+  disabled: false,
+  sso_id: "",
+  allow_ldap: false,
+})
 
 const AddOrEdit = () => {
   const t = useT()
   const { params, to } = useRouter()
   const { id } = params
-  const [user, setUser] = createStore<User>({
-    id: 0,
-    username: "",
-    password: "",
-    base_path: "",
-    role: 0,
-    permission: 0,
-    disabled: false,
-    sso_id: "",
-    allow_ldap: false,
-  })
-  const [userLoading, loadUser] = useFetch((): PResp<User> =>
-    r.get(`/admin/user/get?id=${id}`),
-  )
+  const [user, setUser] = createStore<User>(blankUser())
+  const [baseline, setBaseline] = createSignal(JSON.stringify(user))
+  const dirty = createMemo(() => JSON.stringify(user) !== baseline())
+  const [error, setError] = createSignal<string>()
 
-  const initEdit = async () => {
-    const resp = await loadUser()
-    handleResp<User>(resp, setUser)
+  const [loading, loadUser] = useFetch(
+    (): PResp<User> => r.get(`/admin/user/get?id=${id}`),
+    true,
+  )
+  const init = async () => {
+    if (!id) {
+      setUser(reconcile(blankUser()))
+      setBaseline(JSON.stringify(user))
+      return
+    }
+    handleResp(
+      await loadUser(),
+      (data) => {
+        setError(undefined)
+        setUser(data)
+        setBaseline(JSON.stringify(user))
+      },
+      setError,
+    )
   }
-  if (id) {
-    initEdit()
+  init()
+
+  const [saving, setSaving] = createSignal(false)
+  const save = async () => {
+    setSaving(true)
+    const resp: Awaited<PEmptyResp> = await r.post(
+      `/admin/user/${id ? "update" : "create"}`,
+      getTarget(user),
+    )
+    setSaving(false)
+    handleResp(resp, async () => {
+      notify.success(t("global.save_success"))
+      if (user.username === me().username)
+        handleResp(await (r.get("/me") as PResp<Me>), setMe)
+      to("/@manage/users", false, { replace: true })
+    })
   }
-  const [okLoading, ok] = useFetch((): PEmptyResp => {
-    return r.post(`/admin/user/${id ? "update" : "create"}`, user)
-  })
+
+  const setBit = (bit: number, on: boolean) =>
+    setUser("permission", (p) => (on ? p | (1 << bit) : p & ~(1 << bit)))
+
+  const isAdmin = () => UserMethods.is_admin(me())
+
   return (
-    <MaybeLoading loading={userLoading()}>
-      <VStack w="$full" alignItems="start" spacing="$2">
-        <Heading>{t(`global.${id ? "edit" : "add"}`)}</Heading>
+    <SettingsForm
+      dirty={dirty()}
+      saving={saving()}
+      resetting={loading()}
+      saveLabel={t(`global.${id ? "save" : "add"}`)}
+      onSave={save}
+      onReset={init}
+    >
+      <DataState
+        loading={id ? loading() : false}
+        error={error()}
+        onRetry={init}
+      >
         <Show when={!UserMethods.is_guest(user)}>
-          <FormControl w="$full" display="flex" flexDirection="column" required>
-            <FormLabel for="username" display="flex" alignItems="center">
-              {t(`users.username`)}
-            </FormLabel>
-            <Input
-              id="username"
+          <SettingsSection
+            id="user-account"
+            title={t(`global.${id ? "edit" : "add"}`)}
+          >
+            <FieldRenderer
+              field={{
+                id: "username",
+                type: Type.String,
+                labelKey: "users.username",
+                required: true,
+              }}
               value={user.username}
-              onInput={(e) => setUser("username", e.currentTarget.value)}
+              onChange={(raw) => setUser("username", String(raw))}
             />
-          </FormControl>
-          <FormControl w="$full" display="flex" flexDirection="column" required>
-            <FormLabel for="password" display="flex" alignItems="center">
-              {t(`users.password`)}
-            </FormLabel>
-            <Input
-              id="password"
-              type="password"
-              placeholder="********"
+            <FieldRenderer
+              field={{
+                id: "password",
+                type: Type.String,
+                labelKey: "users.password",
+                required: true,
+                secret: true,
+                placeholder: "********",
+              }}
               value={user.password}
-              onInput={(e) => setUser("password", e.currentTarget.value)}
+              onChange={(raw) => setUser("password", String(raw))}
             />
-          </FormControl>
+          </SettingsSection>
         </Show>
 
         {/* Privileged fields: only a real admin may edit base path, permission
             bits, disabled and LDAP. A delegated (non-admin) editor sees just
-            username/password — matching the backend update policy. */}
-        <Show when={UserMethods.is_admin(me())}>
-          <FormControl w="$full" display="flex" flexDirection="column" required>
-            <FormLabel for="base_path" display="flex" alignItems="center">
-              {t(`users.base_path`)}
-            </FormLabel>
-            <FolderChooseInput
-              id="base_path"
+            username/password, matching the backend update policy. */}
+        <Show when={isAdmin()}>
+          <SettingsSection id="user-access" title={t("users.permission")}>
+            <FieldRenderer
+              field={{
+                id: "base_path",
+                type: Type.String,
+                labelKey: "users.base_path",
+                required: true,
+                picker: "folder",
+              }}
               value={user.base_path}
-              onChange={(path) => setUser("base_path", path)}
-              onlyFolder
+              onChange={(raw) => setUser("base_path", String(raw))}
             />
-          </FormControl>
-          <FormControl w="$full" required>
-            <FormLabel display="flex" alignItems="center">
-              {t(`users.permission`)}
-            </FormLabel>
-            <Flex w="$full" wrap="wrap" gap="$2">
-              <For each={UserPermissions}>
-                {(item, i) => (
-                  <Permission
-                    name={item}
-                    can={UserMethods.can(user, i())}
-                    onChange={(val) => {
-                      if (val) {
-                        setUser("permission", (user.permission |= 1 << i()))
-                      } else {
-                        setUser("permission", (user.permission &= ~(1 << i())))
-                      }
-                    }}
-                  />
+            <div class="flex flex-col gap-4 py-3" data-field="permission">
+              <For each={permissionGroups()}>
+                {(group) => (
+                  <fieldset class="flex flex-col gap-2">
+                    <legend class="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {t(`settings.form.permission_groups.${group.id}`)}
+                    </legend>
+                    <div class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                      <For each={group.names}>
+                        {(name) => {
+                          const bit = UserPermissions.indexOf(name)
+                          return (
+                            <Checkbox
+                              class="flex items-center gap-2"
+                              data-permission={name}
+                              checked={UserMethods.can(user, bit)}
+                              onChange={(on) => setBit(bit, on)}
+                            >
+                              <CheckboxControl />
+                              <CheckboxLabel class="text-sm">
+                                {t(`users.permissions.${name}`)}
+                              </CheckboxLabel>
+                            </Checkbox>
+                          )
+                        }}
+                      </For>
+                    </div>
+                  </fieldset>
                 )}
               </For>
-            </Flex>
-          </FormControl>
-          <FormControl w="fit-content" display="flex">
-            <Checkbox
-              css={{ whiteSpace: "nowrap" }}
-              id="disabled"
-              onChange={(e: any) =>
-                setUser("disabled", e.currentTarget.checked)
-              }
-              color="$neutral10"
-              fontSize="$sm"
-              checked={user.disabled}
-            >
-              {t(`users.disabled`)}
-            </Checkbox>
-          </FormControl>
-          <FormControl w="fit-content" display="flex">
-            <Checkbox
-              css={{ whiteSpace: "nowrap" }}
-              id="allow_ldap"
-              onChange={(e: any) =>
-                setUser("allow_ldap", e.currentTarget.checked)
-              }
-              color="$neutral10"
-              fontSize="$sm"
-              checked={user.allow_ldap}
-            >
-              {t(`users.allow_ldap`)}
-            </Checkbox>
-          </FormControl>
+            </div>
+            <FieldRenderer
+              field={{
+                id: "disabled",
+                type: Type.Bool,
+                labelKey: "users.disabled",
+              }}
+              value={user.disabled}
+              onChange={(raw) => setUser("disabled", raw === true)}
+            />
+            <FieldRenderer
+              field={{
+                id: "allow_ldap",
+                type: Type.Bool,
+                labelKey: "users.allow_ldap",
+              }}
+              value={user.allow_ldap}
+              onChange={(raw) => setUser("allow_ldap", raw === true)}
+            />
+          </SettingsSection>
         </Show>
-        <Button
-          loading={okLoading()}
-          onClick={async () => {
-            const resp = await ok()
-            // TODO maybe can use handleRespWithNotifySuccess
-            handleResp(resp, async () => {
-              notify.success(t("global.save_success"))
-              if (user.username === me().username)
-                handleResp(await (r.get("/me") as PResp<Me>), setMe)
-              to("/@manage/users", false, { replace: true })
-            })
-          }}
-        >
-          {t(`global.${id ? "save" : "add"}`)}
-        </Button>
         <Show when={id && !UserMethods.is_guest(user)}>
           <PublicKeys isMine={false} userId={parseInt(id)} />
         </Show>
-      </VStack>
-    </MaybeLoading>
+      </DataState>
+    </SettingsForm>
   )
 }
 

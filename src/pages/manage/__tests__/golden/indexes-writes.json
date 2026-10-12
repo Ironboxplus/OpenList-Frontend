@@ -2,27 +2,16 @@
   [
     "/admin/index/build",
     {
-      "paths": [
-        "/"
-      ],
+      "paths": ["/"],
       "max_depth": -1
     }
   ],
-  [
-    "/admin/index/clear",
-    null
-  ],
-  [
-    "/admin/index/stop",
-    null
-  ],
+  ["/admin/index/clear", null],
+  ["/admin/index/stop", null],
   [
     "/admin/index/update",
     {
-      "paths": [
-        "/a",
-        "/b"
-      ],
+      "paths": ["/a", "/b"],
       "max_depth": 3
     }
   ]

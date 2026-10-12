@@ -6,8 +6,5 @@
       "limit": 0.5
     }
   ],
-  [
-    "/admin/scan/stop",
-    null
-  ]
+  ["/admin/scan/stop", null]
 ]

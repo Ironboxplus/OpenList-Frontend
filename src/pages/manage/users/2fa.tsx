@@ -1,9 +1,13 @@
-import { Button, Heading, Image, Input, Text, VStack } from "@hope-ui/solid"
 import { createSignal, Show } from "solid-js"
-import { MaybeLoading } from "~/components"
-import { useRouter, useFetch, useT } from "~/hooks"
-import { setMe, me, getMainColor } from "~/store"
-import { PEmptyResp, PResp } from "~/types"
+import { Button } from "~/components/ui/button"
+import {
+  DataState,
+  FieldRenderer,
+  SettingsSection,
+} from "~/features/settings/form"
+import { useFetch, useRouter, useT } from "~/hooks"
+import { me, setMe } from "~/store"
+import { PEmptyResp, PResp, Type } from "~/types"
 import { handleResp, handleRespWithNotifySuccess, notify, r } from "~/utils"
 
 interface Generate2FA {
@@ -13,10 +17,10 @@ interface Generate2FA {
 
 const TwoFA = () => {
   const { back } = useRouter()
+  const t = useT()
   const [generateLoading, generate] = useFetch((): PResp<Generate2FA> =>
     r.post("/auth/2fa/generate"),
   )
-  const t = useT()
   const [otpData, setOtpData] = createSignal<Generate2FA>()
   const init = async () => {
     if (me().otp) {
@@ -24,11 +28,11 @@ const TwoFA = () => {
       back()
       return
     }
-    const resp = await generate()
-    handleResp(resp, setOtpData)
+    handleResp(await generate(), setOtpData)
   }
-  const [code, setCode] = createSignal("")
   init()
+
+  const [code, setCode] = createSignal("")
   const [verifyLoading, verify] = useFetch((): PEmptyResp =>
     r.post("/auth/2fa/verify", {
       code: code(),
@@ -36,39 +40,53 @@ const TwoFA = () => {
     }),
   )
   const verify2FA = async () => {
-    const resp = await verify()
-    handleRespWithNotifySuccess(resp, () => {
+    handleRespWithNotifySuccess(await verify(), () => {
       setMe({ ...me(), otp: true })
       back()
     })
   }
+
   return (
-    <MaybeLoading loading={generateLoading()}>
+    <DataState loading={generateLoading()}>
       <Show when={otpData()}>
-        <VStack spacing="$2" alignItems="start">
-          <Heading>{t("users.scan_qr")}</Heading>
-          <Image boxSize="$xs" rounded="$lg" src={otpData()?.qr} />
-          <Heading>
-            {t("users.or_manual")}:{" "}
-            <Text color={getMainColor()}>{otpData()?.secret}</Text>
-          </Heading>
-          <Input
-            maxW="$xs"
-            placeholder={t("users.input_code")}
-            value={code()}
-            onInput={(e) => setCode(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                verify2FA()
-              }
+        <SettingsSection id="two-factor" title={t("users.scan_qr")}>
+          <div class="flex flex-col items-start gap-3 py-4">
+            <img
+              src={otpData()?.qr}
+              alt={t("users.scan_qr")}
+              class="size-64 rounded-lg border bg-white p-2"
+            />
+            <p class="text-sm">
+              {t("users.or_manual")}:{" "}
+              <code class="break-all rounded bg-muted px-1.5 py-0.5 font-mono">
+                {otpData()?.secret}
+              </code>
+            </p>
+          </div>
+          <form
+            class="flex flex-col gap-2 py-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              verify2FA()
             }}
-          />
-          <Button loading={verifyLoading()} onClick={verify2FA}>
-            {t("users.verify")}
-          </Button>
-        </VStack>
+          >
+            <FieldRenderer
+              stacked
+              field={{
+                id: "code",
+                type: Type.String,
+                labelKey: "users.input_code",
+              }}
+              value={code()}
+              onChange={(raw) => setCode(String(raw))}
+            />
+            <Button type="submit" class="self-start" disabled={verifyLoading()}>
+              {t("users.verify")}
+            </Button>
+          </form>
+        </SettingsSection>
       </Show>
-    </MaybeLoading>
+    </DataState>
   )
 }
 

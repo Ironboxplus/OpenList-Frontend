@@ -10,9 +10,11 @@ import Users from "../users/Users"
 import { ADMIN_ME, USER } from "./fixtures"
 import {
   buttonByText,
+  chooseMenuItem,
   clickButton,
   expectGolden,
   mockApi,
+  openRowMenu,
   renderPage,
   settle,
   writes,
@@ -56,11 +58,11 @@ describe("user list", () => {
   it("delete (after confirmation) and cancel-2fa post the user id", async () => {
     renderPage(() => <Users />)
     await settle()
-    fireEvent.click(nth("Delete", 1))
-    await settle()
+    await openRowMenu(1)
+    await chooseMenuItem("Delete")
     await clickButton("Confirm")
-    fireEvent.click(nth("Cancel 2FA", 1))
-    await settle()
+    await openRowMenu(1)
+    await chooseMenuItem("Cancel 2FA")
     expectGolden(
       "users-list-writes",
       writes().map((c) => [c.method, c.path, c.query]),
@@ -71,8 +73,8 @@ describe("user list", () => {
   it("delete needs a second confirmation", async () => {
     renderPage(() => <Users />)
     await settle()
-    fireEvent.click(nth("Delete", 1))
-    await settle()
+    await openRowMenu(1)
+    await chooseMenuItem("Delete")
     expect(writes()).toHaveLength(0)
   })
 })

@@ -12,10 +12,12 @@ import TwoFA from "../users/2fa"
 import { ADMIN_ME, KEYS } from "./fixtures"
 import {
   buttonByText,
+  chooseMenuItem,
   clickButton,
   expectGolden,
   lastCall,
   mockApi,
+  openRowMenu,
   renderPage,
   settle,
   setValue,
@@ -88,11 +90,8 @@ describe("profile", () => {
     )
     fireEvent.click(adds[adds.length - 1])
     await settle()
-    const del = [...document.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Delete",
-    )!
-    fireEvent.click(del)
-    await settle()
+    await openRowMenu(0)
+    await chooseMenuItem("Delete")
     await confirmIfAsked()
     expectGolden(
       "profile-keys",

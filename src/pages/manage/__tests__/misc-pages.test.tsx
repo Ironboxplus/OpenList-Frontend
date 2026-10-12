@@ -11,12 +11,14 @@ vi.mock("~/plugins", () => ({
 
 import Dashboard from "../Dashboard"
 import Messenger from "../messenger/Messenger"
-import { WebauthnItem } from "../users/Webauthnitems"
+import { WebauthnCredentials } from "../users/Webauthnitems"
 import {
+  chooseMenuItem,
   clickButton,
   expectGolden,
   lastCall,
   mockApi,
+  openRowMenu,
   renderPage,
   settle,
   setValue,
@@ -53,10 +55,15 @@ describe("messenger", () => {
 
 describe("webauthn credential", () => {
   it("deleting posts the credential id after a second confirmation", async () => {
-    renderPage(() => <WebauthnItem id="cred1" fingerprint="fp" />)
+    mockApi({
+      "GET /authn/getcredentials": () => [{ id: "cred1", fingerprint: "fp" }],
+      "POST /authn/delete_authn": () => null,
+    })
+    renderPage(() => <WebauthnCredentials />)
     await settle()
     expect(document.body.textContent).toContain("fp")
-    await clickButton("Delete")
+    await openRowMenu(0)
+    await chooseMenuItem("Delete")
     const confirm = [...document.querySelectorAll("button")].find(
       (b) => b.textContent?.trim() === "Confirm",
     )

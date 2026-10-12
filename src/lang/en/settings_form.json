@@ -3,7 +3,16 @@
     "unsaved": "You have unsaved changes",
     "reset": "Reset",
     "storage_common": "General",
-    "storage_driver": "{{driver}} options"
+    "storage_driver": "{{driver}} options",
+    "permission_groups": {
+      "browse": "Browsing",
+      "files": "File operations",
+      "download": "Downloads",
+      "share": "Sharing",
+      "protocol": "WebDAV and FTP",
+      "account": "Account",
+      "other": "Other"
+    }
   },
   "s3_generate": "Generate keys",
   "s3_restart_to_apply": "Changes to the S3 server take effect after a restart.",

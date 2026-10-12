@@ -1,9 +1,6 @@
 {
   "id": "mine",
-  "files": [
-    "/x",
-    "/y"
-  ],
+  "files": ["/x", "/y"],
   "remark": "r",
   "extract_folder": "back",
   "order_by": "size",

@@ -48,9 +48,7 @@
       "id": 13,
       "path": "/secret",
       "password": "pw",
-      "read_users": [
-        5
-      ],
+      "read_users": [5],
       "read_users_sub": true,
       "write_users": [],
       "write_users_sub": false,
@@ -76,10 +74,7 @@
       "order_by": "name",
       "order_direction": "asc",
       "extract_folder": "front",
-      "files": [
-        "/docs/a.txt",
-        "/docs/b.txt"
-      ],
+      "files": ["/docs/a.txt", "/docs/b.txt"],
       "remark": "note",
       "readme": "",
       "header": "",

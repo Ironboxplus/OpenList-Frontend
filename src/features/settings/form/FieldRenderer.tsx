@@ -33,6 +33,8 @@ export interface FieldRendererProps {
   /** Asked for on a deprecated setting; the page confirms and deletes. */
   onDelete?: () => void
   hideLabel?: boolean
+  /** Label above the control at every width (dialogs and narrow cards). */
+  stacked?: boolean
   class?: string
 }
 
@@ -173,7 +175,9 @@ export const FieldRenderer = (props: FieldRendererProps) => {
     <div
       data-field={f().id}
       class={cn(
-        "grid gap-2 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] md:gap-6",
+        "grid gap-2 py-3",
+        !props.stacked &&
+          "md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] md:gap-6",
         props.class,
       )}
     >
@@ -206,7 +210,12 @@ export const FieldRenderer = (props: FieldRendererProps) => {
           </Show>
         </div>
       </Show>
-      <div class={cn("min-w-0", props.hideLabel && "md:col-span-2")}>
+      <div
+        class={cn(
+          "min-w-0",
+          props.hideLabel && !props.stacked && "md:col-span-2",
+        )}
+      >
         <SwitchBlock
           fallback={
             <p class="text-sm text-muted-foreground">

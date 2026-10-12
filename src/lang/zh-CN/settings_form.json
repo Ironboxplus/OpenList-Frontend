@@ -3,7 +3,16 @@
     "unsaved": "有尚未保存的修改",
     "reset": "重置",
     "storage_common": "常规",
-    "storage_driver": "{{driver}} 选项"
+    "storage_driver": "{{driver}} 选项",
+    "permission_groups": {
+      "browse": "浏览",
+      "files": "文件操作",
+      "download": "下载",
+      "share": "分享",
+      "protocol": "WebDAV 与 FTP",
+      "account": "账户",
+      "other": "其他"
+    }
   },
   "s3_generate": "生成密钥",
   "s3_restart_to_apply": "S3 服务的修改需要重启后生效。",

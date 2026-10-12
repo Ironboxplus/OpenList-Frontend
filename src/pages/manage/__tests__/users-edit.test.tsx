@@ -6,7 +6,8 @@ vi.mock("~/hooks", async (orig) =>
 vi.mock("~/utils/notify", async () => (await import("./mocks")).notifyMock())
 
 import { setMe } from "~/store"
-import AddOrEdit from "../users/AddOrEdit"
+import { UserPermissions } from "~/types"
+import AddOrEdit, { PERMISSION_GROUPS } from "../users/AddOrEdit"
 import { ADMIN_ME, KEYS, USER } from "./fixtures"
 import {
   clickButton,
@@ -16,6 +17,7 @@ import {
   renderPage,
   settle,
   setValue,
+  toggleField,
   writes,
 } from "./harness"
 import { resetRouter, router } from "./mocks"
@@ -33,7 +35,9 @@ beforeEach(() => {
   })
 })
 
-/** Checkboxes in DOM order: one per permission bit, then disabled, allow_ldap. */
+/** The checkbox of one permission, whichever group box it sits in. */
+const perm = (name: string) =>
+  document.querySelector(`[data-permission=${name}] input`) as HTMLInputElement
 const boxes = () =>
   [...document.querySelectorAll("input[type=checkbox]")] as HTMLInputElement[]
 
@@ -44,12 +48,11 @@ describe("user editor payloads", () => {
     setValue(document.getElementById("username")!, "bob")
     setValue(document.getElementById("password")!, "s3cret")
     setValue(document.getElementById("base_path")!, "/bob")
-    const all = boxes()
-    fireEvent.click(all[0]) // see_hides
-    fireEvent.click(all[3]) // write_content
-    fireEvent.click(all[16]) // manage_user_info
-    fireEvent.click(document.getElementById("disabled")!)
-    fireEvent.click(document.getElementById("allow_ldap")!)
+    fireEvent.click(perm("see_hides"))
+    fireEvent.click(perm("write_content"))
+    fireEvent.click(perm("manage_user_info"))
+    toggleField("disabled")
+    toggleField("allow_ldap")
     await clickButton("Add")
     expectGolden("user-create", lastCall("POST", "/admin/user/create")!.body)
     expect(router.to).toHaveBeenCalledWith("/@manage/users", false, {
@@ -64,8 +67,8 @@ describe("user editor payloads", () => {
     expect(
       (document.getElementById("username") as HTMLInputElement).value,
     ).toBe("alice")
-    fireEvent.click(boxes()[0]) // clear see_hides (bit 0 set in fixture)
-    fireEvent.click(boxes()[1]) // set access_without_password
+    fireEvent.click(perm("see_hides")) // clear (bit 0 set in fixture)
+    fireEvent.click(perm("access_without_password"))
     await clickButton("Save")
     expectGolden("user-update", lastCall("POST", "/admin/user/update")!.body)
     expect(router.to).toHaveBeenCalledWith("/@manage/users", false, {
@@ -108,5 +111,12 @@ describe("user editor payloads", () => {
     await settle()
     expect(document.getElementById("username")).toBeNull()
     expect(writes()).toHaveLength(0)
+  })
+})
+
+describe("permission groups", () => {
+  it("place every permission bit exactly once", () => {
+    const placed = PERMISSION_GROUPS.flatMap((g) => g.names)
+    expect([...placed].sort()).toEqual([...UserPermissions].sort())
   })
 })

@@ -20,9 +20,5 @@
       "id": "2"
     }
   ],
-  [
-    "POST",
-    "/admin/storage/load_all",
-    {}
-  ]
+  ["POST", "/admin/storage/load_all", {}]
 ]

@@ -1,9 +1,7 @@
 {
   "id": 3,
   "path": "/secret",
-  "read_users": [
-    5
-  ],
+  "read_users": [5],
   "read_users_sub": true,
   "write_users": [],
   "write_users_sub": false,
