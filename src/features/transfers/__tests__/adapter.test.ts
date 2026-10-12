@@ -1,8 +1,9 @@
-import { createdTaskIds } from "../adapter"
 import { describe, expect, it } from "vitest"
 import type { SyncSnapshot } from "~/platform/contracts/task"
 import {
   availableActions,
+  createdTaskIds,
+  matchesQuery,
   bulkActions,
   drawerTasks,
   filterKeyOf,
@@ -404,5 +405,34 @@ describe("createdTaskIds", () => {
     expect(createdTaskIds("copy", { message: "done" })).toEqual([])
     expect(createdTaskIds("copy", null)).toEqual([])
     expect(createdTaskIds("copy", { tasks: [{ id: 5 }, null, {}] })).toEqual([])
+  })
+})
+
+describe("matchesQuery", () => {
+  const task = mapTache(
+    raw({ name: "copy [/Movies](/Dune.mkv) to [/b](/Backup)" }),
+    "copy",
+    false,
+    NOW,
+  )
+  it.each([
+    ["", true],
+    ["   ", true],
+    ["dune", true], // source, other case
+    ["BACKUP", true], // destination
+    ["/movies/dune", true], // across the whole title
+    ["interstellar", false],
+  ])("%j -> %s", (q, want) => {
+    expect(matchesQuery(task, q)).toBe(want)
+  })
+  it("searches the raw name when the task has no parsed paths", () => {
+    const odd = mapTache(
+      raw({ name: "something unparsable 42" }),
+      "copy",
+      false,
+      NOW,
+    )
+    expect(matchesQuery(odd, "unparsable")).toBe(true)
+    expect(matchesQuery(odd, "nope")).toBe(false)
   })
 })

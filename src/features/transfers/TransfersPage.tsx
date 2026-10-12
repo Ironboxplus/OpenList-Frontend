@@ -1,6 +1,6 @@
 import { focusRing } from "~/components/ui/focus"
 import { useSearchParams } from "@solidjs/router"
-import { TbChevronDown, TbChevronRight, TbPlus } from "solid-icons/tb"
+import { TbChevronDown, TbChevronRight, TbPlus, TbSearch } from "solid-icons/tb"
 import {
   createEffect,
   createMemo,
@@ -12,6 +12,7 @@ import {
   Show,
 } from "solid-js"
 import { Button } from "~/components/ui/button"
+import { Input } from "~/components/ui/input"
 import { Skeleton } from "~/components/ui/skeleton"
 import { useRouter, useT, useTitle } from "~/hooks"
 import {
@@ -27,6 +28,7 @@ import {
   FILTER_KEYS,
   isFilterKey,
   matchesFilter,
+  matchesQuery,
   sectionOf,
   tacheTypesOf,
   TACHE_OPS,
@@ -124,12 +126,17 @@ const TransfersPage = () => {
     const v = Array.isArray(params.path) ? params.path[0] : params.path
     return v && v.startsWith("/") ? v : undefined
   })
+  // ?q= narrows by title and paths on top of the type and path filters.
+  const query = createMemo(() =>
+    String(Array.isArray(params.q) ? params.q[0] : (params.q ?? "")),
+  )
   const inFilter = createMemo(() =>
     transfers
       .tasks()
       .filter(
         (tk) =>
           matchesFilter(tk, filter()) &&
+          matchesQuery(tk, query()) &&
           (!pathFilter() || touchesPath(tk, pathFilter()!)),
       ),
   )
@@ -247,6 +254,24 @@ const TransfersPage = () => {
         )}
       </Show>
 
+      <div class="relative max-w-md">
+        <TbSearch class="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+        <Input
+          type="search"
+          data-testid="task-search"
+          class="pl-8"
+          value={query()}
+          placeholder={t("transfers.search.placeholder")}
+          aria-label={t("transfers.search.placeholder")}
+          onInput={(e) =>
+            setParams(
+              { q: e.currentTarget.value || undefined },
+              { replace: true },
+            )
+          }
+        />
+      </div>
+
       <div
         class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
         role="tablist"
@@ -289,6 +314,14 @@ const TransfersPage = () => {
           </div>
         }
       >
+        <Show when={query().trim() && inFilter().length === 0}>
+          <p
+            data-testid="search-no-match"
+            class="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground"
+          >
+            {t("transfers.search.no_match", { q: query().trim() })}
+          </p>
+        </Show>
         <Section
           testid="section-active"
           title={t("transfers.section.active")}

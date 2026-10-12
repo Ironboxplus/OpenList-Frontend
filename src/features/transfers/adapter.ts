@@ -450,6 +450,19 @@ export const filterKeyOf = (type: string): FilterKey => {
 export const matchesFilter = (t: UnifiedTask, key: FilterKey): boolean =>
   key === "all" || filterKeyOf(t.type) === key
 
+/**
+ * Case-insensitive substring match of a search text against what a card shows:
+ * the title (which carries the raw name of a server task), the source and the
+ * destination path. A blank query matches everything.
+ */
+export const matchesQuery = (t: UnifiedTask, query: string): boolean => {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  return [taskTitle(t).text, t.source?.path, t.destination?.path].some((s) =>
+    s?.toLowerCase().includes(q),
+  )
+}
+
 /** Old `/@manage/tasks/:type` segment to the new `?type=` value. */
 export const legacyTypeToFilter = (type: string | undefined): FilterKey => {
   if (!type) return "all"

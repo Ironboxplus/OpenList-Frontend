@@ -66,6 +66,10 @@
     "open_source": "Open source folder",
     "open_destination": "Open destination folder"
   },
+  "search": {
+    "placeholder": "Search by name or path",
+    "no_match": "No task matches \"{{q}}\"."
+  },
   "path_filter": {
     "showing": "Tasks for {{path}}",
     "clear": "Show all"

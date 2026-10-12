@@ -66,6 +66,10 @@
     "open_source": "打开源目录",
     "open_destination": "打开目标目录"
   },
+  "search": {
+    "placeholder": "按名称或路径搜索",
+    "no_match": "没有匹配“{{q}}”的任务。"
+  },
   "path_filter": {
     "showing": "{{path}} 相关的任务",
     "clear": "显示全部"
