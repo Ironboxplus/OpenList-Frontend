@@ -68,12 +68,14 @@ export const createErrorStore = (deps: ErrorStoreDeps) =>
     let seq = 0
 
     // Switching users swaps the whole list; nothing of the other user is kept.
-    createComputed(() => setList(read(deps.storage, deps.user())))
+    // The memo compares names, so a refetched profile of the same user does not reload.
+    const user = createMemo(deps.user)
+    createComputed(() => setList(read(deps.storage, user())))
 
     const commit = (next: ErrorRecord[]) => {
       setList(next)
       try {
-        deps.storage.setItem(keyOf(deps.user()), JSON.stringify(next))
+        deps.storage.setItem(keyOf(user()), JSON.stringify(next))
       } catch {
         // the list just does not survive a reload
       }

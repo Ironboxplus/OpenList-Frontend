@@ -478,6 +478,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
       undoneSinceDone = DONE_EVERY - 1
       infoLogged = false
       stall.clear()
+      deps.localUploads?.clearFinished(["success", "error"])
       lastState.clear()
       reported.clear()
       failedReported.clear()

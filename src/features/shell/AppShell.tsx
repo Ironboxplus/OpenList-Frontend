@@ -1,6 +1,7 @@
 import { useColorMode } from "@hope-ui/solid"
 import {
   createEffect,
+  createMemo,
   createSignal,
   lazy,
   type ParentProps,
@@ -16,6 +17,7 @@ import { BottomTabs, TAB_BAR_HEIGHT } from "./BottomTabs"
 import { readCollapsed, writeCollapsed } from "./nav-items"
 import { FULL_WIDTH, RAIL_WIDTH, SideNav } from "./SideNav"
 import { TOP_BAR_HEIGHT, TopBar } from "./TopBar"
+import { bindTransfersToUser } from "./transfers-lifecycle"
 import { bottomBarOverride, setPhoneShell, setShellActive } from "./topbar-slot"
 import { createViewport } from "./viewport"
 
@@ -49,19 +51,18 @@ const AppShell = (props: ParentProps) => {
     writeCollapsed(localStorage, next)
   }
 
-  // me() is empty until the route's auth wrapper has loaded it.
-  const shown = () => me().id !== undefined && !UserMethods.is_guest(me())
+  // me() is empty until the route's auth wrapper has loaded it. MustUser
+  // refetches it on every section change and sets a new object each time, so
+  // everything that must only follow the sign-in state reads these memos, not
+  // me() itself: they change when the user does, not when me() is replaced.
+  const shown = createMemo(
+    () => me().id !== undefined && !UserMethods.is_guest(me()),
+  )
+  const userId = createMemo(() => (shown() ? me().id : undefined))
   const rail = () =>
     viewport() === "tablet" || (viewport() === "desktop" && folded())
 
-  createEffect(() => {
-    if (!shown()) return
-    const stop = transfers.start()
-    onCleanup(() => {
-      stop()
-      transfers.reset()
-    })
-  })
+  bindTransfersToUser(userId, transfers)
 
   // Ctrl/Cmd+K toggles the palette anywhere in the signed-in shell.
   createEffect(() => {
