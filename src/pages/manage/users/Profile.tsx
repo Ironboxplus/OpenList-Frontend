@@ -49,13 +49,12 @@ const Profile = () => {
   const [password, setPassword] = createSignal("")
   const [confirmPassword, setConfirmPassword] = createSignal("")
   const usecompatibility = getSettingBool("sso_compatibility_mode")
-  const [loading, save] = useFetch(
-    (ssoID?: boolean): PEmptyResp =>
-      r.post("/me/update", {
-        username: ssoID ? me().username : username(),
-        password: ssoID ? "" : password(),
-        sso_id: me().sso_id,
-      }),
+  const [loading, save] = useFetch((ssoID?: boolean): PEmptyResp =>
+    r.post("/me/update", {
+      username: ssoID ? me().username : username(),
+      password: ssoID ? "" : password(),
+      sso_id: me().sso_id,
+    }),
   )
 
   interface WebauthnItem {
@@ -71,8 +70,8 @@ const Profile = () => {
   const [getauthncredentialsloading, getauthncredentials] = useFetch(
     (): PResp<WebauthnItem[]> => r.get("/authn/getcredentials"),
   )
-  const [, getauthntemp] = useFetch(
-    (): PResp<Webauthntemp> => r.get("/authn/webauthn_begin_registration"),
+  const [, getauthntemp] = useFetch((): PResp<Webauthntemp> =>
+    r.get("/authn/webauthn_begin_registration"),
   )
   const [postregistrationloading, postregistration] = useFetch(
     (session: string, credentials: PublicKeyCredential): PEmptyResp =>

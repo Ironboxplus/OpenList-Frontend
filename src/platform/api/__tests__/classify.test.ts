@@ -59,6 +59,38 @@ describe("classifyAxiosError", () => {
     ).toBe("disk full")
   })
 
+  describe("server envelope data", () => {
+    it("carries message and data of a server 500", () => {
+      const out = classifyAxiosError(
+        httpErr(500, {
+          code: 500,
+          message: "init failed",
+          data: { reason: "x" },
+        }),
+      )
+      expect(out.message).toBe("init failed")
+      expect(out.data).toEqual({ reason: "x" })
+    })
+
+    it("has no data key when a CDN answers with HTML", () => {
+      const out = classifyAxiosError(httpErr(502, "<html>Bad Gateway</html>"))
+      expect("data" in out).toBe(false)
+    })
+
+    it("has no data key when the envelope data is null", () => {
+      const out = classifyAxiosError(httpErr(500, { message: "m", data: null }))
+      expect("data" in out).toBe(false)
+    })
+
+    it("has no data key on a network error without response", () => {
+      const out = classifyAxiosError({
+        code: "ERR_NETWORK",
+        message: "Network Error",
+      })
+      expect("data" in out).toBe(false)
+    })
+  })
+
   it("reads request id from headers", () => {
     const out = classifyAxiosError(
       httpErr(500, undefined, { "x-request-id": "r-1" }),

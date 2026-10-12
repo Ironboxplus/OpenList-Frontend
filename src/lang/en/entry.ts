@@ -6,11 +6,13 @@ import global from "./global.json"
 import home from "./home.json"
 import index from "./index.json"
 import indexes from "./indexes.json"
+import init from "./init.json"
 import login from "./login.json"
 import manage from "./manage.json"
 import media from "./media.json"
 import metas from "./metas.json"
 import palette from "./palette.json"
+import plugins from "./plugins.json"
 import shell from "./shell.json"
 import states from "./states.json"
 import transfers from "./transfers.json"
@@ -31,11 +33,13 @@ export const dict = {
   home,
   index,
   indexes,
+  init,
   login,
   manage,
   media,
   metas,
   palette,
+  plugins,
   settings_other,
   // settings_center adds settings.groups.* / settings.items.* / settings.home.*
   // beside the per-setting labels without touching the Crowdin-managed file.

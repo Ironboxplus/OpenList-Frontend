@@ -9,6 +9,8 @@ type Events = {
   extract: string
   "tasks:refresh": void
   torrent_parsed: { torrentData: string; info: TorrentInfo }
+  "plugin:file_action_registered": any
+  "plugin:header_action_registered": any
 }
 
 export const bus = mitt<Events>()

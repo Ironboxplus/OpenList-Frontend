@@ -43,13 +43,7 @@ instance.interceptors.response.use(
     // });
     // Keep the legacy {code, message} shape, plus the transport category so
     // handleResp can tell "the request never completed" from a business error.
-    const f = classifyAxiosError(error)
-    return {
-      code: f.code,
-      message: f.message,
-      transport: f.transport,
-      requestId: f.requestId,
-    }
+    return classifyAxiosError(error)
   },
 )
 

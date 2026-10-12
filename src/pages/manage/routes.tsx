@@ -9,12 +9,15 @@ import {
 } from "~/features/settings/registry"
 import { SettingsHome } from "~/features/settings/SettingsHome"
 import { me } from "~/store"
+import type { BackendKind } from "~/utils/backend"
 import { PROFILE_PATH, routeComponents } from "./route-components"
 
 interface Route {
   /** Path below /@manage; "" is the index. */
   to: string
   component: Component
+  /** Only mounted on these backends; unset means every backend. */
+  backend?: BackendKind[]
 }
 
 const hide_routes: Route[] = [
@@ -53,6 +56,16 @@ const hide_routes: Route[] = [
   {
     to: "/2fa",
     component: lazy(() => import("./users/2fa")),
+  },
+  {
+    to: "/plugins/add",
+    backend: ["ts-worker"],
+    component: lazy(() => import("./plugins/AddPlugin")),
+  },
+  {
+    to: "/plugins/config/:id",
+    backend: ["ts-worker"],
+    component: lazy(() => import("./plugins/ConfigPlugin")),
   },
   {
     to: "/messenger",

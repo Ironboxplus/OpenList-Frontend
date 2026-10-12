@@ -42,6 +42,7 @@ import { globalStyles } from "./theme"
 const Home = lazy(() => import("~/pages/home/Layout"))
 const Manage = lazy(() => import("~/pages/manage"))
 const Login = lazy(() => import("~/pages/login"))
+const Init = lazy(() => import("~/pages/init"))
 const Test = lazy(() => import("~/pages/test"))
 const AppShell = lazy(() => import("~/features/shell/AppShell"))
 /** Persistent layout route: the shell stays mounted across page changes. */

@@ -8,6 +8,13 @@ export interface TransportFailure {
   message: string
   transport: ErrorCategory
   requestId?: string
+  /**
+   * The server envelope's `data`, present only when the server sent a
+   * non-null one. multipart.ts tells "the transport failed" (no `data` key,
+   * e.g. a CDN HTML error page) from "the server answered" (envelope with
+   * `data`) by the key's presence, so it must never be set to null/undefined.
+   */
+  data?: unknown
 }
 
 export interface Classified {
@@ -75,6 +82,11 @@ const headerOf = (headers: unknown, name: string): string | undefined => {
   return typeof v === "string" && v ? v : undefined
 }
 
+const bodyData = (data: unknown): unknown =>
+  data && typeof data === "object"
+    ? (data as { data?: unknown }).data
+    : undefined
+
 const bodyMessage = (data: unknown): string | undefined => {
   if (data && typeof data === "object") {
     const m = (data as { message?: unknown }).message
@@ -106,12 +118,15 @@ export const classifyAxiosError = (raw: unknown): TransportFailure => {
       transport: timedOut ? "timeout" : "network",
     }
   }
-  return {
+  const failure: TransportFailure = {
     code: status,
     message: redact(bodyMessage(e.response?.data) ?? fallback),
     transport: classifyStatus(status).category,
     requestId,
   }
+  const data = bodyData(e.response?.data)
+  if (data != null) failure.data = data
+  return failure
 }
 
 export const toUnifiedError = (
