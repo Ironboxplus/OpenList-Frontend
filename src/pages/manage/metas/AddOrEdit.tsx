@@ -5,8 +5,8 @@ import {
   CheckboxControl,
   CheckboxLabel,
 } from "~/components/ui/checkbox"
+import { DataState } from "~/components/ui/data-state"
 import {
-  DataState,
   FieldRenderer,
   SettingsForm,
   SettingsSection,

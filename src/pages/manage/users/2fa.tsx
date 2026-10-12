@@ -1,10 +1,7 @@
 import { createSignal, Show } from "solid-js"
 import { Button } from "~/components/ui/button"
-import {
-  DataState,
-  FieldRenderer,
-  SettingsSection,
-} from "~/features/settings/form"
+import { DataState } from "~/components/ui/data-state"
+import { FieldRenderer, SettingsSection } from "~/features/settings/form"
 import { useFetch, useRouter, useT } from "~/hooks"
 import { me, setMe } from "~/store"
 import { PEmptyResp, PResp, Type } from "~/types"

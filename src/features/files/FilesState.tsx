@@ -1,14 +1,8 @@
 import { TbAlertTriangle, TbFolderOff, TbRefresh } from "solid-icons/tb"
 import { createSignal, onCleanup, Show, type JSX } from "solid-js"
-import { focusRing } from "~/components/ui/focus"
+import { retryButtonClass } from "~/components/ui/data-state"
 import { useT } from "~/hooks"
-import { cn } from "~/utils/cn"
 import { canRetry, classifyFilesError } from "./files-state"
-
-const retryButton = cn(
-  focusRing,
-  "inline-flex h-9 items-center gap-1.5 rounded-lg border bg-background px-3 text-sm font-medium text-foreground hover:bg-accent",
-)
 
 /**
  * Three different outcomes get three different looks (loading skeleton lives
@@ -38,7 +32,7 @@ export const FilesError = (props: {
           <button
             type="button"
             data-files-retry
-            class={retryButton}
+            class={retryButtonClass}
             onClick={props.onRetry}
           >
             <TbRefresh class="size-4" />
@@ -92,7 +86,7 @@ export const SlowLoadNotice = (props: { onRetry: () => void }) => {
           <button
             type="button"
             data-files-retry
-            class={retryButton}
+            class={retryButtonClass}
             onClick={props.onRetry}
           >
             <TbRefresh class="size-4" />

@@ -17,7 +17,7 @@ vi.mock("~/hooks", async () => {
 
 import { createDeleteConfirm } from "../DeleteConfirm"
 import { ConfirmDialog } from "../ConfirmDialog"
-import { DataState } from "../DataState"
+import { DataState } from "~/components/ui/data-state"
 import { SettingsForm } from "../SettingsForm"
 import { SettingsSection } from "../SettingsSection"
 

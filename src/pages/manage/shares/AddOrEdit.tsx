@@ -1,7 +1,7 @@
 import { batch, createMemo, createSignal, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
+import { DataState } from "~/components/ui/data-state"
 import {
-  DataState,
   driverFromRaw,
   FieldRenderer,
   SettingsForm,

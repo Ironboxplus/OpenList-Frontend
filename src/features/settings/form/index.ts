@@ -1,6 +1,5 @@
 export { ConfirmDialog } from "./ConfirmDialog"
 export { createDeleteConfirm, DeleteConfirm } from "./DeleteConfirm"
-export { DataState } from "./DataState"
 export { FieldRenderer } from "./FieldRenderer"
 export {
   driverDefault,

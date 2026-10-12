@@ -28,7 +28,7 @@ import {
 import { useT } from "~/hooks"
 import { createViewport } from "~/features/shell/viewport"
 import { cn } from "~/utils/cn"
-import { DataState } from "./DataState"
+import { DataState } from "~/components/ui/data-state"
 
 export interface ResourceColumn<T> {
   id: string

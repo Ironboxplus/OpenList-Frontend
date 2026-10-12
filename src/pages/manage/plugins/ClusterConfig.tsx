@@ -1,10 +1,7 @@
 import { createSignal, onCleanup, onMount, Show } from "solid-js"
 import { Button } from "~/components/ui/button"
-import {
-  DataState,
-  FieldRenderer,
-  SettingsSection,
-} from "~/features/settings/form"
+import { DataState } from "~/components/ui/data-state"
+import { FieldRenderer, SettingsSection } from "~/features/settings/form"
 import { useT } from "~/hooks"
 import { Type } from "~/types"
 import { handleResp, notify } from "~/utils"

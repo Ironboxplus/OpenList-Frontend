@@ -1,9 +1,9 @@
 import { Index } from "solid-js"
 import { Button } from "~/components/ui/button"
+import { DataState } from "~/components/ui/data-state"
 import {
   createDeleteConfirm,
   createSettingsGroup,
-  DataState,
   FieldRenderer,
   settingField,
   SettingsForm,

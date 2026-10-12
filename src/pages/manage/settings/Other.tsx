@@ -2,8 +2,8 @@ import { createSignal, For, onMount } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
+import { DataState } from "~/components/ui/data-state"
 import {
-  DataState,
   FieldRenderer,
   SettingsSection,
   type FieldSpec,

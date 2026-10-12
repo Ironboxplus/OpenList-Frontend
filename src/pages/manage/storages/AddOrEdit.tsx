@@ -2,8 +2,8 @@ import { createMemo, createSignal, For, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
 import { Alert, AlertDescription } from "~/components/ui/alert"
 import { Button } from "~/components/ui/button"
+import { DataState } from "~/components/ui/data-state"
 import {
-  DataState,
   driverDefault,
   driverField,
   driverFromRaw,

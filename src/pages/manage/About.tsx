@@ -1,6 +1,6 @@
 import { createResource } from "solid-js"
 import { Markdown } from "~/components"
-import { DataState } from "~/features/settings/form"
+import { DataState } from "~/components/ui/data-state"
 import { useManageTitle } from "~/hooks"
 
 const fetchReadme = async () =>
