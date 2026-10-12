@@ -1,14 +1,5 @@
-type Status =
-  "pending" | "hashing" | "uploading" | "backending" | "success" | "error"
-export interface UploadFileProps {
-  name: string
-  path: string
-  size: number
-  progress: number
-  speed: number
-  status: Status
-  msg?: string
-}
+import type { UploadFileProps } from "~/features/transfers/local-uploads"
+export type { UploadFileProps }
 export const StatusBadge = {
   pending: "neutral",
   hashing: "warning",

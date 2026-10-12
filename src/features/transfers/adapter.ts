@@ -3,6 +3,7 @@
 // sees UnifiedTask; when the backend serves /api/tasks natively, only this
 // file and ./api.ts are replaced.
 import { packStage } from "./pack"
+import type { LocalUpload, UploadStatus } from "./local-uploads"
 import type {
   ObjectRef,
   SyncSnapshot,
@@ -302,6 +303,60 @@ export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
   }
 }
 
+const LOCAL_STATE: Record<UploadStatus, TaskState> = {
+  pending: "queued",
+  hashing: "running",
+  uploading: "running",
+  backending: "running",
+  success: "succeeded",
+  error: "failed",
+}
+
+/** An in-browser upload as a task (type `file.upload`, like the server-side ones). */
+export const mapLocalUpload = (u: LocalUpload): UnifiedTask => {
+  const state = LOCAL_STATE[u.status]
+  const createdAt = new Date(u.createdAt).toISOString()
+  const endedAt = u.endedAt ? new Date(u.endedAt).toISOString() : undefined
+  const progress: TaskProgress = {
+    percent: u.progress,
+    bytesTotal: u.size,
+    bytesDone: (u.progress / 100) * u.size,
+    updatedAt: endedAt ?? createdAt,
+  }
+  if (state === "running" && u.speed > 0) {
+    progress.speedBytesPerSecond = u.speed
+  }
+  return {
+    id: `upload_local:${u.id}`,
+    type: "file.upload",
+    state,
+    phase: u.status,
+    attempt: 1,
+    maxAttempts: 1,
+    retryable: state === "failed" && u.retryable,
+    source: { path: u.path },
+    destination: { path: u.target },
+    progress,
+    error: u.msg
+      ? {
+          code: "upload_error",
+          category: "task",
+          message: u.msg,
+          retryable: u.retryable,
+          actions: [],
+          occurredAt: endedAt ?? createdAt,
+        }
+      : undefined,
+    createdAt,
+    startedAt: createdAt,
+    updatedAt: endedAt ?? createdAt,
+    endedAt,
+    version: 1,
+    correlationId: u.id,
+    legacy: { kind: "upload_local", id: u.id },
+  }
+}
+
 export type Section = "active" | "failed" | "done"
 
 export const sectionOf = (state: TaskState): Section => {
@@ -321,6 +376,11 @@ export const sectionOf = (state: TaskState): Section => {
 export const availableActions = (t: UnifiedTask): TaskAction[] => {
   const lg = t.legacy
   if (lg.kind === "sync") return t.state === "running" ? ["cancel"] : []
+  if (lg.kind === "upload_local") {
+    // A browser upload cannot be aborted; a finished record can be dropped.
+    if (sectionOf(t.state) === "active") return []
+    return t.retryable ? ["retry", "delete"] : ["delete"]
+  }
   if (!lg.done) return ["cancel"]
   const acts: TaskAction[] = ["delete"]
   if (t.retryable) acts.unshift("retry")

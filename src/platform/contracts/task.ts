@@ -205,6 +205,8 @@ export type LegacyInfo =
       done: boolean
     }
   | { kind: "sync"; snapshot: SyncSnapshot }
+  /** A file this browser tab is uploading; `id` is the record's id in the local source. */
+  | { kind: "upload_local"; id: string }
 
 export interface UnifiedTask {
   id: string

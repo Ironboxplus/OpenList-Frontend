@@ -22,7 +22,10 @@ import {
 } from "solid-icons/ri"
 import { bus, getFileSize, notify, pathJoin } from "~/utils"
 import { asyncPool } from "~/utils/async_pool"
-import { createStore } from "solid-js/store"
+import {
+  isFinishedUpload,
+  localUploads,
+} from "~/features/transfers/local-uploads"
 import { UploadFileProps, StatusBadge } from "./types"
 import { File2Upload, traverseFileTree } from "./util"
 import { SelectWrapper } from "~/components"
@@ -90,38 +93,37 @@ const Upload = () => {
   const { pathname } = useRouter()
   const { refresh } = usePath()
   const [drag, setDrag] = createSignal(false)
-  const [uploading, setUploading] = createSignal(false)
-  const [uploadFiles, setUploadFiles] = createStore<{
-    uploads: UploadFileProps[]
-  }>({
-    uploads: [],
-  })
-  const allDone = () => {
-    return uploadFiles.uploads.every(({ status }) =>
-      ["success", "error"].includes(status),
-    )
-  }
+  // The records live in the transfers source, so the panel comes back with
+  // them after the page was left and the Task Center shows the same ones.
+  const [uploading, setUploading] = createSignal(localUploads.list().length > 0)
+  const allDone = () =>
+    localUploads.list().every(({ status }) => isFinishedUpload(status))
   let fileInput!: HTMLInputElement
   let folderInput!: HTMLInputElement
-  // keep the File handles around so a failed row can be retried in place
-  const fileMap = new Map<string, File>()
   const handleAddFiles = async (files: File[]) => {
     if (files.length === 0) return
     setUploading(true)
-    for (const file of files) {
+    // The folder is fixed when the files are added, not when each one starts.
+    const dir = pathname()
+    const queued = files.map((file) => {
       const upload = File2Upload(file)
-      fileMap.set(upload.path, file)
-      setUploadFiles("uploads", (uploads) => [...uploads, upload])
-    }
-    for await (const ms of asyncPool(3, files, handleFile)) {
+      const target = pathJoin(dir, upload.path)
+      // The retry closure keeps the File handle for as long as the record lives.
+      const id = localUploads.add(
+        upload,
+        target,
+        (id) => void handleFile(id, file, target),
+      )
+      return { id, file, target }
+    })
+    for await (const ms of asyncPool(3, queued, ({ id, file, target }) =>
+      handleFile(id, file, target),
+    )) {
       console.log(ms)
     }
     refresh()
     // 再次延迟刷新一次，以便能看到后端异步生成的 BT 文件（如 189/189pc 驱动的 .cas.torrent）
     setTimeout(() => refresh(undefined, true), 5000)
-  }
-  const setUpload = (path: string, key: keyof UploadFileProps, value: any) => {
-    setUploadFiles("uploads", (upload) => upload.path === path, key, value)
   }
 
   // All upload methods are available by default
@@ -130,43 +132,33 @@ const Upload = () => {
   // multipart sessions are synchronous pipelines with their own progress and
   // retry semantics; "add as task" does not apply to them
   const asTaskUnsupported = () => curUploader()?.name === "Multipart"
-  const retryFile = (path: string) => {
-    const file = fileMap.get(path)
-    if (!file) return
-    setUpload(path, "msg", "")
-    setUpload(path, "progress", 0)
-    setUpload(path, "speed", 0)
-    handleFile(file)
-  }
-  const handleFile = async (file: File) => {
-    const path = file.webkitRelativePath ? file.webkitRelativePath : file.name
-    setUpload(path, "status", "uploading")
-    const uploadPath = pathJoin(pathname(), path)
+  const handleFile = async (id: string, file: File, uploadPath: string) => {
+    const setUpload = (key: keyof UploadFileProps, value: any) =>
+      localUploads.update(id, key, value)
+    setUpload("status", "uploading")
     try {
       const err = await curUploader()
         .upload(
           uploadPath,
           file,
-          (key, value) => {
-            setUpload(path, key, value)
-          },
+          setUpload,
           asTaskUnsupported() ? false : uploadConfig.asTask,
           uploadConfig.overwrite,
           uploadConfig.rapid,
         )
         .catch((err) => err)
       if (!err) {
-        setUpload(path, "status", "success")
-        setUpload(path, "progress", 100)
+        setUpload("status", "success")
+        setUpload("progress", 100)
         if (uploadConfig.asTask) bus.emit("tasks:refresh")
       } else {
-        setUpload(path, "status", "error")
-        setUpload(path, "msg", err.message)
+        setUpload("status", "error")
+        setUpload("msg", err.message)
       }
     } catch (e: any) {
       console.error(e)
-      setUpload(path, "status", "error")
-      setUpload(path, "msg", e.message)
+      setUpload("status", "error")
+      setUpload("msg", e.message)
     }
   }
   return (
@@ -179,12 +171,7 @@ const Upload = () => {
               <Button
                 colorScheme="accent"
                 onClick={() => {
-                  setUploadFiles("uploads", (_uploads) =>
-                    _uploads.filter(
-                      ({ status }) => !["success", "error"].includes(status),
-                    ),
-                  )
-                  console.log(uploadFiles.uploads)
+                  localUploads.clearFinished(["success", "error"])
                 }}
               >
                 {t("home.upload.clear_done")}
@@ -199,11 +186,11 @@ const Upload = () => {
                 </Button>
               </Show>
             </HStack>
-            <For each={uploadFiles.uploads}>
+            <For each={localUploads.list()}>
               {(upload) => (
                 <UploadFile
                   {...upload}
-                  onRetry={() => retryFile(upload.path)}
+                  onRetry={() => localUploads.restart(upload.id)}
                 />
               )}
             </For>

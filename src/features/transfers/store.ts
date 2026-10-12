@@ -4,6 +4,7 @@ import { batch, createMemo, createRoot, createSignal, untrack } from "solid-js"
 import type { SyncSnapshot, UnifiedTask } from "~/platform/contracts/task"
 import {
   isTacheType,
+  mapLocalUpload,
   mapSyncSnapshot,
   mapTache,
   sectionOf,
@@ -15,6 +16,7 @@ import {
   type TacheType,
   type TaskAction,
 } from "./adapter"
+import type { LocalUploads, UploadStatus } from "./local-uploads"
 import { createStallTracker } from "./stall"
 
 export const FAST_MS = 2000
@@ -49,6 +51,11 @@ export interface StoreDeps {
   cancelSync: (id: string) => Promise<Result<unknown>>
   isAdmin: () => boolean
   isHidden: () => boolean
+  /** Uploads running in this tab; merged into the task list as they are. */
+  localUploads?: Pick<
+    LocalUploads,
+    "list" | "restart" | "remove" | "clearFinished"
+  >
   notifyError: (msg: string) => void
   info: (msg: string) => void
   now: () => Date
@@ -91,6 +98,11 @@ export const createTransfersStore = (deps: StoreDeps) =>
     const [detail, setDetail] = createSignal<UnifiedTask>()
     const stall = createStallTracker()
 
+    // Not polled: the source is reactive, so these follow the upload at once.
+    const localTasks = createMemo(() =>
+      (deps.localUploads?.list() ?? []).map(mapLocalUpload),
+    )
+
     const tasks = createMemo(() => {
       const all: UnifiedTask[] = []
       const ids = new Set<string>()
@@ -99,6 +111,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
         ...Object.values(undone()),
         ...Object.values(done()),
         syncTasks(),
+        localTasks(),
       ]) {
         for (const t of list) {
           if (ids.has(t.id)) continue
@@ -366,6 +379,14 @@ export const createTransfersStore = (deps: StoreDeps) =>
     ): Promise<boolean> => {
       const task = tasks().find((t) => t.id === taskId)
       if (!task) return false
+      if (task.legacy.kind === "upload_local") {
+        const local = deps.localUploads
+        if (!local) return false
+        if (action === "retry") return local.restart(task.legacy.id)
+        if (action !== "delete") return false
+        local.remove([task.legacy.id])
+        return true
+      }
       let ok: boolean
       try {
         if (task.legacy.kind === "sync") {
@@ -383,12 +404,30 @@ export const createTransfersStore = (deps: StoreDeps) =>
       return ok
     }
 
+    const CLEARS: Partial<Record<TaskAction, UploadStatus[]>> = {
+      clear_done: ["success", "error"],
+      clear_succeeded: ["success"],
+    }
+    /** The bulk actions the in-browser uploads can do themselves. */
+    const bulkLocal = (action: TaskAction) => {
+      const local = deps.localUploads
+      if (!local) return
+      const clears = CLEARS[action]
+      if (clears) local.clearFinished(clears)
+      else if (action === "retry_failed") {
+        for (const u of local.list()) {
+          if (u.status === "error" && u.retryable) local.restart(u.id)
+        }
+      }
+    }
+
     /** Bulk actions (clear / retry failed) over every type of a filter chip. */
     const actBulk = async (
       key: FilterKey,
       action: TaskAction,
     ): Promise<boolean> => {
       let all = true
+      if (key === "all" || key === "upload") bulkLocal(action)
       for (const type of tacheTypesOf(key)) {
         try {
           all = report(await deps.postTache(type, action)) && all

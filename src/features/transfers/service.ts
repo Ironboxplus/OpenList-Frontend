@@ -5,6 +5,7 @@ import { UserMethods } from "~/types"
 import { bus } from "~/utils/bus"
 import { notify } from "~/utils/notify"
 import * as api from "./api"
+import { localUploads } from "./local-uploads"
 import { createTransfersStore } from "./store"
 
 const succeededListeners = new Set<(task: UnifiedTask) => void>()
@@ -25,6 +26,7 @@ export const transfers = createTransfersStore({
   cancelSync: api.cancelSync,
   isAdmin: () => UserMethods.is_admin(me()),
   isHidden: () => document.hidden,
+  localUploads,
   notifyError: (msg) => notify.error(msg),
   info: (msg) => console.info(msg),
   now: () => new Date(),
