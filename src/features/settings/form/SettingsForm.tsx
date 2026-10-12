@@ -10,6 +10,8 @@ export interface SettingsFormProps {
   resetting?: boolean
   onSave: () => void
   onReset: () => void
+  /** Text of the submit button; defaults to Save. */
+  saveLabel?: string
   /** Extra buttons left of Reset (e.g. "load defaults"). */
   extra?: JSX.Element
   children: JSX.Element
@@ -24,6 +26,8 @@ export const SettingsForm = (props: SettingsFormProps) => {
   const t = useT()
   return (
     <form
+      // Required marks are hints; the backend stays the validator, as before.
+      noValidate
       class="flex w-full flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault()
@@ -50,7 +54,7 @@ export const SettingsForm = (props: SettingsFormProps) => {
             {t("settings.form.reset")}
           </Button>
           <Button type="submit" disabled={!props.dirty || props.saving}>
-            {t("global.save")}
+            {props.saveLabel ?? t("global.save")}
           </Button>
         </div>
       </div>

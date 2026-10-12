@@ -21,6 +21,7 @@ export {
   type RowAction,
   type ToolbarAction,
 } from "./ResourceList"
+export { plainText, StatusBadge, type StatusTone } from "./StatusBadge"
 export { SettingsForm } from "./SettingsForm"
 export { SettingsSection } from "./SettingsSection"
 export { createSettingsGroup, type SettingsGroup } from "./settings-group"

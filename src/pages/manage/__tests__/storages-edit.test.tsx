@@ -8,6 +8,7 @@ vi.mock("~/utils/notify", async () => (await import("./mocks")).notifyMock())
 import AddOrEdit from "../storages/AddOrEdit"
 import { DRIVERS, STORAGE } from "./fixtures"
 import {
+  buttonByText,
   chooseOption,
   clickButton,
   expectGolden,
@@ -17,6 +18,7 @@ import {
   renderPage,
   settle,
   setValue,
+  toggleField,
 } from "./harness"
 import { resetRouter, router } from "./mocks"
 
@@ -45,7 +47,7 @@ describe("storage editor payloads", () => {
     await chooseDriver("Local")
     setValue(document.getElementById("root_folder_path")!, "/srv2")
     setValue(document.getElementById("order")!, "5")
-    fireEvent.click(document.getElementById("web_proxy")!)
+    toggleField("web_proxy")
     await clickButton("Add")
     await settle()
     expectGolden(
@@ -77,7 +79,7 @@ describe("storage editor payloads", () => {
     setValue(document.getElementById("remark")!, "changed")
     setValue(document.getElementById("chunk")!, "16")
     setValue(document.getElementById("ratio")!, "0.25")
-    fireEvent.click(document.getElementById("thumbnail")!)
+    toggleField("thumbnail")
     await clickButton("Save")
     await settle()
     expectGolden(
@@ -95,7 +97,9 @@ describe("storage editor payloads", () => {
     await chooseDriver("Local")
     await clickButton("Import")
     const { id, disabled, modified, status, ...rest } = STORAGE
-    const box = document.getElementById("modal-input") as HTMLTextAreaElement
+    const box = document.getElementById(
+      "json-dialog-input",
+    ) as HTMLTextAreaElement
     setValue(box, JSON.stringify({ ...rest, mount_path: "/imported" }))
     await clickButton("OK")
     await clickButton("Add")
@@ -103,6 +107,50 @@ describe("storage editor payloads", () => {
       "storage-import-create",
       lastCall("POST", "/admin/storage/create")!.body,
     )
+  })
+
+  it("edit: the driver cannot be changed, and Save is off until something changes", async () => {
+    router.params = { id: "7" }
+    renderPage(() => <AddOrEdit />)
+    await settle()
+    expect(
+      (document.getElementById("driver") as HTMLInputElement).disabled,
+    ).toBe(true)
+    expect(buttonByText("Save").disabled).toBe(true)
+    setValue(document.getElementById("remark")!, "changed")
+    expect(buttonByText("Save").disabled).toBe(false)
+    await clickButton("Reset")
+    expect(
+      (document.getElementById("remark") as HTMLTextAreaElement).value,
+    ).toBe("note")
+    expect(buttonByText("Save").disabled).toBe(true)
+  })
+
+  it("edit: Export shows the form as it is now, including driver options just edited", async () => {
+    router.params = { id: "7" }
+    renderPage(() => <AddOrEdit />)
+    await settle()
+    setValue(document.getElementById("root_folder_path")!, "/edited")
+    await clickButton("Export")
+    const shown = (
+      document.getElementById("json-dialog-input") as HTMLTextAreaElement
+    ).value
+    expect(JSON.parse(JSON.parse(shown).addition).root_folder_path).toBe(
+      "/edited",
+    )
+  })
+
+  it("a driver that needs the messenger opens it before saving", async () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null)
+    renderPage(() => <AddOrEdit />)
+    await settle()
+    await chooseDriver("Aliyundrive")
+    await clickButton("Add")
+    expect(open).toHaveBeenCalledWith(
+      expect.stringContaining("/@manage/messenger"),
+      "_blank",
+    )
+    open.mockRestore()
   })
 })
 

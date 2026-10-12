@@ -12,6 +12,8 @@ export const ProgressValueLabel = ProgressPrimitive.ValueLabel
 type ProgressProps = ParentProps<
   ProgressPrimitive.ProgressRootProps & {
     class?: string
+    /** Extra classes for the filled part (e.g. a warning color). */
+    fillClass?: string
   }
 >
 
@@ -21,6 +23,7 @@ export const Progress = <T extends ValidComponent = "div">(
   const [local, rest] = splitProps(props as ProgressProps, [
     "class",
     "children",
+    "fillClass",
   ])
 
   return (
@@ -31,13 +34,14 @@ export const Progress = <T extends ValidComponent = "div">(
       {local.children}
       <ProgressPrimitive.Track class="h-2 overflow-hidden rounded-full bg-primary/20 data-[indeterminate]:bg-muted">
         <ProgressPrimitive.Fill
-          class={
+          class={cn(
             "h-full w-(--kb-progress-fill-width) bg-primary transition-all duration-500 ease-linear data-[progress=complete]:bg-primary " +
-            // Unknown progress: a block sliding across a gray track, so it can
-            // never read as "almost done". Reduced motion gets a static,
-            // semi-transparent full-width bar instead.
-            "data-[indeterminate]:w-2/5 data-[indeterminate]:rounded-full data-[indeterminate]:transition-none data-[indeterminate]:animate-[indeterminate_1.4s_ease-in-out_infinite] motion-reduce:data-[indeterminate]:w-full motion-reduce:data-[indeterminate]:animate-none motion-reduce:data-[indeterminate]:opacity-30"
-          }
+              // Unknown progress: a block sliding across a gray track, so it can
+              // never read as "almost done". Reduced motion gets a static,
+              // semi-transparent full-width bar instead.
+              "data-[indeterminate]:w-2/5 data-[indeterminate]:rounded-full data-[indeterminate]:transition-none data-[indeterminate]:animate-[indeterminate_1.4s_ease-in-out_infinite] motion-reduce:data-[indeterminate]:w-full motion-reduce:data-[indeterminate]:animate-none motion-reduce:data-[indeterminate]:opacity-30",
+            local.fillClass,
+          )}
         />
       </ProgressPrimitive.Track>
     </ProgressPrimitive.Root>

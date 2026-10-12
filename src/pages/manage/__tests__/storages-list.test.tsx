@@ -9,7 +9,9 @@ import Storages from "../storages/Storages"
 import { STORAGE } from "./fixtures"
 import {
   buttonByText,
+  chooseMenuItem,
   clickButton,
+  openRowMenu,
   expectGolden,
   mockApi,
   renderPage,
@@ -46,13 +48,10 @@ beforeEach(() => {
   })
 })
 
-/** The nth "Delete" button shown (one per storage), then its confirm. */
+/** Delete the nth storage through its row menu and the confirmation. */
 const confirmDelete = async (index: number) => {
-  const del = [...document.querySelectorAll("button")].filter(
-    (b) => b.textContent?.trim() === "Delete",
-  )
-  fireEvent.click(del[index])
-  await settle()
+  await openRowMenu(index)
+  await chooseMenuItem("Delete")
   await clickButton("Confirm")
 }
 
@@ -62,6 +61,9 @@ describe("storage list actions", () => {
     await settle()
     expect(document.body.textContent).toContain("/a")
     expect(document.body.textContent).toContain("/b")
+    // the failure is a badge; its full text opens on demand
+    expect(document.body.textContent).not.toContain("failed to init: boom")
+    await clickButton("Show full text")
     expect(document.body.textContent).toContain("failed to init: boom")
   })
 
@@ -69,10 +71,10 @@ describe("storage list actions", () => {
     renderPage(() => <Storages />)
     await settle()
     // /a is enabled -> Disable ; /b is disabled -> Enable
-    fireEvent.click(buttonByText("Disable"))
-    await settle()
-    fireEvent.click(buttonByText("Enable"))
-    await settle()
+    await openRowMenu(0)
+    await chooseMenuItem("Disable")
+    await openRowMenu(1)
+    await chooseMenuItem("Enable")
     await confirmDelete(1)
     await clickButton("Reload All")
     expectGolden(

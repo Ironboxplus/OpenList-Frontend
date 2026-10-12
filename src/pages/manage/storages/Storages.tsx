@@ -1,197 +1,229 @@
+import { TbFilter, TbPlus } from "solid-icons/tb"
+import { createMemo, createSignal, For, Show } from "solid-js"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
 import {
-  Box,
-  Button,
-  Grid,
-  HStack,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectPlaceholder,
-  SelectTrigger,
-  SelectValue,
-  Table,
-  Tbody,
-  Th,
-  Thead,
-  Tr,
-  VStack,
-  Switch as HopeSwitch,
-} from "@hope-ui/solid"
-import { createMemo, createSignal, For, Match, Show, Switch } from "solid-js"
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu"
+import {
+  createDeleteConfirm,
+  ResourceList,
+  type RowAction,
+} from "~/features/settings/form"
 import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
-import { createPersistedSignal, handleResp, notify, r } from "~/utils"
-import { EmptyResp, PageResp, Resp, Storage } from "~/types"
-import { StorageGridItem, StorageListItem } from "./Storage"
-import { createStorageSignal } from "@solid-primitives/storage"
+import { EmptyResp, PageResp, PEmptyResp, Resp, Storage } from "~/types"
+import {
+  createPersistedSignal,
+  handleResp,
+  handleRespWithNotifySuccess,
+  notify,
+  r,
+} from "~/utils"
+import { StorageStatus, StorageUsage } from "./Storage"
 
 const Storages = () => {
   const t = useT()
   useManageTitle("manage.sidemenu.storages")
   const { to } = useRouter()
-  const [getStoragesLoading, getStorages] = useFetch(
+  const [loading, fetchList] = useFetch(
     (): Promise<PageResp<Storage>> => r.get("/admin/storage/list"),
+    true,
   )
   const [storages, setStorages] = createSignal<Storage[]>([])
+  const [error, setError] = createSignal<string>()
   const refresh = async () => {
-    const resp = await getStorages()
-    handleResp(resp, (data) => setStorages(data.content))
+    handleResp(
+      await fetchList(),
+      (data) => {
+        setError(undefined)
+        setStorages(data.content)
+      },
+      (message) => setError(message),
+    )
   }
+  refresh()
+
   const [drivers, setDrivers] = createSignal<string[]>([])
   // Persisted so the driver filter survives leaving and returning to the page.
   const [selectedDrivers, setSelectedDrivers] = createPersistedSignal<string[]>(
     "storages-driver-filter",
     [],
   )
-  const getDrivers = async () => {
+  ;(async () => {
     const resp: Resp<string[]> = await r.get("/admin/driver/names")
-    handleResp(resp, (data) => setDrivers(data))
-  }
-  getDrivers()
-  refresh()
+    handleResp(resp, setDrivers)
+  })()
+
+  const shown = createMemo(() =>
+    selectedDrivers().length === 0
+      ? storages()
+      : storages().filter((s) => selectedDrivers().includes(s.driver)),
+  )
+
   const loadAll = async () => {
     const resp: EmptyResp = await r.post("/admin/storage/load_all")
-    handleResp(resp, () => {
-      notify.success(t("storages.other.start_load_success"))
-    })
+    handleResp(resp, () =>
+      notify.success(t("storages.other.start_load_success")),
+    )
   }
-  const shownStorages = createMemo(() => {
-    return storages().filter((storage) => {
-      if (selectedDrivers().length === 0) {
-        return true
-      }
-      return selectedDrivers().includes(storage.driver)
-    })
+
+  const toggleDisabled = async (s: Storage) => {
+    const resp: Awaited<PEmptyResp> = await r.post(
+      `/admin/storage/${s.disabled ? "enable" : "disable"}?id=${s.id}`,
+    )
+    handleRespWithNotifySuccess(resp, refresh)
+  }
+
+  const removal = createDeleteConfirm<Storage>({
+    name: (s) => s.mount_path,
+    run: async (s) => {
+      const resp: Awaited<PEmptyResp> = await r.post(
+        `/admin/storage/delete?id=${s.id}`,
+      )
+      handleResp(resp, () => {
+        notify.success(t("global.delete_success"))
+        refresh()
+      })
+    },
   })
-  const [layout, setLayout] = createStorageSignal(
-    "storages-layout",
-    "grid" as "grid" | "table",
-  )
+
+  const actions = (s: Storage): RowAction<Storage>[] => [
+    {
+      id: "toggle",
+      label: t(`global.${s.disabled ? "enable" : "disable"}`),
+      onSelect: toggleDisabled,
+    },
+    {
+      id: "delete",
+      label: t("global.delete"),
+      destructive: true,
+      onSelect: removal.ask,
+    },
+  ]
+
   return (
-    <VStack spacing="$3" alignItems="start" w="$full">
-      <HStack
-        spacing="$2"
-        gap="$2"
-        w="$full"
-        wrap={{
-          "@initial": "wrap",
-          "@md": "unset",
-        }}
-      >
-        <Button
-          colorScheme="accent"
-          loading={getStoragesLoading()}
-          onClick={refresh}
-        >
-          {t("global.refresh")}
-        </Button>
-        <Button
-          onClick={() => {
-            to("/@manage/storages/add")
-          }}
-        >
-          {t("global.add")}
-        </Button>
-        <Button
-          colorScheme="warning"
-          loading={getStoragesLoading()}
-          onClick={loadAll}
-        >
-          {t("storages.other.load_all")}
-        </Button>
-        <Show when={drivers().length > 0}>
-          <Select
-            multiple
-            value={selectedDrivers()}
-            onChange={setSelectedDrivers}
-            // variant="outline"
-          >
-            <SelectTrigger>
-              <SelectPlaceholder>
+    <>
+      <ResourceList
+        rows={shown()}
+        rowKey={(s) => s.id}
+        loading={loading()}
+        error={error()}
+        onRefresh={refresh}
+        toolbarActions={[
+          {
+            id: "add",
+            label: t("global.add"),
+            icon: <TbPlus class="mr-1.5 size-4" />,
+            onSelect: () => to("/@manage/storages/add"),
+          },
+          {
+            id: "load-all",
+            label: t("storages.other.load_all"),
+            variant: "outline",
+            onSelect: loadAll,
+          },
+        ]}
+        toolbar={
+          <Show when={drivers().length > 0}>
+            <DropdownMenu>
+              <DropdownMenuTrigger as={Button} variant="outline">
+                <TbFilter class="mr-1.5 size-4" />
                 {t("storages.other.filter_by_driver")}
-              </SelectPlaceholder>
-              <SelectValue />
-              <SelectIcon />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectListbox>
+                <Show when={selectedDrivers().length > 0}>
+                  <Badge variant="secondary" class="ml-1.5">
+                    {selectedDrivers().length}
+                  </Badge>
+                </Show>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="max-h-72 overflow-y-auto">
                 <For each={drivers()}>
-                  {(item) => (
-                    <SelectOption value={item}>
-                      <SelectOptionText>
-                        {t(`drivers.drivers.${item}`)}
-                      </SelectOptionText>
-                      <SelectOptionIndicator />
-                    </SelectOption>
+                  {(driver) => (
+                    <DropdownMenuCheckboxItem
+                      checked={selectedDrivers().includes(driver)}
+                      onChange={(on) =>
+                        setSelectedDrivers((cur) =>
+                          on
+                            ? [...cur, driver]
+                            : cur.filter((d) => d !== driver),
+                        )
+                      }
+                    >
+                      {t(`drivers.drivers.${driver}`)}
+                    </DropdownMenuCheckboxItem>
                   )}
                 </For>
-              </SelectListbox>
-            </SelectContent>
-          </Select>
-        </Show>
-        <HopeSwitch
-          checked={layout() === "table"}
-          onChange={(e: Event) => {
-            setLayout(
-              (e.currentTarget as HTMLInputElement).checked ? "table" : "grid",
-            )
-          }}
-        >
-          {t("storages.other.table_layout")}
-        </HopeSwitch>
-      </HStack>
-      <Switch>
-        <Match when={layout() === "grid"}>
-          <Grid
-            w="$full"
-            gap="$2_5"
-            templateColumns={{
-              "@initial": "1fr",
-              "@lg": "repeat(auto-fill, minmax(324px, 1fr))",
-            }}
-          >
-            <For each={shownStorages()}>
-              {(storage) => (
-                <StorageGridItem storage={storage} refresh={refresh} />
-              )}
-            </For>
-          </Grid>
-        </Match>
-        <Match when={layout() === "table"}>
-          <Box w="$full" overflowX="auto">
-            <Table highlightOnHover dense>
-              <Thead>
-                <Tr>
-                  <For
-                    each={[
-                      "mount_path",
-                      "driver",
-                      "order",
-                      "usage",
-                      "status",
-                      "remark",
-                    ]}
-                  >
-                    {(title) => <Th>{t(`storages.common.${title}`)}</Th>}
-                  </For>
-                  <Th>{t("global.operations")}</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                <For each={shownStorages()}>
-                  {(storage) => (
-                    <StorageListItem storage={storage} refresh={refresh} />
-                  )}
-                </For>
-              </Tbody>
-            </Table>
-          </Box>
-        </Match>
-      </Switch>
-    </VStack>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Show>
+        }
+        columns={[
+          {
+            id: "mount_path",
+            header: t("storages.common.mount_path"),
+            cell: (s) => (
+              <span class="break-all font-medium">{s.mount_path}</span>
+            ),
+            sort: (s) => s.mount_path,
+          },
+          {
+            id: "driver",
+            header: t("storages.common.driver"),
+            cell: (s) => t(`drivers.drivers.${s.driver}`),
+            sort: (s) => s.driver,
+          },
+          {
+            id: "order",
+            header: t("storages.common.order"),
+            cell: (s) => s.order,
+            sort: (s) => s.order,
+          },
+          {
+            id: "usage",
+            header: t("storages.common.usage"),
+            cell: (s) => <StorageUsage details={s.mount_details} />,
+          },
+          {
+            id: "status",
+            header: t("storages.common.status"),
+            cell: (s) => <StorageStatus storage={s} />,
+          },
+          {
+            id: "remark",
+            header: t("storages.common.remark"),
+            cell: (s) => <span class="break-all">{s.remark}</span>,
+          },
+        ]}
+        card={{
+          title: (s) => s.mount_path,
+          badges: (s) => (
+            <>
+              <Badge variant="outline">
+                {t(`drivers.drivers.${s.driver}`)}
+              </Badge>
+              <StorageStatus storage={s} />
+            </>
+          ),
+          body: (s) => (
+            <div class="flex flex-col gap-2">
+              <StorageUsage details={s.mount_details} />
+              <Show when={s.remark}>
+                <span class="break-all">{s.remark}</span>
+              </Show>
+            </div>
+          ),
+        }}
+        primary={(s) => ({
+          id: "edit",
+          label: t("global.edit"),
+          onSelect: () => to(`/@manage/storages/edit/${s.id}`),
+        })}
+        actions={actions}
+      />
+      {removal.dialog()}
+    </>
   )
 }
 

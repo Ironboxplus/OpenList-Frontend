@@ -1,7 +1,9 @@
 {
   "form": {
     "unsaved": "You have unsaved changes",
-    "reset": "Reset"
+    "reset": "Reset",
+    "storage_common": "General",
+    "storage_driver": "{{driver}} options"
   },
   "s3_generate": "Generate keys",
   "s3_restart_to_apply": "Changes to the S3 server take effect after a restart.",
