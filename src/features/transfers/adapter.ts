@@ -3,6 +3,7 @@
 // sees UnifiedTask; when the backend serves /api/tasks natively, only this
 // file and ./api.ts are replaced.
 import { packStage } from "./pack"
+import type { ErrorInput } from "../notifications/store"
 import type { LocalUpload, UploadStatus } from "./local-uploads"
 import type {
   ObjectRef,
@@ -500,4 +501,17 @@ export const taskTitle = (
   if (from && to) return { from, to, text: `${from} → ${to}` }
   if (t.legacy.kind === "tache") return { text: t.legacy.name }
   return { text: to ?? from ?? t.id }
+}
+
+/** A failed task as an error-center entry, pointing at its detail in Transfers. */
+export const taskFailureInput = (t: UnifiedTask): ErrorInput => {
+  const title = taskTitle(t).text
+  return {
+    category: t.error?.category ?? "task",
+    source: `task.${t.type}`,
+    message: t.error?.message || title,
+    detail: title,
+    href: `/@transfers?task=${encodeURIComponent(t.id)}`,
+    taskId: t.id,
+  }
 }

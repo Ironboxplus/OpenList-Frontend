@@ -1,3 +1,5 @@
+import { recordError } from "~/features/notifications/service"
+import { respCategory } from "~/platform/api/classify"
 import { Resp } from "~/types"
 import { useT } from "~/hooks/useT"
 import { bus, notify } from "."
@@ -35,6 +37,21 @@ export const handleResp = <T>(
   } else {
     const shown = failureMessage(resp)
     notify_error && shown !== undefined && notify.error(shown)
+    // Failures the caller chose to keep quiet (background polls) stay out of
+    // the error center too; what is recorded is what the user was told.
+    if (notify_error) {
+      recordError({
+        category: respCategory(resp),
+        source: resp.source ?? "api",
+        message: shown,
+        detail: [
+          resp.code !== undefined && `code ${resp.code}`,
+          resp.requestId && `request ${resp.requestId}`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      })
+    }
     if (auth && resp.code === 401) {
       if (location.pathname === "/@manage") {
         bus.emit("to", "/")

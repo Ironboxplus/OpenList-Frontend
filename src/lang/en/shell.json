@@ -15,5 +15,35 @@
     "empty": "No running or recent tasks.",
     "view_all": "View all",
     "running": "{{count}} running"
+  },
+  "error_center": {
+    "title": "Errors",
+    "open": "Open the error center",
+    "empty": "No errors recorded.",
+    "mark_all_read": "Mark all read",
+    "clear": "Clear",
+    "all": "All",
+    "show_detail": "Show details",
+    "hide_detail": "Hide details",
+    "open_link": "Open",
+    "times": "×{{count}}",
+    "unread": "{{count}} unread",
+    "category": {
+      "network": "Network",
+      "timeout": "Timeout",
+      "canceled": "Canceled",
+      "auth": "Sign-in",
+      "permission": "Permission",
+      "validation": "Request",
+      "conflict": "Conflict",
+      "rate_limited": "Rate limit",
+      "provider": "Provider",
+      "driver": "Storage",
+      "task": "Task",
+      "player": "Player",
+      "plugin": "Plugin",
+      "cluster": "Cluster",
+      "internal": "Server"
+    }
   }
 }

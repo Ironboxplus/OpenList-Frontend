@@ -1,6 +1,7 @@
 import { Badge } from "~/components/ui/badge"
 import { Progress } from "~/components/ui/progress"
 import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js"
+import { recordError } from "~/features/notifications/service"
 import { useT } from "~/hooks"
 import {
   handleRespWithoutNotify,
@@ -26,6 +27,22 @@ export const StorageLoadingBar = () => {
   const [health, setHealth] = createSignal(healthy)
   let timer: number | undefined
   let stopped = false
+  // Storages already reported to the error center, so a poll reports each once.
+  const reported = new Set<string>()
+
+  const reportFailures = (data: LoadingSnapshot) => {
+    for (const item of data.items ?? []) {
+      if (item.state !== "failed" || reported.has(item.mount_path)) continue
+      reported.add(item.mount_path)
+      recordError({
+        category: "driver",
+        source: "storage.loading",
+        message: t("storages.loading.item_failed", { path: item.mount_path }),
+        detail: item.error,
+        href: "/@manage/storages",
+      })
+    }
+  }
 
   const poll = async () => {
     // Failures stay quiet (no toast): count them, and after a few in a row the
@@ -35,7 +52,10 @@ export const StorageLoadingBar = () => {
       const resp: Resp<LoadingSnapshot> = await r.get("/admin/storage/loading")
       handleRespWithoutNotify(
         resp,
-        (data) => setSnap(data),
+        (data) => {
+          setSnap(data)
+          reportFailures(data)
+        },
         () => {
           failed = true
         },

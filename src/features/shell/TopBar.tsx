@@ -1,5 +1,5 @@
 import { focusRing } from "~/components/ui/focus"
-import { TbListDetails, TbSearch } from "solid-icons/tb"
+import { TbBell, TbListDetails, TbSearch } from "solid-icons/tb"
 import { For, Show } from "solid-js"
 import { Motion } from "solid-motionone"
 import { attentionRing, prefersReducedMotion } from "~/utils/motion-presets"
@@ -9,7 +9,9 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip"
 import { useT } from "~/hooks"
-import { NavBadge } from "./NavBadge"
+import { errorCenter } from "../notifications/service"
+import { setErrorCenterOpen } from "../notifications/state"
+import { CountBadge, NavBadge } from "./NavBadge"
 import { activeNavId, NAV_ITEMS } from "./nav-items"
 import { hotkeyLabel, setPaletteOpen } from "../palette/state"
 import { nudge, setTaskCenterOpen, taskCenterOpen } from "./task-center"
@@ -68,6 +70,27 @@ export const TopBar = (props: { pathname: string; phone?: boolean }) => {
           </TooltipContent>
         </Tooltip>
         <Show when={!props.phone}>
+          <Tooltip placement="bottom">
+            <TooltipTrigger
+              as="button"
+              type="button"
+              aria-label={t("shell.error_center.open")}
+              data-error-center-trigger
+              onClick={() => setErrorCenterOpen(true)}
+              class={`${focusRing} relative inline-flex size-9 items-center justify-center rounded-lg bg-transparent text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground`}
+            >
+              <TbBell class="size-5" />
+              <CountBadge
+                testid="error-badge"
+                count={errorCenter.unreadCount()}
+                label={t("shell.error_center.unread", {
+                  count: errorCenter.unreadCount(),
+                })}
+                class="absolute -right-0.5 -top-0.5 bg-destructive text-destructive-foreground"
+              />
+            </TooltipTrigger>
+            <TooltipContent>{t("shell.error_center.title")}</TooltipContent>
+          </Tooltip>
           <Tooltip placement="bottom">
             <TooltipTrigger
               as="button"

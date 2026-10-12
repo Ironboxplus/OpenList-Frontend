@@ -8,6 +8,8 @@ export interface TransportFailure {
   message: string
   transport: ErrorCategory
   requestId?: string
+  /** Path of the failed request, see `requestPath`. */
+  source?: string
   /**
    * The server envelope's `data`, present only when the server sent a
    * non-null one. multipart.ts tells "the transport failed" (no `data` key,
@@ -21,6 +23,14 @@ export interface Classified {
   category: ErrorCategory
   code: string
   retryable: boolean
+}
+
+/** The path of a request URL: no origin and no query, which can carry tokens. */
+export const requestPath = (url: string | undefined): string | undefined => {
+  if (!url) return undefined
+  const noQuery = url.split(/[?#]/)[0]
+  const path = noQuery.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/]*/i, "")
+  return path || undefined
 }
 
 /** Drops credentials that may ride along in axios messages and URLs. */
@@ -68,6 +78,7 @@ interface AxiosLike {
   code?: string
   name?: string
   message?: string
+  config?: { url?: string }
   response?: { status?: number; data?: unknown; headers?: unknown }
   __CANCEL__?: boolean
 }
@@ -101,11 +112,22 @@ export const classifyAxiosError = (raw: unknown): TransportFailure => {
   const fallback = typeof e.message === "string" ? e.message : String(raw)
   const status = e.response?.status
   const requestId = headerOf(e.response?.headers, "x-request-id")
+  const source = requestPath(e.config?.url)
   if (e.code === "ERR_CANCELED" || e.name === "CanceledError" || e.__CANCEL__) {
-    return { code: -1, message: redact(fallback), transport: "canceled" }
+    return {
+      code: -1,
+      message: redact(fallback),
+      transport: "canceled",
+      source,
+    }
   }
   if (e.name === "AbortError") {
-    return { code: -1, message: redact(fallback), transport: "canceled" }
+    return {
+      code: -1,
+      message: redact(fallback),
+      transport: "canceled",
+      source,
+    }
   }
   if (status === undefined) {
     const timedOut =
@@ -116,6 +138,7 @@ export const classifyAxiosError = (raw: unknown): TransportFailure => {
       code: undefined,
       message: redact(fallback),
       transport: timedOut ? "timeout" : "network",
+      source,
     }
   }
   const failure: TransportFailure = {
@@ -123,11 +146,22 @@ export const classifyAxiosError = (raw: unknown): TransportFailure => {
     message: redact(bodyMessage(e.response?.data) ?? fallback),
     transport: classifyStatus(status).category,
     requestId,
+    source,
   }
   const data = bodyData(e.response?.data)
   if (data != null) failure.data = data
   return failure
 }
+
+/** The category of a failed legacy response: the transport's, else by its business code. */
+export const respCategory = (resp: {
+  code?: number
+  transport?: ErrorCategory
+}): ErrorCategory =>
+  resp.transport ??
+  (resp.code === undefined
+    ? "internal"
+    : classifyBusinessCode(resp.code).category)
 
 export const toUnifiedError = (
   c: Classified,

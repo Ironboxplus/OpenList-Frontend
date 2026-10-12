@@ -66,6 +66,11 @@ export interface StoreDeps {
    * reported). The Files page uses it to refresh the open directory.
    */
   onSucceeded?: (task: UnifiedTask) => void
+  /**
+   * Called once per task that failed since the user last looked at the
+   * failures (the same "unseen" the badge dot uses), unless it ended long ago.
+   */
+  onFailed?: (task: UnifiedTask) => void
 }
 
 export type SyncCapability = "unknown" | "yes" | "no"
@@ -160,6 +165,24 @@ export const createTransfersStore = (deps: StoreDeps) =>
         }
       }
       baselined = true
+    }
+
+    // A failure counts as news while the user has not seen it (the badge dot)
+    // and it is recent; the id is remembered so polls report it once.
+    const failedReported = new Set<string>()
+    const detectFailed = () => {
+      for (const t of untrack(tasks)) {
+        if (t.state !== "failed" || failedReported.has(t.id)) continue
+        if (untrack(seen).has(t.id)) continue
+        const age = deps.now().getTime() - Date.parse(t.endedAt ?? "")
+        if (Number.isFinite(age) && age >= RECENT_MS) continue
+        failedReported.add(t.id)
+        try {
+          deps.onFailed?.(t)
+        } catch {
+          // a listener must not break polling
+        }
+      }
     }
 
     // ---- polling ----------------------------------------------------------
@@ -295,6 +318,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
         setLoaded(true)
       })
       detectSucceeded()
+      detectFailed()
     }
 
     const refresh = (opts: { full?: boolean } = {}): Promise<void> => {
@@ -456,6 +480,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
       stall.clear()
       lastState.clear()
       reported.clear()
+      failedReported.clear()
       baselined = false
     }
 

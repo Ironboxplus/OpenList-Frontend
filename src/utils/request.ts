@@ -1,5 +1,5 @@
 import axios from "axios"
-import { classifyAxiosError } from "~/platform/api/classify"
+import { classifyAxiosError, requestPath } from "~/platform/api/classify"
 import { api, log } from "."
 
 const instance = axios.create({
@@ -28,6 +28,10 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response) => {
     const resp = response.data
+    // Which request this answers, for whoever reports a failure of it.
+    if (resp && typeof resp === "object") {
+      resp.source = requestPath(response.config?.url)
+    }
     log(resp)
     return resp
   },

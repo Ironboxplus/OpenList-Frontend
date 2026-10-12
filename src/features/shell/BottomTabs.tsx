@@ -1,5 +1,5 @@
 import { focusRing } from "~/components/ui/focus"
-import { TbLogout, TbSun, TbUserCircle } from "solid-icons/tb"
+import { TbBell, TbLogout, TbSun, TbUserCircle } from "solid-icons/tb"
 import { createSignal, For, Show } from "solid-js"
 import {
   Sheet,
@@ -12,7 +12,9 @@ import { me } from "~/store"
 import { cn } from "~/utils/cn"
 import { useAccountActions } from "./account"
 import { NavIconView } from "./icons"
-import { NavBadge } from "./NavBadge"
+import { errorCenter } from "../notifications/service"
+import { setErrorCenterOpen } from "../notifications/state"
+import { CountBadge, NavBadge } from "./NavBadge"
 import { NavLink } from "./NavLink"
 import { activeNavId, badgeTarget, navItemsFor } from "./nav-items"
 
@@ -80,6 +82,23 @@ export const BottomTabs = (props: { pathname: string }) => {
             >
               <TbUserCircle class="size-5" />
               {t("shell.nav.profile")}
+            </button>
+            <button
+              type="button"
+              class={sheetRow}
+              data-error-center-trigger
+              onClick={() => {
+                setMeOpen(false)
+                setErrorCenterOpen(true)
+              }}
+            >
+              <TbBell class="size-5" />
+              {t("shell.error_center.title")}
+              <CountBadge
+                testid="error-badge"
+                count={errorCenter.unreadCount()}
+                class="ml-auto bg-destructive text-destructive-foreground"
+              />
             </button>
             <button
               type="button"

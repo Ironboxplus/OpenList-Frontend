@@ -15,5 +15,35 @@
     "empty": "没有进行中或最近的任务。",
     "view_all": "查看全部",
     "running": "{{count}} 个进行中"
+  },
+  "error_center": {
+    "title": "错误中心",
+    "open": "打开错误中心",
+    "empty": "没有记录到错误。",
+    "mark_all_read": "全部已读",
+    "clear": "清空",
+    "all": "全部",
+    "show_detail": "查看详情",
+    "hide_detail": "收起详情",
+    "open_link": "前往",
+    "times": "×{{count}}",
+    "unread": "{{count}} 条未读",
+    "category": {
+      "network": "网络",
+      "timeout": "超时",
+      "canceled": "已取消",
+      "auth": "登录",
+      "permission": "权限",
+      "validation": "请求",
+      "conflict": "冲突",
+      "rate_limited": "限流",
+      "provider": "服务商",
+      "driver": "存储",
+      "task": "任务",
+      "player": "播放器",
+      "plugin": "插件",
+      "cluster": "集群",
+      "internal": "服务端"
+    }
   }
 }

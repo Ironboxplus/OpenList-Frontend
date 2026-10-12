@@ -8,6 +8,8 @@ export interface Resp<T> {
   /** Set by the axios interceptor when the request itself failed. */
   transport?: ErrorCategory
   requestId?: string
+  /** Path of the request this answers (no origin, no query), set by the interceptors. */
+  source?: string
 }
 
 export type PageResp<T> = Resp<{

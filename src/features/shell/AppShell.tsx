@@ -20,6 +20,7 @@ import { bottomBarOverride, setPhoneShell, setShellActive } from "./topbar-slot"
 import { createViewport } from "./viewport"
 
 const TaskCenter = lazy(() => import("../transfers/TaskCenter"))
+const ErrorCenter = lazy(() => import("../notifications/ErrorCenter"))
 // Loaded on first use; the hotkey and the buttons only touch ../palette/state.
 const CommandPalette = lazy(() => import("../palette/CommandPalette"))
 
@@ -137,6 +138,9 @@ const AppShell = (props: ParentProps) => {
       </Show>
       <Show when={wide()}>
         <TaskCenter />
+      </Show>
+      <Show when={shown()}>
+        <ErrorCenter />
       </Show>
     </>
   )

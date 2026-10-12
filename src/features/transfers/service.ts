@@ -7,7 +7,8 @@ import { pointAtTasks } from "../shell/task-center"
 import { notify } from "~/utils/notify"
 import * as api from "./api"
 import { localUploads } from "./local-uploads"
-import { createdTaskIds, type TacheType } from "./adapter"
+import { recordError } from "../notifications/service"
+import { createdTaskIds, taskFailureInput, type TacheType } from "./adapter"
 import { createTransfersStore } from "./store"
 
 const succeededListeners = new Set<(task: UnifiedTask) => void>()
@@ -20,6 +21,7 @@ export const onTaskSucceeded = (cb: (task: UnifiedTask) => void) => {
 
 export const transfers = createTransfersStore({
   onSucceeded: (task) => succeededListeners.forEach((cb) => cb(task)),
+  onFailed: (task) => recordError(taskFailureInput(task)),
   fetchTache: api.fetchTache,
   postTache: api.postTache,
   fetchSyncList: api.fetchSyncList,

@@ -1,7 +1,8 @@
 {
   "loading": {
     "title": "Loading storages",
-    "failed": "failed"
+    "failed": "failed",
+    "item_failed": "Storage {{path}} failed to load"
   },
   "common": {
     "export": "Export",
