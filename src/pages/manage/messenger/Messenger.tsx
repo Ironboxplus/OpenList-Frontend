@@ -1,4 +1,6 @@
-import { Button, Heading, HStack, Input, VStack } from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
+import { Card } from "~/components/ui/card"
+import { Input } from "~/components/ui/input"
 import { Component, createSignal, For, onCleanup } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
@@ -48,34 +50,31 @@ export const Messenger = () => {
   const getInterval = setInterval(get, 1000)
   onCleanup(() => clearInterval(getInterval))
   return (
-    <VStack spacing="$2" h="$full" alignItems="start">
-      <VStack
-        w="$full"
-        spacing="$2"
-        alignItems="start"
-        p="$2"
-        rounded="$lg"
-        border="1px solid var(--hope-colors-neutral6)"
-      >
-        <Heading size="xl">{t("manage.received_msgs")}</Heading>
+    <div class="flex w-full flex-col gap-3">
+      <Card class="flex flex-col gap-2 p-4">
+        <h2 class="text-base font-semibold">{t("manage.received_msgs")}</h2>
         <For each={received}>
           {(item) => <Dynamic component={Shower[item.type]} {...item} />}
         </For>
-      </VStack>
+      </Card>
       <Input
-        w="$full"
         value={toSend()}
         onInput={(e) => setToSend(e.currentTarget.value)}
       />
-      <HStack spacing="$2">
-        <Button colorScheme="accent" loading={getLoading()} onClick={get}>
+      <div class="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={getLoading()}
+          onClick={get}
+        >
           {t("manage.receive")}
         </Button>
-        <Button loading={sendLoading()} onClick={send}>
+        <Button type="button" disabled={sendLoading()} onClick={send}>
           {t("manage.send")}
         </Button>
-      </HStack>
-    </VStack>
+      </div>
+    </div>
   )
 }
 

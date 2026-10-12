@@ -1,6 +1,7 @@
 import { createResource } from "solid-js"
-import { Markdown, MaybeLoading } from "~/components"
-import { useT, useManageTitle } from "~/hooks"
+import { Markdown } from "~/components"
+import { DataState } from "~/features/settings/form"
+import { useManageTitle } from "~/hooks"
 
 const fetchReadme = async () =>
   await (
@@ -10,13 +11,15 @@ const fetchReadme = async () =>
   ).text()
 
 const About = () => {
-  const t = useT()
   useManageTitle("manage.sidemenu.about")
   const [readme] = createResource(fetchReadme)
   return (
-    <MaybeLoading loading={readme.loading}>
+    <DataState
+      loading={readme.loading}
+      error={readme.error ? String(readme.error) : undefined}
+    >
       <Markdown children={readme()} sanitize={true} />
-    </MaybeLoading>
+    </DataState>
   )
 }
 

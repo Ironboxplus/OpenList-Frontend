@@ -1,11 +1,5 @@
-import {
-  Badge,
-  Box,
-  HStack,
-  Progress,
-  ProgressIndicator,
-  Text,
-} from "@hope-ui/solid"
+import { Badge } from "~/components/ui/badge"
+import { Progress } from "~/components/ui/progress"
 import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js"
 import { useT } from "~/hooks"
 import {
@@ -16,6 +10,7 @@ import {
 } from "~/utils"
 import { healthy, pollFailed, pollSucceeded } from "./poll-health"
 import type { Resp } from "~/types"
+import { cn } from "~/utils/cn"
 
 const POLL_INTERVAL = 1500
 
@@ -51,7 +46,9 @@ export const StorageLoadingBar = () => {
     }
     if (failed) {
       setHealth(pollFailed(health()))
-      console.warn(`storage loading poll failed (${health().failures} in a row)`)
+      console.warn(
+        `storage loading poll failed (${health().failures} in a row)`,
+      )
     } else {
       setHealth(pollSucceeded())
     }
@@ -73,45 +70,36 @@ export const StorageLoadingBar = () => {
 
   return (
     <Show when={summary() && !summary()!.done}>
-      <Box
-        w="$full"
-        px="$2"
-        pt="$2"
-        opacity={health().stale ? 0.6 : 1}
+      <div
+        class={cn("w-full px-2 pb-2", health().stale && "opacity-60")}
         aria-busy={!health().stale}
       >
-        <HStack justifyContent="space-between" mb="$1">
-          <Text fontSize="$sm" color="$neutral11">
+        <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+          <span class="text-muted-foreground">
             {t("storages.loading.title")}
-          </Text>
-          <HStack spacing="$2">
+          </span>
+          <div class="flex items-center gap-2">
             <Show when={health().stale}>
-              <Badge colorScheme="warning" data-testid="loading-stale">
+              <Badge variant="warning" data-testid="loading-stale">
                 {t("errors.status_stale")}
               </Badge>
             </Show>
-            <Text fontSize="$sm" color="$neutral10">
+            <span class="text-muted-foreground">
               {summary()!.settled}/{summary()!.total}
-            </Text>
+            </span>
             <Show when={summary()!.hasFailures}>
-              <Badge colorScheme="danger">
+              <Badge variant="destructive">
                 {summary()!.failed} {t("storages.loading.failed")}
               </Badge>
             </Show>
-          </HStack>
-        </HStack>
+          </div>
+        </div>
         <Progress
-          size="sm"
           value={summary()!.percent}
-          trackColor="$neutral4"
-          rounded="$full"
-        >
-          <ProgressIndicator
-            rounded="$full"
-            color={summary()!.hasFailures ? "$warning9" : "$accent9"}
-          />
-        </Progress>
-      </Box>
+          class="gap-0"
+          fillClass={summary()!.hasFailures ? "bg-warning" : undefined}
+        />
+      </div>
     </Show>
   )
 }

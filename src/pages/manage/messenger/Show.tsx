@@ -1,10 +1,9 @@
 import { Message } from "./Messenger"
-import { Heading, Image } from "@hope-ui/solid"
 
 export const StringShow = (props: Message) => {
-  return <Heading>{props.content}</Heading>
+  return <p class="break-all text-base font-medium">{props.content}</p>
 }
 
 export const ImageShow = (props: Message) => {
-  return <Image src={props.content} />
+  return <img src={props.content} alt="" class="max-w-full rounded-md" />
 }

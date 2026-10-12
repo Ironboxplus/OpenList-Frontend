@@ -1,4 +1,4 @@
-import { fireEvent } from "@solidjs/testing-library"
+import crypto from "crypto-js"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 vi.mock("~/hooks", async (orig) =>
   (await import("./mocks")).hooksMock(await orig()),
@@ -15,6 +15,7 @@ import {
   renderPage,
   settle,
   setValue,
+  toggleField,
   writes,
 } from "./harness"
 import { resetRouter } from "./mocks"
@@ -119,7 +120,7 @@ describe("backup and restore", () => {
     })
     renderPage(() => <BackupRestore />)
     await settle()
-    fireEvent.click(document.getElementById("restore-override")!)
+    toggleField("restore-override")
     await clickButton("Restore")
     await pick(data)
     expectGolden(
@@ -156,5 +157,20 @@ describe("backup and restore", () => {
     expect(Object.keys(JSON.parse(text)).sort()).toEqual(
       ["encrypted", "metas", "settings", "shares", "storages", "users"].sort(),
     )
+  })
+
+  it("a wrong password is reported and nothing is written", async () => {
+    const marker = crypto.enc.Base64.stringify(
+      crypto.enc.Utf8.parse(
+        crypto.AES.encrypt(JSON.stringify("encrypted"), "right").toString(),
+      ),
+    )
+    renderPage(() => <BackupRestore />)
+    await settle()
+    setValue(document.getElementById("password")!, "wrong")
+    await clickButton("Restore")
+    await pick({ ...BACKUP, encrypted: marker })
+    expect(document.body.textContent).toContain("Wrong")
+    expect(writes()).toHaveLength(0)
   })
 })

@@ -1,4 +1,3 @@
-import { Box } from "@hope-ui/solid"
 import { Route, Routes, useLocation } from "@solidjs/router"
 import { createMemo, createSignal, For } from "solid-js"
 import { useRouter, useT, useTitle } from "~/hooks"
@@ -45,13 +44,7 @@ const Manage = () => {
   }))
 
   return (
-    <Box
-      css={{
-        "--hope-colors-background": "var(--hope-colors-loContrast)",
-      }}
-      bgColor="$background"
-      w="$full"
-    >
+    <div class="w-full bg-background">
       <div
         class="flex w-full items-start"
         style={{ "min-height": "calc(100vh - var(--shell-top, 0px))" }}
@@ -73,7 +66,7 @@ const Manage = () => {
           </Routes>
         </main>
       </div>
-    </Box>
+    </div>
   )
 }
 

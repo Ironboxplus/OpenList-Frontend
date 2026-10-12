@@ -154,13 +154,8 @@ export const renderPage = (page: () => JSX.Element) =>
  * text: open the combobox, then click the option in the listbox.
  */
 export const chooseOption = async (id: string, optionText: string | RegExp) => {
-  const legacy = document.getElementById(`${id}-trigger`) // hope-ui select (pages not yet moved)
-  const trigger = legacy ?? document.getElementById(id)!
-  if (legacy) {
-    fireEvent.click(legacy)
-    const query = legacy.querySelector("input")
-    if (query) fireEvent.input(query, { target: { value: "" } })
-  } else if (trigger.tagName === "INPUT") {
+  const trigger = document.getElementById(id)!
+  if (trigger.tagName === "INPUT") {
     // searchable (combobox): focusing opens it; start from an empty query
     fireEvent.focus(trigger)
     fireEvent.click(trigger)
