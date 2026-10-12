@@ -105,6 +105,23 @@ describe("TaskCard", () => {
     expect(title.textContent).toContain("/b/out")
   })
 
+  it("shows how long a stale task has not moved", () => {
+    const task: UnifiedTask = {
+      ...tache({}),
+      stale: true,
+      progress: { updatedAt: new Date(Date.now() - 5 * 60_000).toISOString() },
+    }
+    render(() => <TaskCard task={task} />)
+    expect(
+      screen.getByText(/Possibly stuck · no progress for 5 min/),
+    ).toBeTruthy()
+  })
+
+  it("shows no stale badge on a moving task", () => {
+    render(() => <TaskCard task={tache({})} />)
+    expect(screen.queryByText(/Possibly stuck/)).toBeNull()
+  })
+
   it("failed + retryable: error summary, retry and delete buttons", () => {
     const onAction = vi.fn()
     const task = tache({ state: 7, error: "no space left", progress: 10 }, true)

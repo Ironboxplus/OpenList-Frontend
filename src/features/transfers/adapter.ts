@@ -161,7 +161,12 @@ export const mapTache = (
 ): UnifiedTask => {
   const state = mapTacheState(raw.state)
   const nowIso = now.toISOString()
-  const progress: TaskProgress = { updatedAt: nowIso }
+  const startedAt = isUsableTime(raw.start_time) ? raw.start_time : undefined
+  const endedAt = isUsableTime(raw.end_time) ? raw.end_time : undefined
+  // The backend reports no progress time: a finished task last moved when it
+  // ended; for a running one the store fills in when its numbers last changed.
+  const touchedAt = endedAt ?? startedAt ?? nowIso
+  const progress: TaskProgress = { updatedAt: touchedAt }
   // The backend fills NaN progress with 100, so a running task at 100 has no
   // real percentage.
   if (!(state === "running" && raw.progress === 100)) {
@@ -175,7 +180,7 @@ export const mapTache = (
         message: raw.error,
         retryable: true,
         actions: [],
-        occurredAt: isUsableTime(raw.end_time) ? raw.end_time : nowIso,
+        occurredAt: endedAt ?? nowIso,
       }
     : undefined
   const { source, destination } = parseTaskName(type, raw.name)
@@ -192,10 +197,10 @@ export const mapTache = (
     destination,
     progress,
     error,
-    createdAt: isUsableTime(raw.start_time) ? raw.start_time : nowIso,
-    startedAt: isUsableTime(raw.start_time) ? raw.start_time : undefined,
-    updatedAt: nowIso,
-    endedAt: isUsableTime(raw.end_time) ? raw.end_time : undefined,
+    createdAt: startedAt ?? nowIso,
+    startedAt,
+    updatedAt: touchedAt,
+    endedAt,
     version: 1,
     correlationId: raw.id,
     legacy: {
@@ -234,7 +239,11 @@ export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
   const finished = snap.state !== "running"
   const bytesDone = finite(stats.bytes)
   const bytesTotal = finite(stats.totalBytes)
-  const progress: TaskProgress = { updatedAt: nowIso }
+  const startedAt = isUsableTime(snap.started_at) ? snap.started_at : nowIso
+  const endedAt = isUsableTime(snap.ended_at) ? snap.ended_at : undefined
+  // A snapshot has no progress time either; see mapTache.
+  const touchedAt = endedAt ?? startedAt
+  const progress: TaskProgress = { updatedAt: touchedAt }
   if (bytesDone !== undefined) progress.bytesDone = bytesDone
   if (bytesTotal !== undefined) progress.bytesTotal = bytesTotal
   const itemsDone = finite(stats.transfers)
@@ -260,8 +269,6 @@ export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
       progress.percent = 100
     }
   }
-  const startedAt = isUsableTime(snap.started_at) ? snap.started_at : nowIso
-  const endedAt = isUsableTime(snap.ended_at) ? snap.ended_at : undefined
   return {
     id: `sync:${snap.id}`,
     type: `sync.${snap.spec.mode}`,
@@ -287,7 +294,7 @@ export const mapSyncSnapshot = (snap: SyncSnapshot, now: Date): UnifiedTask => {
       : undefined,
     createdAt: startedAt,
     startedAt,
-    updatedAt: nowIso,
+    updatedAt: touchedAt,
     endedAt,
     version: 1,
     correlationId: snap.id,

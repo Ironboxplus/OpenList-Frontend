@@ -22,7 +22,7 @@ import type { OpenTarget } from "../files/tasks-for-path"
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog"
 import { OpenFolderButtons } from "./OpenFolderButtons"
 import { formatBytes, formatEta } from "./format"
-import { StateBadge } from "./StateBadge"
+import { StaleBadge, StateBadge } from "./StateBadge"
 import { TaskTitle } from "./TaskTitle"
 
 const ICONS: Record<string, typeof TbCopy> = {
@@ -178,6 +178,7 @@ export const TaskCard = (props: TaskCardProps) => {
           />
           <TaskTitle task={props.task} class="flex-1 text-sm font-medium" />
           <StateBadge state={state()} />
+          <StaleBadge task={props.task} />
         </div>
 
         <Show when={showBar()}>

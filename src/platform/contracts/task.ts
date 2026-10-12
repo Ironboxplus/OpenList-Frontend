@@ -138,12 +138,7 @@ export interface SyncCounters {
 }
 
 export type SyncEventKind =
-  | "only_in_src"
-  | "only_in_dst"
-  | "differ"
-  | "error"
-  | "uploaded"
-  | "rapid"
+  "only_in_src" | "only_in_dst" | "differ" | "error" | "uploaded" | "rapid"
 
 export interface SyncEvent {
   time: string
@@ -232,6 +227,11 @@ export interface UnifiedTask {
   startedAt?: string
   updatedAt: string
   endedAt?: string
+  /**
+   * Frontend-derived (the store, from `progress.updatedAt`): a running task
+   * whose progress has not moved for STALE_MS. Not sent by any backend.
+   */
+  stale?: boolean
   version: number
   correlationId: string
   legacy: LegacyInfo

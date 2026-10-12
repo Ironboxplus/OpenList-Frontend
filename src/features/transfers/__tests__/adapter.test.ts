@@ -77,7 +77,8 @@ describe("progress", () => {
     const t = mapTache(raw({ progress: 40 }), "copy", false, NOW)
     expect(t.progress.percent).toBe(40)
     expect(t.progress.bytesTotal).toBe(1000)
-    expect(t.progress.updatedAt).toBe(NOW.toISOString())
+    // no progress time from the backend: a running task falls back to its start
+    expect(t.progress.updatedAt).toBe(raw().start_time)
   })
   it("treats running + 100 as unknown", () => {
     const t = mapTache(raw({ state: 1, progress: 100 }), "copy", false, NOW)

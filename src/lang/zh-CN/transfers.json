@@ -22,6 +22,7 @@
     "history": "还没有同步历史。"
   },
   "loading_failed": "无法加载任务。",
+  "stale": "可能卡住 · 已 {{n}} 分钟无进展",
   "show_more": "显示全部 {{count}} 项",
   "state": {
     "queued": "排队中",

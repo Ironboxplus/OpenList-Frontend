@@ -25,7 +25,7 @@ import type { OpenTarget } from "../files/tasks-for-path"
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog"
 import { OpenFolderButtons } from "./OpenFolderButtons"
 import { formatBytes, formatEta, formatTime } from "./format"
-import { StateBadge } from "./StateBadge"
+import { StaleBadge, StateBadge } from "./StateBadge"
 import { TaskTitle } from "./TaskTitle"
 
 const EVENT_KINDS: SyncEventKind[] = [
@@ -437,6 +437,7 @@ export const TaskDetail = (props: TaskDetailProps) => {
                       class="flex-1 text-base font-semibold"
                     />
                     <StateBadge state={tk().state} />
+                    <StaleBadge task={tk()} />
                   </div>
                 </SheetHeader>
 

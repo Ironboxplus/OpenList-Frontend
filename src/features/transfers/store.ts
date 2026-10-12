@@ -15,6 +15,7 @@ import {
   type TacheType,
   type TaskAction,
 } from "./adapter"
+import { createStallTracker } from "./stall"
 
 export const FAST_MS = 2000
 export const SLOW_MS = 15000
@@ -88,6 +89,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
     // Full snapshot (with events) of the sync job whose detail is open.
     const [detailId, setDetailId] = createSignal<string>()
     const [detail, setDetail] = createSignal<UnifiedTask>()
+    const stall = createStallTracker()
 
     const tasks = createMemo(() => {
       const all: UnifiedTask[] = []
@@ -169,6 +171,11 @@ export const createTransfersStore = (deps: StoreDeps) =>
       }, interval())
     }
 
+    const stampByType = (byType: Record<TacheType, UnifiedTask[]>) =>
+      Object.fromEntries(
+        TACHE_TYPES.map((type) => [type, byType[type].map(stall.stamp)]),
+      ) as Record<TacheType, UnifiedTask[]>
+
     const mapList = (
       type: TacheType,
       list: TacheRaw[] | null,
@@ -198,8 +205,9 @@ export const createTransfersStore = (deps: StoreDeps) =>
       return next
     }
 
+    /** The fresh sync tasks, or undefined when there are none to replace the old ones. */
     const fetchSync = async (now: Date) => {
-      if (!deps.isAdmin() || capability() === "no") return
+      if (!deps.isAdmin() || capability() === "no") return undefined
       try {
         const resp = await deps.fetchSyncList()
         if (resp.code === 404 || resp.code === 405) {
@@ -209,15 +217,16 @@ export const createTransfersStore = (deps: StoreDeps) =>
             infoLogged = true
             deps.info("sync API not available on this backend; hiding sync UI")
           }
-          return
+          return undefined
         }
         if (resp.code === 200) {
           setCapability("yes")
-          setSyncTasks((resp.data ?? []).map((s) => mapSyncSnapshot(s, now)))
+          return (resp.data ?? []).map((s) => mapSyncSnapshot(s, now))
         }
       } catch {
         // transient: keep what we have
       }
+      return undefined
     }
 
     const fetchDetail = async (now: Date) => {
@@ -256,11 +265,20 @@ export const createTransfersStore = (deps: StoreDeps) =>
       } else {
         undoneSinceDone++
       }
-      await fetchSync(now)
+      const nextSync = await fetchSync(now)
       await fetchDetail(now)
+      // Every poll passes through the stall tracker once, here, so a task's
+      // progress time and stale flag come from one place.
+      stall.track(
+        [...Object.values(nextUndone).flat(), ...(nextSync ?? syncTasks())],
+        now.getTime(),
+      )
       batch(() => {
-        setUndone(nextUndone)
+        setUndone(stampByType(nextUndone))
         if (nextDone) setDone(nextDone)
+        if (nextSync) setSyncTasks(nextSync.map(stall.stamp))
+        else setSyncTasks((list) => list.map(stall.stamp))
+        setDetail((d) => d && stall.stamp(d))
         setLoaded(true)
       })
       detectSucceeded()
@@ -288,6 +306,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
       if (deps.isHidden()) {
         if (timer !== undefined) clearTimeout(timer)
         timer = undefined
+        stall.pause(deps.now().getTime())
       } else if (started) {
         void refresh({ full: false })
       }
@@ -395,6 +414,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
       })
       undoneSinceDone = DONE_EVERY - 1
       infoLogged = false
+      stall.clear()
       lastState.clear()
       reported.clear()
       baselined = false
