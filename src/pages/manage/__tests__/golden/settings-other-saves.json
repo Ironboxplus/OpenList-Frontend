@@ -1,0 +1,78 @@
+[
+  [
+    "/admin/setting/set_aria2",
+    {
+      "uri": "http://aria2:6800/jsonrpc",
+      "secret": "s3"
+    }
+  ],
+  [
+    "/admin/setting/set_qbit",
+    {
+      "url": "http://qb:1",
+      "seedtime": "90"
+    }
+  ],
+  [
+    "/admin/setting/set_transmission",
+    {
+      "uri": "http://tr:2",
+      "seedtime": "45"
+    }
+  ],
+  [
+    "/admin/setting/set_115",
+    {
+      "temp_dir": "/n115"
+    }
+  ],
+  [
+    "/admin/setting/set_115_open",
+    {
+      "temp_dir": "/n115o"
+    }
+  ],
+  [
+    "/admin/setting/set_123_pan",
+    {
+      "temp_dir": "/n123"
+    }
+  ],
+  [
+    "/admin/setting/set_123_open",
+    {
+      "temp_dir": "/n123o",
+      "callback_url": "https://cb2"
+    }
+  ],
+  [
+    "/admin/setting/set_pikpak",
+    {
+      "temp_dir": "/npik"
+    }
+  ],
+  [
+    "/admin/setting/set_thunder",
+    {
+      "temp_dir": "/nth"
+    }
+  ],
+  [
+    "/admin/setting/set_thunder_browser",
+    {
+      "temp_dir": "/nthb"
+    }
+  ],
+  [
+    "/admin/setting/set_thunderx",
+    {
+      "temp_dir": "/nthx"
+    }
+  ],
+  [
+    "/admin/setting/set_guangyapan",
+    {
+      "temp_dir": "/ngy"
+    }
+  ]
+]

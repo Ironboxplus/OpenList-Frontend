@@ -1,0 +1,9 @@
+[
+  [
+    "POST",
+    "/admin/setting/delete",
+    {
+      "key": "old_key"
+    }
+  ]
+]

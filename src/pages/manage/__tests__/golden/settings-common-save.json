@@ -1,0 +1,65 @@
+[
+  {
+    "key": "site_title",
+    "value": "My Site",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "announcement",
+    "value": "welcome",
+    "type": "text",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "allow_indexed",
+    "value": "true",
+    "type": "bool",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "home_container",
+    "value": "max_width",
+    "type": "select",
+    "help": "",
+    "options": "max_width,hope_container",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "max_items",
+    "value": "50",
+    "type": "number",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "old_key",
+    "value": "x",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 3
+  },
+  {
+    "key": "version",
+    "value": "v1",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 2
+  }
+]

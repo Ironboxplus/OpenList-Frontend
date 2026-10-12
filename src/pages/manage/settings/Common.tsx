@@ -1,107 +1,100 @@
-import { useFetch, useT, useRouter, useManageTitle } from "~/hooks"
-import { Group, SettingItem, PResp, PEmptyResp, EmptyResp, Resp } from "~/types"
+import { Index } from "solid-js"
+import { Button } from "~/components/ui/button"
 import {
-  r,
-  notify,
-  getTarget,
-  handleResp,
-  handleRespWithoutAuthAndNotify,
-} from "~/utils"
-import { createStore } from "solid-js/store"
-import { Button, HStack, VStack } from "@hope-ui/solid"
-import { createSignal, Index } from "solid-js"
-import { Item } from "./SettingItem"
-import { ResponsiveGrid } from "../common/ResponsiveGrid"
-import { setSettings as renewSettings } from "~/store"
+  createDeleteConfirm,
+  createSettingsGroup,
+  DataState,
+  FieldRenderer,
+  settingField,
+  SettingsForm,
+  SettingsSection,
+  settingFromRaw,
+  settingValue,
+} from "~/features/settings/form"
+import { useManageTitle, useRouter, useT } from "~/hooks"
+import { Group } from "~/types"
+
+/** Which registry entry names the card of each group. */
+const GROUP_ITEM: Partial<Record<Group, string>> = {
+  [Group.SITE]: "site",
+  [Group.STYLE]: "style",
+  [Group.PREVIEW]: "preview",
+  [Group.GLOBAL]: "global",
+  [Group.SSO]: "sso",
+  [Group.LDAP]: "ldap",
+  [Group.FTP]: "ftp",
+  [Group.TRAFFIC]: "traffic",
+  [Group.S3]: "s3",
+}
 
 export interface CommonSettingsProps {
   group: Group
+  /** Card heading when the group is embedded in a page of its own. */
+  title?: string
 }
+
+/** A settings group as one card of fields with the page Save / Reset bar. */
 const CommonSettings = (props: CommonSettingsProps) => {
   const t = useT()
   const { pathname } = useRouter()
   useManageTitle(`manage.sidemenu.${pathname().split("/").pop()}`)
-  const [settingsLoading, getSettings] = useFetch((): PResp<SettingItem[]> =>
-    r.get(`/admin/setting/list?group=${props.group}`),
-  )
-  const [settings, setSettings] = createStore<SettingItem[]>([])
-  const refresh = async () => {
-    const resp = await getSettings()
-    handleResp<SettingItem[]>(resp, setSettings)
-  }
-  refresh()
-  const [saveLoading, saveSettings] = useFetch((): PEmptyResp =>
-    r.post("/admin/setting/save", getTarget(settings)),
-  )
-  const [defaultLoading, defaultSettings] = useFetch((): PResp<SettingItem[]> =>
-    r.post(`/admin/setting/default?group=${props.group}`),
-  )
-  const [loading, setLoading] = createSignal(false)
+  const g = createSettingsGroup(props.group)
+  g.load()
+  const item = () => GROUP_ITEM[props.group]
+  const removal = createDeleteConfirm<string>({
+    name: (key) => t(`settings.${key}`),
+    run: g.remove,
+  })
   return (
-    <VStack w="$full" alignItems="start" spacing="$2">
-      <ResponsiveGrid>
-        <Index each={settings}>
-          {(item) => (
-            <Item
-              {...item()}
-              onChange={(val) => {
-                setSettings((i) => item().key === i.key, "value", val)
-              }}
-              onDelete={async () => {
-                setLoading(true)
-                const resp: EmptyResp = await r.post(
-                  `/admin/setting/delete?key=${item().key}`,
-                )
-                setLoading(false)
-                handleResp(resp, () => {
-                  notify.success(t("global.delete_success"))
-                  refresh()
-                })
-              }}
-            />
-          )}
-        </Index>
-      </ResponsiveGrid>
-      <HStack spacing="$2">
-        <Button
-          colorScheme="accent"
-          onClick={refresh}
-          loading={settingsLoading() || loading() || defaultLoading()}
+    <>
+      <SettingsForm
+        dirty={g.dirty()}
+        saving={g.saving()}
+        resetting={g.loading()}
+        onSave={g.save}
+        onReset={g.load}
+        extra={
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={g.loading() || g.saving()}
+            onClick={g.loadDefaults}
+          >
+            {t("manage.load_default_setting")}
+          </Button>
+        }
+      >
+        <DataState
+          loading={g.loading()}
+          error={g.error()}
+          empty={g.settings.length === 0}
+          onRetry={g.load}
         >
-          {t("global.refresh")}
-        </Button>
-        <Button
-          loading={saveLoading()}
-          onClick={async () => {
-            const resp = await saveSettings()
-            handleResp(resp, async () => {
-              notify.success(t("global.save_success"))
-              handleRespWithoutAuthAndNotify(
-                (await r.get("/public/settings")) as Resp<
-                  Record<string, string>
-                >,
-                renewSettings,
-              )
-            })
-          }}
-        >
-          {t("global.save")}
-        </Button>
-        <Button
-          colorScheme="warning"
-          loading={settingsLoading() || loading() || defaultLoading()}
-          onClick={async () => {
-            const resp = await defaultSettings()
-            handleResp(resp, (data) => {
-              notify.info(t("manage.load_default_setting_success"))
-              setSettings(data)
-            })
-          }}
-        >
-          {t("manage.load_default_setting")}
-        </Button>
-      </HStack>
-    </VStack>
+          <SettingsSection
+            id={`group-${props.group}`}
+            title={
+              props.title ??
+              (item() ? t(`settings.items.${item()}.title`) : t("manage.title"))
+            }
+            description={
+              item() ? t(`settings.items.${item()}.description`) : undefined
+            }
+          >
+            <Index each={g.settings}>
+              {(row) => (
+                <FieldRenderer
+                  field={settingField(row())}
+                  value={settingValue(row())}
+                  onChange={(raw) => g.set(row().key, settingFromRaw(raw))}
+                  onDelete={() => removal.ask(row().key)}
+                />
+              )}
+            </Index>
+          </SettingsSection>
+        </DataState>
+      </SettingsForm>
+      {removal.dialog()}
+    </>
   )
 }
 

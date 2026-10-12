@@ -1,0 +1,47 @@
+[
+  {
+    "key": "s3_enabled",
+    "value": "true",
+    "type": "bool",
+    "help": "",
+    "options": "",
+    "group": 9,
+    "flag": 1
+  },
+  {
+    "key": "s3_port",
+    "value": "9000",
+    "type": "number",
+    "help": "",
+    "options": "",
+    "group": 9,
+    "flag": 1
+  },
+  {
+    "key": "s3_access_key_id",
+    "value": "AK",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 9,
+    "flag": 1
+  },
+  {
+    "key": "s3_secret_access_key",
+    "value": "SK",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 9,
+    "flag": 1
+  },
+  {
+    "key": "s3_buckets",
+    "value": "[{\"name\":\"one\",\"path\":\"/one\"},{\"name\":\"two\",\"path\":\"/two\"}]",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 9,
+    "flag": 1
+  }
+]

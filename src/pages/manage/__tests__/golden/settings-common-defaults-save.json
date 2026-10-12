@@ -1,0 +1,65 @@
+[
+  {
+    "key": "site_title",
+    "value": "DEFAULT",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "announcement",
+    "value": "DEFAULT",
+    "type": "text",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "allow_indexed",
+    "value": "DEFAULT",
+    "type": "bool",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "home_container",
+    "value": "DEFAULT",
+    "type": "select",
+    "help": "",
+    "options": "max_width,hope_container",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "max_items",
+    "value": "DEFAULT",
+    "type": "number",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 0
+  },
+  {
+    "key": "old_key",
+    "value": "DEFAULT",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 3
+  },
+  {
+    "key": "version",
+    "value": "DEFAULT",
+    "type": "string",
+    "help": "",
+    "options": "",
+    "group": 1,
+    "flag": 2
+  }
+]
