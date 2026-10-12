@@ -1,3 +1,4 @@
+import { createdTaskIds } from "../adapter"
 import { describe, expect, it } from "vitest"
 import type { SyncSnapshot } from "~/platform/contracts/task"
 import {
@@ -390,5 +391,18 @@ describe("sync phase", () => {
       mapSyncSnapshot(snap({ state: "succeeded", stats: checkingStats }), NOW)
         .phase,
     ).toBe("succeeded")
+  })
+})
+
+describe("createdTaskIds", () => {
+  it("prefixes the ids of the tasks a copy / move response lists", () => {
+    const data = { message: "ok", tasks: [{ id: "a1" }, { id: "b2" }] }
+    expect(createdTaskIds("copy", data)).toEqual(["copy:a1", "copy:b2"])
+    expect(createdTaskIds("move", data)).toEqual(["move:a1", "move:b2"])
+  })
+  it("is empty when the work finished at once or the shape is unknown", () => {
+    expect(createdTaskIds("copy", { message: "done" })).toEqual([])
+    expect(createdTaskIds("copy", null)).toEqual([])
+    expect(createdTaskIds("copy", { tasks: [{ id: 5 }, null, {}] })).toEqual([])
   })
 })

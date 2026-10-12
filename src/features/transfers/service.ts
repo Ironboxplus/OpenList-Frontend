@@ -3,9 +3,11 @@ import type { UnifiedTask } from "~/platform/contracts/task"
 import { me } from "~/store/user"
 import { UserMethods } from "~/types"
 import { bus } from "~/utils/bus"
+import { pointAtTasks } from "../shell/task-center"
 import { notify } from "~/utils/notify"
 import * as api from "./api"
 import { localUploads } from "./local-uploads"
+import { createdTaskIds, type TacheType } from "./adapter"
 import { createTransfersStore } from "./store"
 
 const succeededListeners = new Set<(task: UnifiedTask) => void>()
@@ -38,3 +40,18 @@ export const transfers = createTransfersStore({
 bus.on("tasks:refresh", () => {
   void transfers.refresh({ full: false })
 })
+
+bus.on("tasks:created", (ids) => {
+  void transfers.refresh({ full: true })
+  pointAtTasks(ids)
+})
+
+/**
+ * The one way an action reports the tasks it started: with their ids when the
+ * response carries them, otherwise as a plain refresh request.
+ */
+export const announceTasks = (type: TacheType, responseData: unknown) => {
+  const ids = createdTaskIds(type, responseData)
+  if (ids.length > 0) bus.emit("tasks:created", ids)
+  else bus.emit("tasks:refresh")
+}

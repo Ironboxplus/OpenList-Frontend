@@ -1,6 +1,8 @@
 import { focusRing } from "~/components/ui/focus"
 import { TbListDetails, TbSearch } from "solid-icons/tb"
-import { Show } from "solid-js"
+import { For, Show } from "solid-js"
+import { Motion } from "solid-motionone"
+import { attentionRing, prefersReducedMotion } from "~/utils/motion-presets"
 import {
   Tooltip,
   TooltipContent,
@@ -10,7 +12,7 @@ import { useT } from "~/hooks"
 import { NavBadge } from "./NavBadge"
 import { activeNavId, NAV_ITEMS } from "./nav-items"
 import { hotkeyLabel, setPaletteOpen } from "../palette/state"
-import { setTaskCenterOpen, taskCenterOpen } from "./task-center"
+import { nudge, setTaskCenterOpen, taskCenterOpen } from "./task-center"
 import { topBarSlots } from "./topbar-slot"
 
 export const TOP_BAR_HEIGHT = "2.75rem"
@@ -28,6 +30,8 @@ export const TopBar = (props: { pathname: string; phone?: boolean }) => {
     return item ? t(item.labelKey) : ""
   }
   const ctx = () => ({ phone: !!props.phone })
+  // Reduced motion: no ring; the badge count still changes.
+  const rings = () => (nudge() > 0 && !prefersReducedMotion() ? [nudge()] : [])
   return (
     <header
       data-topbar
@@ -76,6 +80,17 @@ export const TopBar = (props: { pathname: string; phone?: boolean }) => {
               class={`${focusRing} relative inline-flex size-9 items-center justify-center rounded-lg bg-transparent text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground`}
             >
               <TbListDetails class="size-5" />
+              {/* a new nudge value is a new item: a fresh ring mounts and plays once */}
+              <For each={rings()}>
+                {() => (
+                  <Motion.span
+                    data-testid="task-nudge"
+                    aria-hidden="true"
+                    class="pointer-events-none absolute inset-0 rounded-lg bg-primary/40"
+                    {...(attentionRing as any)}
+                  />
+                )}
+              </For>
               <NavBadge class="absolute -right-0.5 -top-0.5" />
             </TooltipTrigger>
             <TooltipContent>{t("shell.task_center.title")}</TooltipContent>

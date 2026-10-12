@@ -49,6 +49,8 @@ export interface TaskCardProps {
   task: UnifiedTask
   /** Compact cards (Task Center drawer) drop the stats rows and the buttons. */
   compact?: boolean
+  /** Ring the card: it is what the user just started. */
+  highlight?: boolean
   onOpen?: (task: UnifiedTask) => void
   onAction?: (task: UnifiedTask, action: TaskAction) => void
   /** Open a folder in the Files page; enables the open source/destination buttons. */
@@ -154,6 +156,8 @@ export const TaskCard = (props: TaskCardProps) => {
     <>
       <Card
         data-testid="task-card"
+        data-task-id={props.task.id}
+        data-highlight={props.highlight ? "" : undefined}
         data-state={state()}
         data-section={sectionOf(state())}
         tabIndex={props.onOpen ? 0 : undefined}
@@ -162,6 +166,7 @@ export const TaskCard = (props: TaskCardProps) => {
           "flex flex-col gap-3 p-4",
           props.onOpen && focusRing,
           props.compact && "gap-2 p-3",
+          props.highlight && "ring-2 ring-primary",
           props.onOpen && "cursor-pointer transition-shadow hover:shadow-md",
         )}
         onClick={() => props.onOpen?.(props.task)}

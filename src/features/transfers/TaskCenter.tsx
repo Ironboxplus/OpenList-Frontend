@@ -7,7 +7,12 @@ import {
   SheetTitle,
 } from "~/components/ui/sheet"
 import { useRouter, useT } from "~/hooks"
-import { setTaskCenterOpen, taskCenterOpen } from "../shell/task-center"
+import { prefersReducedMotion } from "~/utils/motion-presets"
+import {
+  highlighted,
+  setTaskCenterOpen,
+  taskCenterOpen,
+} from "../shell/task-center"
 import { drawerTasks } from "./adapter"
 import { transfers } from "./service"
 import { TaskCard } from "./TaskCard"
@@ -31,6 +36,29 @@ const TaskCenter = () => {
   })
 
   const list = () => drawerTasks(transfers.tasks(), Date.now())
+
+  // Bring the tasks an action just created into view, once per highlight: the
+  // card may only arrive with the next poll, so wait for it while it is lit.
+  let scrolledFor: ReadonlySet<string> | undefined
+  let listEl: HTMLDivElement | undefined
+  createEffect(() => {
+    const ids = highlighted()
+    list()
+    if (ids.size === 0) {
+      scrolledFor = undefined
+      return
+    }
+    if (scrolledFor === ids) return
+    const card = [...(listEl?.querySelectorAll("[data-task-id]") ?? [])].find(
+      (el) => ids.has(el.getAttribute("data-task-id") ?? ""),
+    )
+    if (!card) return
+    scrolledFor = ids
+    card.scrollIntoView({
+      block: "nearest",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    })
+  })
   const goAll = () => {
     setTaskCenterOpen(false)
     to("/@transfers")
@@ -46,7 +74,8 @@ const TaskCenter = () => {
           </p>
         </SheetHeader>
         <div
-          class="flex flex-1 flex-col gap-3 overflow-y-auto"
+          ref={listEl}
+          class="-mx-1 flex flex-1 flex-col gap-3 overflow-y-auto p-1"
           data-testid="task-center-list"
         >
           <Show
@@ -58,7 +87,14 @@ const TaskCenter = () => {
             }
           >
             <For each={list()}>
-              {(tk) => <TaskCard task={tk} compact onOpen={goAll} />}
+              {(tk) => (
+                <TaskCard
+                  task={tk}
+                  compact
+                  highlight={highlighted().has(tk.id)}
+                  onOpen={goAll}
+                />
+              )}
             </For>
           </Show>
         </div>

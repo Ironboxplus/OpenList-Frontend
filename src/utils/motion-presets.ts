@@ -43,3 +43,15 @@ export const pageTransition: MotionPreset = {
   exit: { opacity: 0, y: -8 },
   transition: { duration: 0.18 },
 }
+
+/** Reduced motion is asked for: skip decorative animation, keep the information. */
+export const prefersReducedMotion = (): boolean =>
+  typeof window !== "undefined" &&
+  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+
+/** One soft ring that grows and fades once: draws the eye to a button without moving it. */
+export const attentionRing: MotionPreset = {
+  initial: { opacity: 0.7, scale: 0.9 },
+  animate: { opacity: 0, scale: 1.7 },
+  transition: { duration: 0.9 },
+}

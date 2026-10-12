@@ -3,6 +3,7 @@ import { createSignal, onCleanup } from "solid-js"
 import { ModalFolderChoose, FolderTreeHandler } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { selectedObjs, userCan } from "~/store"
+import { announceTasks } from "~/features/transfers/service"
 import { bus, fsCopy, fsMove, handleRespWithNotifySuccess } from "~/utils"
 import { CgFolderAdd } from "solid-icons/cg"
 
@@ -95,8 +96,8 @@ export const Copy = () => {
           skipExisting(),
           merge(),
         )
-        handleRespWithNotifySuccess(resp, () => {
-          bus.emit("tasks:refresh")
+        handleRespWithNotifySuccess(resp, (data) => {
+          announceTasks("copy", data)
           refresh()
           onClose()
         })
@@ -165,8 +166,8 @@ export const Move = () => {
           overwrite(),
           skipExisting(),
         )
-        handleRespWithNotifySuccess(resp, () => {
-          bus.emit("tasks:refresh")
+        handleRespWithNotifySuccess(resp, (data) => {
+          announceTasks("move", data)
           refresh()
           onClose()
         })

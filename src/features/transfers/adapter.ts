@@ -357,6 +357,19 @@ export const mapLocalUpload = (u: LocalUpload): UnifiedTask => {
   }
 }
 
+/**
+ * Ids of the tasks a copy / move request created, from its response data
+ * (`{ message, tasks: [{ id, ... }] }`); empty when it finished at once.
+ */
+export const createdTaskIds = (type: TacheType, data: unknown): string[] => {
+  const tasks = (data as { tasks?: unknown } | null | undefined)?.tasks
+  if (!Array.isArray(tasks)) return []
+  return tasks
+    .map((t) => (t as { id?: unknown } | null)?.id)
+    .filter((id): id is string => typeof id === "string" && id !== "")
+    .map((id) => `${type}:${id}`)
+}
+
 export type Section = "active" | "failed" | "done"
 
 export const sectionOf = (state: TaskState): Section => {
