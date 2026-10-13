@@ -256,12 +256,9 @@ const ListLayout = () => {
   const virtual = createMemo(() =>
     shouldVirtualize(pagerType, objStore.objs.length),
   )
-  const renderRow = (obj: StoreObj, index: number, animate: boolean) => (
-    <Show
-      when={useMediaRows()}
-      fallback={<ListItem obj={obj} index={index} animate={animate} />}
-    >
-      <MediaListItem obj={obj} index={index} animate={animate} />
+  const renderRow = (obj: StoreObj, index: number) => (
+    <Show when={useMediaRows()} fallback={<ListItem obj={obj} index={index} />}>
+      <MediaListItem obj={obj} index={index} />
     </Show>
   )
 
@@ -303,9 +300,7 @@ const ListLayout = () => {
       <Show
         when={virtual()}
         fallback={
-          <For each={objStore.objs}>
-            {(obj, i) => renderRow(obj, i(), true)}
-          </For>
+          <For each={objStore.objs}>{(obj, i) => renderRow(obj, i())}</For>
         }
       >
         <VirtualRows
@@ -314,7 +309,7 @@ const ListLayout = () => {
           gap={4}
           render={(i) => (
             <Show when={objStore.objs[i]} keyed>
-              {(obj) => renderRow(obj, i, false)}
+              {(obj) => renderRow(obj, i)}
             </Show>
           )}
         />

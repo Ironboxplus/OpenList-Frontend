@@ -9,14 +9,21 @@ import {
   Suspense,
   onCleanup,
 } from "solid-js"
+import { Motion } from "solid-motionone"
 import { FullLoading } from "~/components"
 import { useRouter } from "~/hooks"
 import { me } from "~/store"
+import { asMotion, motionProps, sectionEnter } from "~/utils/motion-presets"
 import { UserMethods } from "~/types"
 import { isPaletteHotkey, paletteOpen, setPaletteOpen } from "../palette/state"
 import { transfers } from "../transfers/service"
 import { BottomTabs, TAB_BAR_HEIGHT } from "./BottomTabs"
-import { preloadAllSections, readCollapsed, writeCollapsed } from "./nav-items"
+import {
+  activeNavId,
+  preloadAllSections,
+  readCollapsed,
+  writeCollapsed,
+} from "./nav-items"
 import { FULL_WIDTH, RAIL_WIDTH, SideNav } from "./SideNav"
 import { TOP_BAR_HEIGHT, TopBar } from "./TopBar"
 import { bindTransfersToUser } from "./transfers-lifecycle"
@@ -131,8 +138,27 @@ const AppShell = (props: ParentProps) => {
         <Show when={shown()}>
           <TopBar pathname={pathname()} phone={phone()} />
         </Show>
-        {/* Whatever suspends below stops here: the nav and the top bar stay. */}
-        <Suspense fallback={<FullLoading />}>{props.children}</Suspense>
+        {/* One enter animation per section, none inside it (the file browser
+            has its own transitions). The old section stays until the new one
+            is ready; there is no exit. Whatever suspends below stops at the
+            Suspense, which must sit outside the keyed frame so that it is the
+            same boundary across sections: the nav and the top bar stay. */}
+        <Suspense fallback={<FullLoading />}>
+          <Show when={activeNavId(pathname()) ?? "none"} keyed>
+            {(_section) => (
+              <Motion.div
+                {...asMotion(motionProps(sectionEnter))}
+                // A resting transform would make this box the containing
+                // block of the page's position: fixed elements.
+                onMotionComplete={(e) =>
+                  (e.target as HTMLElement).style.removeProperty("transform")
+                }
+              >
+                {props.children}
+              </Motion.div>
+            )}
+          </Show>
+        </Suspense>
       </div>
       <Show when={phone()}>
         <Show

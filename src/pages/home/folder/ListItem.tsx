@@ -7,8 +7,7 @@ import {
   ProgressLabel,
   Text,
 } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
-import { createSignal, onCleanup, Show, untrack } from "solid-js"
+import { createSignal, onCleanup, Show } from "solid-js"
 import { LinkWithPush } from "~/components"
 import { useUtil } from "~/hooks"
 import {
@@ -30,7 +29,6 @@ import {
   usedPercentage,
   toReadableUsage,
   nearlyFull,
-  listItemIn,
 } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
@@ -69,7 +67,6 @@ export const ListItem = (props: {
   obj: StoreObj
   index: number
   /** Off for virtualized rows, which mount constantly while scrolling. */
-  animate?: boolean
 }) => {
   const { isHide } = useUtil()
   if (isHide(props.obj)) {
@@ -117,10 +114,7 @@ export const ListItem = (props: {
   })
 
   return (
-    <Motion.div
-      {...(props.animate === false
-        ? {}
-        : (listItemIn(untrack(() => props.index)) as any))}
+    <div
       style={{
         width: "100%",
         position: "relative",
@@ -315,6 +309,6 @@ export const ListItem = (props: {
           />
         </Box>
       </Show>
-    </Motion.div>
+    </div>
   )
 }

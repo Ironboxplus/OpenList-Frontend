@@ -43,13 +43,12 @@ const GridLayout = (props: GridLayoutProps) => {
       ? Math.round(((width() || 800) / columns()) * 1.5) + 84
       : parseInt(local["grid_item_size"]) + 84
   const rowCount = () => Math.ceil(order().length / columns())
-  const card = (i: number, animate: boolean) => (
+  const card = (i: number) => (
     <Show when={objStore.objs[i]} keyed>
       {(obj) => (
         <GridItem
           obj={obj}
           index={i}
-          animate={animate}
           decor={props.decorate ? () => props.decorate!(obj) : undefined}
         />
       )}
@@ -84,7 +83,7 @@ const GridLayout = (props: GridLayoutProps) => {
               parseInt(local["grid_item_size"]) + 20
             }px,1fr))`}
           >
-            <For each={order()}>{(i) => card(i, true)}</For>
+            <For each={order()}>{(i) => card(i)}</For>
           </Grid>
         }
       >
@@ -110,7 +109,7 @@ const GridLayout = (props: GridLayoutProps) => {
                 <For
                   each={order().slice(row * columns(), (row + 1) * columns())}
                 >
-                  {(i) => card(i, false)}
+                  {(i) => card(i)}
                 </For>
               </div>
             )}

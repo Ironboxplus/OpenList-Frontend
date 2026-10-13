@@ -30,13 +30,14 @@ export const SideNavEntry = (props: {
       path={props.item.path}
       onPointerEnter={() => preloadSection(props.item.id)}
       onFocus={() => preloadSection(props.item.id)}
+      data-nav-id={props.item.id}
       aria-current={props.active ? "page" : undefined}
       aria-label={props.rail ? props.label : undefined}
       class={cn(
         navRowClass,
         "relative",
         props.rail && "justify-center px-0",
-        props.active && "bg-accent text-foreground",
+        props.active && "text-foreground",
       )}
     >
       <NavIconView icon={props.item.icon} />

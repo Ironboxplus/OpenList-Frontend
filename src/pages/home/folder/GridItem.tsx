@@ -1,12 +1,11 @@
 import { Center, VStack, Icon, Text } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
 import { useContextMenu } from "solid-contextmenu"
-import { batch, Show, untrack } from "solid-js"
+import { batch, Show } from "solid-js"
 import { CenterLoading, LinkWithPush, ImageWithError } from "~/components"
 import { usePath, useRouter, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, local, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus, getFileSize, hoverColor, listItemIn } from "~/utils"
+import { bus, getFileSize, hoverColor } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
 import type { GridDecor } from "~/features/files/grid-decor"
@@ -23,7 +22,6 @@ export const GridItem = (props: {
   /** Poster image URL; shown 2:3 and lazy, the icon takes over if it fails. */
   cover?: string
   /** Off for virtualized rows, which mount constantly while scrolling. */
-  animate?: boolean
   /** Media view: replaces the name, size line and poster of this card. */
   decor?: () => GridDecor | undefined
 }) => {
@@ -51,10 +49,7 @@ export const GridItem = (props: {
     if (phoneShell() && !props.obj.selected) selectIndex(props.index, true)
   })
   return (
-    <Motion.div
-      {...(props.animate === false
-        ? {}
-        : (listItemIn(untrack(() => props.index)) as any))}
+    <div
       style={{
         width: "100%",
       }}
@@ -219,6 +214,6 @@ export const GridItem = (props: {
         </Show>
         <ExtraBadges extra={props.obj.extra} maxTags={1} />
       </VStack>
-    </Motion.div>
+    </div>
   )
 }

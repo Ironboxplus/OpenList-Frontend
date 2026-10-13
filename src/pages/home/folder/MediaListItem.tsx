@@ -1,17 +1,10 @@
 import { Box, HStack, Icon, Text, VStack } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
-import { createMemo, createSignal, Show, untrack } from "solid-js"
+import { createMemo, createSignal, Show } from "solid-js"
 import { AiFillStar } from "solid-icons/ai"
 import { LinkWithPush } from "~/components"
 import { checkboxOpen, getMainColor, local } from "~/store"
 import { StoreObj } from "~/types"
-import {
-  formatDate,
-  formatDateCompact,
-  getFileSize,
-  hoverColor,
-  listItemIn,
-} from "~/utils"
+import { formatDate, formatDateCompact, getFileSize, hoverColor } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { readExtra } from "./extra-meta"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
@@ -45,7 +38,6 @@ export const MediaListItem = (props: {
   obj: StoreObj
   index: number
   /** Off for virtualized rows, which mount constantly while scrolling. */
-  animate?: boolean
 }) => {
   // Selection / open / context-menu behaviour is shared with the table row —
   // see useFileRowInteraction. Only the visuals below are specific to this row.
@@ -79,12 +71,7 @@ export const MediaListItem = (props: {
       .join("  ·  ")
 
   return (
-    <Motion.div
-      {...(props.animate === false
-        ? {}
-        : (listItemIn(untrack(() => props.index)) as any))}
-      style={{ width: "100%" }}
-    >
+    <div style={{ width: "100%" }}>
       <HStack
         classList={{ selected: !!props.obj.selected }}
         class="media-list-item viselect-item"
@@ -244,7 +231,7 @@ export const MediaListItem = (props: {
           </HStack>
         </VStack>
       </HStack>
-    </Motion.div>
+    </div>
   )
 }
 

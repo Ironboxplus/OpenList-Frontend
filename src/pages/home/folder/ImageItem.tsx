@@ -1,12 +1,11 @@
 import { Center, VStack, Icon } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
 import { useContextMenu } from "solid-contextmenu"
-import { batch, Show, untrack } from "solid-js"
+import { batch, Show } from "solid-js"
 import { CenterLoading, ImageWithError } from "~/components"
 import { useLink, usePath, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, selectAll, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus, listItemIn } from "~/utils"
+import { bus } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
 
@@ -24,8 +23,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
   return (
-    <Motion.div
-      {...(listItemIn(untrack(() => props.index)) as any)}
+    <div
       style={{
         "flex-grow": 1,
       }}
@@ -100,6 +98,6 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
           />
         </Center>
       </VStack>
-    </Motion.div>
+    </div>
   )
 }

@@ -16,25 +16,12 @@ export interface MotionPreset {
   transition: MotionTransition
 }
 
-/** Per-item entrance delay for staggered lists, clamped so long lists stay snappy. */
-export const staggerDelay = (index: number, step = 0.03, max = 0.3): number => {
-  if (index <= 0) return 0
-  return Math.min(index * step, max)
-}
-
 /** Fade + slight scale-up, the default item entrance. */
 export const fadeScaleIn: MotionPreset = {
   initial: { opacity: 0, scale: 0.95 },
   animate: { opacity: 1, scale: 1 },
   transition: { duration: 0.2 },
 }
-
-/** Staggered variant of {@link fadeScaleIn} for list/grid items. */
-export const listItemIn = (index: number): MotionPreset => ({
-  initial: { opacity: 0, scale: 0.95 },
-  animate: { opacity: 1, scale: 1 },
-  transition: { duration: 0.2, delay: staggerDelay(index) },
-})
 
 /** Page/route-level transition used when switching directories. */
 export const pageTransition: MotionPreset = {
@@ -48,6 +35,36 @@ export const pageTransition: MotionPreset = {
 export const prefersReducedMotion = (): boolean =>
   typeof window !== "undefined" &&
   !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+
+/**
+ * A section's content comes in with a short fade and rise. There is no exit:
+ * the old section stays until the new one is ready and is then replaced.
+ */
+export const sectionEnter: MotionPreset = {
+  initial: { opacity: 0.001, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.16 },
+}
+
+/** The sliding highlight of the side nav. */
+export const navIndicatorMove: MotionTransition = {
+  duration: 0.16,
+  easing: [0.4, 0, 0.2, 1],
+}
+
+/**
+ * Props to spread onto `<Motion.div>`. With reduced motion asked for they are
+ * empty: the element just shows its final state.
+ */
+export const motionProps = (preset: MotionPreset): Partial<MotionPreset> =>
+  prefersReducedMotion() ? {} : preset
+
+/** motionone's option types are stricter than our plain presets; spread through this. */
+export const asMotion = (p: object): any => p
+
+/** A transition that takes no time when reduced motion is asked for. */
+export const motionTransition = (t: MotionTransition): MotionTransition =>
+  prefersReducedMotion() ? { duration: 0 } : t
 
 /** One soft ring that grows and fades once: draws the eye to a button without moving it. */
 export const attentionRing: MotionPreset = {

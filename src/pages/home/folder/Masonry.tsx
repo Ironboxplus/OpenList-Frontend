@@ -1,5 +1,4 @@
 import { Box, Center, Skeleton, Text, VStack } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
 import { useContextMenu } from "solid-contextmenu"
 import {
   For,
@@ -10,7 +9,6 @@ import {
   createSignal,
   onCleanup,
   onMount,
-  untrack,
 } from "solid-js"
 import { CenterLoading, ImageWithError, LinkWithPush } from "~/components"
 import { useLink, useRouter, useT, useUtil } from "~/hooks"
@@ -22,7 +20,7 @@ import {
   smartCountMsg,
 } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus, listItemIn } from "~/utils"
+import { bus } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { BsPlayCircleFill } from "solid-icons/bs"
 import {
@@ -132,10 +130,7 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
     <Box as={getIconByObj(obj) as any} color={getMainColor()} fontSize={size} />
   )
   return (
-    <Motion.div
-      {...(listItemIn(untrack(() => props.index)) as any)}
-      style={{ "break-inside": "avoid", "margin-bottom": "0.6rem" }}
-    >
+    <div style={{ "break-inside": "avoid", "margin-bottom": "0.6rem" }}>
       <Box
         as={LinkWithPush}
         href={obj.name}
@@ -270,7 +265,7 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
           </Text>
         </Box>
       </Box>
-    </Motion.div>
+    </div>
   )
 }
 

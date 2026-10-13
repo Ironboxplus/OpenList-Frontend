@@ -1,40 +1,14 @@
-import { describe, it, expect } from "vitest"
+import { afterEach, describe, it, expect, vi } from "vitest"
 import {
-  staggerDelay,
-  listItemIn,
-  pageTransition,
   fadeScaleIn,
+  motionProps,
+  motionTransition,
+  navIndicatorMove,
+  pageTransition,
+  sectionEnter,
 } from "../motion-presets"
 
-describe("staggerDelay", () => {
-  it("scales linearly with index", () => {
-    expect(staggerDelay(0)).toBe(0)
-    expect(staggerDelay(1, 0.03)).toBeCloseTo(0.03)
-    expect(staggerDelay(3, 0.03)).toBeCloseTo(0.09)
-  })
-
-  it("is clamped to the max so long lists don't crawl in", () => {
-    expect(staggerDelay(1000, 0.03, 0.3)).toBe(0.3)
-  })
-
-  it("never returns a negative delay for a negative index", () => {
-    expect(staggerDelay(-5)).toBe(0)
-  })
-})
-
-describe("listItemIn", () => {
-  it("produces a fade+scale enter with an index-based delay", () => {
-    const a = listItemIn(0)
-    expect(a.initial).toEqual({ opacity: 0, scale: 0.95 })
-    expect(a.animate).toEqual({ opacity: 1, scale: 1 })
-    expect(a.transition.delay).toBe(0)
-
-    const b = listItemIn(2)
-    expect(b.transition.delay).toBeGreaterThan(0)
-  })
-})
-
-describe("static presets", () => {
+describe("presets", () => {
   it("pageTransition has enter and exit states", () => {
     expect(pageTransition.initial).toBeDefined()
     expect(pageTransition.animate).toBeDefined()
@@ -44,5 +18,38 @@ describe("static presets", () => {
   it("fadeScaleIn is a plain enter preset", () => {
     expect(fadeScaleIn.initial).toEqual({ opacity: 0, scale: 0.95 })
     expect(fadeScaleIn.animate).toEqual({ opacity: 1, scale: 1 })
+  })
+})
+
+const reduced = (on: boolean) =>
+  vi.stubGlobal("matchMedia", (q: string) => ({
+    matches: on && q.includes("prefers-reduced-motion"),
+  }))
+
+describe("reduced motion", () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it("sectionEnter is a short fade and rise, and has no exit", () => {
+    expect(sectionEnter.initial).toEqual({ opacity: 0.001, y: 6 })
+    expect(sectionEnter.animate).toEqual({ opacity: 1, y: 0 })
+    expect(sectionEnter.transition.duration).toBe(0.16)
+    expect(sectionEnter.exit).toBeUndefined()
+  })
+
+  it("motionProps passes the preset through normally", () => {
+    reduced(false)
+    expect(motionProps(sectionEnter)).toBe(sectionEnter)
+  })
+
+  it("motionProps is a no-op under reduced motion", () => {
+    reduced(true)
+    expect(motionProps(sectionEnter)).toEqual({})
+  })
+
+  it("motionTransition takes no time under reduced motion", () => {
+    reduced(false)
+    expect(motionTransition(navIndicatorMove)).toBe(navIndicatorMove)
+    reduced(true)
+    expect(motionTransition(navIndicatorMove)).toEqual({ duration: 0 })
   })
 })
