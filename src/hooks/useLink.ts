@@ -1,14 +1,17 @@
-import { objStore, selectedObjs, State, me } from "~/store"
+import { objStore, password, selectedObjs, State, me } from "~/store"
 import { Obj, ArchiveObj } from "~/types"
 import {
   base_path,
   api,
+  buildMpvCommandFor,
   encodePath,
+  isMpvMedia,
+  notify,
   pathDir,
   pathJoin,
   standardizePath,
 } from "~/utils"
-import { useRouter, useUtil } from "."
+import { useRouter, useT, useUtil } from "."
 import { cookieStorage } from "@solid-primitives/storage"
 
 type URLType = "preview" | "direct" | "proxy"
@@ -118,9 +121,32 @@ export const useSelectedLink = () => {
 }
 
 export const useCopyLink = () => {
+  const t = useT()
   const { copy } = useUtil()
+  const { pathname, isShare } = useRouter()
   const { previewPagesText, rawLinksText } = useSelectedLink()
-  const { currentObjLink } = useLink()
+  const { currentObjLink, rawLink } = useLink()
+
+  // Same directory rule as `useLink`: on a file page the path is the file.
+  const objPath = (obj: Obj) =>
+    pathJoin(
+      objStore.state === State.File ? pathDir(pathname()) : pathname(),
+      obj.name,
+    )
+  // Waits for every subtitle lookup, then copies. A failed lookup still copies
+  // the command, without that file's subtitles, and says so. Share pages have no
+  // subtitle endpoint, so they copy links only.
+  const copyMpv = async (objs: Obj[]) => {
+    const { command, count, subtitleFailed } = await buildMpvCommandFor(objs, {
+      linkOf: (obj) => rawLink(obj, true),
+      pathOf: objPath,
+      password: password(),
+      withSubtitles: !isShare(),
+    })
+    if (count === 0) return
+    if (subtitleFailed) notify.warning(t("home.toolbar.mpv_subtitle_failed"))
+    copy(command)
+  }
   return {
     copySelectedPreviewPage: () => {
       copy(previewPagesText())
@@ -131,5 +157,9 @@ export const useCopyLink = () => {
     copyCurrentRawLink: (encodeAll?: boolean) => {
       copy(currentObjLink(encodeAll))
     },
+    /** Whether the selection holds anything mpv can play (entries hide otherwise). */
+    canCopyMpvCommand: () => selectedObjs().some(isMpvMedia),
+    copySelectedMpvCommand: () => copyMpv(selectedObjs()),
+    copyMpvCommand: (obj: Obj) => copyMpv([obj]),
   }
 }

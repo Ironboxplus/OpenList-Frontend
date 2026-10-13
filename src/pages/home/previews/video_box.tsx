@@ -9,14 +9,34 @@ import {
   Icon,
   IconButton,
 } from "@hope-ui/solid"
-import { For, JSXElement, createSignal, createMemo, Show } from "solid-js"
-import { useRouter, useLink, useT, usePath, getGlobalPage } from "~/hooks"
-import { getPagination, objStore, setShouldKeepState } from "~/store"
+import {
+  For,
+  JSXElement,
+  createSignal,
+  createMemo,
+  createResource,
+  Show,
+} from "solid-js"
+import {
+  useRouter,
+  useLink,
+  useT,
+  usePath,
+  useCopyLink,
+  getGlobalPage,
+} from "~/hooks"
+import { getPagination, objStore, password, setShouldKeepState } from "~/store"
 import { ObjType } from "~/types"
-import { convertURL, getPlatform, pathDir } from "~/utils"
+import {
+  convertURL,
+  fetchSidecarSubtitles,
+  getPlatform,
+  pathDir,
+} from "~/utils"
 import Artplayer from "artplayer"
 import { SelectWrapper } from "~/components"
 import { BsArrowRight } from "solid-icons/bs"
+import { TbTerminal2 } from "solid-icons/tb"
 import { VideoTreeList } from "./VideoTreeList"
 
 Artplayer.PLAYBACK_RATE = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4]
@@ -144,17 +164,23 @@ export const VideoBox = (props: {
   children: JSXElement
   onAutoNextChange: (v: boolean) => void
 }) => {
-  const { replace, pathname } = useRouter()
-  const { currentObjLink, proxyLink } = useLink()
+  const { replace, pathname, isShare } = useRouter()
+  const { currentObjLink } = useLink()
   const { handleFolder } = usePath()
-  // Sidecar external subtitle for the current video, handed to players that
-  // support one (e.g. mpv via subfile).
-  const subtitleUrl = createMemo(() => {
-    const sub = objStore.related.find((obj) =>
-      [".srt", ".ass", ".vtt"].some((e) => obj.name.toLowerCase().endsWith(e)),
-    )
-    return sub ? proxyLink(sub, true) : undefined
-  })
+  const { copyMpvCommand } = useCopyLink()
+  // First sidecar external subtitle of the current video, handed to players that
+  // support one (e.g. mpv via subfile). The backend does the matching; share
+  // pages have no subtitle endpoint, so they get none.
+  const [subtitleUrl] = createResource(
+    () => (isShare() ? false : pathname()),
+    async (path) => {
+      try {
+        return (await fetchSidecarSubtitles(path, password()))[0]
+      } catch {
+        return undefined
+      }
+    },
+  )
   const [videoName, setVideoName] = createSignal("")
   const videos = createMemo(() => {
     let isLoadMore = true,
@@ -261,6 +287,18 @@ export const VideoBox = (props: {
             )
           }}
         </For>
+        <Tooltip
+          placement="top"
+          withArrow
+          label={t("home.toolbar.mpv_command")}
+        >
+          <IconButton
+            aria-label={t("home.toolbar.mpv_command")}
+            variant="ghost"
+            onClick={() => void copyMpvCommand(objStore.obj)}
+            icon={<Icon as={TbTerminal2} boxSize="$6" color="accent.500" />}
+          />
+        </Tooltip>
         <IconButton
           aria-label="Show all players"
           variant="ghost"

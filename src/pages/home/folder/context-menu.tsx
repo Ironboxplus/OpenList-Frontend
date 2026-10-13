@@ -4,7 +4,7 @@ import "solid-contextmenu/dist/style.css"
 import { HStack, Icon, Text, useColorMode, Image } from "@hope-ui/solid"
 import { operations } from "../toolbar/operations"
 import { createMemo, For, Show } from "solid-js"
-import { bus, convertURL, notify, torrentParse } from "~/utils"
+import { bus, convertURL, isMpvMedia, notify, torrentParse } from "~/utils"
 import { ObjType, UserMethods } from "~/types"
 import {
   getSettingBool,
@@ -19,7 +19,7 @@ import { players } from "../previews/video_box"
 import { getPreviews } from "../previews"
 import { BsPlayCircleFill } from "solid-icons/bs"
 import { isArchive } from "~/store/archive"
-import { TbBooks, TbMovie } from "solid-icons/tb"
+import { TbBooks, TbMovie, TbTerminal2 } from "solid-icons/tb"
 import {
   cardFor,
   mediaReady,
@@ -47,7 +47,13 @@ const ItemContent = (props: { name: string }) => {
 export const ContextMenu = () => {
   const t = useT()
   const { colorMode } = useColorMode()
-  const { copySelectedRawLink, copySelectedPreviewPage } = useCopyLink()
+  const {
+    copySelectedRawLink,
+    copySelectedPreviewPage,
+    copySelectedMpvCommand,
+    copyMpvCommand,
+    canCopyMpvCommand,
+  } = useCopyLink()
   const { batchDownloadSelected, sendToAria2, playlistDownloadSelected } =
     useDownload()
   const canPackageDownload = () => {
@@ -278,6 +284,17 @@ export const ContextMenu = () => {
             )}
           </For>
         </Submenu>
+        <Item
+          hidden={({ props }) => !isMpvMedia(props)}
+          onClick={({ props }) => {
+            void copyMpvCommand(props)
+          }}
+        >
+          <HStack spacing="$2">
+            <Icon as={TbTerminal2} boxSize="$7" p="$0_5" color="$info9" />
+            <Text>{t("home.toolbar.mpv_command")}</Text>
+          </HStack>
+        </Item>
       </Show>
       <Show when={!oneChecked() && haveSelected()}>
         <Submenu label={<ItemContent name="copy_link" />}>
@@ -289,6 +306,12 @@ export const ContextMenu = () => {
           </Item>
           <Item onClick={() => copySelectedRawLink(true)}>
             {t("home.toolbar.encode_down_link")}
+          </Item>
+          <Item
+            hidden={() => !canCopyMpvCommand()}
+            onClick={() => void copySelectedMpvCommand()}
+          >
+            {t("home.toolbar.mpv_command")}
           </Item>
         </Submenu>
         <Submenu label={<ItemContent name="download" />}>

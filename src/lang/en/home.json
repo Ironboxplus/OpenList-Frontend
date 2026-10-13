@@ -96,6 +96,8 @@
     "preview_page": "Preview page",
     "down_link": "Download link",
     "encode_down_link": "Encode download link",
+    "mpv_command": "Copy as mpv command",
+    "mpv_subtitle_failed": "Could not fetch subtitles; copied the command without them",
     "mkdir": "New Folder",
     "input_dir_name": "Input folder name",
     "new_file": "New File",

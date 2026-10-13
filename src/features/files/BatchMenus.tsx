@@ -34,7 +34,12 @@ export const DownloadItems = () => {
 
 export const CopyLinkItems = () => {
   const t = useT()
-  const { copySelectedPreviewPage, copySelectedRawLink } = useCopyLink()
+  const {
+    copySelectedPreviewPage,
+    copySelectedRawLink,
+    copySelectedMpvCommand,
+    canCopyMpvCommand,
+  } = useCopyLink()
   return (
     <>
       <DropdownMenuItem onSelect={() => copySelectedPreviewPage()}>
@@ -46,6 +51,11 @@ export const CopyLinkItems = () => {
       <DropdownMenuItem onSelect={() => copySelectedRawLink(true)}>
         {t("home.toolbar.encode_down_link")}
       </DropdownMenuItem>
+      <Show when={canCopyMpvCommand()}>
+        <DropdownMenuItem onSelect={() => void copySelectedMpvCommand()}>
+          {t("home.toolbar.mpv_command")}
+        </DropdownMenuItem>
+      </Show>
     </>
   )
 }

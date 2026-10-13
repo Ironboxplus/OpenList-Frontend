@@ -1,10 +1,16 @@
+import { Show } from "solid-js"
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@hope-ui/solid"
 import { useT, useCopyLink } from "~/hooks"
 import { CenterIcon } from "./Icon"
 
 export const CopyLink = () => {
   const t = useT()
-  const { copySelectedPreviewPage, copySelectedRawLink } = useCopyLink()
+  const {
+    copySelectedPreviewPage,
+    copySelectedRawLink,
+    copySelectedMpvCommand,
+    canCopyMpvCommand,
+  } = useCopyLink()
   const colorScheme = "neutral"
   return (
     <Menu placement="top" offset={10}>
@@ -34,6 +40,16 @@ export const CopyLink = () => {
         >
           {t("home.toolbar.encode_down_link")}
         </MenuItem>
+        <Show when={canCopyMpvCommand()}>
+          <MenuItem
+            colorScheme={colorScheme}
+            onSelect={() => {
+              void copySelectedMpvCommand()
+            }}
+          >
+            {t("home.toolbar.mpv_command")}
+          </MenuItem>
+        </Show>
       </MenuContent>
     </Menu>
   )
