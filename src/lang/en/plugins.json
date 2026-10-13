@@ -1,5 +1,13 @@
 {
   "title": "Plugins",
+  "page": {
+    "browser_only": "These plugins run in this browser. Switching one off only affects this browser; it is remembered here and does not change the server.",
+    "empty": "No browser plugins are registered.",
+    "version": "Version {{version}}",
+    "contributes": "Appears in",
+    "toggle": "Enable {{name}}",
+    "manage_system": "Manage system plugins"
+  },
   "name": "Plugin Name",
   "type": "Type",
   "version": "Version",
