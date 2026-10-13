@@ -74,13 +74,16 @@ const useCrumbs = () => {
   return { crumbs, go }
 }
 
-const CrumbLabel = (props: { crumb: FileCrumb }) => {
+/** `iconOnly`: the root shows just its icon (the caller names the control). */
+const CrumbLabel = (props: { crumb: FileCrumb; iconOnly?: boolean }) => {
   const t = useT()
   return (
     <>
       <Show when={props.crumb.kind === "root"}>
         <TbHome class="size-4 shrink-0" />
-        <span>{t("shell.nav.files")}</span>
+        <Show when={!props.iconOnly}>
+          <span>{t("shell.nav.files")}</span>
+        </Show>
       </Show>
       <Show when={props.crumb.kind === "share"}>
         <TbShare class="size-4 shrink-0" />
@@ -183,6 +186,11 @@ const PhoneCrumbs = () => {
         type="button"
         data-files-current
         aria-haspopup="dialog"
+        // The bottom tab already says "Files"; on the root this button is the
+        // home icon, and what it does is open the path list.
+        aria-label={
+          current().kind === "root" ? t("files.full_path") : undefined
+        }
         onClick={() => setOpen(true)}
         class={cn(
           focusRing,
@@ -190,7 +198,7 @@ const PhoneCrumbs = () => {
         )}
       >
         <span class="flex min-w-0 items-center gap-1.5 truncate">
-          <CrumbLabel crumb={current()} />
+          <CrumbLabel crumb={current()} iconOnly />
         </span>
       </button>
       <Sheet open={open()} onOpenChange={setOpen}>
