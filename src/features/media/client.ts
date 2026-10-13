@@ -2,6 +2,8 @@ import { api, apiGet, apiPost } from "~/platform/api/client"
 import { password } from "~/store"
 import { createMediaClient } from "./logic"
 import type {
+  LibraryKind,
+  LibraryPage,
   MediaCandidate,
   MediaFs,
   MediaKind,
@@ -24,6 +26,16 @@ export const mediaClient = createMediaClient(async (path) => {
     },
   }
 })
+
+/** One page of the scraped items the signed-in user may see; no kind lists all. */
+export const library = (args: {
+  kind?: LibraryKind
+  page: number
+  perPage: number
+}) =>
+  apiGet<LibraryPage>("/media/library", {
+    params: { kind: args.kind, page: args.page, per_page: args.perPage },
+  })
 
 export interface EditorOutcome<T> {
   ok: boolean

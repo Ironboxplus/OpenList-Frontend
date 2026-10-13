@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   assetSrc,
   baseName,
+  cardDecor,
   cardRating,
   cardsByName,
   cleanTitle,
@@ -176,9 +177,10 @@ describe("createMediaClient", () => {
   })
 
   it("asks once per directory and answers repeats from the cache", async () => {
-    const f = vi.fn(
-      async (): Promise<FetchOutcome> => ({ ok: true, data: data("A") }),
-    )
+    const f = vi.fn(async (): Promise<FetchOutcome> => ({
+      ok: true,
+      data: data("A"),
+    }))
     const c = createMediaClient(f)
     await c.get("/x")
     await c.get("/x/")
@@ -186,9 +188,10 @@ describe("createMediaClient", () => {
   })
 
   it("shares one in-flight request between concurrent callers", async () => {
-    const f = vi.fn(
-      async (): Promise<FetchOutcome> => ({ ok: true, data: data("A") }),
-    )
+    const f = vi.fn(async (): Promise<FetchOutcome> => ({
+      ok: true,
+      data: data("A"),
+    }))
     const c = createMediaClient(f)
     await Promise.all([c.get("/x"), c.get("/x")])
     expect(f).toHaveBeenCalledTimes(1)
@@ -196,9 +199,10 @@ describe("createMediaClient", () => {
 
   it("fetches again after invalidate (directory refresh)", async () => {
     let n = 0
-    const f = vi.fn(
-      async (): Promise<FetchOutcome> => ({ ok: true, data: data("v" + ++n) }),
-    )
+    const f = vi.fn(async (): Promise<FetchOutcome> => ({
+      ok: true,
+      data: data("v" + ++n),
+    }))
     const c = createMediaClient(f)
     expect((await c.get("/x"))?.item?.title).toBe("v1")
     c.invalidate("/x")
@@ -208,18 +212,20 @@ describe("createMediaClient", () => {
   })
 
   it("keeps at most 50 directories", async () => {
-    const f = vi.fn(
-      async (): Promise<FetchOutcome> => ({ ok: true, data: data("A") }),
-    )
+    const f = vi.fn(async (): Promise<FetchOutcome> => ({
+      ok: true,
+      data: data("A"),
+    }))
     const c = createMediaClient(f)
     for (let i = 0; i < 60; i++) await c.get("/d" + i)
     expect(c.size()).toBe(50)
   })
 
   it("switches itself off on 404 and stops asking", async () => {
-    const f = vi.fn(
-      async (): Promise<FetchOutcome> => ({ ok: false, status: 404 }),
-    )
+    const f = vi.fn(async (): Promise<FetchOutcome> => ({
+      ok: false,
+      status: 404,
+    }))
     const c = createMediaClient(f)
     expect(await c.get("/x")).toBeUndefined()
     expect(c.isUnavailable()).toBe(true)
@@ -252,5 +258,39 @@ describe("library placeholders", () => {
     expect(nameHue("abc")).not.toBe(nameHue("abd"))
     expect(nameHue("x")).toBeGreaterThanOrEqual(0)
     expect(nameHue("x")).toBeLessThan(360)
+  })
+})
+
+describe("cardDecor", () => {
+  const base: MediaCard = {
+    path: "/m/Film",
+    kind: "movie",
+    title: "Film",
+    year: 1999,
+    ratings: { douban: 8.7 },
+    poster_url: "/api/media/asset/1?v=thumb",
+  }
+  it("draws a movie as cover, title, year and rating", () => {
+    expect(cardDecor(base, "Collection", "http://h:5244/api")).toEqual({
+      cover: "http://h:5244/api/media/asset/1?v=thumb",
+      label: "Film",
+      sub: "1999",
+      badge: "8.7",
+    })
+  })
+  it("draws a collection as its members' mosaic, else a placeholder, with the tag", () => {
+    const col: MediaCard = {
+      ...base,
+      kind: "collection",
+      child_posters: ["/a", "/b"],
+    }
+    expect(cardDecor(col, "Collection", "").mosaic).toEqual(["/a", "/b"])
+    expect(cardDecor(col, "Collection", "").cover).toBeUndefined()
+    const bare = cardDecor({ ...col, child_posters: [] }, "Collection", "")
+    expect(bare.placeholder).toBe("Film")
+    expect(bare.tag).toBe("Collection")
+  })
+  it("has no cover when the item has no poster", () => {
+    expect(cardDecor({ ...base, poster_url: "" }, "", "").cover).toBeUndefined()
   })
 })

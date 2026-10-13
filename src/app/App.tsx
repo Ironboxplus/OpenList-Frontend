@@ -56,6 +56,7 @@ const ShellLayout = () => (
 )
 const Transfers = lazy(() => import("~/features/transfers/TransfersPage"))
 const Dashboard = lazy(() => import("~/features/dashboard/DashboardPage"))
+const Library = lazy(() => import("~/features/media/LibraryPage"))
 
 /** Old `/@manage/tasks[/:type]` addresses now live on the Transfers page. */
 const TasksRedirect = () => {
@@ -181,6 +182,14 @@ const App: Component = () => {
                 element={
                   <MustUser>
                     <Dashboard />
+                  </MustUser>
+                }
+              />
+              <Route
+                path="/@media"
+                element={
+                  <MustUser>
+                    <Library />
                   </MustUser>
                 }
               />

@@ -12,6 +12,7 @@ import {
   Show,
 } from "solid-js"
 import { Button } from "~/components/ui/button"
+import { ChipTabs } from "~/components/ui/chip-tabs"
 import { Input } from "~/components/ui/input"
 import { Skeleton } from "~/components/ui/skeleton"
 import { useRouter, useT, useTitle } from "~/hooks"
@@ -272,37 +273,17 @@ const TransfersPage = () => {
         />
       </div>
 
-      <div
-        class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
-        role="tablist"
-        aria-label="filter"
-      >
-        <For each={chips()}>
-          {(k) => (
-            <button
-              type="button"
-              role="tab"
-              data-chip={k}
-              aria-selected={filter() === k}
-              class={cn(
-                focusRing,
-                "shrink-0 rounded-full border px-3 py-1 text-sm text-foreground transition-colors",
-                filter() === k
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-card hover:bg-accent",
-              )}
-              onClick={() =>
-                setParams(
-                  { type: k === "all" ? undefined : k },
-                  { replace: true },
-                )
-              }
-            >
-              {t(`transfers.filter.${k}`)}
-            </button>
-          )}
-        </For>
-      </div>
+      <ChipTabs
+        label="filter"
+        items={chips().map((k) => ({
+          key: k,
+          label: t(`transfers.filter.${k}`),
+        }))}
+        value={filter()}
+        onChange={(k) =>
+          setParams({ type: k === "all" ? undefined : k }, { replace: true })
+        }
+      />
 
       <Show
         when={transfers.loaded()}

@@ -1,6 +1,7 @@
 // Pure decisions of the media view: which rating to show, when the poster wall
 // is the default, how episode files map to rows, and the small LRU in front of
 // /api/fs/media. Nothing here touches the DOM or the network.
+import type { GridDecor } from "../files/grid-decor"
 import type { MediaCard, MediaEpisode, MediaFs } from "./types"
 
 // ---- ratings ----
@@ -147,6 +148,44 @@ export const assetSrc = (url: string, apiBase: string): string => {
   }
 }
 
+// ---- poster card ----
+
+/**
+ * How a card with media info looks as a poster: the picture, title, year and
+ * rating. A collection has no poster of its own, so it is its members' mosaic
+ * (or a placeholder) with `collectionTag` on it. The file grid and the library
+ * page both draw their cards from this.
+ */
+export const cardDecor = (
+  card: MediaCard,
+  collectionTag: string,
+  apiBase: string,
+): GridDecor => {
+  const collection = card.kind === "collection"
+  const posters = collection
+    ? (card.child_posters ?? [])
+        .map((u) => assetSrc(u, apiBase))
+        .filter(Boolean)
+    : []
+  return {
+    // A collection is a title card: its members are on the wall below it.
+    cover: collection
+      ? undefined
+      : assetSrc(card.poster_url, apiBase) || undefined,
+    ...(collection
+      ? posters.length
+        ? { mosaic: posters.slice(0, 4), tag: collectionTag }
+        : {
+            placeholder: card.title || cleanTitle(card.path),
+            tag: collectionTag,
+          }
+      : {}),
+    label: card.title || undefined,
+    sub: card.year ? String(card.year) : undefined,
+    badge: cardRating(card.ratings)?.text,
+  }
+}
+
 // ---- cache + client ----
 
 export class Lru<V> {
@@ -181,8 +220,7 @@ export class Lru<V> {
 }
 
 export type FetchOutcome =
-  | { ok: true; data: MediaFs }
-  | { ok: false; status?: number }
+  { ok: true; data: MediaFs } | { ok: false; status?: number }
 
 export const normPath = (p: string): string => {
   const t = p.replace(/\/+$/, "")
