@@ -1,6 +1,6 @@
 import { focusRing } from "~/components/ui/focus"
 import { TbBell, TbLogout, TbSun, TbUserCircle } from "solid-icons/tb"
-import { createSignal, For, Show } from "solid-js"
+import { createEffect, createSignal, For, on, Show } from "solid-js"
 import {
   Sheet,
   SheetContent,
@@ -16,7 +16,12 @@ import { errorCenter } from "../notifications/service"
 import { setErrorCenterOpen } from "../notifications/state"
 import { CountBadge, NavBadge } from "./NavBadge"
 import { NavLink } from "./NavLink"
-import { activeNavId, badgeTarget, navItemsFor } from "./nav-items"
+import {
+  activeNavId,
+  badgeTarget,
+  navItemsFor,
+  phoneTabItems,
+} from "./nav-items"
 
 export { TAB_BAR_HEIGHT } from "./viewport"
 import { TAB_BAR_HEIGHT } from "./viewport"
@@ -33,6 +38,15 @@ export const BottomTabs = (props: { pathname: string }) => {
   const account = useAccountActions()
   const [meOpen, setMeOpen] = createSignal(false)
   const active = () => activeNavId(props.pathname)
+  // what the tab bar has no room for lives in the sheet
+  const sheetNav = () => navItemsFor(me()).filter((i) => !i.phone)
+  createEffect(
+    on(
+      () => props.pathname,
+      () => setMeOpen(false),
+      { defer: true },
+    ),
+  )
 
   return (
     <>
@@ -44,7 +58,7 @@ export const BottomTabs = (props: { pathname: string }) => {
           "padding-bottom": "env(safe-area-inset-bottom)",
         }}
       >
-        <For each={navItemsFor(me())}>
+        <For each={phoneTabItems(me())}>
           {(item) => (
             <NavLink
               path={item.path}
@@ -72,6 +86,18 @@ export const BottomTabs = (props: { pathname: string }) => {
             <SheetTitle>{me().username}</SheetTitle>
           </SheetHeader>
           <div class="mt-4 flex flex-col gap-1">
+            <For each={sheetNav()}>
+              {(item) => (
+                <NavLink
+                  path={item.path}
+                  aria-current={active() === item.id ? "page" : undefined}
+                  class={sheetRow}
+                >
+                  <NavIconView icon={item.icon} />
+                  {t(item.labelKey)}
+                </NavLink>
+              )}
+            </For>
             <button
               type="button"
               class={sheetRow}

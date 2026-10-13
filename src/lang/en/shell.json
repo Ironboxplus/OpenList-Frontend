@@ -1,7 +1,10 @@
 {
   "nav": {
+    "dashboard": "Home",
     "files": "Files",
+    "media": "Media",
     "transfers": "Transfers",
+    "plugins": "Plugins",
     "settings": "Settings",
     "me": "Me",
     "account": "Account",

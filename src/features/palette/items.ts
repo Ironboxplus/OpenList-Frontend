@@ -1,16 +1,9 @@
 // What the command palette can find and run. Pure: the caller supplies the
 // translator and the effects, so permission rules are unit-testable.
 import type { IconTypes } from "solid-icons"
-import {
-  TbArrowsUpDown,
-  TbFolder,
-  TbLanguage,
-  TbListDetails,
-  TbMoon,
-  TbPlus,
-  TbSettings,
-} from "solid-icons/tb"
-import { NAV_ITEMS, type NavId } from "../shell/nav-items"
+import { TbLanguage, TbListDetails, TbMoon, TbPlus } from "solid-icons/tb"
+import { NAV_ICONS } from "../shell/icons"
+import { NAV_ITEMS, navEnv, type NavId } from "../shell/nav-items"
 import { openSetting } from "../settings/open"
 import { visibleSettings } from "../settings/registry"
 import { UserMethods, type User } from "~/types"
@@ -41,15 +34,12 @@ export interface PaletteContext {
 }
 
 const NAV_KEYWORDS: Record<NavId, string[]> = {
-  files: ["files", "browse", "home", "文件", "首页", "浏览"],
+  dashboard: ["dashboard", "overview", "home", "首页", "概览", "仪表盘"],
+  files: ["files", "browse", "文件", "浏览"],
+  media: ["media", "library", "movies", "tv", "媒体", "影视", "电影"],
   transfers: ["transfers", "tasks", "传输", "任务"],
+  plugins: ["plugins", "extensions", "插件", "扩展"],
   settings: ["settings", "manage", "admin", "设置", "管理", "后台"],
-}
-
-const NAV_ICONS: Record<NavId, IconTypes> = {
-  files: TbFolder,
-  transfers: TbArrowsUpDown,
-  settings: TbSettings,
 }
 
 export const buildPaletteItems = (ctx: PaletteContext): PaletteItem[] => {
@@ -58,14 +48,14 @@ export const buildPaletteItems = (ctx: PaletteContext): PaletteItem[] => {
 
   const navPaths = new Set<string>()
   for (const nav of NAV_ITEMS) {
-    if (!nav.visible(user as User)) continue
+    if (!nav.visible(user as User, navEnv())) continue
     navPaths.add(nav.path)
     items.push({
       id: `nav:${nav.id}`,
       group: "nav",
       title: t(nav.labelKey),
       keywords: NAV_KEYWORDS[nav.id],
-      icon: NAV_ICONS[nav.id],
+      icon: NAV_ICONS[nav.icon],
       run: () => ctx.go(nav.path),
     })
   }

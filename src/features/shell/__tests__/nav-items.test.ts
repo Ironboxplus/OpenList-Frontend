@@ -3,7 +3,9 @@ import { User, UserRole } from "~/types"
 import {
   activeNavId,
   badgeTarget,
+  NAV_ITEMS,
   navItemsFor,
+  phoneTabItems,
   readCollapsed,
   writeCollapsed,
 } from "../nav-items"
@@ -20,20 +22,47 @@ const user = (role: UserRole): User => ({
   allow_ldap: false,
 })
 
-const ids = (u: User, area?: "main" | "secondary") =>
-  navItemsFor(u, area).map((i) => i.id)
+const on = { mediaEnabled: true }
+const off = { mediaEnabled: false }
+
+const ids = (u: User, area?: "main" | "secondary", env = on) =>
+  navItemsFor(u, area, env).map((i) => i.id)
+
+const SIGNED_IN = [
+  "dashboard",
+  "files",
+  "media",
+  "transfers",
+  "plugins",
+  "settings",
+]
 
 describe("navItemsFor", () => {
   it.each([
-    ["admin", UserRole.ADMIN, ["files", "transfers", "settings"]],
-    ["general", UserRole.GENERAL, ["files", "transfers", "settings"]],
+    ["admin", UserRole.ADMIN, SIGNED_IN],
+    ["general", UserRole.GENERAL, SIGNED_IN],
     ["guest", UserRole.GUEST, ["files"]],
   ])("%s sees %j", (_n, role, expected) => {
     expect(ids(user(role))).toEqual(expected)
   })
 
+  it("hides media when the media switch is off, for everyone", () => {
+    for (const role of [UserRole.ADMIN, UserRole.GENERAL]) {
+      expect(ids(user(role), undefined, off)).toEqual(
+        SIGNED_IN.filter((i) => i !== "media"),
+      )
+    }
+    expect(ids(user(UserRole.GUEST), undefined, off)).toEqual(["files"])
+  })
+
   it("splits main and secondary areas", () => {
-    expect(ids(user(UserRole.ADMIN), "main")).toEqual(["files", "transfers"])
+    expect(ids(user(UserRole.ADMIN), "main")).toEqual([
+      "dashboard",
+      "files",
+      "media",
+      "transfers",
+      "plugins",
+    ])
     expect(ids(user(UserRole.ADMIN), "secondary")).toEqual(["settings"])
   })
 
@@ -42,10 +71,37 @@ describe("navItemsFor", () => {
   })
 })
 
+describe("phoneTabItems", () => {
+  const phone = (u: User, env = on) => phoneTabItems(u, env).map((i) => i.id)
+  it("holds the four high-frequency entries", () => {
+    expect(phone(user(UserRole.GENERAL))).toEqual([
+      "dashboard",
+      "files",
+      "media",
+      "transfers",
+    ])
+  })
+  it("drops media with the switch and shrinks a guest to files", () => {
+    expect(phone(user(UserRole.GENERAL), off)).toEqual([
+      "dashboard",
+      "files",
+      "transfers",
+    ])
+    expect(phone(user(UserRole.GUEST))).toEqual(["files"])
+  })
+  it("never has more than four", () => {
+    expect(NAV_ITEMS.filter((i) => i.phone).length).toBeLessThanOrEqual(4)
+  })
+})
+
 describe("activeNavId", () => {
   it.each([
     ["/", "files"],
     ["/movies/a b", "files"],
+    ["/@dashboard", "dashboard"],
+    ["/@media", "media"],
+    ["/@media/", "media"],
+    ["/@plugins", "plugins"],
     ["/@transfers", "transfers"],
     ["/@transfers/", "transfers"],
     ["/@manage", "settings"],
@@ -54,6 +110,7 @@ describe("activeNavId", () => {
     ["/@login", undefined],
     ["/@s/abc", undefined],
     ["/@transfersX", undefined],
+    ["/@mediaX", undefined],
   ])("%s -> %s", (path, expected) => {
     expect(activeNavId(path)).toBe(expected)
   })
