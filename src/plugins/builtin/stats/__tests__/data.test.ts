@@ -1,79 +1,54 @@
-import { describe, it, expect } from "vitest"
-import { driverDistribution, storageUsageSeries } from "../data"
+import { describe, expect, it } from "vitest"
 import type { Storage } from "~/types"
+import { storageUsageRows } from "../data"
 
-function storage(partial: Partial<Storage>): Storage {
-  return {
-    id: 1,
-    mount_path: "/s",
-    order: 0,
-    driver: "Local",
-    status: "work",
-    ...partial,
-  } as Storage
-}
+const GB = 1024 ** 3
+const st = (path: string, total?: number, used = 0, status = "work"): Storage =>
+  ({
+    mount_path: path,
+    status,
+    mount_details:
+      total === undefined
+        ? undefined
+        : { total_space: total, used_space: used },
+  }) as unknown as Storage
 
-describe("driverDistribution", () => {
-  it("counts storages per driver", () => {
-    const data = driverDistribution([
-      storage({ driver: "Local" }),
-      storage({ driver: "Local" }),
-      storage({ driver: "OneDrive" }),
+describe("storageUsageRows", () => {
+  it("sorts by total capacity, biggest first, unknown last in given order", () => {
+    const rows = storageUsageRows([
+      st("/nodata"),
+      st("/small", 10 * GB, GB),
+      st("/big", 2048 * GB, 1024 * GB),
+      st("/nodata2"),
     ])
-    expect(data).toEqual([
-      { name: "Local", value: 2 },
-      { name: "OneDrive", value: 1 },
+    expect(rows.map((r) => r.path)).toEqual([
+      "/big",
+      "/small",
+      "/nodata",
+      "/nodata2",
+    ])
+    expect(rows[0]).toMatchObject({
+      percent: 50,
+      text: "1.00T / 2.00T",
+      unknown: false,
+    })
+    expect(rows[2]).toMatchObject({ unknown: true, text: "" })
+  })
+
+  it("flags every storage that is not working", () => {
+    const rows = storageUsageRows([
+      st("/ok", GB, 0),
+      st("/bad", GB, 0, "error"),
+      st("/off", undefined, 0, "disabled"),
+    ])
+    expect(rows.map((r) => [r.path, r.failing])).toEqual([
+      ["/ok", false],
+      ["/bad", true],
+      ["/off", true],
     ])
   })
 
-  it("returns an empty array for no storages", () => {
-    expect(driverDistribution([])).toEqual([])
-  })
-
-  it("sorts by count descending", () => {
-    const data = driverDistribution([
-      storage({ driver: "A" }),
-      storage({ driver: "B" }),
-      storage({ driver: "B" }),
-    ])
-    expect(data[0]).toEqual({ name: "B", value: 2 })
-  })
-})
-
-describe("storageUsageSeries", () => {
-  it("includes only storages that report capacity", () => {
-    const data = storageUsageSeries([
-      storage({
-        mount_path: "/a",
-        mount_details: {
-          total_space: 100,
-          used_space: 40,
-          driver_name: "Local",
-        },
-      }),
-      storage({ mount_path: "/b" }), // no details
-    ])
-    expect(data).toHaveLength(1)
-    expect(data[0].name).toBe("/a")
-    expect(data[0].used).toBe(40)
-    expect(data[0].free).toBe(60)
-  })
-
-  it("computes percent used and clamps to 100", () => {
-    const data = storageUsageSeries([
-      storage({
-        mount_path: "/full",
-        mount_details: {
-          total_space: 100,
-          used_space: 150,
-          driver_name: "X",
-        },
-      }),
-    ])
-    expect(data[0].percent).toBe(100)
-  })
-
-  it("returns empty when nothing reports usage", () => {
-    expect(storageUsageSeries([storage({ mount_path: "/x" })])).toEqual([])
+  it("is empty without storages", () => {
+    expect(storageUsageRows([])).toEqual([])
   })
 })

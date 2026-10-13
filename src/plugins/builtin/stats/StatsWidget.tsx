@@ -1,109 +1,128 @@
-import { Box, Grid, Heading, VStack } from "@hope-ui/solid"
-import { createMemo, createSignal, onMount, Show } from "solid-js"
-import { EChart } from "~/components/EChart"
-import { useFetch, useT } from "~/hooks"
-import { handleResp, r, toReadableUsage } from "~/utils"
+import { TbDatabase } from "solid-icons/tb"
+import { createMemo, createResource, For, Show } from "solid-js"
+import { DashboardCard } from "~/features/dashboard/DashboardCard"
+import { DataState } from "~/components/ui/data-state"
+import { focusRing } from "~/components/ui/focus"
+import { Progress } from "~/components/ui/progress"
+import { useRouter, useT } from "~/hooks"
+import { apiGet } from "~/platform/api/client"
 import { me } from "~/store"
-import { UserMethods, type PageResp, type Storage } from "~/types"
-import { driverDistribution, storageUsageSeries } from "./data"
+import { UserMethods, type Storage } from "~/types"
+import { cn } from "~/utils/cn"
+import { storageUsageRows, type UsageRow } from "./data"
 
-const StatsCharts = () => {
+const load = async (): Promise<Storage[]> => {
+  const r = await apiGet<{ content: Storage[] | null }>("/admin/storage/list", {
+    params: { page: 1, per_page: 1000 },
+  })
+  if (!r.ok) throw new Error(r.error.message)
+  return r.data.content ?? []
+}
+
+/**
+ * Storage usage as a list: mount path, a bar, "used / total". Biggest first,
+ * storages without a known size last, broken ones in red (they open the
+ * storages page).
+ */
+const Row = (props: { row: UsageRow }) => {
   const t = useT()
-  const [storages, setStorages] = createSignal<Storage[]>([])
-  const [, getStorages] = useFetch((): Promise<PageResp<Storage>> =>
-    r.get("/admin/storage/list"),
-  )
-  onMount(async () => {
-    handleResp(await getStorages(), (data) => setStorages(data.content))
-  })
-
-  const driverOption = createMemo(() => ({
-    tooltip: { trigger: "item" },
-    legend: { bottom: 0, type: "scroll" },
-    series: [
-      {
-        name: t("manage.sidemenu.storages"),
-        type: "pie",
-        radius: ["40%", "70%"],
-        avoidLabelOverlap: true,
-        itemStyle: {
-          borderRadius: 6,
-          borderColor: "transparent",
-          borderWidth: 2,
-        },
-        data: driverDistribution(storages()),
-      },
-    ],
-  }))
-
-  const usageOption = createMemo(() => {
-    const series = storageUsageSeries(storages())
-    return {
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        formatter: (params: any[]) => {
-          const d = series[params[0].dataIndex]
-          return `${d.name}<br/>${toReadableUsage({
-            total_space: d.total,
-            used_space: d.used,
-            driver_name: "",
-          })} (${d.percent.toFixed(1)}%)`
-        },
-      },
-      legend: { bottom: 0 },
-      grid: { left: "3%", right: "4%", bottom: "12%", containLabel: true },
-      xAxis: {
-        type: "category",
-        data: series.map((s) => s.name),
-        axisLabel: { rotate: 30 },
-      },
-      yAxis: { type: "value" },
-      series: [
-        {
-          name: t("storages.common.usage"),
-          type: "bar",
-          stack: "cap",
-          data: series.map((s) => s.used),
-        },
-        {
-          name: t("manage.stats_free"),
-          type: "bar",
-          stack: "cap",
-          data: series.map((s) => s.free),
-        },
-      ],
-    }
-  })
-
-  return (
-    <VStack w="$full" spacing="$4" alignItems="stretch">
-      <Grid
-        gap="$4"
-        templateColumns={{ "@initial": "1fr", "@lg": "1fr 1fr" }}
-        w="$full"
+  const { to } = useRouter()
+  const row = () => props.row
+  const body = (
+    <>
+      <span class="truncate font-medium">{row().path}</span>
+      <Show
+        when={!row().unknown}
+        fallback={<span class="hidden h-2 rounded-full bg-muted sm:block" />}
       >
-        <Box p="$4" rounded="$lg" bgColor="$neutral2">
-          <Heading size="sm" mb="$2">
-            {t("manage.stats_driver_distribution")}
-          </Heading>
-          <EChart option={driverOption()} />
-        </Box>
-        <Box p="$4" rounded="$lg" bgColor="$neutral2">
-          <Heading size="sm" mb="$2">
-            {t("manage.stats_storage_usage")}
-          </Heading>
-          <EChart option={usageOption()} />
-        </Box>
-      </Grid>
-    </VStack>
+        <Progress
+          value={row().percent}
+          minValue={0}
+          maxValue={100}
+          aria-label={row().path}
+          fillClass={
+            row().failing
+              ? "bg-destructive"
+              : row().percent >= 90
+                ? "bg-warning"
+                : undefined
+          }
+        />
+      </Show>
+      <span class="truncate text-xs tabular-nums sm:text-right">
+        {row().unknown ? t("dashboard.storage.unknown") : row().text}
+        <Show when={row().failing}>
+          {" · "}
+          {t("dashboard.storage.failing")}
+        </Show>
+      </span>
+    </>
+  )
+  const cls = cn(
+    "grid w-full grid-cols-[minmax(0,1fr)] items-center gap-x-4 gap-y-1 rounded-md px-2 py-1.5 text-left text-sm sm:grid-cols-[minmax(8rem,14rem)_minmax(0,1fr)_minmax(7rem,auto)]",
+    row().failing
+      ? "text-destructive"
+      : "[&>span:last-child]:text-muted-foreground",
+  )
+  return (
+    <li>
+      <Show
+        when={row().failing}
+        fallback={
+          <div data-testid="stats-storage-row" class={cls}>
+            {body}
+          </div>
+        }
+      >
+        <button
+          type="button"
+          data-testid="stats-storage-row"
+          data-failing=""
+          title={row().status}
+          onClick={() => to("/@manage/storages")}
+          class={cn(focusRing, cls, "bg-transparent hover:bg-accent")}
+        >
+          {body}
+        </button>
+      </Show>
+    </li>
   )
 }
 
-/** The charts read /admin/storage/list, so anyone else gets nothing (and no request). */
+const StatsList = () => {
+  const t = useT()
+  const [storages, { refetch }] = createResource(load)
+  const rows = createMemo(() => storageUsageRows(storages() ?? []))
+  const message = () => {
+    const e = storages.error
+    return e ? (e instanceof Error ? e.message : String(e)) : undefined
+  }
+  return (
+    <DashboardCard
+      testid="stats-storage-usage"
+      title={t("dashboard.storage.title")}
+      icon={TbDatabase}
+    >
+      <DataState
+        loading={storages.loading}
+        error={message()}
+        onRetry={() => void refetch()}
+        empty={!storages.loading && !storages.error && rows().length === 0}
+        emptyText={t("dashboard.storage.empty")}
+        skeletonRows={3}
+      >
+        <ul class="m-0 flex list-none flex-col gap-1 p-0">
+          <For each={rows()}>{(row) => <Row row={row} />}</For>
+        </ul>
+      </DataState>
+    </DashboardCard>
+  )
+}
+
+/** The list reads /admin/storage/list, so anyone else gets nothing (and no request). */
 const StatsWidget = () => (
   <Show when={UserMethods.is_admin(me())}>
-    <StatsCharts />
+    <StatsList />
   </Show>
 )
 

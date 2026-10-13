@@ -49,5 +49,11 @@
   "sync": {
     "title": "Sync jobs",
     "empty": "No sync runs yet."
+  },
+  "storage": {
+    "title": "Storage usage",
+    "empty": "No storages yet.",
+    "unknown": "Unknown",
+    "failing": "Not working"
   }
 }
