@@ -53,6 +53,42 @@
   --ring: hsl(217 91% 62%);
 }
 
+/*
+ * Floating shell (tablet and desktop): a side panel and a content panel on the
+ * page background, with a gap between them and to the viewport edges, centred
+ * with a maximum width. They are set only while AppShell shows the wide shell,
+ * so a guest's bare page keeps its old geometry (var() fallbacks are 0). The
+ * phone shell sits flush against the edges.
+ */
+html.shell-wide {
+  /* A scrollbar appearing must not shift the panels (phones: overlay bars). */
+  scrollbar-gutter: stable;
+  --shell-gap: 12px;
+  --shell-max: 1680px;
+  --shell-radius: 1rem;
+  /* Left edge of the side panel. */
+  --shell-left: max(
+    var(--shell-gap),
+    calc((100vw - var(--shell-max)) / 2 + var(--shell-gap))
+  );
+  /* Distance from the content panel's right edge to the viewport's. */
+  --shell-content-right: var(--shell-left);
+}
+@media (max-width: 1023.98px) {
+  html.shell-wide {
+    --shell-gap: 8px;
+  }
+}
+html.shell-wide body {
+  background: var(--muted);
+}
+html.shell-phone {
+  --shell-gap: 0px;
+  --shell-radius: 0px;
+  --shell-left: 0px;
+  --shell-content-right: 0px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

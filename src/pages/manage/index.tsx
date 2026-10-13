@@ -47,7 +47,10 @@ const Manage = () => {
     <div class="w-full bg-background">
       <div
         class="flex w-full items-start"
-        style={{ "min-height": "calc(100vh - var(--shell-top, 0px))" }}
+        style={{
+          "min-height":
+            "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))",
+        }}
       >
         <SettingsNav
           sections={sections()}

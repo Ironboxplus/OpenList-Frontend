@@ -70,7 +70,7 @@ export const SettingsNav = (props: {
       )}
       style={{
         top: "var(--shell-top, 0px)",
-        height: "calc(100vh - var(--shell-top, 0px))",
+        height: "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))",
       }}
     >
       <button

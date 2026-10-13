@@ -20,7 +20,8 @@ export const Right = () => {
     onClose: () => localStorage.setItem("more-open", "false"),
     onOpen: () => localStorage.setItem("more-open", "true"),
   })
-  const margin = createMemo(() => (isOpen() ? "$4" : "$5"))
+  // Measured from the content panel, so it never floats outside the card.
+  const margin = createMemo(() => (isOpen() ? "1rem" : "1.25rem"))
   const isFolder = createMemo(() => objStore.state === State.Folder)
   const { refresh } = usePath()
   const { isShare } = useRouter()
@@ -28,8 +29,8 @@ export const Right = () => {
     <Box
       class="left-toolbar-box"
       pos="fixed"
-      right={margin()}
-      bottom={margin()}
+      right={`calc(var(--shell-content-right, 0px) + ${margin()})`}
+      bottom={`calc(var(--shell-gap, 0px) + ${margin()})`}
       zIndex="calc($modal - 1)"
     >
       <Show

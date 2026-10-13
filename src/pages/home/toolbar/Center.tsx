@@ -33,8 +33,9 @@ export const Center = () => {
         <Box
           class="center-toolbar"
           pos="fixed"
-          bottom="$4"
-          left="50%"
+          bottom="calc(var(--shell-gap, 0px) + 1rem)"
+          // Centred on the content panel, not on the window.
+          left="calc((var(--shell-content-left, 0px) + 100% - var(--shell-content-right, 0px)) / 2)"
           w="max-content"
           // On touch, cap width to viewport minus gutters so labels can wrap
           maxW={isTouch ? "calc(100vw - 2rem)" : undefined}

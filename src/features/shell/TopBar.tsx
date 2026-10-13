@@ -37,7 +37,7 @@ export const TopBar = (props: { pathname: string; phone?: boolean }) => {
   return (
     <header
       data-topbar
-      class="sticky top-0 z-[1100] flex items-center justify-between gap-2 border-b bg-background/95 px-3 backdrop-blur sm:px-4"
+      class="sticky top-[var(--shell-gap,0px)] z-[1100] flex items-center justify-between gap-2 rounded-t-[calc(var(--shell-radius,0px)-1px)] border-b bg-background/95 px-3 backdrop-blur before:pointer-events-none before:absolute before:inset-x-0 before:-top-[var(--shell-gap,0px)] before:h-[var(--shell-gap,0px)] before:bg-muted sm:px-4"
       style={{ height: TOP_BAR_HEIGHT }}
     >
       <div class="flex min-w-0 flex-1 items-center">

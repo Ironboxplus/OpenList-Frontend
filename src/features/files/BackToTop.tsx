@@ -22,10 +22,10 @@ export const BackToTop = () => {
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         class="fixed z-[1100] inline-flex size-10 items-center justify-center rounded-full border bg-card text-foreground shadow-md"
         style={{
-          right: "1.25rem",
+          right: "calc(var(--shell-content-right, 0px) + 1.25rem)",
           bottom: phoneShell()
             ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom) + 5.25rem)`
-            : "1.5rem",
+            : "calc(var(--shell-gap, 0px) + 1.5rem)",
         }}
       >
         <TbArrowUp class="size-5" />

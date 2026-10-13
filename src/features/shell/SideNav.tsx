@@ -76,8 +76,14 @@ export const SideNav = (props: SideNavProps) => {
     <nav
       ref={nav}
       aria-label="main"
-      class="fixed inset-y-0 left-0 z-[1200] flex flex-col gap-1 border-r bg-card p-3 text-card-foreground transition-[width] duration-150"
-      style={{ width: props.rail ? RAIL_WIDTH : FULL_WIDTH }}
+      class="fixed z-[1200] flex flex-col gap-1 border bg-card p-3 text-card-foreground shadow-sm transition-[width] duration-150"
+      style={{
+        width: props.rail ? RAIL_WIDTH : FULL_WIDTH,
+        top: "var(--shell-gap)",
+        left: "var(--shell-left)",
+        height: "calc(100dvh - 2 * var(--shell-gap))",
+        "border-radius": "var(--shell-radius)",
+      }}
     >
       <Show when={indicatorY() !== undefined}>
         <Motion.div

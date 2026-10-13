@@ -122,8 +122,8 @@ function MarkdownToc(props: {
         onMouseLeave={() => setOffsetX(initialOffsetX)}
         zIndex="$overlay"
         pos="fixed"
-        right="$6"
-        top="$6"
+        right="calc(var(--shell-content-right, 0px) + 1.5rem)"
+        top="calc(var(--shell-gap, 0px) + 1.5rem)"
       >
         <Box
           mt="$5"

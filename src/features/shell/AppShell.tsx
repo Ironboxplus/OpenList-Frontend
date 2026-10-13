@@ -107,6 +107,11 @@ const AppShell = (props: ParentProps) => {
     document.documentElement.classList.toggle("shell-phone", phone())
     onCleanup(() => document.documentElement.classList.remove("shell-phone"))
   })
+  // The floating panels' variables (tokens.css) apply while the wide shell is on.
+  createEffect(() => {
+    document.documentElement.classList.toggle("shell-wide", wide())
+    onCleanup(() => document.documentElement.classList.remove("shell-wide"))
+  })
 
   // The content wrapper is always rendered, so the page underneath is not
   // remounted when the nav appears once the user has loaded.
@@ -120,45 +125,69 @@ const AppShell = (props: ParentProps) => {
         />
       </Show>
       <div
-        data-shell-content
+        data-shell-frame
         class="w-full min-w-0 transition-[padding] duration-150"
         style={{
-          "padding-left": wide() ? (rail() ? RAIL_WIDTH : FULL_WIDTH) : "0",
+          // The side panel is fixed; the content panel makes room for it.
+          "padding-left": wide() ? "var(--shell-content-left)" : "0",
+          "padding-right": wide() ? "var(--shell-content-right)" : "0",
+          "padding-top": wide() ? "var(--shell-gap)" : "0",
           "padding-bottom": phone()
             ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
-            : "0",
-          // Pages that size themselves to the viewport subtract this.
-          "--shell-top": shown() ? TOP_BAR_HEIGHT : "0px",
-          // What pinned bars must stay above (the phone tab bar).
-          "--shell-bottom": phone()
-            ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
+            : wide()
+              ? "var(--shell-gap)"
+              : "0",
+          // Fixed elements inside the page line up with the content panel.
+          "--shell-content-left": wide()
+            ? `calc(var(--shell-left) + ${rail() ? RAIL_WIDTH : FULL_WIDTH} + var(--shell-gap))`
             : "0px",
         }}
       >
-        <Show when={shown()}>
-          <TopBar pathname={pathname()} phone={phone()} />
-        </Show>
-        {/* One enter animation per section, none inside it (the file browser
+        <div
+          data-shell-content
+          class="min-w-0"
+          classList={{
+            "overflow-clip rounded-[var(--shell-radius)] border bg-background":
+              wide(),
+          }}
+          style={{
+            "min-height": wide() ? "calc(100dvh - 2 * var(--shell-gap))" : "0",
+            // Pages that size themselves to the viewport subtract this; it is
+            // also where their sticky bars stop below the top of the window.
+            "--shell-top": shown()
+              ? `calc(var(--shell-gap, 0px) + ${TOP_BAR_HEIGHT})`
+              : "0px",
+            // What pinned bars must stay above (the phone tab bar).
+            "--shell-bottom": phone()
+              ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
+              : "0px",
+          }}
+        >
+          <Show when={shown()}>
+            <TopBar pathname={pathname()} phone={phone()} />
+          </Show>
+          {/* One enter animation per section, none inside it (the file browser
             has its own transitions). The old section stays until the new one
             is ready; there is no exit. Whatever suspends below stops at the
             Suspense, which must sit outside the keyed frame so that it is the
             same boundary across sections: the nav and the top bar stay. */}
-        <Suspense fallback={<FullLoading />}>
-          <Show when={activeNavId(pathname()) ?? "none"} keyed>
-            {(_section) => (
-              <Motion.div
-                {...asMotion(motionProps(sectionEnter))}
-                // A resting transform would make this box the containing
-                // block of the page's position: fixed elements.
-                onMotionComplete={(e) =>
-                  (e.target as HTMLElement).style.removeProperty("transform")
-                }
-              >
-                {props.children}
-              </Motion.div>
-            )}
-          </Show>
-        </Suspense>
+          <Suspense fallback={<FullLoading />}>
+            <Show when={activeNavId(pathname()) ?? "none"} keyed>
+              {(_section) => (
+                <Motion.div
+                  {...asMotion(motionProps(sectionEnter))}
+                  // A resting transform would make this box the containing
+                  // block of the page's position: fixed elements.
+                  onMotionComplete={(e) =>
+                    (e.target as HTMLElement).style.removeProperty("transform")
+                  }
+                >
+                  {props.children}
+                </Motion.div>
+              )}
+            </Show>
+          </Suspense>
+        </div>
       </div>
       <Show when={phone()}>
         <Show
