@@ -1,5 +1,5 @@
 import { TbDatabase } from "solid-icons/tb"
-import { createMemo, createResource, For, Show } from "solid-js"
+import { createMemo, For, Show } from "solid-js"
 import { DashboardCard } from "~/features/dashboard/DashboardCard"
 import { DataState } from "~/components/ui/data-state"
 import { focusRing } from "~/components/ui/focus"
@@ -9,6 +9,7 @@ import { apiGet } from "~/platform/api/client"
 import { me } from "~/store"
 import { UserMethods, type Storage } from "~/types"
 import { cn } from "~/utils/cn"
+import { createLoad } from "~/utils/load"
 import { storageUsageRows, type UsageRow } from "./data"
 
 const load = async (): Promise<Storage[]> => {
@@ -91,10 +92,10 @@ const Row = (props: { row: UsageRow }) => {
 
 const StatsList = () => {
   const t = useT()
-  const [storages, { refetch }] = createResource(load)
-  const rows = createMemo(() => storageUsageRows(storages() ?? []))
+  const storages = createLoad(() => undefined, load)
+  const rows = createMemo(() => storageUsageRows(storages.data() ?? []))
   const message = () => {
-    const e = storages.error
+    const e = storages.error()
     return e ? (e instanceof Error ? e.message : String(e)) : undefined
   }
   return (
@@ -104,10 +105,10 @@ const StatsList = () => {
       icon={TbDatabase}
     >
       <DataState
-        loading={storages.loading}
+        loading={storages.loading()}
         error={message()}
-        onRetry={() => void refetch()}
-        empty={!storages.loading && !storages.error && rows().length === 0}
+        onRetry={() => void storages.refetch()}
+        empty={!storages.loading() && !storages.error() && rows().length === 0}
         emptyText={t("dashboard.storage.empty")}
         skeletonRows={3}
       >

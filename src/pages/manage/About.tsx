@@ -1,4 +1,4 @@
-import { createResource } from "solid-js"
+import { createLoad } from "~/utils/load"
 import { Markdown } from "~/components"
 import { DataState } from "~/components/ui/data-state"
 import { useManageTitle } from "~/hooks"
@@ -12,13 +12,13 @@ const fetchReadme = async () =>
 
 const About = () => {
   useManageTitle("manage.sidemenu.about")
-  const [readme] = createResource(fetchReadme)
+  const readme = createLoad(() => undefined, fetchReadme)
   return (
     <DataState
-      loading={readme.loading}
-      error={readme.error ? String(readme.error) : undefined}
+      loading={readme.loading()}
+      error={readme.error() ? String(readme.error()) : undefined}
     >
-      <Markdown children={readme()} sanitize={true} />
+      <Markdown children={readme.data()} sanitize={true} />
     </DataState>
   )
 }

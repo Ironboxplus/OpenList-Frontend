@@ -1,11 +1,12 @@
 import { TbBell, TbBookmark, TbFile, TbFolder } from "solid-icons/tb"
-import { createResource, For, Show } from "solid-js"
+import { For, Show } from "solid-js"
 import { DataState } from "~/components/ui/data-state"
 import { focusRing } from "~/components/ui/focus"
 import { useRouter, useT } from "~/hooks"
 import { fetchFavorites } from "~/plugins/builtin/favorites/api"
 import type { Favorite } from "~/plugins/builtin/favorites/data"
 import { cn } from "~/utils/cn"
+import { createLoad } from "~/utils/load"
 import { errorCenter } from "../notifications/service"
 import { setErrorCenterOpen } from "../notifications/state"
 import { DashboardCard } from "./DashboardCard"
@@ -28,9 +29,9 @@ export const FavoritesCard = (props: {
 }) => {
   const t = useT()
   const { to } = useRouter()
-  const [favs, { refetch }] = createResource(() => load(props.top))
+  const favs = createLoad(() => props.top, load)
   const message = () => {
-    const e = favs.error
+    const e = favs.error()
     return e ? (e instanceof Error ? e.message : String(e)) : undefined
   }
   return (
@@ -42,14 +43,16 @@ export const FavoritesCard = (props: {
       class={props.class}
     >
       <DataState
-        loading={favs.loading}
+        loading={favs.loading()}
         error={message()}
-        onRetry={() => void refetch()}
-        empty={!favs.loading && !favs.error && (favs() ?? []).length === 0}
+        onRetry={() => void favs.refetch()}
+        empty={
+          !favs.loading() && !favs.error() && (favs.data() ?? []).length === 0
+        }
         emptyText={t("dashboard.favorites.empty")}
       >
         <ul class="m-0 flex list-none flex-col gap-1 p-0">
-          <For each={favs()}>
+          <For each={favs.data()}>
             {(fav) => (
               <li>
                 <button
