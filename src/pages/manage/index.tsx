@@ -34,13 +34,7 @@ const Manage = () => {
   }
 
   useTopBarSlots(() => ({
-    left: (ctx) => (
-      <SettingsTopLeft
-        phone={ctx.phone}
-        pathname={pathname()}
-        hash={location.hash}
-      />
-    ),
+    left: () => <SettingsTopLeft pathname={pathname()} hash={location.hash} />,
   }))
 
   return (
@@ -49,7 +43,7 @@ const Manage = () => {
         class="flex w-full items-start"
         style={{
           "min-height":
-            "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))",
+            "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px) - 2px)",
         }}
       >
         <SettingsNav

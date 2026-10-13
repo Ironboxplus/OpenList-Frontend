@@ -108,28 +108,9 @@ describe("SettingsNav", () => {
 })
 
 describe("SettingsTopLeft", () => {
-  it("desktop: Settings links home, group and page follow", () => {
-    const { container } = render(() => (
-      <SettingsTopLeft
-        phone={false}
-        pathname="/@manage/settings/traffic"
-        hash=""
-      />
-    ))
-    const items = [...container.querySelectorAll("li")].map((l) =>
-      l.textContent?.trim(),
-    )
-    expect(items).toEqual(["Settings", "Storage and transfer", "Traffic"])
-    fireEvent.click(screen.getByRole("link", { name: "Settings" }))
-    expect(to).toHaveBeenCalledWith("/@manage")
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toBe(
-      "Traffic",
-    )
-  })
-
   it("phone: back button to the settings home plus the page title", () => {
     const { container } = render(() => (
-      <SettingsTopLeft phone pathname="/@manage/settings/traffic" hash="" />
+      <SettingsTopLeft pathname="/@manage/settings/traffic" hash="" />
     ))
     expect(container.textContent).toContain("Traffic")
     fireEvent.click(container.querySelector("[data-settings-back]")!)
@@ -138,7 +119,7 @@ describe("SettingsTopLeft", () => {
 
   it("phone: no back button on the settings home", () => {
     const { container } = render(() => (
-      <SettingsTopLeft phone pathname="/@manage" hash="" />
+      <SettingsTopLeft pathname="/@manage" hash="" />
     ))
     expect(container.querySelector("[data-settings-back]")).toBeNull()
     expect(container.textContent).toContain("Settings")

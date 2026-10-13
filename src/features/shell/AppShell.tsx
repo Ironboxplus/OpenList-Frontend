@@ -99,6 +99,11 @@ const AppShell = (props: ParentProps) => {
 
   const wide = () => shown() && viewport() !== "phone"
   const phone = () => shown() && viewport() === "phone"
+  // The settings pages are a page of their own (menu on the left, a titled
+  // card): on tablet and desktop the bar above them would only repeat that.
+  // Phones keep it for the way back.
+  const topBar = () =>
+    shown() && !(activeNavId(pathname()) === "settings" && !phone())
 
   createEffect(() => setPhoneShell(phone()))
   onCleanup(() => setPhoneShell(false))
@@ -154,16 +159,18 @@ const AppShell = (props: ParentProps) => {
             "min-height": wide() ? "calc(100dvh - 2 * var(--shell-gap))" : "0",
             // Pages that size themselves to the viewport subtract this; it is
             // also where their sticky bars stop below the top of the window.
-            "--shell-top": shown()
-              ? `calc(var(--shell-gap, 0px) + ${TOP_BAR_HEIGHT})`
-              : "0px",
+            "--shell-top": !shown()
+              ? "0px"
+              : topBar()
+                ? `calc(var(--shell-gap, 0px) + ${TOP_BAR_HEIGHT})`
+                : "var(--shell-gap, 0px)",
             // What pinned bars must stay above (the phone tab bar).
             "--shell-bottom": phone()
               ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
               : "0px",
           }}
         >
-          <Show when={shown()}>
+          <Show when={topBar()}>
             <TopBar pathname={pathname()} phone={phone()} />
           </Show>
           {/* One enter animation per section, none inside it (the file browser
