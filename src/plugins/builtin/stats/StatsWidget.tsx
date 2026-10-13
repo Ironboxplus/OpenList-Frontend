@@ -1,16 +1,17 @@
 import { Box, Grid, Heading, VStack } from "@hope-ui/solid"
-import { createMemo, createSignal, onMount } from "solid-js"
+import { createMemo, createSignal, onMount, Show } from "solid-js"
 import { EChart } from "~/components/EChart"
 import { useFetch, useT } from "~/hooks"
 import { handleResp, r, toReadableUsage } from "~/utils"
-import type { PageResp, Storage } from "~/types"
+import { me } from "~/store"
+import { UserMethods, type PageResp, type Storage } from "~/types"
 import { driverDistribution, storageUsageSeries } from "./data"
 
-const StatsWidget = () => {
+const StatsCharts = () => {
   const t = useT()
   const [storages, setStorages] = createSignal<Storage[]>([])
-  const [, getStorages] = useFetch(
-    (): Promise<PageResp<Storage>> => r.get("/admin/storage/list"),
+  const [, getStorages] = useFetch((): Promise<PageResp<Storage>> =>
+    r.get("/admin/storage/list"),
   )
   onMount(async () => {
     handleResp(await getStorages(), (data) => setStorages(data.content))
@@ -98,5 +99,12 @@ const StatsWidget = () => {
     </VStack>
   )
 }
+
+/** The charts read /admin/storage/list, so anyone else gets nothing (and no request). */
+const StatsWidget = () => (
+  <Show when={UserMethods.is_admin(me())}>
+    <StatsCharts />
+  </Show>
+)
 
 export default StatsWidget

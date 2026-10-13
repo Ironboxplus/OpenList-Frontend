@@ -1,5 +1,6 @@
 import br from "./br.json"
 import common from "./common.json"
+import dashboard from "./dashboard.json"
 import drivers from "./drivers.json"
 import errors from "./errors.json"
 import files from "./files.json"
@@ -29,6 +30,7 @@ import users from "./users.json"
 export const dict = {
   br,
   common,
+  dashboard,
   drivers,
   errors,
   files,

@@ -20,6 +20,7 @@ import { objStore } from "~/store"
 import { handleResp, notify, r } from "~/utils"
 import type { PResp } from "~/types"
 import type { Plugin } from "../../registry"
+import { fetchFavorites } from "./api"
 import { isFavorited, sortFavorites, type Favorite } from "./data"
 
 export const FavoritesWidget = () => {
@@ -31,8 +32,9 @@ export const FavoritesWidget = () => {
   const refresh = async () => {
     setLoading(true)
     try {
-      const resp: PResp<Favorite[]> = r.get("/me/favorites")
-      handleResp(await resp, (data) => setFavorites(sortFavorites(data ?? [])))
+      handleResp(await fetchFavorites(), (data) =>
+        setFavorites(sortFavorites(data ?? [])),
+      )
     } finally {
       setLoading(false)
     }

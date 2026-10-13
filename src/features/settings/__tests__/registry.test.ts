@@ -24,7 +24,7 @@ import {
  * Adding a page without a registry entry, or dropping one, fails here.
  */
 const LEGACY_ROUTES = [
-  "/@manage/dashboard",
+  "/@dashboard",
   "/@manage/settings/site",
   "/@manage/settings/style",
   "/@manage/settings/preview",

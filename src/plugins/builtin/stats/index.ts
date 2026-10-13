@@ -7,7 +7,5 @@ const StatsWidget = lazy(() => import("./StatsWidget"))
 export const statsPlugin: Plugin = {
   id: "builtin.stats",
   name: "Dashboard Stats",
-  contributions: [
-    { slot: "manage-dashboard", component: StatsWidget, order: 0 },
-  ],
+  contributions: [{ slot: "dashboard", component: StatsWidget, order: 0 }],
 }

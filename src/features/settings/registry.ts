@@ -371,7 +371,7 @@ export const SETTINGS: SettingContribution[] = [
     "filename char mapping",
     "ignore system files",
   ]),
-  item("dashboard", "system", "/@manage/dashboard", BsSpeedometer2, [
+  item("dashboard", "system", "/@dashboard", BsSpeedometer2, [
     "仪表盘",
     "概览",
     "状态",

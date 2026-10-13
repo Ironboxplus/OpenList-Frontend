@@ -4,12 +4,7 @@ vi.mock("~/hooks", async (orig) =>
   (await import("./mocks")).hooksMock(await orig()),
 )
 vi.mock("~/utils/notify", async () => (await import("./mocks")).notifyMock())
-vi.mock("~/plugins", () => ({
-  PluginSlot: () => <div data-testid="slot" />,
-  slotComponents: () => [],
-}))
 
-import Dashboard from "../Dashboard"
 import Messenger from "../messenger/Messenger"
 import { WebauthnCredentials } from "../users/Webauthnitems"
 import {
@@ -75,13 +70,5 @@ describe("webauthn credential", () => {
       "webauthn-delete",
       writes().map((c) => [c.path, c.body]),
     )
-  })
-})
-
-describe("dashboard", () => {
-  it("renders the plugin slot and an empty hint", async () => {
-    renderPage(() => <Dashboard />)
-    await settle()
-    expect(document.querySelector("[data-testid=slot]")).toBeTruthy()
   })
 })

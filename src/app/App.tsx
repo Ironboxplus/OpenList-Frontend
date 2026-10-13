@@ -55,6 +55,7 @@ const ShellLayout = () => (
   </AppShell>
 )
 const Transfers = lazy(() => import("~/features/transfers/TransfersPage"))
+const Dashboard = lazy(() => import("~/features/dashboard/DashboardPage"))
 
 /** Old `/@manage/tasks[/:type]` addresses now live on the Transfers page. */
 const TasksRedirect = () => {
@@ -170,7 +171,19 @@ const App: Component = () => {
             <Route path="/@login" component={Login} />
             <Route path="/@init" component={Init} />
             <Route path="/@manage/tasks/:type?" component={TasksRedirect} />
+            <Route
+              path="/@manage/dashboard"
+              element={<Navigate href={joinBase("/@dashboard")} />}
+            />
             <Route path="/" component={ShellLayout}>
+              <Route
+                path="/@dashboard"
+                element={
+                  <MustUser>
+                    <Dashboard />
+                  </MustUser>
+                }
+              />
               <Route
                 path="/@transfers"
                 element={

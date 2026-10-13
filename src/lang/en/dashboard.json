@@ -1,0 +1,20 @@
+{
+  "title": "Home",
+  "open": "Open",
+  "transfers": {
+    "title": "Transfers",
+    "active": "In progress",
+    "failed": "Failed",
+    "stale": "Possibly stuck",
+    "empty": "No transfers yet."
+  },
+  "errors": {
+    "title": "Errors",
+    "unread": "{{count}} unread",
+    "empty": "No errors recorded."
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorites yet. Bookmark a folder from the Files page."
+  }
+}
