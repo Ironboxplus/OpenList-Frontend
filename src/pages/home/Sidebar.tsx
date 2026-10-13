@@ -22,6 +22,7 @@ function SidebarPanel() {
   const [folderTreeHandler, setFolderTreeHandler] =
     createSignal<FolderTreeHandler>()
   const [sideBarRef, setSideBarRef] = createSignal<HTMLDivElement>()
+  const [anchorRef, setAnchorRef] = createSignal<HTMLDivElement>()
   const [offsetX, setOffsetX] = createSignal<number | string>(-999)
 
   const showFullSidebar = () => setOffsetX(0)
@@ -29,15 +30,34 @@ function SidebarPanel() {
     const $objBox = objBoxRef()
     const $sideBar = sideBarRef()
     if (!$objBox || !$sideBar) return
-    const gap = $objBox.offsetLeft > 50 ? 16 : 0
-    if ($sideBar.clientWidth < $objBox.offsetLeft - gap) {
+    // The free space the panel may rest in: from where it is anchored (the
+    // content panel's left edge in the shell, the window's in the classic
+    // layout) to the file box. Measured, not offsetLeft, which is relative to
+    // the offset parent and knows nothing of the panel's anchor.
+    const $anchor = anchorRef()
+    if (!$anchor) return
+    // The panel rests 3px inside its anchor (the shadow's room).
+    const panelLeft = $anchor.getBoundingClientRect().left + 3
+    const free = Math.max(0, $objBox.getBoundingClientRect().left - panelLeft)
+    const gap = free > 50 ? 16 : 0
+    if ($sideBar.clientWidth < free - gap) {
       setOffsetX(0)
     } else {
-      setOffsetX(`calc(-100% + ${$objBox.offsetLeft}px - ${gap}px)`)
+      setOffsetX(`calc(-100% + ${free}px - ${gap}px)`)
     }
   }
 
   let rafId: number
+
+  // The room left of the file box changes with the layout around it (the
+  // shell's nav folding, the first layout pass), not only with the window.
+  createEffect(() => {
+    const $objBox = objBoxRef()
+    if (!$objBox || typeof ResizeObserver === "undefined") return
+    const ro = new ResizeObserver(() => resetSidebar())
+    ro.observe($objBox)
+    onCleanup(() => ro.disconnect())
+  })
 
   onMount(() => {
     const handler = folderTreeHandler()
@@ -68,33 +88,47 @@ function SidebarPanel() {
   )
 
   return (
+    // The outer box is the anchor and the clip: fixed to the content panel in
+    // the shell (the variables are unset elsewhere and fall back to 0, the
+    // window's edge), it hides the part of the panel that is slid out of view,
+    // so that part never covers the side nav. Its 3px padding leaves room for
+    // the outline shadow. It lets pointer events through; the panel takes them.
     <Box
-      as={Motion.div}
-      initial={{ x: -999 }}
-      animate={{ x: offsetX() }}
-      zIndex="$overlay"
       pos="fixed"
-      left={3} // width of outline shadow
-      top={3}
-      h="calc(100vh - 6px)"
-      minW={180}
-      p="$2"
-      overflow="auto"
-      shadow="$lg"
-      rounded="$lg"
-      bgColor="white"
-      _dark={{ bgColor: "$neutral3" }}
-      onMouseEnter={showFullSidebar}
-      onMouseLeave={resetSidebar}
-      ref={(el: HTMLDivElement) => setSideBarRef(el)}
+      zIndex="$overlay"
+      left="var(--shell-content-left, 0px)"
+      top="var(--shell-gap, 0px)"
+      h="calc(100dvh - 2 * var(--shell-gap, 0px))"
+      p="3px"
+      overflow="hidden"
+      pointerEvents="none"
+      ref={(el: HTMLDivElement) => setAnchorRef(el)}
     >
-      <FolderTree
-        autoOpen
-        showEmptyIcon
-        showHiddenFolder={false}
-        onChange={(path) => to(path)}
-        handle={(handler) => setFolderTreeHandler(handler)}
-      />
+      <Box
+        as={Motion.div}
+        initial={{ x: -999 }}
+        animate={{ x: offsetX() }}
+        h="$full"
+        minW={180}
+        p="$2"
+        overflow="auto"
+        shadow="$lg"
+        rounded="$lg"
+        bgColor="white"
+        pointerEvents="auto"
+        _dark={{ bgColor: "$neutral3" }}
+        onMouseEnter={showFullSidebar}
+        onMouseLeave={resetSidebar}
+        ref={(el: HTMLDivElement) => setSideBarRef(el)}
+      >
+        <FolderTree
+          autoOpen
+          showEmptyIcon
+          showHiddenFolder={false}
+          onChange={(path) => to(path)}
+          handle={(handler) => setFolderTreeHandler(handler)}
+        />
+      </Box>
     </Box>
   )
 }
