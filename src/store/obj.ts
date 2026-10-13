@@ -49,7 +49,6 @@ const setObjs = (objs: Obj[]) => {
   lastChecked.start = -1
   lastChecked.end = -1
   setObjStore("objs", withoutNulls(objs))
-  setObjStore("obj", "is_dir", true)
 }
 
 export const ObjStore = {
@@ -69,6 +68,9 @@ export const ObjStore = {
     setObjStore("provider", provider)
   },
   setObjs: setObjs,
+  // The listed folder is the current object (as opposed to a preview page's
+  // background sibling listing, where the current object is the open file).
+  markFolder: () => setObjStore("obj", "is_dir", true),
   setTotal: (total: number) => {
     setObjStore("total", total)
   },

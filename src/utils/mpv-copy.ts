@@ -4,9 +4,8 @@ import { asyncPool } from "./async_pool"
 import { mpvCommand, MpvItem } from "./mpv-command"
 
 /**
- * Only video and audio files can be handed to mpv. Decided by `type` alone: a
- * folder has type FOLDER, and `is_dir` is not reliable on `objStore.obj` (loading
- * the sibling list on a preview page sets it to true for the open file).
+ * Only video and audio files can be handed to mpv. `type` is derived from the
+ * name by the backend (folders are FOLDER), so it alone decides.
  */
 export const isMpvMedia = (obj: Obj): boolean =>
   obj.type === ObjType.VIDEO || obj.type === ObjType.AUDIO

@@ -175,6 +175,7 @@ export const usePath = () => {
         if (onlyList) {
           return
         }
+        ObjStore.markFolder()
         ObjStore.setReadme(data.readme)
         ObjStore.setHeader(data.header)
         ObjStore.setWrite(data.write)
