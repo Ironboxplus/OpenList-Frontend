@@ -6,15 +6,17 @@ import {
   lazy,
   type ParentProps,
   Show,
+  Suspense,
   onCleanup,
 } from "solid-js"
+import { FullLoading } from "~/components"
 import { useRouter } from "~/hooks"
 import { me } from "~/store"
 import { UserMethods } from "~/types"
 import { isPaletteHotkey, paletteOpen, setPaletteOpen } from "../palette/state"
 import { transfers } from "../transfers/service"
 import { BottomTabs, TAB_BAR_HEIGHT } from "./BottomTabs"
-import { readCollapsed, writeCollapsed } from "./nav-items"
+import { preloadAllSections, readCollapsed, writeCollapsed } from "./nav-items"
 import { FULL_WIDTH, RAIL_WIDTH, SideNav } from "./SideNav"
 import { TOP_BAR_HEIGHT, TopBar } from "./TopBar"
 import { bindTransfersToUser } from "./transfers-lifecycle"
@@ -51,10 +53,9 @@ const AppShell = (props: ParentProps) => {
     writeCollapsed(localStorage, next)
   }
 
-  // me() is empty until the route's auth wrapper has loaded it. MustUser
-  // refetches it on every section change and sets a new object each time, so
-  // everything that must only follow the sign-in state reads these memos, not
-  // me() itself: they change when the user does, not when me() is replaced.
+  // me() is empty until SessionGate has loaded it. It revalidates /me on every
+  // section change, so everything that must only follow the sign-in state reads
+  // these memos, not me() itself: they change when the user does.
   const shown = createMemo(
     () => me().id !== undefined && !UserMethods.is_guest(me()),
   )
@@ -78,6 +79,12 @@ const AppShell = (props: ParentProps) => {
   const [paletteUsed, setPaletteUsed] = createSignal(false)
   createEffect(() => {
     if (paletteOpen()) setPaletteUsed(true)
+  })
+
+  // Once signed in, fetch the section chunks while the browser is idle so the
+  // first click on each of them has nothing left to download.
+  createEffect(() => {
+    if (shown()) onCleanup(preloadAllSections())
   })
 
   createEffect(() => setShellActive(shown()))
@@ -124,7 +131,8 @@ const AppShell = (props: ParentProps) => {
         <Show when={shown()}>
           <TopBar pathname={pathname()} phone={phone()} />
         </Show>
-        {props.children}
+        {/* Whatever suspends below stops here: the nav and the top bar stay. */}
+        <Suspense fallback={<FullLoading />}>{props.children}</Suspense>
       </div>
       <Show when={phone()}>
         <Show

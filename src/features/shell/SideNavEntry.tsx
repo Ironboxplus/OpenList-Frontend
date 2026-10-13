@@ -9,7 +9,7 @@ import { cn } from "~/utils/cn"
 import { NavIconView } from "./icons"
 import { NavBadge } from "./NavBadge"
 import { NavLink } from "./NavLink"
-import { badgeTarget, type NavItem } from "./nav-items"
+import { badgeTarget, preloadSection, type NavItem } from "./nav-items"
 
 export const navRowClass =
   `${focusRing} ` +
@@ -28,6 +28,8 @@ export const SideNavEntry = (props: {
   const link = () => (
     <NavLink
       path={props.item.path}
+      onPointerEnter={() => preloadSection(props.item.id)}
+      onFocus={() => preloadSection(props.item.id)}
       aria-current={props.active ? "page" : undefined}
       aria-label={props.rail ? props.label : undefined}
       class={cn(

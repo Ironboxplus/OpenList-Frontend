@@ -119,6 +119,38 @@ export const activeNavId = (pathname: string): NavId | undefined => {
   return "files"
 }
 
+/**
+ * The code chunk behind each section. The router's `lazy()` pages are made from
+ * these, and the same loaders warm the chunks up ahead of the click, so one
+ * table says what "going to a section" costs.
+ */
+export const SECTION_LOADERS: Record<NavId, () => Promise<{ default: any }>> = {
+  dashboard: () => import("~/features/dashboard/DashboardPage"),
+  files: () => import("~/pages/home/Layout"),
+  media: () => import("~/features/media/LibraryPage"),
+  transfers: () => import("~/features/transfers/TransfersPage"),
+  plugins: () => import("~/features/plugins/PluginsPage"),
+  settings: () => import("~/pages/manage"),
+}
+
+/** Start loading a section's chunk; failures are left to the real navigation. */
+export const preloadSection = (id: NavId): void => {
+  void SECTION_LOADERS[id]().catch(() => {})
+}
+
+/** Warm every section's chunk when the browser is idle (after sign-in). */
+export const preloadAllSections = (
+  ids: readonly NavId[] = Object.keys(SECTION_LOADERS) as NavId[],
+): (() => void) => {
+  const run = () => ids.forEach(preloadSection)
+  if (typeof requestIdleCallback === "function") {
+    const h = requestIdleCallback(run)
+    return () => cancelIdleCallback(h)
+  }
+  const h = setTimeout(run, 200)
+  return () => clearTimeout(h)
+}
+
 /** The transfer badge hangs on the Transfers item (tab bar, side nav). */
 export const badgeTarget = (id: NavId): boolean => id === "transfers"
 

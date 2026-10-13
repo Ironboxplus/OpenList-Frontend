@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { User, UserRole } from "~/types"
 import {
   activeNavId,
@@ -153,5 +153,33 @@ describe("collapsed persistence", () => {
     }
     expect(readCollapsed(bad)).toBe(false)
     expect(() => writeCollapsed(bad, true)).not.toThrow()
+  })
+})
+
+describe("section preloading", () => {
+  it("has one loader per nav id, including the settings and files pages", async () => {
+    const { SECTION_LOADERS, NAV_ITEMS } = await import("../nav-items")
+    for (const i of NAV_ITEMS)
+      expect(SECTION_LOADERS[i.id]).toBeTypeOf("function")
+  })
+
+  it("falls back to a timer when requestIdleCallback is missing, and can be cancelled", async () => {
+    vi.useFakeTimers()
+    const { preloadAllSections, SECTION_LOADERS } = await import("../nav-items")
+    const spy = vi
+      .spyOn(SECTION_LOADERS, "transfers")
+      .mockResolvedValue({ default: () => null })
+    const old = (globalThis as any).requestIdleCallback
+    ;(globalThis as any).requestIdleCallback = undefined
+    const cancel = preloadAllSections(["transfers"])
+    expect(spy).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(300)
+    expect(spy).toHaveBeenCalledTimes(1)
+    preloadAllSections(["transfers"])()
+    vi.advanceTimersByTime(300)
+    expect(spy).toHaveBeenCalledTimes(1)
+    cancel()
+    ;(globalThis as any).requestIdleCallback = old
+    vi.useRealTimers()
   })
 })

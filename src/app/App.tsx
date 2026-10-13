@@ -36,28 +36,31 @@ import {
 import { setArchiveExtensions } from "~/store/archive"
 import { base_path, bus, joinBase } from "~/utils"
 import { onSettingsLoaded } from "./boot"
-import { MustUser, UserOrGuest } from "./MustUser"
+import { SECTION_LOADERS } from "~/features/shell/nav-items"
+import { SessionGate } from "./MustUser"
 import "./index.css"
 import "./tailwind.css"
 import { legacyTypeToFilter } from "~/features/transfers/adapter"
 import { globalStyles } from "./theme"
 
-const Home = lazy(() => import("~/pages/home/Layout"))
-const Manage = lazy(() => import("~/pages/manage"))
+const Home = lazy(SECTION_LOADERS.files)
+const Manage = lazy(SECTION_LOADERS.settings)
 const Login = lazy(() => import("~/pages/login"))
 const Init = lazy(() => import("~/pages/init"))
 const Test = lazy(() => import("~/pages/test"))
 const AppShell = lazy(() => import("~/features/shell/AppShell"))
 /** Persistent layout route: the shell stays mounted across page changes. */
 const ShellLayout = () => (
-  <AppShell>
-    <Outlet />
-  </AppShell>
+  <SessionGate>
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  </SessionGate>
 )
-const Transfers = lazy(() => import("~/features/transfers/TransfersPage"))
-const Dashboard = lazy(() => import("~/features/dashboard/DashboardPage"))
-const Library = lazy(() => import("~/features/media/LibraryPage"))
-const PluginsPage = lazy(() => import("~/features/plugins/PluginsPage"))
+const Transfers = lazy(SECTION_LOADERS.transfers)
+const Dashboard = lazy(SECTION_LOADERS.dashboard)
+const Library = lazy(SECTION_LOADERS.media)
+const PluginsPage = lazy(SECTION_LOADERS.plugins)
 
 /** Old `/@manage/tasks[/:type]` addresses now live on the Transfers page. */
 const TasksRedirect = () => {
@@ -77,17 +80,8 @@ const TasksRedirect = () => {
 const CatchAll = () => {
   const { pathname } = useRouter()
   return (
-    <Show
-      when={!pathname().startsWith("/@")}
-      fallback={
-        <MustUser>
-          <NotFound />
-        </MustUser>
-      }
-    >
-      <MustUser>
-        <Home />
-      </MustUser>
+    <Show when={!pathname().startsWith("/@")} fallback={<NotFound />}>
+      <Home />
     </Show>
   )
 }
@@ -178,54 +172,12 @@ const App: Component = () => {
               element={<Navigate href={joinBase("/@dashboard")} />}
             />
             <Route path="/" component={ShellLayout}>
-              <Route
-                path="/@dashboard"
-                element={
-                  <MustUser>
-                    <Dashboard />
-                  </MustUser>
-                }
-              />
-              <Route
-                path="/@media"
-                element={
-                  <MustUser>
-                    <Library />
-                  </MustUser>
-                }
-              />
-              <Route
-                path="/@plugins"
-                element={
-                  <MustUser>
-                    <PluginsPage />
-                  </MustUser>
-                }
-              />
-              <Route
-                path="/@transfers"
-                element={
-                  <MustUser>
-                    <Transfers />
-                  </MustUser>
-                }
-              />
-              <Route
-                path="/@manage/*"
-                element={
-                  <MustUser>
-                    <Manage />
-                  </MustUser>
-                }
-              />
-              <Route
-                path={["/@s/*", "/%40s/*"]}
-                element={
-                  <UserOrGuest>
-                    <Home />
-                  </UserOrGuest>
-                }
-              />
+              <Route path="/@dashboard" element={<Dashboard />} />
+              <Route path="/@media" element={<Library />} />
+              <Route path="/@plugins" element={<PluginsPage />} />
+              <Route path="/@transfers" element={<Transfers />} />
+              <Route path="/@manage/*" element={<Manage />} />
+              <Route path={["/@s/*", "/%40s/*"]} element={<Home />} />
               <Route path="*" component={CatchAll} />
             </Route>
           </Routes>
