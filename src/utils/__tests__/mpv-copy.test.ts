@@ -21,7 +21,6 @@ const deps = (over: Partial<MpvCommandDeps> = {}): MpvCommandDeps => ({
   linkOf: (o) => `http://h/d/${encodeURIComponent(o.name)}`,
   pathOf: (o) => `/dir/${o.name}`,
   password: "pw",
-  withSubtitles: true,
   ...over,
 })
 
@@ -124,15 +123,6 @@ describe("buildMpvCommandFor", () => {
     const out = await buildMpvCommandFor(objs, deps())
     expect(peak).toBe(4)
     expect(out.command.match(/--sub-file/g)).toHaveLength(10)
-  })
-
-  it("makes no request where subtitles are unavailable (share pages)", async () => {
-    const out = await buildMpvCommandFor(
-      [obj("a.mkv", ObjType.VIDEO)],
-      deps({ withSubtitles: false }),
-    )
-    expect(apiPost).not.toHaveBeenCalled()
-    expect(out.command).toBe('mpv "http://h/d/a.mkv"')
   })
 
   it("gives a single file the same text as the pure function (preview page button)", async () => {

@@ -42,8 +42,6 @@ export interface MpvCommandDeps {
   /** full path of a file, as `/fs/video_subtitle` expects it */
   pathOf: (obj: Obj) => string
   password: string
-  /** false where the backend cannot resolve subtitles (share pages) */
-  withSubtitles: boolean
 }
 
 /**
@@ -58,24 +56,18 @@ export const buildMpvCommandFor = async (
   const media = objs.filter(isMpvMedia)
   const subUrls: string[][] = media.map(() => [])
   let subtitleFailed = false
-  if (deps.withSubtitles) {
-    const indices = media.map((_, i) => i)
-    for await (const _ of asyncPool(
-      SUBTITLE_CONCURRENCY,
-      indices,
-      async (i) => {
-        try {
-          subUrls[i] = await fetchSidecarSubtitles(
-            deps.pathOf(media[i]),
-            deps.password,
-          )
-        } catch {
-          subtitleFailed = true
-        }
-      },
-    )) {
-      // drained for completion only
+  const indices = media.map((_, i) => i)
+  for await (const _ of asyncPool(SUBTITLE_CONCURRENCY, indices, async (i) => {
+    try {
+      subUrls[i] = await fetchSidecarSubtitles(
+        deps.pathOf(media[i]),
+        deps.password,
+      )
+    } catch {
+      subtitleFailed = true
     }
+  })) {
+    // drained for completion only
   }
   const items: MpvItem[] = media.map((obj, i) => ({
     url: deps.linkOf(obj),

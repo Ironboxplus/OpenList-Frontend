@@ -66,27 +66,44 @@ export const getLinkByDirAndObj = (
   return ans
 }
 
+/**
+ * Where obj lives, given the page: on a file page the path is the file itself; a
+ * single-file share ("/@s/<id>") is the file with no name below the share root.
+ */
+export const locateObj = (
+  isFilePage: boolean,
+  pathname: string,
+  isShare: boolean,
+  obj: Obj,
+): { dir: string; obj: Obj } => {
+  if (!isFilePage) return { dir: pathname, obj }
+  const dir = pathDir(pathname)
+  if (isShare && dir === "/@s") {
+    return { dir: pathname, obj: { ...obj, name: "" } }
+  }
+  return { dir, obj }
+}
+
 // get download link by current state and pathname
 export const useLink = () => {
   const { pathname, isShare } = useRouter()
+  const locate = (obj: Obj) =>
+    locateObj(objStore.state === State.File, pathname(), isShare(), obj)
   const getLinkByObj = (obj: Obj, type?: URLType, encodeAll?: boolean) => {
-    let dir: string
-    if (objStore.state === State.File) {
-      dir = pathDir(pathname())
-      if (isShare() && dir === "/@s") {
-        dir = pathname()
-        obj = { ...obj, name: "" }
-      }
-    } else {
-      dir = pathname()
-    }
-    return getLinkByDirAndObj(dir, obj, type, isShare(), encodeAll)
+    const at = locate(obj)
+    return getLinkByDirAndObj(at.dir, at.obj, type, isShare(), encodeAll)
+  }
+  /** The full path of obj as the fs endpoints expect it (shares: /@s/<id>/...). */
+  const objPath = (obj: Obj) => {
+    const at = locate(obj)
+    return pathJoin(at.dir, at.obj.name).replace(/\/$/, "")
   }
   const rawLink = (obj: Obj, encodeAll?: boolean) => {
     return getLinkByObj(obj, "direct", encodeAll)
   }
   return {
     getLinkByObj: getLinkByObj,
+    objPath: objPath,
     rawLink: rawLink,
     proxyLink: (obj: Obj, encodeAll?: boolean) => {
       return getLinkByObj(obj, "proxy", encodeAll)
@@ -123,25 +140,16 @@ export const useSelectedLink = () => {
 export const useCopyLink = () => {
   const t = useT()
   const { copy } = useUtil()
-  const { pathname, isShare } = useRouter()
   const { previewPagesText, rawLinksText } = useSelectedLink()
-  const { currentObjLink, rawLink } = useLink()
+  const { currentObjLink, rawLink, objPath } = useLink()
 
-  // Same directory rule as `useLink`: on a file page the path is the file.
-  const objPath = (obj: Obj) =>
-    pathJoin(
-      objStore.state === State.File ? pathDir(pathname()) : pathname(),
-      obj.name,
-    )
   // Waits for every subtitle lookup, then copies. A failed lookup still copies
-  // the command, without that file's subtitles, and says so. Share pages have no
-  // subtitle endpoint, so they copy links only.
+  // the command, without that file's subtitles, and says so.
   const copyMpv = async (objs: Obj[]) => {
     const { command, count, subtitleFailed } = await buildMpvCommandFor(objs, {
       linkOf: (obj) => rawLink(obj, true),
       pathOf: objPath,
       password: password(),
-      withSubtitles: !isShare(),
     })
     if (count === 0) return
     if (subtitleFailed) notify.warning(t("home.toolbar.mpv_subtitle_failed"))

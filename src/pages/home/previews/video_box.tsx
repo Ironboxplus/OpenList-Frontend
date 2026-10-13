@@ -164,15 +164,15 @@ export const VideoBox = (props: {
   children: JSXElement
   onAutoNextChange: (v: boolean) => void
 }) => {
-  const { replace, pathname, isShare } = useRouter()
-  const { currentObjLink } = useLink()
+  const { replace, pathname } = useRouter()
+  const { currentObjLink, objPath } = useLink()
   const { handleFolder } = usePath()
   const { copyMpvCommand } = useCopyLink()
   // First sidecar external subtitle of the current video, handed to players that
-  // support one (e.g. mpv via subfile). The backend does the matching; share
-  // pages have no subtitle endpoint, so they get none.
+  // support one (e.g. mpv via subfile). The backend does the matching, for
+  // storage paths and share paths alike.
   const [subtitleUrl] = createResource(
-    () => (isShare() ? false : pathname()),
+    () => objPath(objStore.obj),
     async (path) => {
       try {
         return (await fetchSidecarSubtitles(path, password()))[0]
