@@ -208,3 +208,34 @@ describe("CommandPaletteView reopening", () => {
     expect(options()).toHaveLength(3)
   })
 })
+
+describe("CommandPaletteView extra items", () => {
+  it("adds the entries made for the typed text after the matches, and not for an empty query", () => {
+    const search = make(
+      "action:search-files",
+      "Search files for x",
+      [],
+      "action",
+    )
+    const extra = vi.fn((q: string) => (q ? [search] : []))
+    const onRun = vi.fn()
+    render(() => (
+      <CommandPaletteView
+        open
+        onOpenChange={() => {}}
+        items={items}
+        recentIds={[]}
+        onRun={onRun}
+        phone={false}
+        labels={labels}
+        extraItems={extra}
+      />
+    ))
+    expect(screen.queryByText("Search files for x")).toBeNull()
+    fireEvent.input(input(), { target: { value: "zzzz-no-match" } })
+    expect(options()).toHaveLength(1)
+    fireEvent.keyDown(input(), { key: "Enter" })
+    expect(onRun).toHaveBeenCalledWith(search)
+    expect(extra).toHaveBeenCalledWith("zzzz-no-match")
+  })
+})

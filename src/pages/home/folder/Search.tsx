@@ -188,7 +188,13 @@ const Search = () => {
       onOpen()
     }
   }
+  const searchFor = (query: string) => {
+    setKeywords(query)
+    onOpen()
+    void search()
+  }
   bus.on("tool", handler)
+  bus.on("search", searchFor)
   const searchEvent = (e: KeyboardEvent) => {
     // Inside the shell Ctrl/Cmd+K belongs to the command palette; file search
     // moves to Ctrl/Cmd+Shift+K. Guests (no shell) keep Ctrl/Cmd+K.
@@ -204,6 +210,7 @@ const Search = () => {
   document.addEventListener("keydown", searchEvent)
   onCleanup(() => {
     bus.off("tool", handler)
+    bus.off("search", searchFor)
     document.removeEventListener("keydown", searchEvent)
   })
   const [keywords, setKeywords] = createSignal("")

@@ -13,6 +13,12 @@ import {
 } from "solid-js"
 import { Button } from "~/components/ui/button"
 import { ChipTabs } from "~/components/ui/chip-tabs"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu"
 import { Input } from "~/components/ui/input"
 import { Skeleton } from "~/components/ui/skeleton"
 import { useRouter, useT, useTitle } from "~/hooks"
@@ -346,22 +352,35 @@ const TransfersPage = () => {
           onToggle={() => setDoneOpen(!doneOpen())}
           actions={
             <Show when={canBulk("clear_done")}>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void transfers.actBulk(filter(), "clear_done")}
-              >
-                {t("transfers.action.clear_done")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  void transfers.actBulk(filter(), "clear_succeeded")
-                }
-              >
-                {t("transfers.action.clear_succeeded")}
-              </Button>
+              {/* "Succeeded" is a part of "completed": one menu, not two buttons. */}
+              <DropdownMenu placement="bottom-end">
+                <DropdownMenuTrigger
+                  data-testid="clear-menu"
+                  class={cn(
+                    focusRing,
+                    "inline-flex h-8 items-center gap-1 rounded-md border bg-background px-3 text-sm hover:bg-accent hover:text-accent-foreground",
+                  )}
+                >
+                  {t("transfers.action.clear")}
+                  <TbChevronDown class="size-3.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      void transfers.actBulk(filter(), "clear_done")
+                    }
+                  >
+                    {t("transfers.action.clear_done")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      void transfers.actBulk(filter(), "clear_succeeded")
+                    }
+                  >
+                    {t("transfers.action.clear_succeeded")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </Show>
           }
         >

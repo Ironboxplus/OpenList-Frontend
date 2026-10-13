@@ -23,16 +23,12 @@ afterEach(() => to.mockClear())
 const admin = { role: UserRole.ADMIN, permission: 0 }
 const sections = groupSettings(visibleSettings(admin))
 
-const nav = (
-  over: { pathname?: string; hash?: string; collapsed?: boolean } = {},
-) =>
+const nav = (over: { pathname?: string; hash?: string } = {}) =>
   render(() => (
     <SettingsNav
       sections={sections}
       pathname={over.pathname ?? "/@manage/settings/traffic"}
       hash={over.hash ?? ""}
-      collapsed={over.collapsed ?? false}
-      onToggle={() => {}}
     />
   ))
 
@@ -77,33 +73,12 @@ describe("SettingsNav", () => {
     expect(to).toHaveBeenCalledWith("/@manage/users")
   })
 
-  it("collapses to icons with accessible names", () => {
-    const { container } = nav({ collapsed: true })
-    expect(container.querySelectorAll("h2")).toHaveLength(0)
+  it("names every item for the icon-only widths and has no fold button of its own", () => {
+    const { container } = nav()
     const item = container.querySelector('[data-settings-nav-item="traffic"]')!
     expect(item.getAttribute("aria-label")).toBe("Traffic")
-    expect(item.textContent?.trim()).toBe("")
-  })
-
-  it("the toggle calls back and reflects the state", () => {
-    const [c, setC] = createSignal(false)
-    render(() => (
-      <SettingsNav
-        sections={sections}
-        pathname="/@manage"
-        hash=""
-        collapsed={c()}
-        onToggle={() => setC(!c())}
-      />
-    ))
-    const btn = screen.getByRole("button", { name: "Collapse" })
-    expect(btn.getAttribute("aria-expanded")).toBe("true")
-    fireEvent.click(btn)
-    expect(
-      screen
-        .getByRole("button", { name: "Expand settings menu" })
-        .getAttribute("aria-expanded"),
-    ).toBe("false")
+    expect(item.getAttribute("title")).toBe("Traffic")
+    expect(container.querySelector("button")).toBeNull()
   })
 })
 

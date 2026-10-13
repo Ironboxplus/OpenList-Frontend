@@ -1,11 +1,7 @@
 import { Route, Routes, useLocation } from "@solidjs/router"
-import { createMemo, createSignal, For } from "solid-js"
+import { createMemo, For } from "solid-js"
 import { useRouter, useT, useTitle } from "~/hooks"
-import {
-  readNavCollapsed,
-  SettingsNav,
-  writeNavCollapsed,
-} from "~/features/settings/SettingsNav"
+import { SettingsNav } from "~/features/settings/SettingsNav"
 import { SettingsTopLeft } from "~/features/settings/SettingsTopLeft"
 import { groupSettings, visibleSettings } from "~/features/settings/registry"
 import { NotFound } from "~/features/shell/states"
@@ -15,9 +11,9 @@ import { getRoutes } from "./routes"
 import { StorageLoadingBar } from "./StorageLoadingBar"
 
 /**
- * The settings area inside the app shell. The shell already provides the
- * header (TopBar with the breadcrumb) and the primary navigation, so this is
- * only the secondary settings nav (wide screens) and the page content.
+ * The settings area inside the app shell. The shell provides the
+ * primary navigation (and the phone's back bar), so this is only the secondary
+ * settings nav and the page content.
  */
 const Manage = () => {
   const t = useT()
@@ -26,13 +22,6 @@ const Manage = () => {
   const location = useLocation()
   const routes = getRoutes()
   const sections = createMemo(() => groupSettings(visibleSettings(me())))
-  const [collapsed, setCollapsed] = createSignal(readNavCollapsed(localStorage))
-  const toggle = () => {
-    const next = !collapsed()
-    setCollapsed(next)
-    writeNavCollapsed(localStorage, next)
-  }
-
   useTopBarSlots(() => ({
     left: () => <SettingsTopLeft pathname={pathname()} hash={location.hash} />,
   }))
@@ -50,8 +39,6 @@ const Manage = () => {
           sections={sections()}
           pathname={pathname()}
           hash={location.hash}
-          collapsed={collapsed()}
-          onToggle={toggle}
         />
         <main class="min-w-0 flex-1 p-4">
           <StorageLoadingBar />

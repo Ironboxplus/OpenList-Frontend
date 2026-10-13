@@ -15,6 +15,7 @@
     "new_sync": "New sync job",
     "task_center": "Open Task Center",
     "toggle_theme": "Toggle dark mode",
-    "toggle_language": "Switch language"
+    "toggle_language": "Switch language",
+    "search_files": "Search files in this folder for “{{query}}”"
   }
 }

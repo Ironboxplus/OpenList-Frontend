@@ -54,7 +54,7 @@
       "description": "FTP / SFTP 服务地址、端口与 TLS。"
     },
     "transfers": {
-      "title": "传输",
+      "title": "传输设置",
       "description": "复制、上传、离线下载与同步作业。"
     },
     "indexes": {
@@ -112,8 +112,6 @@
   },
   "nav": {
     "label": "设置页面",
-    "collapse": "收起",
-    "expand": "展开设置菜单",
     "back": "返回设置"
   }
 }

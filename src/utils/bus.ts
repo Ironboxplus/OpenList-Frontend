@@ -5,6 +5,8 @@ type Events = {
   to: string
   gallery: string
   tool: string
+  /** Open the folder search dialog and search for this text. */
+  search: string
   pathname: string
   extract: string
   "tasks:refresh": void

@@ -29,6 +29,8 @@ export interface CommandPaletteViewProps {
   onOpenChange: (open: boolean) => void
   items: PaletteItem[]
   recentIds: string[]
+  /** Entries that exist only for the text typed so far, listed after the matches. */
+  extraItems?: (query: string) => PaletteItem[]
   /** Called after the palette closed, with the chosen entry. */
   onRun: (item: PaletteItem) => void
   /** Phones get a full-screen sheet from the bottom, others a centered dialog. */
@@ -51,7 +53,9 @@ export const CommandPaletteView = (props: CommandPaletteViewProps) => {
   const rows = createMemo(() => {
     const q = query().trim()
     if (q === "") return emptyQueryList(props.items, props.recentIds)
-    return rankAll(q, props.items).map((item) => ({ item, recent: false }))
+    return [...rankAll(q, props.items), ...(props.extraItems?.(q) ?? [])].map(
+      (item) => ({ item, recent: false }),
+    )
   })
 
   // A new query starts at the top; reopening starts clean.

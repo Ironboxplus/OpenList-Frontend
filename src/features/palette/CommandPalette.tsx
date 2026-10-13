@@ -1,8 +1,11 @@
 import { useColorMode } from "@hope-ui/solid"
+import { TbFileSearch } from "solid-icons/tb"
 import { createMemo, createSignal } from "solid-js"
 import { currentLang, languages, setCurrentLang, type Lang } from "~/app/i18n"
 import { useRouter, useT } from "~/hooks"
 import { me } from "~/store"
+import { fileSearchAvailable, openFileSearch } from "../files/search-entry"
+import { activeNavId } from "../shell/nav-items"
 import { setTaskCenterOpen } from "../shell/task-center"
 import { createViewport } from "../shell/viewport"
 import { transfers } from "../transfers/service"
@@ -21,7 +24,7 @@ const nextLang = (): Lang => {
 /** Wires the palette view to the real router, stores and effects. */
 const CommandPalette = () => {
   const t = useT()
-  const { to } = useRouter()
+  const { to, pathname } = useRouter()
   const { toggleColorMode } = useColorMode()
   const viewport = createViewport()
   const [recentIds, setRecentIds] = createSignal(readRecent(localStorage))
@@ -42,6 +45,21 @@ const CommandPalette = () => {
       },
     }),
   )
+
+  // On the files page, whatever is typed can also be searched for in the folder.
+  const extraItems = (query: string): PaletteItem[] =>
+    activeNavId(pathname()) === "files" && fileSearchAvailable()
+      ? [
+          {
+            id: "action:search-files",
+            group: "action",
+            title: t("palette.actions.search_files", { query }),
+            keywords: [],
+            icon: TbFileSearch,
+            run: () => openFileSearch(query),
+          },
+        ]
+      : []
 
   const labels = createMemo<PaletteLabels>(() => ({
     title: t("palette.title"),
@@ -67,6 +85,7 @@ const CommandPalette = () => {
       open={paletteOpen()}
       onOpenChange={setPaletteOpen}
       items={items()}
+      extraItems={extraItems}
       recentIds={recentIds()}
       onRun={run}
       phone={viewport() === "phone"}

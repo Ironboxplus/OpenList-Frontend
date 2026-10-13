@@ -3,7 +3,6 @@ import {
   TbArrowLeft,
   TbChevronRight,
   TbDots,
-  TbFileSearch,
   TbHome,
   TbLayoutGrid,
   TbLayoutList,
@@ -35,17 +34,8 @@ import {
 } from "~/components/ui/tooltip"
 import { usePath, useRouter, useT } from "~/hooks"
 import { PluginSlot } from "~/plugins"
-import {
-  getSetting,
-  layout,
-  LayoutType,
-  me,
-  objStore,
-  setLayout,
-  State,
-} from "~/store"
+import { layout, LayoutType, me, objStore, setLayout, State } from "~/store"
 import { UserMethods } from "~/types"
-import { bus } from "~/utils/bus"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
 import { fileCrumbs, parentCrumb, type FileCrumb } from "./crumbs"
@@ -90,7 +80,7 @@ const CrumbLabel = (props: { crumb: FileCrumb }) => {
     <>
       <Show when={props.crumb.kind === "root"}>
         <TbHome class="size-4 shrink-0" />
-        <span>{t("manage.sidemenu.home")}</span>
+        <span>{t("shell.nav.files")}</span>
       </Show>
       <Show when={props.crumb.kind === "share"}>
         <TbShare class="size-4 shrink-0" />
@@ -296,13 +286,9 @@ const AdminMediaItem = () => {
   )
 }
 
-const searchOn = () =>
-  objStore.state === State.Folder && getSetting("search_index") !== "none"
 const layoutOn = () => objStore.state === State.Folder
 
-const openSearch = () => bus.emit("tool", "search")
-
-/** Right side of the TopBar on the Files page: plugin widgets, search, view. */
+/** Right side of the TopBar on the Files page: plugin widgets and the view. Searching is the command palette's (it offers "search this folder"). */
 export const FilesTopRight = (props: { phone: boolean }) => {
   const t = useT()
   return (
@@ -311,7 +297,7 @@ export const FilesTopRight = (props: { phone: boolean }) => {
       <Show
         when={!props.phone}
         fallback={
-          <Show when={(searchOn() || layoutOn()) && !selectionMode()}>
+          <Show when={layoutOn() && !selectionMode()}>
             <DropdownMenu placement="bottom-end">
               <DropdownMenuTrigger
                 aria-label={t("files.more")}
@@ -321,12 +307,6 @@ export const FilesTopRight = (props: { phone: boolean }) => {
                 <TbDots class="size-5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <Show when={searchOn()}>
-                  <DropdownMenuItem onSelect={openSearch} class="gap-2">
-                    <TbFileSearch class="size-4" />
-                    {t("home.search.search")}
-                  </DropdownMenuItem>
-                </Show>
                 <Show when={layoutOn()}>
                   <For each={Object.keys(LAYOUTS) as LayoutType[]}>
                     {(key) => (
@@ -351,21 +331,6 @@ export const FilesTopRight = (props: { phone: boolean }) => {
           </Show>
         }
       >
-        <Show when={searchOn()}>
-          <Tooltip placement="bottom">
-            <TooltipTrigger
-              as="button"
-              type="button"
-              aria-label={t("home.search.search")}
-              data-files-search
-              onClick={openSearch}
-              class={iconButton}
-            >
-              <TbFileSearch class="size-5" />
-            </TooltipTrigger>
-            <TooltipContent>{t("home.search.search")}</TooltipContent>
-          </Tooltip>
-        </Show>
         <Show when={layoutOn()}>
           <DropdownMenu placement="bottom-end">
             <DropdownMenuTrigger

@@ -60,6 +60,7 @@
     "cancel": "Cancel",
     "retry": "Retry",
     "delete": "Delete",
+    "clear": "Clear",
     "clear_done": "Clear completed",
     "clear_succeeded": "Clear succeeded",
     "retry_failed": "Retry all",

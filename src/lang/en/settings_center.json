@@ -54,7 +54,7 @@
       "description": "FTP and SFTP server address, ports and TLS."
     },
     "transfers": {
-      "title": "Transfers",
+      "title": "Transfer settings",
       "description": "Copy, upload, offline download and sync jobs."
     },
     "indexes": {
@@ -112,8 +112,6 @@
   },
   "nav": {
     "label": "Settings pages",
-    "collapse": "Collapse",
-    "expand": "Expand settings menu",
     "back": "Back to settings"
   }
 }
