@@ -56,7 +56,7 @@ export const getLinkByDirAndObj = (
   if (type !== "preview" && isShare) {
     const pwd = cookieStorage.getItem("browser-password") || ""
     if (pwd) {
-      ans += `${QP()}pwd=${pwd}`
+      ans += `${QP()}pwd=${encodeURIComponent(pwd)}`
     }
   }
   if (archive) {
