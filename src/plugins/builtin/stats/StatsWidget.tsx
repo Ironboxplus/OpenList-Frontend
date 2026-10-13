@@ -59,7 +59,7 @@ const Row = (props: { row: UsageRow }) => {
     </>
   )
   const cls = cn(
-    "grid w-full grid-cols-[minmax(0,1fr)] items-center gap-x-4 gap-y-1 rounded-md px-2 py-1.5 text-left text-sm sm:grid-cols-[minmax(8rem,14rem)_minmax(0,1fr)_minmax(7rem,auto)]",
+    "grid w-full grid-cols-[minmax(0,1fr)] items-center gap-x-4 gap-y-1 rounded-md px-2 py-1.5 text-left text-sm sm:grid-cols-[minmax(8rem,14rem)_minmax(0,1fr)_11rem]",
     row().failing
       ? "text-destructive"
       : "[&>span:last-child]:text-muted-foreground",

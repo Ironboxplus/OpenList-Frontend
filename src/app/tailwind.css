@@ -13,6 +13,9 @@
 /* The settings area is built on the same components and styled with utilities. */
 @source "../pages/manage";
 @source not "../pages/manage/__tests__";
+/* The built-in stats plugin renders a dashboard card with utilities. */
+@source "../plugins/builtin/stats";
+@source not "../plugins/builtin/stats/__tests__";
 
 /*
  * Phone shell: the bottom tab bar is `position: fixed`, so Home's own fixed
