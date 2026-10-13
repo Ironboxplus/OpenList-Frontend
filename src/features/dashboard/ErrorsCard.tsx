@@ -8,7 +8,7 @@ import { DashboardCard } from "./DashboardCard"
 import { recentErrors } from "./summary"
 
 /** Opens the error center through the same state the top bar's bell uses. */
-export const ErrorsCard = () => {
+export const ErrorsCard = (props: { class?: string }) => {
   const t = useT()
   const shown = () => recentErrors(errorCenter.records())
   return (
@@ -17,6 +17,7 @@ export const ErrorsCard = () => {
       title={t("dashboard.errors.title")}
       icon={TbBell}
       onOpen={() => setErrorCenterOpen(true)}
+      class={props.class}
     >
       <p class="m-0 text-xs text-muted-foreground">
         {t("dashboard.errors.unread", { count: errorCenter.unreadCount() })}

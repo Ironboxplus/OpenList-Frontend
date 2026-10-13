@@ -1,6 +1,6 @@
-import { onCleanup, onMount, createEffect } from "solid-js"
+import { createEffect, on, onCleanup, untrack } from "solid-js"
 import * as echarts from "echarts/core"
-import { PieChart, BarChart } from "echarts/charts"
+import { PieChart, BarChart, LineChart } from "echarts/charts"
 import {
   TitleComponent,
   TooltipComponent,
@@ -13,6 +13,7 @@ import { useColorMode } from "@hope-ui/solid"
 echarts.use([
   PieChart,
   BarChart,
+  LineChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
@@ -20,9 +21,17 @@ echarts.use([
   CanvasRenderer,
 ])
 
+// The dark theme paints its own page colour; the card behind the chart is the
+// background.
+const withOption = (option: echarts.EChartsCoreOption) => ({
+  backgroundColor: "transparent",
+  ...option,
+})
+
 /**
  * Thin SolidJS wrapper over an ECharts instance. Re-applies `option` reactively,
- * follows the color mode, resizes with the window, and disposes on unmount.
+ * re-creates the chart in the other theme when the color mode changes, resizes
+ * with its box and the window, and disposes on unmount.
  */
 export const EChart = (props: {
   option: echarts.EChartsCoreOption
@@ -33,19 +42,32 @@ export const EChart = (props: {
   const { colorMode } = useColorMode()
 
   const resize = () => chart?.resize()
-
-  onMount(() => {
-    chart = echarts.init(el, colorMode() === "dark" ? "dark" : undefined)
-    chart.setOption(props.option)
-    window.addEventListener("resize", resize)
-  })
+  let observer: ResizeObserver | undefined
 
   createEffect(() => {
-    chart?.setOption(props.option, true)
+    const dark = colorMode() === "dark"
+    chart?.dispose()
+    chart = echarts.init(el, dark ? "dark" : undefined)
+    chart.setOption(untrack(() => withOption(props.option)))
+  })
+  createEffect(
+    on(
+      () => props.option,
+      (option) => chart?.setOption(withOption(option), true),
+      { defer: true },
+    ),
+  )
+  createEffect(() => {
+    window.addEventListener("resize", resize)
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(resize)
+      observer.observe(el)
+    }
   })
 
   onCleanup(() => {
     window.removeEventListener("resize", resize)
+    observer?.disconnect()
     chart?.dispose()
   })
 

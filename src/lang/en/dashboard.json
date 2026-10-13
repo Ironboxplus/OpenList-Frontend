@@ -6,7 +6,9 @@
     "active": "In progress",
     "failed": "Failed",
     "stale": "Possibly stuck",
-    "empty": "No transfers yet."
+    "empty": "No transfers yet.",
+    "done_today": "Done today",
+    "failed_today": "Failed today"
   },
   "errors": {
     "title": "Errors",
@@ -16,5 +18,36 @@
   "favorites": {
     "title": "Favorites",
     "empty": "No favorites yet. Bookmark a folder from the Files page."
+  },
+  "stale": "Could not refresh; showing the last numbers.",
+  "traffic": {
+    "title": "Traffic",
+    "today": "Today",
+    "month": "This month",
+    "total": "All time",
+    "download": "Download",
+    "upload": "Upload",
+    "client": "Clients",
+    "this_node": "this node",
+    "note": "Relayed by {{node}}; direct (302) links do not pass through it. Storage side."
+  },
+  "speed": {
+    "title": "Live speed"
+  },
+  "daily": {
+    "title": "Last 30 days"
+  },
+  "media": {
+    "title": "Library",
+    "movie": "Movies",
+    "tv": "Series",
+    "anime": "Anime",
+    "collection": "Collections",
+    "episodes": "Episodes",
+    "unscraped": "Not scraped yet"
+  },
+  "sync": {
+    "title": "Sync jobs",
+    "empty": "No sync runs yet."
   }
 }

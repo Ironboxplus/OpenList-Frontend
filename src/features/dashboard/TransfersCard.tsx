@@ -1,10 +1,10 @@
 import { TbArrowsUpDown } from "solid-icons/tb"
-import { createMemo, onCleanup } from "solid-js"
+import { createMemo, For, Show, onCleanup } from "solid-js"
 import { DataState } from "~/components/ui/data-state"
 import { useRouter, useT } from "~/hooks"
 import { transfers } from "../transfers/service"
 import { DashboardCard } from "./DashboardCard"
-import { summarizeTransfers } from "./summary"
+import { transferDay } from "./stats-model"
 
 const Stat = (props: { label: string; value: number; tone?: string }) => (
   <div class="flex flex-col">
@@ -15,19 +15,23 @@ const Stat = (props: { label: string; value: number; tone?: string }) => (
   </div>
 )
 
-/** The counts come from the one transfers store; the store has no error state of its own. */
-export const TransfersCard = () => {
+/**
+ * In progress now, and what finished or failed today (by end time). All of it
+ * is computed here from the one transfers store's tasks; there is no endpoint.
+ */
+export const TransfersCard = (props: { class?: string }) => {
   const t = useT()
   const { to } = useRouter()
   const release = transfers.watch()
   onCleanup(release)
-  const summary = createMemo(() => summarizeTransfers(transfers.tasks()))
+  const day = createMemo(() => transferDay(transfers.tasks(), new Date()))
   return (
     <DashboardCard
       testid="dashboard-transfers"
       title={t("dashboard.transfers.title")}
       icon={TbArrowsUpDown}
       onOpen={() => to("/@transfers")}
+      class={props.class}
     >
       <DataState
         loading={!transfers.loaded()}
@@ -35,20 +39,31 @@ export const TransfersCard = () => {
         emptyText={t("dashboard.transfers.empty")}
       >
         <div class="grid grid-cols-3 gap-2">
+          <Stat label={t("dashboard.transfers.active")} value={day().active} />
           <Stat
-            label={t("dashboard.transfers.active")}
-            value={summary().active}
+            label={t("dashboard.transfers.done_today")}
+            value={day().doneToday}
           />
           <Stat
-            label={t("dashboard.transfers.failed")}
-            value={summary().failed}
-            tone={summary().failed > 0 ? "text-destructive" : ""}
-          />
-          <Stat
-            label={t("dashboard.transfers.stale")}
-            value={summary().stale}
+            label={t("dashboard.transfers.failed_today")}
+            value={day().failedToday}
+            tone={day().failedToday > 0 ? "text-destructive" : ""}
           />
         </div>
+        <Show when={day().byType.length > 0}>
+          <ul class="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0 text-xs text-muted-foreground">
+            <For each={day().byType}>
+              {(row) => (
+                <li data-testid="dashboard-transfer-type" class="tabular-nums">
+                  {t(`transfers.type.${row.type}`)} {row.done}
+                  <Show when={row.failed > 0}>
+                    <span class="text-destructive"> / {row.failed}</span>
+                  </Show>
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
       </DataState>
     </DashboardCard>
   )

@@ -1,4 +1,4 @@
-import { TbBookmark, TbFile, TbFolder } from "solid-icons/tb"
+import { TbBell, TbBookmark, TbFile, TbFolder } from "solid-icons/tb"
 import { createResource, For, Show } from "solid-js"
 import { DataState } from "~/components/ui/data-state"
 import { focusRing } from "~/components/ui/focus"
@@ -6,19 +6,29 @@ import { useRouter, useT } from "~/hooks"
 import { fetchFavorites } from "~/plugins/builtin/favorites/api"
 import type { Favorite } from "~/plugins/builtin/favorites/data"
 import { cn } from "~/utils/cn"
+import { errorCenter } from "../notifications/service"
+import { setErrorCenterOpen } from "../notifications/state"
 import { DashboardCard } from "./DashboardCard"
 import { topFavorites } from "./summary"
 
-const load = async (): Promise<Favorite[]> => {
+const load = async (top?: number): Promise<Favorite[]> => {
   const resp = await fetchFavorites()
   if (resp.code !== 200) throw new Error(resp.message || `HTTP ${resp.code}`)
-  return topFavorites(resp.data ?? [])
+  return topFavorites(resp.data ?? [], top)
 }
 
-export const FavoritesCard = () => {
+/**
+ * `top` caps the list; `withErrors` adds the unread error count underneath
+ * (the admin layout has one card for both).
+ */
+export const FavoritesCard = (props: {
+  top?: number
+  withErrors?: boolean
+  class?: string
+}) => {
   const t = useT()
   const { to } = useRouter()
-  const [favs, { refetch }] = createResource(load)
+  const [favs, { refetch }] = createResource(() => load(props.top))
   const message = () => {
     const e = favs.error
     return e ? (e instanceof Error ? e.message : String(e)) : undefined
@@ -29,6 +39,7 @@ export const FavoritesCard = () => {
       title={t("dashboard.favorites.title")}
       icon={TbBookmark}
       onOpen={() => to("/")}
+      class={props.class}
     >
       <DataState
         loading={favs.loading}
@@ -65,6 +76,20 @@ export const FavoritesCard = () => {
           </For>
         </ul>
       </DataState>
+      <Show when={props.withErrors}>
+        <button
+          type="button"
+          data-testid="dashboard-unread-errors"
+          onClick={() => setErrorCenterOpen(true)}
+          class={cn(
+            focusRing,
+            "flex items-center gap-2 rounded-md bg-transparent px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent",
+          )}
+        >
+          <TbBell class="size-4" />
+          {t("dashboard.errors.unread", { count: errorCenter.unreadCount() })}
+        </button>
+      </Show>
     </DashboardCard>
   )
 }

@@ -40,7 +40,15 @@ vi.mock("../../transfers/service", async () => {
   const [loaded, setLoaded] = createSignal(true)
   h.setTasks = setTasks
   h.setLoaded = setLoaded
-  return { transfers: { tasks, loaded, watch: () => () => {} } }
+  return {
+    transfers: {
+      tasks,
+      loaded,
+      watch: () => () => {},
+      history: () => [],
+      loadHistory: async () => {},
+    },
+  }
 })
 vi.mock("../../notifications/service", async () => {
   const { createSignal } = await import("solid-js")
@@ -52,6 +60,15 @@ vi.mock("../../notifications/service", async () => {
 })
 vi.mock("../../notifications/state", () => ({
   setErrorCenterOpen: h.openErrors,
+}))
+
+const getStatsOverview = vi.fn()
+vi.mock("~/platform/api/stats", () => ({
+  getStatsOverview: (...a: unknown[]) => getStatsOverview(...a),
+}))
+// The chart pulls in echarts (canvas); the cards are what is under test.
+vi.mock("../TrafficChart", () => ({
+  default: (p: { kind: string }) => <div data-testid={`chart-${p.kind}`} />,
 }))
 
 const fetchFavorites = vi.fn()
@@ -72,6 +89,32 @@ const fav = (i: number): Favorite => ({
 const t = (state: string, stale = false) =>
   ({ id: `${state}${Math.random()}`, state, stale }) as UnifiedTask
 
+const counts = (d: number, u: number, cd = 0, cu = 0) => ({
+  server_download: d,
+  server_upload: u,
+  client_download: cd,
+  client_upload: cu,
+})
+const overview = () => ({
+  node: "cfscan",
+  traffic: {
+    now_bps: counts(8 * 1048576, 1048576),
+    series: [{ t: 1, ...counts(1, 1) }],
+    today: counts(3 * 1073741824, 0, 2048, 0),
+    month: counts(5 * 1073741824, 1073741824),
+    total: counts(1099511627776, 536870912),
+    daily: [{ day: "2026-10-13", ...counts(1, 1) }],
+  },
+  media: {
+    movie: 120,
+    tv: 45,
+    anime: 80,
+    collection: 6,
+    episodes: 3210,
+    unscraped: 12,
+  },
+})
+
 beforeEach(() => {
   h.to.mockClear()
   h.openErrors.mockClear()
@@ -79,6 +122,8 @@ beforeEach(() => {
   h.setTasks([])
   h.setLoaded(true)
   h.setRecords([])
+  getStatsOverview.mockReset()
+  getStatsOverview.mockResolvedValue({ ok: true, data: overview() })
   fetchFavorites.mockReset()
   fetchFavorites.mockResolvedValue({ code: 200, message: "ok", data: [] })
 })
@@ -88,8 +133,10 @@ describe("DashboardPage", () => {
     h.setTasks([t("running"), t("running", true), t("failed")])
     render(() => <DashboardPage />)
     const card = screen.getByTestId("dashboard-transfers")
-    expect(card.textContent).toContain("2")
-    expect(card.textContent).toContain("1")
+    // two in progress; the failed one has no end time, so it is not "today"
+    expect(card.textContent).toContain("2In progress")
+    expect(card.textContent).toContain("0Done today")
+    expect(card.textContent).toContain("0Failed today")
     fireEvent.click(card.querySelector("button")!)
     expect(h.to).toHaveBeenCalledWith("/@transfers")
   })
@@ -180,6 +227,72 @@ describe("DashboardPage", () => {
     expect(
       screen.getAllByTestId("slot").map((s) => s.getAttribute("data-name")),
     ).toEqual(["dashboard", "manage-dashboard"])
+  })
+
+  it("an admin gets the traffic, speed, library and sync cards from the overview", async () => {
+    h.admin.v = true
+    render(() => <DashboardPage />)
+    const traffic = await screen.findByTestId("dashboard-traffic")
+    await waitFor(() => expect(traffic.textContent).toContain("3.00G"))
+    const today = traffic.querySelector("[data-period=today]")!
+    expect(today.textContent).toContain("3.00G")
+    expect(today.textContent).toContain("0B") // nothing uploaded today
+    expect(today.textContent).toContain("2.00K") // client side, shown apart
+    expect(traffic.querySelector("[data-period=total]")!.textContent).toContain(
+      "1.00T",
+    )
+    expect(traffic.textContent).toContain("cfscan")
+    expect(screen.getByTestId("dashboard-speed").textContent).toContain(
+      "8.00M/s",
+    )
+    expect(await screen.findByTestId("chart-speed")).toBeTruthy()
+    expect(await screen.findByTestId("chart-daily")).toBeTruthy()
+    const media = screen.getByTestId("dashboard-media")
+    expect(media.querySelector("[data-media=episodes]")!.textContent).toContain(
+      "3,210",
+    )
+    expect(
+      media.querySelector("[data-media=unscraped]")!.textContent,
+    ).toContain("12")
+    expect(screen.getByTestId("dashboard-sync")).toBeTruthy()
+    fireEvent.click(media.querySelector("button")!)
+    expect(h.to).toHaveBeenCalledWith("/@media")
+  })
+
+  it("a failed overview shows a retry inside its cards only", async () => {
+    h.admin.v = true
+    getStatsOverview.mockResolvedValueOnce({
+      ok: false,
+      error: { message: "stats down" },
+    })
+    render(() => <DashboardPage />)
+    const traffic = await screen.findByTestId("dashboard-traffic")
+    await waitFor(() =>
+      expect(traffic.querySelector("[data-state=error]")).toBeTruthy(),
+    )
+    expect(traffic.textContent).toContain("stats down")
+    // the other cards are not affected
+    expect(screen.getByTestId("dashboard-transfers")).toBeTruthy()
+    await new Promise((r) => setTimeout(r, 0)) // let the failed round settle
+    fireEvent.click(traffic.querySelector("[data-state=error] button")!)
+    await waitFor(() => expect(traffic.textContent).toContain("3.00G"))
+  })
+
+  it("a signed-in non-admin sees neither the traffic nor the library cards, and asks for nothing", () => {
+    render(() => <DashboardPage />)
+    for (const id of [
+      "dashboard-traffic",
+      "dashboard-speed",
+      "dashboard-daily",
+      "dashboard-media",
+      "dashboard-sync",
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull()
+    }
+    expect(screen.getByTestId("dashboard-transfers")).toBeTruthy()
+    expect(screen.getByTestId("dashboard-errors")).toBeTruthy()
+    expect(screen.getByTestId("dashboard-favorites")).toBeTruthy()
+    expect(getStatsOverview).not.toHaveBeenCalled()
   })
 
   it("has no form controls", () => {
