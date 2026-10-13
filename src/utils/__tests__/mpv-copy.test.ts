@@ -61,6 +61,8 @@ describe("isMpvMedia", () => {
     expect(isMpvMedia(obj("a.jpg", ObjType.IMAGE))).toBe(false)
     expect(isMpvMedia(obj("a.txt", ObjType.TEXT))).toBe(false)
     expect(isMpvMedia(obj("d", ObjType.FOLDER, true))).toBe(false)
+    // the preview page's open file can carry a stale is_dir
+    expect(isMpvMedia(obj("a.mkv", ObjType.VIDEO, true))).toBe(true)
   })
 })
 

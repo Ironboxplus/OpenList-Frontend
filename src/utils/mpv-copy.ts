@@ -3,9 +3,13 @@ import { Obj, ObjType } from "~/types"
 import { asyncPool } from "./async_pool"
 import { mpvCommand, MpvItem } from "./mpv-command"
 
-/** Only video and audio files can be handed to mpv. */
+/**
+ * Only video and audio files can be handed to mpv. Decided by `type` alone: a
+ * folder has type FOLDER, and `is_dir` is not reliable on `objStore.obj` (loading
+ * the sibling list on a preview page sets it to true for the open file).
+ */
 export const isMpvMedia = (obj: Obj): boolean =>
-  !obj.is_dir && (obj.type === ObjType.VIDEO || obj.type === ObjType.AUDIO)
+  obj.type === ObjType.VIDEO || obj.type === ObjType.AUDIO
 
 interface SubtitleEntry {
   url: string
