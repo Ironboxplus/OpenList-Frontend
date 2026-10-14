@@ -119,16 +119,22 @@ const AppShell = (props: ParentProps) => {
   })
 
   // The content wrapper is always rendered, so the page underneath is not
-  // remounted when the nav appears once the user has loaded.
+  // remounted when the nav appears once the user has loaded. The chrome around
+  // it sits in stable `display: contents` slots for the same reason: if
+  // siblings on both sides of the frame come and go at once (a rotation), Solid
+  // moves the frame with insertBefore, which tears down a fullscreen element
+  // (the movi player) or an iframe inside it. The frame must never be moved.
   return (
     <>
-      <Show when={wide()}>
-        <SideNav
-          pathname={pathname()}
-          rail={rail()}
-          onToggle={viewport() === "desktop" ? fold : undefined}
-        />
-      </Show>
+      <div style={{ display: "contents" }}>
+        <Show when={wide()}>
+          <SideNav
+            pathname={pathname()}
+            rail={rail()}
+            onToggle={viewport() === "desktop" ? fold : undefined}
+          />
+        </Show>
+      </div>
       <div
         data-shell-frame
         class="w-full min-w-0 transition-[padding] duration-150"
@@ -196,23 +202,31 @@ const AppShell = (props: ParentProps) => {
           </Suspense>
         </div>
       </div>
-      <Show when={phone()}>
-        <Show
-          when={bottomBarOverride()?.when()}
-          fallback={<BottomTabs pathname={pathname()} />}
-        >
-          {bottomBarOverride()!.render()}
+      <div style={{ display: "contents" }}>
+        <Show when={phone()}>
+          <Show
+            when={bottomBarOverride()?.when()}
+            fallback={<BottomTabs pathname={pathname()} />}
+          >
+            {bottomBarOverride()!.render()}
+          </Show>
         </Show>
-      </Show>
-      <Show when={shown() && paletteUsed()}>
-        <CommandPalette />
-      </Show>
-      <Show when={wide()}>
-        <TaskCenter />
-      </Show>
-      <Show when={shown()}>
-        <ErrorCenter />
-      </Show>
+      </div>
+      <div style={{ display: "contents" }}>
+        <Show when={shown() && paletteUsed()}>
+          <CommandPalette />
+        </Show>
+      </div>
+      <div style={{ display: "contents" }}>
+        <Show when={wide()}>
+          <TaskCenter />
+        </Show>
+      </div>
+      <div style={{ display: "contents" }}>
+        <Show when={shown()}>
+          <ErrorCenter />
+        </Show>
+      </div>
     </>
   )
 }
