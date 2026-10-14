@@ -124,16 +124,20 @@ const AppShell = (props: ParentProps) => {
   // siblings on both sides of the frame come and go at once (a rotation), Solid
   // moves the frame with insertBefore, which tears down a fullscreen element
   // (the movi player) or an iframe inside it. The frame must never be moved.
+  // Each slot is also its own Suspense boundary, so lazy chrome that is still
+  // loading never escalates to the root boundary and blanks the whole app.
   return (
     <>
       <div style={{ display: "contents" }}>
-        <Show when={wide()}>
-          <SideNav
-            pathname={pathname()}
-            rail={rail()}
-            onToggle={viewport() === "desktop" ? fold : undefined}
-          />
-        </Show>
+        <Suspense>
+          <Show when={wide()}>
+            <SideNav
+              pathname={pathname()}
+              rail={rail()}
+              onToggle={viewport() === "desktop" ? fold : undefined}
+            />
+          </Show>
+        </Suspense>
       </div>
       <div
         data-shell-frame
@@ -203,29 +207,37 @@ const AppShell = (props: ParentProps) => {
         </div>
       </div>
       <div style={{ display: "contents" }}>
-        <Show when={phone()}>
-          <Show
-            when={bottomBarOverride()?.when()}
-            fallback={<BottomTabs pathname={pathname()} />}
-          >
-            {bottomBarOverride()!.render()}
+        <Suspense>
+          <Show when={phone()}>
+            <Show
+              when={bottomBarOverride()?.when()}
+              fallback={<BottomTabs pathname={pathname()} />}
+            >
+              {bottomBarOverride()!.render()}
+            </Show>
           </Show>
-        </Show>
+        </Suspense>
       </div>
       <div style={{ display: "contents" }}>
-        <Show when={shown() && paletteUsed()}>
-          <CommandPalette />
-        </Show>
+        <Suspense>
+          <Show when={shown() && paletteUsed()}>
+            <CommandPalette />
+          </Show>
+        </Suspense>
       </div>
       <div style={{ display: "contents" }}>
-        <Show when={wide()}>
-          <TaskCenter />
-        </Show>
+        <Suspense>
+          <Show when={wide()}>
+            <TaskCenter />
+          </Show>
+        </Suspense>
       </div>
       <div style={{ display: "contents" }}>
-        <Show when={shown()}>
-          <ErrorCenter />
-        </Show>
+        <Suspense>
+          <Show when={shown()}>
+            <ErrorCenter />
+          </Show>
+        </Suspense>
       </div>
     </>
   )

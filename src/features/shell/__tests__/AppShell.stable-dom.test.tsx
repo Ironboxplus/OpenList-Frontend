@@ -1,5 +1,5 @@
 import { render } from "@solidjs/testing-library"
-import { createSignal } from "solid-js"
+import { Suspense } from "solid-js"
 import { describe, expect, it, vi } from "vitest"
 
 const h = vi.hoisted(() => ({
@@ -7,7 +7,13 @@ const h = vi.hoisted(() => ({
   setViewport: undefined as unknown as (v: string) => void,
   me: undefined as unknown as () => { id?: number; role?: number },
   setMe: undefined as unknown as (u: { id?: number; role?: number }) => void,
+  setPaletteOpen: undefined as unknown as (v: boolean) => void,
+  // The lazy chrome chunks resolve only when the test releases these.
+  release: {} as Record<"task" | "palette", () => void>,
+  gate: {} as Record<"task" | "palette", Promise<void>>,
 }))
+for (const k of ["task", "palette"] as const)
+  h.gate[k] = new Promise<void>((r) => (h.release[k] = r))
 
 vi.mock("@hope-ui/solid", () => ({
   useColorMode: () => ({ colorMode: () => "light" }),
@@ -38,11 +44,16 @@ vi.mock("../viewport", async () => {
   h.setViewport = setVp
   return { createViewport: () => vp }
 })
-vi.mock("../../palette/state", () => ({
-  isPaletteHotkey: () => false,
-  paletteOpen: () => true,
-  setPaletteOpen: vi.fn(),
-}))
+vi.mock("../../palette/state", async () => {
+  const { createSignal } = await import("solid-js")
+  const [open, setOpen] = createSignal(false)
+  h.setPaletteOpen = setOpen
+  return {
+    isPaletteHotkey: () => false,
+    paletteOpen: open,
+    setPaletteOpen: setOpen,
+  }
+})
 vi.mock("../../transfers/service", () => ({ transfers: {} }))
 vi.mock("../transfers-lifecycle", () => ({ bindTransfersToUser: vi.fn() }))
 vi.mock("../nav-items", () => ({
@@ -64,35 +75,55 @@ vi.mock("../TopBar", () => ({
   TOP_BAR_HEIGHT: "1rem",
   TopBar: () => <header />,
 }))
-vi.mock("../../transfers/TaskCenter", () => ({
-  default: () => <div data-task-center />,
-}))
+vi.mock("../../transfers/TaskCenter", async () => {
+  await h.gate.task
+  return { default: () => <div data-task-center /> }
+})
 vi.mock("../../notifications/ErrorCenter", () => ({
   default: () => <div data-error-center />,
 }))
-vi.mock("../../palette/CommandPalette", () => ({
-  default: () => <div data-palette />,
-}))
+vi.mock("../../palette/CommandPalette", async () => {
+  await h.gate.palette
+  return { default: () => <div data-palette /> }
+})
 
 import AppShell from "../AppShell"
 
 describe("AppShell content frame", () => {
   it("is never removed or moved when the viewport or sign-in state changes", async () => {
+    // Like src/app/index.tsx: a root boundary that blanks the app while it loads.
     const { container } = render(() => (
-      <AppShell>
-        <p>page</p>
-      </AppShell>
+      <Suspense fallback={<div data-root-fallback />}>
+        <AppShell>
+          <p>page</p>
+        </AppShell>
+      </Suspense>
     ))
     const frame = container.querySelector("[data-shell-frame]")!
     expect(frame).toBeTruthy()
 
     let removals = 0
+    let fallbacks = 0
     const count = (records: MutationRecord[]) => {
-      for (const r of records)
+      for (const r of records) {
         for (const n of r.removedNodes) if (n === frame) removals++
+        for (const n of r.addedNodes)
+          if ((n as Element).hasAttribute?.("data-root-fallback")) fallbacks++
+      }
     }
     const observer = new MutationObserver(count)
     observer.observe(container, { childList: true, subtree: true })
+
+    // Chrome that has never been loaded mounts while its chunk is still loading.
+    h.setMe({ id: 1, role: 0 })
+    h.setViewport("tablet")
+    h.setPaletteOpen(true)
+    await new Promise((r) => setTimeout(r, 20))
+    h.release.task()
+    h.release.palette()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(container.querySelector("[data-task-center]")).toBeTruthy()
+    expect(container.querySelector("[data-palette]")).toBeTruthy()
 
     const steps: [string, boolean][] = [
       ["phone", true],
@@ -112,6 +143,7 @@ describe("AppShell content frame", () => {
     count(observer.takeRecords())
     observer.disconnect()
 
+    expect(fallbacks).toBe(0)
     expect(removals).toBe(0)
     expect(frame.isConnected).toBe(true)
     expect(container.querySelector("[data-shell-frame]")).toBe(frame)
