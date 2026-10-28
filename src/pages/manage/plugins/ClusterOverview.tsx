@@ -5,6 +5,7 @@ import { ResourceList, SettingsSection } from "~/features/settings/form"
 import { useT } from "~/hooks"
 import { cn } from "~/utils/cn"
 import type { ClusterNodeView, ClusterStatus } from "./api"
+import { ClusterLinks } from "./ClusterLinks"
 import { ago } from "./cluster-util"
 
 const Dot = (props: { on: boolean }) => (
@@ -125,35 +126,42 @@ export const ClusterOverview = (props: { status: ClusterStatus }) => {
       />
 
       <div class="grid gap-4 lg:grid-cols-2">
-        <SettingsSection
-          id="cluster-connections"
-          title={t("manage.cluster.connections_title")}
+        <Show
+          when={(props.status.links ?? []).length > 0}
+          fallback={
+            <SettingsSection
+              id="cluster-connections"
+              title={t("manage.cluster.connections_title")}
+            >
+              <Show
+                when={connections().length > 0}
+                fallback={
+                  <p class="py-3 text-sm text-muted-foreground">
+                    {t("manage.cluster.no_connections")}
+                  </p>
+                }
+              >
+                <For each={connections()}>
+                  {(c) => (
+                    <div class="flex items-center justify-between gap-2 py-2 text-sm">
+                      <span class="flex items-center gap-2">
+                        <Badge variant={c.outbound ? "default" : "secondary"}>
+                          {c.outbound ? "→" : "←"}
+                        </Badge>
+                        {nodeLabel(c.node_id)}
+                      </span>
+                      <span class="text-xs text-muted-foreground">
+                        {ago(c.since)}
+                      </span>
+                    </div>
+                  )}
+                </For>
+              </Show>
+            </SettingsSection>
+          }
         >
-          <Show
-            when={connections().length > 0}
-            fallback={
-              <p class="py-3 text-sm text-muted-foreground">
-                {t("manage.cluster.no_connections")}
-              </p>
-            }
-          >
-            <For each={connections()}>
-              {(c) => (
-                <div class="flex items-center justify-between gap-2 py-2 text-sm">
-                  <span class="flex items-center gap-2">
-                    <Badge variant={c.outbound ? "default" : "secondary"}>
-                      {c.outbound ? "→" : "←"}
-                    </Badge>
-                    {nodeLabel(c.node_id)}
-                  </span>
-                  <span class="text-xs text-muted-foreground">
-                    {ago(c.since)}
-                  </span>
-                </div>
-              )}
-            </For>
-          </Show>
-        </SettingsSection>
+          <ClusterLinks status={props.status} />
+        </Show>
 
         <SettingsSection
           id="cluster-events"

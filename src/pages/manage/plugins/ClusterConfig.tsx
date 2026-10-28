@@ -13,6 +13,7 @@ import {
   getClusterKey,
   setClusterConfig,
   setClusterGroups,
+  setClusterRefresher,
 } from "./api"
 import { ClusterGroups } from "./ClusterGroups"
 import { ClusterOverview, ClusterStats } from "./ClusterOverview"
@@ -109,6 +110,17 @@ const ClusterConfig = () => {
       notify.success(t("manage.cluster.saved"))
     })
     setSavingGroups(false)
+  }
+
+  const [preferBusy, setPreferBusy] = createSignal(false)
+  const prefer = async (groupID: string, nodeID: string) => {
+    setPreferBusy(true)
+    handleResp(await setClusterRefresher(groupID, nodeID), (s) => {
+      // Only the status: the groups draft may hold unsaved edits.
+      setStatus(s)
+      notify.success(t("manage.cluster.saved"))
+    })
+    setPreferBusy(false)
   }
 
   return (
@@ -220,6 +232,8 @@ const ClusterConfig = () => {
             onChange={setGroups}
             saving={savingGroups()}
             onSave={saveGroups}
+            onPrefer={prefer}
+            preferBusy={preferBusy()}
           />
           <ClusterOverview status={status()!} />
         </Show>

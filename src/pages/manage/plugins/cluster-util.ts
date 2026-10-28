@@ -21,3 +21,13 @@ export const ago = (t: number) => {
   if (d < 86400) return `${Math.floor(d / 3600)}h`
   return `${Math.floor(d / 86400)}d`
 }
+
+/** A duration in seconds as a short span: 45s, 3m, 2h10m. Negative/zero => 0s. */
+export const span = (sec: number) => {
+  const s = Math.max(0, Math.floor(sec || 0))
+  if (s < 60) return `${s}s`
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  return m ? `${h}h${m}m` : `${h}h`
+}

@@ -97,6 +97,41 @@ const CLUSTER = {
             present: true,
             is_origin: true,
             self: true,
+            held_version: 1,
+            laggard: true,
+            refresher: true,
+          },
+        ],
+        refresh_group: true,
+        preferred: "",
+        refresher: {
+          node_id: "n1aaaaaaaa",
+          label: "node-a",
+          self: true,
+          epoch: 3,
+          valid: true,
+          expires_in: 40,
+          ttl_sec: 60,
+        },
+        last_refresh: {
+          time: 1,
+          node_id: "n1aaaaaaaa",
+          label: "node-a",
+          mount: "/s1",
+          trigger: "proactive",
+          outcome: "ok",
+          err_code: 0,
+          expires_in: 7200,
+        },
+        requests: [
+          {
+            time: 1,
+            direction: "received",
+            peer: "n2bbbbbbbb",
+            peer_label: "node-b",
+            group_id: "g1",
+            mount: "/s1",
+            result: "refresh started",
           },
         ],
         fields: ["token"],
@@ -109,6 +144,24 @@ const CLUSTER = {
     ],
     connections: [
       { node_id: "n2bbbbbbbb", addr: "", outbound: true, since: 1 },
+    ],
+    links: [
+      {
+        node_id: "n2bbbbbbbb",
+        label: "node-b",
+        connected: true,
+        outbound: true,
+        since: 1,
+        queue_depth: 4,
+        rtt_ms: 37,
+        last_anti_entropy: 1,
+        connects: 5,
+        disconnects: 4,
+        flaps_10m: 3,
+        last_reason: "peer_closed",
+        last_disconnect_at: 1,
+        proto: 2,
+      },
     ],
     events: [
       { time: 1, kind: "apply", group_id: "g1", detail: "applied token" },
@@ -139,6 +192,7 @@ beforeEach(() => {
     "GET /admin/cluster/key": () => ({ key: "REALKEY" }),
     "POST /admin/cluster/config": () => structuredClone(CLUSTER),
     "POST /admin/cluster/groups": () => structuredClone(CLUSTER.status),
+    "POST /admin/cluster/refresher": () => structuredClone(CLUSTER.status),
   })
 })
 
@@ -249,5 +303,47 @@ describe("cluster config", () => {
     const body = lastCall("POST", "/admin/cluster/groups")!.body as any
     expect(body.groups.map((g: any) => g.id)).toEqual(["g1"])
     expectGolden("cluster-groups-save", body)
+  })
+
+  it("shows the refresher, its last refresh, laggards and link health", async () => {
+    renderPage(() => <Plugins />)
+    await settle()
+    const panel = document.querySelector("[data-testid=cluster-refresher]")!
+    expect(panel.textContent).toContain("node-a")
+    expect(panel.textContent).toContain("lease epoch 3")
+    expect(panel.textContent).toContain("ahead of expiry")
+    expect(panel.textContent).toContain("refresh started")
+    // v1 is behind the group's v2
+    expect(
+      panel.querySelector("[data-testid=cluster-laggards]")!.textContent,
+    ).toContain("Behind v2")
+    expect(document.querySelector("[data-laggard=true]")!.textContent).toBe(
+      "v1",
+    )
+    const links = document.querySelector("[data-testid=cluster-links]")!
+    expect(links.textContent).toContain("37 ms")
+    expect(links.textContent).toContain("peer_closed")
+  })
+
+  it("choosing a preferred refresher posts it without touching the groups draft", async () => {
+    renderPage(() => <Plugins />)
+    await settle()
+    const panel = document.querySelector("[data-testid=cluster-refresher]")!
+    const trigger = [...panel.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Automatic"),
+    )!
+    trigger.focus()
+    fireEvent.keyDown(trigger, { key: "Enter" })
+    await settle()
+    const item = [...document.querySelectorAll("[role=menuitem]")].find((e) =>
+      e.textContent?.includes("node-a"),
+    )!
+    ;(item as HTMLElement).focus()
+    fireEvent.keyDown(item, { key: "Enter" })
+    await settle()
+    expect(lastCall("POST", "/admin/cluster/refresher")!.body).toEqual({
+      group_id: "g1",
+      node_id: "n1aaaaaaaa",
+    })
   })
 })

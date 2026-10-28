@@ -1,4 +1,4 @@
-import { TbPlus, TbX } from "solid-icons/tb"
+import { TbPlus, TbRefresh, TbX } from "solid-icons/tb"
 import { createMemo, For, Index, Show } from "solid-js"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
@@ -14,6 +14,7 @@ import { useT } from "~/hooks"
 import { cn } from "~/utils/cn"
 import type { ClusterGroupSpec, ClusterGroupView, ClusterStatus } from "./api"
 import ClusterGraph from "./ClusterGraph"
+import { ClusterRefresher } from "./ClusterRefresher"
 import { ago, rid } from "./cluster-util"
 
 export interface ClusterGroupsProps {
@@ -23,6 +24,9 @@ export interface ClusterGroupsProps {
   onChange: (groups: ClusterGroupSpec[]) => void
   saving: boolean
   onSave: () => void
+  /** Pin (or with "" clear) the group's preferred refresher; applies at once. */
+  onPrefer?: (groupID: string, nodeID: string) => void
+  preferBusy?: boolean
 }
 
 /**
@@ -199,10 +203,42 @@ export const ClusterGroups = (props: ClusterGroupsProps) => {
                               <Show when={mv()?.is_origin}>
                                 <span title="credential source">★</span>
                               </Show>
+                              <Show when={mv()?.refresher}>
+                                <span title={t("manage.cluster.refresher")}>
+                                  <TbRefresh class="size-3.5 text-success" />
+                                </span>
+                              </Show>
                               {nodeLabel(m.node_id)}
                               <span class="font-mono text-muted-foreground">
                                 {m.mount_path}
                               </span>
+                              <Show when={mv()?.proto === 1}>
+                                <Badge
+                                  variant="warning"
+                                  class="px-1.5 py-0"
+                                  title={t("manage.cluster.legacy_hint")}
+                                >
+                                  {t("manage.cluster.legacy")}
+                                </Badge>
+                              </Show>
+                              <Show
+                                when={mv() && (mv()!.held_version ?? 0) > 0}
+                              >
+                                <span
+                                  class={cn(
+                                    "text-xs",
+                                    mv()!.laggard
+                                      ? "font-semibold text-warning"
+                                      : "text-muted-foreground",
+                                  )}
+                                  data-laggard={
+                                    mv()!.laggard ? "true" : undefined
+                                  }
+                                  title={t("manage.cluster.held_version")}
+                                >
+                                  v{mv()!.held_version}
+                                </span>
+                              </Show>
                               <Show when={mv() && !mv()!.present}>
                                 <span
                                   class="text-xs text-warning"
@@ -256,6 +292,22 @@ export const ClusterGroups = (props: ClusterGroupsProps) => {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
+
+                    <Show
+                      when={
+                        props.onPrefer &&
+                        saved() &&
+                        (saved()!.refresh_group ||
+                          saved()!.refresher ||
+                          saved()!.last_refresh)
+                      }
+                    >
+                      <ClusterRefresher
+                        group={saved()!}
+                        onPrefer={props.onPrefer!}
+                        busy={props.preferBusy}
+                      />
+                    </Show>
 
                     <Show
                       when={saved()?.has_cred && saved()!.fields.length > 0}
