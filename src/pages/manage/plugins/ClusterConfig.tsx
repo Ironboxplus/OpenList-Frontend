@@ -30,6 +30,7 @@ import {
   getClusterKey,
   setClusterConfig,
   setClusterGroups,
+  setClusterRefresher,
 } from "./api"
 import ClusterGraph from "./ClusterGraph"
 
@@ -54,6 +55,15 @@ const ago = (t: number) => {
   if (d < 3600) return `${Math.floor(d / 60)}m`
   if (d < 86400) return `${Math.floor(d / 3600)}h`
   return `${Math.floor(d / 86400)}d`
+}
+
+const span = (sec: number) => {
+  const s = Math.max(0, Math.floor(sec))
+  if (s < 60) return `${s}s`
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  return m ? `${h}h${m}m` : `${h}h`
 }
 
 const Field = (props: { label: string; hint?: string; children: any }) => (
@@ -183,6 +193,17 @@ const ClusterConfig = () => {
     setBusy(false)
   }
 
+  const [preferBusy, setPreferBusy] = createSignal(false)
+  const prefer = async (groupID: string, nodeID: string) => {
+    setPreferBusy(true)
+    handleResp(await setClusterRefresher(groupID, nodeID), (s) => {
+      // Only the status: the groups draft may hold unsaved edits.
+      setStatus(s)
+      notify.success(t("manage.cluster.saved"))
+    })
+    setPreferBusy(false)
+  }
+
   const saveGroups = async () => {
     setSavingGroups(true)
     // drop empty groups / members before saving
@@ -289,6 +310,169 @@ const ClusterConfig = () => {
       }
     }
     return out
+  }
+
+  const refresherPanel = (g: ClusterGroupView) => {
+    const seen = new Set<string>()
+    const nodes = g.members.filter((m) => {
+      if (seen.has(m.node_id)) return false
+      seen.add(m.node_id)
+      return true
+    })
+    const name = (id: string) =>
+      g.members.find((m) => m.node_id === id)?.label || id.slice(0, 8)
+    const lagging = g.members.filter((m) => m.laggard)
+    const lease = g.refresher
+    const lr = g.last_refresh
+    const trig = (x: string) =>
+      x === "proactive" || x === "refresh-request" || x === "recover"
+        ? t(`manage.cluster.trigger_${x.replace("-", "_")}`)
+        : t("manage.cluster.trigger_code", { code: x })
+    return (
+      <VStack
+        w="$full"
+        spacing="$1_5"
+        p="$2_5"
+        rounded="$md"
+        bgColor="$neutral1"
+        border="1px solid $neutral4"
+        alignItems="stretch"
+        data-testid="cluster-refresher"
+      >
+        <HStack wrap="wrap" gap="$2" alignItems="center">
+          <Text fontWeight="$medium">{t("manage.cluster.refresher")}</Text>
+          <Show
+            when={lease?.valid}
+            fallback={
+              <Badge colorScheme="warning" variant="subtle">
+                {t("manage.cluster.no_refresher")}
+              </Badge>
+            }
+          >
+            <Badge colorScheme="success" variant="subtle">
+              {lease!.label || name(lease!.node_id)}
+              {lease!.self ? ` · ${t("manage.cluster.self")}` : ""}
+            </Badge>
+            <Text fontSize="$xs" color="$neutral10">
+              {t("manage.cluster.lease_info", {
+                epoch: lease!.epoch,
+                n: span(lease!.expires_in),
+              })}
+            </Text>
+          </Show>
+          <Box flex={1} />
+          <Text fontSize="$xs" color="$neutral10">
+            {t("manage.cluster.preferred")}
+          </Text>
+          <Menu>
+            <MenuTrigger
+              as={Button}
+              size="xs"
+              variant="outline"
+              disabled={preferBusy()}
+            >
+              {g.preferred
+                ? name(g.preferred)
+                : t("manage.cluster.preferred_auto")}
+            </MenuTrigger>
+            <MenuContent>
+              <MenuItem onSelect={() => prefer(g.id, "")}>
+                {t("manage.cluster.preferred_auto")}
+              </MenuItem>
+              <For each={nodes}>
+                {(m) => (
+                  <MenuItem onSelect={() => prefer(g.id, m.node_id)}>
+                    {m.label || m.node_id.slice(0, 8)}
+                  </MenuItem>
+                )}
+              </For>
+            </MenuContent>
+          </Menu>
+        </HStack>
+        <Show
+          when={lr}
+          fallback={
+            <Text fontSize="$xs" color="$neutral10">
+              {t("manage.cluster.no_refresh_yet")}
+            </Text>
+          }
+        >
+          <Text fontSize="$xs">
+            <Text as="span" color="$neutral10">
+              {t("manage.cluster.last_refresh")}:
+            </Text>{" "}
+            {lr!.label || name(lr!.node_id)} · {ago(lr!.time)} ·{" "}
+            <Badge
+              colorScheme={lr!.outcome === "ok" ? "success" : "danger"}
+              variant="subtle"
+            >
+              {lr!.outcome === "ok"
+                ? t("manage.cluster.refresh_ok", { n: span(lr!.expires_in) })
+                : t("manage.cluster.refresh_failed", {
+                    code: lr!.err_code || lr!.outcome,
+                  })}
+            </Badge>{" "}
+            · {trig(lr!.trigger)}
+          </Text>
+        </Show>
+        <Show when={(g.expires_at ?? 0) > 0}>
+          <Text fontSize="$xs" color="$neutral10">
+            {t("manage.cluster.token_expires", {
+              n: span((g.expires_at ?? 0) - Math.floor(Date.now() / 1000)),
+            })}
+          </Text>
+        </Show>
+        <Show when={lagging.length > 0}>
+          <Text fontSize="$xs" color="$warning9" data-testid="cluster-laggards">
+            {t("manage.cluster.laggards", {
+              names: lagging
+                .map(
+                  (m) =>
+                    `${m.label || m.node_id.slice(0, 8)} v${m.held_version ?? 0}`,
+                )
+                .join(", "),
+              v: g.version,
+            })}
+          </Text>
+        </Show>
+        <Show when={g.mixed}>
+          <Text fontSize="$xs" color="$warning9">
+            {t("manage.cluster.mixed_warning")}
+          </Text>
+        </Show>
+        <Show when={(g.requests ?? []).length > 0}>
+          <VStack spacing="$0_5" alignItems="stretch">
+            <Text fontSize="$xs" color="$neutral10">
+              {t("manage.cluster.requests_title")}
+            </Text>
+            <For each={(g.requests ?? []).slice(0, 5)}>
+              {(q) => (
+                <HStack spacing="$1_5" alignItems="baseline" wrap="wrap">
+                  <Text fontSize="$xs" color="$neutral9" w="36px">
+                    {ago(q.time)}
+                  </Text>
+                  <Badge
+                    variant="subtle"
+                    colorScheme={q.direction === "sent" ? "info" : "neutral"}
+                  >
+                    {q.direction === "sent"
+                      ? t("manage.cluster.request_sent")
+                      : t("manage.cluster.request_received")}
+                  </Badge>
+                  <Text fontSize="$xs">
+                    {q.peer_label || (q.peer ? q.peer.slice(0, 8) : "—")} ·{" "}
+                    <Text as="span" fontFamily="$mono">
+                      {q.mount}
+                    </Text>{" "}
+                    · {q.result}
+                  </Text>
+                </HStack>
+              )}
+            </For>
+          </VStack>
+        </Show>
+      </VStack>
+    )
   }
 
   const st = () => status()
@@ -568,6 +752,15 @@ const ClusterConfig = () => {
                                   ★
                                 </Text>
                               </Show>
+                              <Show when={mv()?.refresher}>
+                                <Text
+                                  fontSize="$xs"
+                                  color="$success10"
+                                  title={t("manage.cluster.refresher")}
+                                >
+                                  ⟳
+                                </Text>
+                              </Show>
                               <Text fontSize="$sm">{nodeLabel(m.node_id)}</Text>
                               <Text
                                 fontSize="$sm"
@@ -576,6 +769,34 @@ const ClusterConfig = () => {
                               >
                                 {m.mount_path}
                               </Text>
+                              <Show when={mv()?.proto === 1}>
+                                <Badge
+                                  colorScheme="warning"
+                                  variant="subtle"
+                                  title={t("manage.cluster.legacy_hint")}
+                                >
+                                  {t("manage.cluster.legacy")}
+                                </Badge>
+                              </Show>
+                              <Show
+                                when={mv() && (mv()!.held_version ?? 0) > 0}
+                              >
+                                <Text
+                                  fontSize="$xs"
+                                  color={
+                                    mv()!.laggard ? "$warning9" : "$neutral10"
+                                  }
+                                  fontWeight={
+                                    mv()!.laggard ? "$semibold" : undefined
+                                  }
+                                  data-laggard={
+                                    mv()!.laggard ? "true" : undefined
+                                  }
+                                  title={t("manage.cluster.held_version")}
+                                >
+                                  v{mv()!.held_version}
+                                </Text>
+                              </Show>
                               <Show when={mv() && !mv()!.present}>
                                 <Text
                                   fontSize="$xs"
@@ -630,6 +851,17 @@ const ClusterConfig = () => {
                         </MenuContent>
                       </Menu>
                     </HStack>
+
+                    <Show
+                      when={
+                        saved() &&
+                        (saved()!.refresh_group ||
+                          saved()!.refresher ||
+                          saved()!.last_refresh)
+                      }
+                    >
+                      {refresherPanel(saved()!)}
+                    </Show>
 
                     <Show
                       when={saved()?.has_cred && saved()!.fields.length > 0}
@@ -700,42 +932,120 @@ const ClusterConfig = () => {
 
         {/* ---- connections + events ---- */}
         <HStack w="$full" gap="$4" alignItems="start" wrap="wrap">
-          <VStack flex={1} minW="260px" spacing="$2" alignItems="stretch">
-            <Heading size="sm">{t("manage.cluster.connections_title")}</Heading>
-            <Show
-              when={(st()!.connections?.length ?? 0) > 0}
-              fallback={
-                <Text fontSize="$sm" color="$neutral9">
-                  {t("manage.cluster.no_connections")}
-                </Text>
-              }
-            >
-              <For each={st()!.connections}>
-                {(c) => (
-                  <HStack
-                    spacing="$2"
-                    p="$2"
-                    rounded="$md"
-                    bgColor="$neutral2"
-                    justifyContent="space-between"
-                  >
-                    <HStack spacing="$2">
-                      <Badge
-                        colorScheme={c.outbound ? "primary" : "neutral"}
-                        variant="subtle"
-                      >
-                        {c.outbound ? "→" : "←"}
-                      </Badge>
-                      <Text fontSize="$sm">{nodeLabel(c.node_id)}</Text>
-                    </HStack>
-                    <Text fontSize="$xs" color="$neutral10">
-                      {ago(c.since)}
+          <Show
+            when={(st()!.links?.length ?? 0) > 0}
+            fallback={
+              <VStack flex={1} minW="260px" spacing="$2" alignItems="stretch">
+                <Heading size="sm">
+                  {t("manage.cluster.connections_title")}
+                </Heading>
+                <Show
+                  when={(st()!.connections?.length ?? 0) > 0}
+                  fallback={
+                    <Text fontSize="$sm" color="$neutral9">
+                      {t("manage.cluster.no_connections")}
                     </Text>
-                  </HStack>
-                )}
-              </For>
-            </Show>
-          </VStack>
+                  }
+                >
+                  <For each={st()!.connections}>
+                    {(c) => (
+                      <HStack
+                        spacing="$2"
+                        p="$2"
+                        rounded="$md"
+                        bgColor="$neutral2"
+                        justifyContent="space-between"
+                      >
+                        <HStack spacing="$2">
+                          <Badge
+                            colorScheme={c.outbound ? "primary" : "neutral"}
+                            variant="subtle"
+                          >
+                            {c.outbound ? "→" : "←"}
+                          </Badge>
+                          <Text fontSize="$sm">{nodeLabel(c.node_id)}</Text>
+                        </HStack>
+                        <Text fontSize="$xs" color="$neutral10">
+                          {ago(c.since)}
+                        </Text>
+                      </HStack>
+                    )}
+                  </For>
+                </Show>
+              </VStack>
+            }
+          >
+            <VStack
+              flex={1}
+              minW="320px"
+              spacing="$2"
+              alignItems="stretch"
+              data-testid="cluster-links"
+            >
+              <Heading size="sm">{t("manage.cluster.links_title")}</Heading>
+              <Text fontSize="$xs" color="$neutral10">
+                {t("manage.cluster.links_hint")}
+              </Text>
+              <Box overflowX="auto">
+                <table style={{ width: "100%", "font-size": "12px" }}>
+                  <thead>
+                    <tr style={{ "text-align": "left" }}>
+                      <th>{t("manage.cluster.link_peer")}</th>
+                      <th>{t("manage.cluster.link_state")}</th>
+                      <th>RTT</th>
+                      <th>{t("manage.cluster.link_queue")}</th>
+                      <th>{t("manage.cluster.link_sync")}</th>
+                      <th>{t("manage.cluster.link_drops")}</th>
+                      <th>{t("manage.cluster.link_reason")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <For each={st()!.links}>
+                      {(l) => (
+                        <tr>
+                          <td>
+                            {l.label || nodeLabel(l.node_id)}
+                            <Show when={l.proto === 1}>
+                              {" "}
+                              <Badge colorScheme="warning" variant="subtle">
+                                {t("manage.cluster.legacy")}
+                              </Badge>
+                            </Show>
+                          </td>
+                          <td>
+                            {l.connected
+                              ? `${l.outbound ? "→" : "←"} ${ago(l.since)}`
+                              : t("manage.cluster.link_down")}
+                          </td>
+                          <td>{l.connected ? `${l.rtt_ms} ms` : "—"}</td>
+                          <td>{l.connected ? l.queue_depth : "—"}</td>
+                          <td>
+                            {l.last_anti_entropy
+                              ? ago(l.last_anti_entropy)
+                              : "—"}
+                          </td>
+                          <td
+                            style={{
+                              color: l.flaps_10m >= 3 ? "orange" : undefined,
+                            }}
+                          >
+                            {l.disconnects}
+                            {l.flaps_10m > 0 ? ` (${l.flaps_10m} / 10m)` : ""}
+                          </td>
+                          <td>
+                            {l.last_reason || "—"}
+                            {l.last_disconnect_at
+                              ? ` · ${ago(l.last_disconnect_at)}`
+                              : ""}
+                          </td>
+                        </tr>
+                      )}
+                    </For>
+                  </tbody>
+                </table>
+              </Box>
+            </VStack>
+          </Show>
 
           <VStack flex={1} minW="260px" spacing="$2" alignItems="stretch">
             <Heading size="sm">{t("manage.cluster.events_title")}</Heading>

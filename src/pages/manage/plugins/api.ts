@@ -53,12 +53,21 @@ export type ClusterConfig = {
   seeds: string[]
   apply_remote: boolean
   announce_interval_sec: number
+  /** Optional refresher timing overrides (0/absent = default). */
+  lease_ttl_sec?: number
+  refresh_request_wait_sec?: number
+  proactive_min_gap_sec?: number
+  delivery_resend_sec?: number
+  revocation_retention_days?: number
 }
 
 export type ClusterStorageInfo = {
   mount_path: string
   driver: string
   status: string
+  /** Credential pair the mount uses: short hash and catalogue version. */
+  cred_hash?: string
+  cred_ver?: number
 }
 
 export type ClusterNodeView = {
@@ -79,6 +88,51 @@ export type ClusterMemberView = {
   present: boolean
   is_origin: boolean
   self: boolean
+  /** Credential version this member actually holds (0 = unknown). */
+  held_version?: number
+  held_hash?: string
+  /** Online but behind the group's current version. */
+  laggard?: boolean
+  /** Protocol level: 1 = predates refresher leases (still refreshes alone). */
+  proto?: number
+  /** Currently holds the refresher lease / is the admin's preferred refresher. */
+  refresher?: boolean
+  preferred?: boolean
+}
+
+export type ClusterRefresherView = {
+  node_id: string
+  label: string
+  self: boolean
+  epoch: number
+  /** The lease currently designates a live holder. */
+  valid: boolean
+  /** Seconds until the lease lapses without renewal (<= 0: lapsed). */
+  expires_in: number
+  ttl_sec: number
+}
+
+export type ClusterRefreshView = {
+  time: number
+  node_id: string
+  label: string
+  mount: string
+  /** API error code, "proactive", "refresh-request" or "recover". */
+  trigger: string
+  outcome: "ok" | "api_error" | "transport_error" | string
+  err_code: number
+  /** Lifetime in seconds of the access token obtained. */
+  expires_in: number
+}
+
+export type ClusterRequestView = {
+  time: number
+  direction: "sent" | "received" | string
+  peer: string
+  peer_label: string
+  group_id: string
+  mount: string
+  result: string
 }
 
 export type ClusterGroupView = {
@@ -91,6 +145,17 @@ export type ClusterGroupView = {
   origin: string
   updated_at: number
   has_cred: boolean
+  /** Unix seconds the newest access token lapses (0 = unknown). */
+  expires_at?: number
+  /** The group takes part in single-refresher leases. */
+  refresh_group?: boolean
+  refresher?: ClusterRefresherView
+  /** Admin's preferred refresher node id (empty = automatic). */
+  preferred?: string
+  last_refresh?: ClusterRefreshView
+  requests?: ClusterRequestView[]
+  /** A member without leases is still refreshing on its own. */
+  mixed?: boolean
 }
 
 export type ClusterConnView = {
@@ -98,6 +163,30 @@ export type ClusterConnView = {
   addr: string
   outbound: boolean
   since: number
+  queue_depth?: number
+  rtt_ms?: number
+  last_anti_entropy?: number
+  proto?: number
+}
+
+/** Health of the link to one peer, connected or not. */
+export type ClusterLinkView = {
+  node_id: string
+  label: string
+  connected: boolean
+  outbound: boolean
+  since: number
+  queue_depth: number
+  rtt_ms: number
+  /** Unix seconds of the last hello/announce/reply received (0 = never). */
+  last_anti_entropy: number
+  connects: number
+  disconnects: number
+  /** Disconnects in the last 10 minutes. */
+  flaps_10m: number
+  last_reason: string
+  last_disconnect_at: number
+  proto: number
 }
 
 export type ClusterEventView = {
@@ -124,6 +213,10 @@ export type ClusterStatus = {
   nodes: ClusterNodeView[]
   groups: ClusterGroupView[]
   connections: ClusterConnView[]
+  links?: ClusterLinkView[]
+  requests?: ClusterRequestView[]
+  proto?: number
+  rev_digest?: string
   events: ClusterEventView[]
   stats: ClusterStatsView
 }
@@ -157,6 +250,13 @@ export const getClusterStatus = (): PResp<ClusterStatus> =>
 export const setClusterGroups = (
   groups: ClusterGroupSpec[],
 ): PResp<ClusterStatus> => r.post("/admin/cluster/groups", { groups })
+
+/** Set (or with an empty node id, clear) the group's preferred refresher. */
+export const setClusterRefresher = (
+  group_id: string,
+  node_id: string,
+): PResp<ClusterStatus> =>
+  r.post("/admin/cluster/refresher", { group_id, node_id })
 
 /** Starter source shown when creating a new backend plugin. */
 export const PLUGIN_TEMPLATE = `package main
