@@ -28,6 +28,8 @@
   "filename_char_mapping": "Filename char mapping",
   "filter_readme_scripts": "Filter readme scripts",
   "forward_direct_link_params": "Forward direct link params",
+  "frontend_remember_sort": "Remember list sorting",
+  "frontend_remember_sort-tips": "Keep each folder's sort order in the browser. When off, the storage's own order is used until the visitor sorts, and the choice lasts for the current session only.",
   "ftp_implicit_tls": "Ftp implicit tls",
   "ftp_mandatory_tls": "Ftp mandatory tls",
   "ftp_pasv_port_map": "Ftp pasv port map",

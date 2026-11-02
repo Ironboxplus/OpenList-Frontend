@@ -32,32 +32,7 @@ import { VirtualRows } from "~/features/files/VirtualRows"
 import { rowEstimate, shouldVirtualize } from "~/features/files/virtualize"
 import { phoneShell } from "~/features/shell/topbar-slot"
 import { StoreObj } from "~/types"
-
-export interface SortState {
-  orderBy: string
-  reverse: boolean
-}
-
-const SORT_KEY_PREFIX = "dir_sort_"
-
-export function saveSortState(dir: string, state: SortState) {
-  try {
-    localStorage.setItem(`${SORT_KEY_PREFIX}${dir}`, JSON.stringify(state))
-  } catch (err) {
-    console.warn("failed to save sort config:", err)
-  }
-}
-
-export function loadSortState(dir: string): SortState | null {
-  try {
-    const item = localStorage.getItem(`${SORT_KEY_PREFIX}${dir}`)
-    if (!item) return null
-    return JSON.parse(item) as SortState
-  } catch (err) {
-    console.warn("failed to read sort config:", err)
-    return null
-  }
-}
+import { loadSortState, saveSortState } from "./sort-state"
 
 export const ListTitle = (props: {
   sortCallback: (orderBy: OrderBy, reverse?: boolean) => void
