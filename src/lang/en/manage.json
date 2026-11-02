@@ -40,7 +40,8 @@
     "media_transcode": "Transcoding Settings",
     "transcode": "Transcode",
     "plugins": "Plugins",
-    "seed": "Seed"
+    "seed": "Seed",
+    "sessions": "Devices"
   },
   "title": "OpenList Management",
   "media_lib": {

@@ -19,6 +19,7 @@ export const entryComponents: Record<string, Component> = {
 /** Keyed by the path below /@manage. */
 export const routeComponents: Record<string, Component> = {
   [PROFILE_PATH]: lazy(() => import("./users/Profile")),
+  "/sessions": lazy(() => import("./users/SessionsPage")),
   "/settings/site": () => <CommonSettings group={Group.SITE} />,
   "/settings/style": () => <CommonSettings group={Group.STYLE} />,
   "/settings/preview": () => <CommonSettings group={Group.PREVIEW} />,

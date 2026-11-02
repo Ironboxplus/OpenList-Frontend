@@ -65,6 +65,10 @@
       "title": "Users",
       "description": "Accounts, roles and permissions."
     },
+    "sessions": {
+      "title": "Devices",
+      "description": "Who is signed in where, and how many devices each user may use."
+    },
     "metas": {
       "title": "Metas",
       "description": "Folder passwords, hidden files and readme rules."
