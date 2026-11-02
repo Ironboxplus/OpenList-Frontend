@@ -21,6 +21,11 @@ export interface ApiOptions {
   params?: Record<string, unknown>
   signal?: AbortSignal
   timeoutMs?: number
+  /**
+   * Extra request headers. The shared instance defaults to a JSON content type,
+   * so a multipart body has to say so, or it is sent as JSON.
+   */
+  headers?: Record<string, string>
 }
 
 type Method = "get" | "post" | "put" | "delete" | "patch"
@@ -53,6 +58,7 @@ export async function api<T>(
     params: opts.params,
     signal: opts.signal,
     timeout: opts.timeoutMs,
+    headers: opts.headers,
   }
   let resp: any
   try {

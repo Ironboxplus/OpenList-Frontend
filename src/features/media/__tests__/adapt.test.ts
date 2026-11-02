@@ -4,7 +4,14 @@ import type { MediaItem } from "~/types"
 vi.mock("~/utils/config", () => ({ api: "" }))
 vi.mock("~/store/media", () => ({ mediaStatus: () => ({}) }))
 
-import { absoluteOf, cardOf, episodesOf, itemOf, relativeTo } from "../adapt"
+import {
+  absoluteOf,
+  cardOf,
+  episodesIn,
+  episodesOf,
+  itemOf,
+  relativeTo,
+} from "../adapt"
 
 const view = (over: Partial<MediaItem> = {}): MediaItem =>
   ({
@@ -100,5 +107,43 @@ describe("scan paths and the user's base path", () => {
     expect(absoluteOf("/anime", "/")).toBe("/anime")
     expect(absoluteOf("/", "/data")).toBe("/data")
     expect(absoluteOf("/anime/", undefined)).toBe("/anime")
+  })
+})
+
+describe("episodesIn", () => {
+  const ep = (file_name: string) => ({
+    file_name,
+    season: 1,
+    episode: 1,
+    title: "",
+    overview: "",
+  })
+  const list = [
+    ep("Season 1/a.mkv"),
+    ep("Season 1/Extras/b.mkv"),
+    ep("Season 2/c.mkv"),
+    ep("d.mkv"),
+  ]
+
+  it("names the files of a subfolder the way its file list does", () => {
+    expect(
+      episodesIn(list, "/lib/Show", "/lib/Show/Season 1").map(
+        (e) => e.file_name,
+      ),
+    ).toEqual(["a.mkv"])
+    expect(
+      episodesIn(list, "/lib/Show/", "/lib/Show/Season 2/").map(
+        (e) => e.file_name,
+      ),
+    ).toEqual(["c.mkv"])
+  })
+
+  it("is the whole list in the work's own folder", () => {
+    expect(episodesIn(list, "/lib/Show", "/lib/Show")).toHaveLength(4)
+  })
+
+  it("has nothing for a folder the work has no episode in", () => {
+    expect(episodesIn(list, "/lib/Show", "/lib/Show/Specials")).toEqual([])
+    expect(episodesIn(undefined, "/lib/Show", "/lib/Show/Season 1")).toEqual([])
   })
 })

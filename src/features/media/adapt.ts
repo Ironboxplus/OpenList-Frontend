@@ -4,6 +4,7 @@
 import { getMediaName, parseCandidates, parseExternalIds } from "~/types"
 import type { MediaItem as ApiItem, MediaEpisodeView } from "~/types"
 import { resolveMediaCover } from "~/utils/media_cover"
+import { normPath } from "./logic"
 import type { MediaCard, MediaEpisode, MediaItem, MediaKind } from "./types"
 
 const KINDS: readonly string[] = ["movie", "tv", "anime", "collection"]
@@ -49,6 +50,32 @@ export const episodesOf = (
     title: e.title,
     overview: e.overview,
   }))
+
+/**
+ * The episodes of a work that sit in one of its subfolders (a show's "Season 1"
+ * folder): the work's episode_list names files relative to the work's folder
+ * ("Season 1/x.mkv"), the file list of the subfolder names them "x.mkv".
+ * Files deeper down are left to their own folder.
+ */
+export const episodesIn = (
+  list: readonly MediaEpisodeView[] | undefined,
+  workPath: string,
+  dirPath: string,
+): MediaEpisode[] => {
+  const work = normPath(workPath)
+  const rel = normPath(dirPath).slice(work.length)
+  if (rel === "" || rel === "/") return episodesOf(list)
+  const prefix = (rel.startsWith("/") ? rel.slice(1) : rel) + "/"
+  return episodesOf(
+    (list ?? [])
+      .filter(
+        (e) =>
+          e.file_name.startsWith(prefix) &&
+          !e.file_name.slice(prefix.length).includes("/"),
+      )
+      .map((e) => ({ ...e, file_name: e.file_name.slice(prefix.length) })),
+  )
+}
 
 /**
  * Scan paths are stored as absolute paths; the file browser works relative to

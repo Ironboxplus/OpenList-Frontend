@@ -7,9 +7,21 @@ import {
 } from "~/platform/api/client"
 import { me } from "~/store"
 import type { MediaItem as ApiItem, MediaScanPath } from "~/types"
-import { absoluteOf, cardOf, episodesOf, itemOf, relativeTo } from "./adapt"
+import {
+  absoluteOf,
+  cardOf,
+  episodesIn,
+  episodesOf,
+  itemOf,
+  relativeTo,
+} from "./adapt"
 import { baseName, createMediaClient, normPath } from "./logic"
-import type { MediaCandidate, MediaKind, SearchCandidate } from "./types"
+import type {
+  MediaCandidate,
+  MediaEpisode,
+  MediaKind,
+  SearchCandidate,
+} from "./types"
 
 /** Children of a directory, all pages of it (a library holds hundreds of works). */
 const listChildren = async (path: string): Promise<ApiResult<ApiItem[]>> => {
@@ -47,6 +59,32 @@ const visibleLibraries = async (): Promise<string[]> => {
     .filter((p): p is string => p !== undefined)
 }
 
+const parentOf = (path: string): string =>
+  path.slice(0, path.lastIndexOf("/")) || "/"
+
+/**
+ * Inside a work's subfolder (a show's "Season 1") there is no item of its own,
+ * but the files in it are the work's episodes. Only below a library: walk up to
+ * the work and take its episodes that sit in this folder. The walk stops at the
+ * library, so a folder outside any library costs no request.
+ */
+const episodesFromWork = async (
+  path: string,
+  libraries: string[],
+): Promise<MediaEpisode[]> => {
+  const lib = libraries
+    .filter((l) => path !== l && path.startsWith(l === "/" ? "/" : l + "/"))
+    .sort((a, b) => b.length - a.length)[0]
+  if (lib === undefined) return []
+  for (let dir = parentOf(path); dir.length > lib.length; dir = parentOf(dir)) {
+    const out = await itemAt(dir)
+    if (!out.ok) return []
+    if (out.data)
+      return episodesIn(out.data.episode_list, out.data.path ?? dir, path)
+  }
+  return []
+}
+
 /**
  * The one client of the session: LRU of 50 directories, off after a 404 of the
  * listing (the backend has no media library, or it is switched off).
@@ -64,7 +102,9 @@ export const mediaClient = createMediaClient(async (path) => {
     data: {
       item: own.data ? itemOf(own.data) : null,
       children: list.data.map(cardOf),
-      episodes: episodesOf(own.data?.episode_list),
+      episodes: own.data
+        ? episodesOf(own.data.episode_list)
+        : await episodesFromWork(path, libraries),
       libraries,
     },
   }
@@ -151,18 +191,27 @@ export const uploadMediaImage = (
   path: string,
   role: "poster" | "backdrop",
   source: File | string,
-) =>
-  wrap<{ cover: string }>(
+) => {
+  if (typeof source === "string") {
+    return wrap<{ cover: string }>(
+      apiPost("/admin/media/curate/image", {
+        params: { path, role },
+        body: { url: source },
+      }),
+    )
+  }
+  const form = new FormData()
+  form.append("file", source)
+  return wrap<{ cover: string }>(
     apiPost("/admin/media/curate/image", {
       params: { path, role },
-      body: (() => {
-        if (typeof source === "string") return { url: source }
-        const form = new FormData()
-        form.append("file", source)
-        return form
-      })(),
+      body: form,
+      // the shared instance sends JSON by default; the server only reads a
+      // multipart body as a file
+      headers: { "Content-Type": "multipart/form-data" },
     }),
   )
+}
 
 /**
  * A video library is a video scan path. Marking a folder creates one at it (the
