@@ -3,7 +3,7 @@ import { createMemo, createSignal, onCleanup, onMount } from "solid-js"
 import { useRouter, useLink } from "~/hooks"
 import { getMainColor, getSettingBool, objStore } from "~/store"
 import { ObjType } from "~/types"
-import { ext, pathDir, pathJoin, safeJsonParse } from "~/utils"
+import { ext, pathDir, pathJoin, safeJsonParse, asPreview } from "~/utils"
 import Artplayer from "artplayer"
 import { type Option } from "artplayer/types/option"
 import { type Setting } from "artplayer/types/setting"
@@ -55,7 +55,7 @@ function ensureAc3Decoder() {
 const Preview = () => {
   const t = useT()
   const { pathname, searchParams } = useRouter()
-  const { proxyLink } = useLink()
+  const { previewLink } = useLink()
   const navigate = useNavigate()
   const videos = createMemo(() =>
     objStore.objs.filter((obj) => obj.type === ObjType.VIDEO),
@@ -88,7 +88,7 @@ const Preview = () => {
   let option: Option = {
     id: pathname(),
     container: "#video-player",
-    url: objStore.raw_url,
+    url: asPreview(objStore.raw_url),
     title: objStore.obj.name,
     volume: 1.0,
     autoplay: getSettingBool("video_autoplay"),
@@ -222,12 +222,12 @@ const Preview = () => {
       option.plugins?.push(
         artplayerPluginAss({
           // debug: true,
-          subUrl: proxyLink(defaultSubtitle, true),
+          subUrl: previewLink(defaultSubtitle, true),
         }),
       )
     } else {
       option.subtitle = {
-        url: proxyLink(defaultSubtitle, true),
+        url: previewLink(defaultSubtitle, true),
         type: ext(defaultSubtitle.name),
         escape: false,
       }
@@ -276,7 +276,7 @@ const Preview = () => {
           </span>
         ) as HTMLElement,
         name: item.name,
-        url: proxyLink(item, true),
+        url: previewLink(item, true),
       })
     })
 
@@ -342,7 +342,7 @@ const Preview = () => {
           localStorage.getItem("danmuku_config"),
         ),
         emitter: false,
-        danmuku: proxyLink(danmu, true),
+        danmuku: previewLink(danmu, true),
       }),
     )
   }
@@ -408,8 +408,8 @@ const Preview = () => {
     if (disposed) return
 
     // 预下载视频文件的前几个区块（仅直链模式，转码模式由 HLS.js 管理）
-    if (!useTranscode && objStore.raw_url) {
-      void prefetchVideoChunks(objStore.raw_url, {
+    if (!useTranscode && asPreview(objStore.raw_url)) {
+      void prefetchVideoChunks(asPreview(objStore.raw_url), {
         byteRange: 8 * 1024 * 1024,
         timeoutMs: 3000,
       })
@@ -420,9 +420,9 @@ const Preview = () => {
     if (
       !useTranscode &&
       getMediaBunnyMode() === "audio_only" &&
-      objStore.raw_url
+      asPreview(objStore.raw_url)
     ) {
-      attachMediabunnyAudio(player, objStore.raw_url)
+      attachMediabunnyAudio(player, asPreview(objStore.raw_url))
     }
     // 注意每个分支都要 break：旧代码缺少 break 导致 true 一路穿透并被重置为 false
     const auto_fullscreen = searchParams["auto_fullscreen"] === "true"

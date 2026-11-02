@@ -38,7 +38,7 @@ const MasonryLayout = lazy(() => import("./Masonry"))
 const PosterWall = lazy(() => import("./PosterWall"))
 
 const Folder = () => {
-  const { rawLink } = useLink()
+  const { previewLink } = useLink()
   const images = createMemo(() =>
     objStore.objs.filter((obj) => obj.type === ObjType.IMAGE),
   )
@@ -51,7 +51,7 @@ const Folder = () => {
       thumbnail: local["show_gallery_thumbnails"] === "visible",
       plugins: [lgZoom, lgThumbnail, lgRotate, lgAutoplay, lgFullscreen],
       dynamicEl: images().map((obj) => {
-        const raw = rawLink(obj, true)
+        const raw = previewLink(obj, true)
         return {
           src: raw,
           thumb: obj.thumb === "" ? raw : obj.thumb,

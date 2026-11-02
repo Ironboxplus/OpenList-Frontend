@@ -1,3 +1,4 @@
+import { asPreview } from "~/utils"
 import { Box } from "@hope-ui/solid"
 import { VideoBox } from "./video_box"
 import { createSignal, onCleanup, onMount } from "solid-js"
@@ -48,7 +49,7 @@ const Preview = () => {
         >
           <canvas class="view360-canvas" />
           <video
-            src={objStore.raw_url}
+            src={asPreview(objStore.raw_url)}
             id="view360-video"
             playsinline
             crossOrigin="anonymous"

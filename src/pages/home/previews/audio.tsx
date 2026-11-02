@@ -6,10 +6,10 @@ import { onCleanup, onMount } from "solid-js"
 import { useLink, useRouter, useTitle } from "~/hooks"
 import { getMainColor, getSetting, getSettingBool, objStore } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { baseName, fsGet } from "~/utils"
+import { baseName, fsGet, asPreview } from "~/utils"
 
 const Preview = () => {
-  const { proxyLink, rawLink, previewPage } = useLink()
+  const { previewLink, previewPage } = useLink()
   const { searchParams } = useRouter()
   let audios = objStore.objs.filter((obj) => obj.type === ObjType.AUDIO)
   if (audios.length === 0 || searchParams["from"] === "search") {
@@ -22,7 +22,7 @@ const Preview = () => {
       return baseName(o.name) === baseName(obj.name) && o.name.endsWith(".lrc")
     })
     if (lrcObj) {
-      lrc = proxyLink(lrcObj, true)
+      lrc = previewLink(lrcObj, true)
     }
     let cover = undefined
     const coverObj = objStore.objs.find((o) => {
@@ -35,7 +35,7 @@ const Preview = () => {
       )
     })
     if (coverObj) {
-      cover = rawLink(coverObj, true)
+      cover = previewLink(coverObj, true)
     } else {
       cover =
         obj.thumb ||
@@ -48,7 +48,9 @@ const Preview = () => {
       // Use objStore.raw_url for current file (has correct auth tokens from backend)
       // Use rawLink for other files in playlist
       url:
-        obj.name === objStore.obj.name ? objStore.raw_url : rawLink(obj, true),
+        obj.name === objStore.obj.name
+          ? asPreview(objStore.raw_url)
+          : previewLink(obj, true),
       cover: cover,
       lrc: lrc,
     }
@@ -94,7 +96,7 @@ const Preview = () => {
         fsGet(lrcURL).then((resp) => {
           ap.lrc.async = true
           ap.lrc.parsed[i] = undefined
-          ap.list.audios[i].lrc = resp.data.raw_url
+          ap.list.audios[i].lrc = asPreview(resp.data.raw_url)
           ap.lrc.switch(i) // fetch lrc into `parsed`
           ap.list.audios[i].lrc = ""
           ap.lrc.async = false

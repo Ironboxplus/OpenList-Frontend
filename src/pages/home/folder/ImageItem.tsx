@@ -19,7 +19,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
     <Icon color={getMainColor()} boxSize="$12" as={getIconByObj(props.obj)} />
   )
   const { show } = useContextMenu({ id: 1 })
-  const { rawLink } = useLink()
+  const { previewLink } = useLink()
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
   return (
@@ -80,7 +80,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
             shadow="$md"
             fallback={<CenterLoading size="lg" />}
             fallbackErr={objIcon}
-            src={rawLink(props.obj)}
+            src={previewLink(props.obj)}
             loading="lazy"
             on:dblclick={() => {
               if (!openWithDoubleClick()) return

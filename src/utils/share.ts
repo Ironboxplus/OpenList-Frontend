@@ -45,3 +45,17 @@ export const getExpireDate = (dateStr: string) => {
     return new Date(dateStr)
   }
 }
+
+/**
+ * Marks a link to a share's file as a preview (preview=1), which a share that
+ * switched downloads off still serves. Links to anything else, and links already
+ * marked, come back unchanged. Downloads must not go through this.
+ */
+export const asPreview = (url: string): string => {
+  if (!url || !/\/sad?\/[^?#]/.test(url) || /[?&]preview=1(&|#|$)/.test(url))
+    return url
+  const hash = url.indexOf("#")
+  const head = hash < 0 ? url : url.slice(0, hash)
+  const tail = hash < 0 ? "" : url.slice(hash)
+  return `${head}${head.includes("?") ? "&" : "?"}preview=1${tail}`
+}

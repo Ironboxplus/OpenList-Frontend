@@ -12,7 +12,7 @@ import {
 import { useFetch, useRouter } from "~/hooks"
 import { objStore, password, setShouldKeepState } from "~/store"
 import { ObjType, PResp } from "~/types"
-import { pathDir, pathJoin, r } from "~/utils"
+import { asPreview, pathDir, pathJoin, r } from "~/utils"
 import { VideoBox } from "./video_box"
 import { useNavigate } from "@solidjs/router"
 import { SubtitleManager } from "./subtitle-manager"
@@ -47,9 +47,8 @@ const Preview = () => {
 
   // Provider transcoded sources are fetched on demand; movi always defaults to
   // the original stream (raw_url) per the product requirement.
-  const [, fetchPlaySources] = useFetch(
-    (): PResp<VideoPlaySource[]> =>
-      r.post("/fs/video_play", { path: pathname(), password: password() }),
+  const [, fetchPlaySources] = useFetch((): PResp<VideoPlaySource[]> =>
+    r.post("/fs/video_play", { path: pathname(), password: password() }),
   )
 
   // All subtitle tracks for the video, resolved server-side by
@@ -57,9 +56,8 @@ const Preview = () => {
   // (e.g. 115 extracts a container's embedded subs during transcoding). Resolving
   // them on the backend keeps the player dumb and lets the transcoded HLS stream
   // show the original file's subtitles even when they were embedded in the mkv.
-  const [, fetchSubtitles] = useFetch(
-    (): PResp<VideoSubtitleSource[]> =>
-      r.post("/fs/video_subtitle", { path: pathname(), password: password() }),
+  const [, fetchSubtitles] = useFetch((): PResp<VideoSubtitleSource[]> =>
+    r.post("/fs/video_subtitle", { path: pathname(), password: password() }),
   )
   const [subtitles, setSubtitles] = createSignal<
     { name: string; url: string }[]
@@ -254,7 +252,7 @@ const Preview = () => {
 
     createEffect(
       on(
-        () => objStore.raw_url,
+        () => asPreview(objStore.raw_url),
         async (url) => {
           if (!containerRef || !url) return
           setMenuOpen(false)

@@ -18,7 +18,7 @@ declare global {
 
 const PPTViewerApp = () => {
   const t = useT()
-  const { currentObjLink } = useLink()
+  const { currentPreviewLink } = useLink()
   const { npm, pptBasePath } = useCDN()
   const [loading, setLoading] = createSignal(true)
   const [error, setError] = createSignal(false)
@@ -82,7 +82,7 @@ const PPTViewerApp = () => {
       // 初始化pptxToHtml（渲染到Shadow DOM内的resultRef）
       if (resultRef) {
         window.$(resultRef).pptxToHtml({
-          pptxFileUrl: currentObjLink(),
+          pptxFileUrl: currentPreviewLink(),
           slideMode: false,
           keyBoardShortCut: false,
           slideModeConfig: {

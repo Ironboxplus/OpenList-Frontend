@@ -1,18 +1,18 @@
 import { BoxWithFullScreen } from "~/components"
 import { objStore } from "~/store"
 import { hope, Tooltip, IconButton } from "@hope-ui/solid"
-import { convertURL } from "~/utils"
+import { convertURL, asPreview } from "~/utils"
 import { Component, createMemo } from "solid-js"
 import { useLink } from "~/hooks"
 import { TbExternalLink } from "solid-icons/tb"
 
 const IframePreview = (props: { scheme: string }) => {
-  const { currentObjLink } = useLink()
+  const { currentPreviewLink } = useLink()
   const iframeSrc = createMemo(() => {
     return convertURL(props.scheme, {
-      raw_url: objStore.raw_url,
+      raw_url: asPreview(objStore.raw_url),
       name: objStore.obj.name,
-      d_url: currentObjLink(true),
+      d_url: currentPreviewLink(true),
       ts: true,
     })
   })

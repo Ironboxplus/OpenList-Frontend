@@ -68,4 +68,20 @@ describe("share direct link token", () => {
       }
     }
   })
+
+  it("marks a preview link and keeps downloads unmarked", () => {
+    setToken("tok")
+    const dl = getLinkByDirAndObj("/@s/sid", obj, "direct", true, true)
+    const pv = getLinkByDirAndObj("/@s/sid", obj, "direct", true, true, {
+      preview: true,
+    })
+    expect(new URL(dl).searchParams.has("preview")).toBe(false)
+    const u = new URL(pv)
+    expect(u.searchParams.get("preview")).toBe("1")
+    expect(u.searchParams.get("auth")).toBe("tok")
+    // outside a share the flag means nothing
+    expect(
+      getLinkByDirAndObj("/a", obj, "direct", false, true, { preview: true }),
+    ).not.toContain("preview")
+  })
 })

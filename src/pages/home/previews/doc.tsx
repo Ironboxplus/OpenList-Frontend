@@ -18,7 +18,7 @@ declare global {
 
 const DocViewerApp = () => {
   const t = useT()
-  const { currentObjLink } = useLink()
+  const { currentPreviewLink } = useLink()
   const { npm, docxPreviewPath } = useCDN()
   const [loading, setLoading] = createSignal(true)
   const [error, setError] = createSignal(false)
@@ -48,7 +48,7 @@ const DocViewerApp = () => {
       }
 
       // 获取文件URL并下载
-      const fileUrl = currentObjLink()
+      const fileUrl = currentPreviewLink()
       const response = await fetch(fileUrl)
       if (!response.ok) {
         throw new Error("Failed to fetch document file")

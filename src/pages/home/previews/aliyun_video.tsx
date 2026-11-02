@@ -63,7 +63,7 @@ export interface Meta {
 
 const Preview = () => {
   const { pathname, searchParams } = useRouter()
-  const { proxyLink } = useLink()
+  const { previewLink } = useLink()
   const navigate = useNavigate()
   const videos = createMemo(() =>
     objStore.objs.filter((obj) => obj.type === ObjType.VIDEO),
@@ -194,12 +194,12 @@ const Preview = () => {
       option.plugins?.push(
         artplayerPluginAss({
           // debug: true,
-          subUrl: proxyLink(defaultSubtitle, true),
+          subUrl: previewLink(defaultSubtitle, true),
         }),
       )
     } else {
       option.subtitle = {
-        url: proxyLink(defaultSubtitle, true),
+        url: previewLink(defaultSubtitle, true),
         type: ext(defaultSubtitle.name),
       }
     }
@@ -247,7 +247,7 @@ const Preview = () => {
           </span>
         ) as HTMLElement,
         name: item.name,
-        url: proxyLink(item, true),
+        url: previewLink(item, true),
       })
     })
 
@@ -313,7 +313,7 @@ const Preview = () => {
           localStorage.getItem("danmuku_config"),
         ),
         emitter: false,
-        danmuku: proxyLink(danmu, true),
+        danmuku: previewLink(danmu, true),
       }),
     )
   }

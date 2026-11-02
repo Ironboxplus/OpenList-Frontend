@@ -438,7 +438,7 @@ function methodBadgeColor(
 
 const TorrentPreview = () => {
   const t = useT()
-  const { proxyLink, rawLink } = useLink()
+  const { previewLink } = useLink()
   const { isShare, pathname, to } = useRouter()
   const { refresh } = usePath()
   const { copy } = useUtil()
@@ -730,11 +730,11 @@ const TorrentPreview = () => {
     try {
       let resp
       try {
-        resp = await axios.get(proxyLink(objStore.obj, true), {
+        resp = await axios.get(previewLink(objStore.obj, true), {
           responseType: "arraybuffer",
         })
       } catch (_) {
-        resp = await axios.get(rawLink(objStore.obj, true), {
+        resp = await axios.get(previewLink(objStore.obj, true), {
           responseType: "arraybuffer",
         })
       }

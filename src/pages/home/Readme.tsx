@@ -11,7 +11,7 @@ export function Readme(props: {
   fromMeta: keyof typeof objStore
 }) {
   const cardBg = useColorModeValue("white", "$neutral3")
-  const { proxyLink } = useLink()
+  const { previewLink } = useLink()
   const { pathname } = useRouter()
   const readme = createMemo(
     on(
@@ -31,7 +31,7 @@ export function Readme(props: {
             ),
           )
           if (obj) {
-            return proxyLink(obj, true)
+            return previewLink(obj, true)
           }
         }
         if (

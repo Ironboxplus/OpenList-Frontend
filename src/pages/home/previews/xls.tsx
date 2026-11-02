@@ -29,7 +29,7 @@ interface SheetData {
 
 const ExcelViewerApp = () => {
   const t = useT()
-  const { currentObjLink } = useLink()
+  const { currentPreviewLink } = useLink()
   const { excelJSPath } = useCDN()
   const [loading, setLoading] = createSignal(true)
   const [error, setError] = createSignal(false)
@@ -47,7 +47,7 @@ const ExcelViewerApp = () => {
       await loadScriptIIFE(excelJSPath(), "exceljs-script")
 
       // 获取文件URL
-      const fileUrl = currentObjLink()
+      const fileUrl = currentPreviewLink()
 
       // 下载文件
       const response = await fetch(fileUrl)

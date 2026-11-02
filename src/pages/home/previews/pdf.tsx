@@ -5,13 +5,13 @@ import { onMount } from "solid-js"
 import { currentLang } from "~/app/i18n"
 import { BoxWithFullScreen } from "~/components"
 import { objStore } from "~/store"
-import { base_path } from "~/utils"
+import { base_path, asPreview } from "~/utils"
 
 const PDFViewer = () => {
   const { colorMode } = useColorMode()
   let ref: HTMLDivElement | undefined
   onMount(() => {
-    const src = objStore.raw_url
+    const src = asPreview(objStore.raw_url)
     // wasm url must be absolute
     const absolutePdfiumWasmUrl = new URL(
       pdfiumWasmUrl,

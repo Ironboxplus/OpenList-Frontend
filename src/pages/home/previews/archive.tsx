@@ -241,7 +241,7 @@ type List = {
 const Preview = () => {
   const t = useT()
   const { pathname } = useRouter()
-  const { rawLink } = useLink()
+  const { previewLink } = useLink()
   const [metaLoading, fetchMeta] = useFetch(fsArchiveMeta)
   const [listLoading, fetchList] = useFetch(fsArchiveList)
   const loading = createMemo(() => {
@@ -462,7 +462,7 @@ const Preview = () => {
         // Set new
         const file = files().find((f) => f.name === name)
         if (file) {
-          const innerUrl = rawLink(file)
+          const innerUrl = previewLink(file)
           ObjStore.setObj(file)
           ObjStore.setRawUrl(innerUrl)
           setSelectedFile(name)
@@ -547,7 +547,9 @@ const Preview = () => {
                     {(obj, i) => {
                       const objWithInner = buildObjWithInner(obj)
                       // Use rawLink to construct the URL for the object
-                      let url = !obj.is_dir ? rawLink(objWithInner) : undefined
+                      let url = !obj.is_dir
+                        ? previewLink(objWithInner)
+                        : undefined
                       let innerPath = buildInnerUrl(obj.name)
                       return (
                         <ListItem

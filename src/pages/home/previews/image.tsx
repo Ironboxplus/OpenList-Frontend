@@ -40,7 +40,13 @@ import {
 import { useCDN, useRouter, useT } from "~/hooks"
 import { objStore } from "~/store"
 import { Obj, ObjType } from "~/types"
-import { ext, formatDate, getFileSize, loadScriptIIFE } from "~/utils"
+import {
+  ext,
+  formatDate,
+  getFileSize,
+  loadScriptIIFE,
+  asPreview,
+} from "~/utils"
 
 const HEIF_EXTS = new Set(["heic", "heif", "avif", "vvc", "avc"])
 const isHeif = (name: string) => HEIF_EXTS.has(ext(name).toLowerCase())
@@ -486,7 +492,7 @@ const Preview = (props: PreviewProps) => {
             <Switch
               fallback={
                 <ImageWithError
-                  src={objStore.raw_url}
+                  src={asPreview(objStore.raw_url)}
                   fallback={<FullLoading />}
                   fallbackErr={
                     <Error msg={t("home.preview.failed_load_img")} />
@@ -513,7 +519,7 @@ const Preview = (props: PreviewProps) => {
             >
               <Match when={isHeif(objStore.obj.name)}>
                 <HeifView
-                  src={objStore.raw_url}
+                  src={asPreview(objStore.raw_url)}
                   onLoad={onHeifLoad}
                   style={
                     fitMode() === "contain"

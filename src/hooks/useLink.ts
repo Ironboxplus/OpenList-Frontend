@@ -23,6 +23,7 @@ export const getLinkByDirAndObj = (
   type: URLType = "direct",
   isShare: boolean,
   encodeAll?: boolean,
+  opts: { preview?: boolean } = {},
 ) => {
   const shareId = isShare ? shareIdOf(dir.endsWith("/") ? dir : dir + "/") : ""
   if (type !== "preview")
@@ -62,6 +63,10 @@ export const getLinkByDirAndObj = (
       ans += `${QP()}auth=${encodeURIComponent(token)}`
     }
   }
+  // A share can switch downloads off but keep previews: say which this is.
+  if (type !== "preview" && isShare && opts.preview) {
+    ans += `${QP()}preview=1`
+  }
   if (archive) {
     let inner = `${inner_path}/${obj.name}`
     ans += `${QP()}inner=${encodePath(inner, encodeAll)}${archive_pass ? `&pass=${encodeURIComponent(archive_pass)}` : ""}`
@@ -92,9 +97,14 @@ export const useLink = () => {
   const { pathname, isShare } = useRouter()
   const locate = (obj: Obj) =>
     locateObj(objStore.state === State.File, pathname(), isShare(), obj)
-  const getLinkByObj = (obj: Obj, type?: URLType, encodeAll?: boolean) => {
+  const getLinkByObj = (
+    obj: Obj,
+    type?: URLType,
+    encodeAll?: boolean,
+    opts?: { preview?: boolean },
+  ) => {
     const at = locate(obj)
-    return getLinkByDirAndObj(at.dir, at.obj, type, isShare(), encodeAll)
+    return getLinkByDirAndObj(at.dir, at.obj, type, isShare(), encodeAll, opts)
   }
   /** The full path of obj as the fs endpoints expect it (shares: /@s/<id>/...). */
   const objPath = (obj: Obj) => {
@@ -110,6 +120,13 @@ export const useLink = () => {
     rawLink: rawLink,
     proxyLink: (obj: Obj, encodeAll?: boolean) => {
       return getLinkByObj(obj, "proxy", encodeAll)
+    },
+    /** The file for a viewer or player (a share counts it as a preview, not a download). */
+    previewLink: (obj: Obj, encodeAll?: boolean) => {
+      return getLinkByObj(obj, "direct", encodeAll, { preview: true })
+    },
+    currentPreviewLink: (encodeAll?: boolean) => {
+      return getLinkByObj(objStore.obj, "direct", encodeAll, { preview: true })
     },
     previewPage: (obj: Obj, encodeAll?: boolean) => {
       return getLinkByObj(obj, "preview", encodeAll)

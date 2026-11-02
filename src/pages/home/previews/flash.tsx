@@ -1,7 +1,7 @@
 import { BoxWithFullScreen, Error, FullLoading } from "~/components"
 import { useCDN, useRouter, useT } from "~/hooks"
 import { objStore } from "~/store"
-import { loadScriptIIFE } from "~/utils"
+import { loadScriptIIFE, asPreview } from "~/utils"
 import { onCleanup, onMount, createSignal, Show } from "solid-js"
 
 const Preview = () => {
@@ -84,7 +84,7 @@ const Preview = () => {
           setLoading(false)
         })
 
-        player.load(objStore.raw_url)
+        player.load(asPreview(objStore.raw_url))
       }
     } catch (e) {
       console.error("Ruffle初始化失败:", e)

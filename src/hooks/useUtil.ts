@@ -86,9 +86,9 @@ export const useUtil = () => {
 }
 
 export function useFetchText() {
-  const { proxyLink } = useLink()
+  const { previewLink } = useLink()
   const fetchContent = async () => {
-    let fileurl = proxyLink(objStore.obj, true)
+    let fileurl = previewLink(objStore.obj, true)
     return fetchText(fileurl)
   }
   return createResource("", fetchContent)

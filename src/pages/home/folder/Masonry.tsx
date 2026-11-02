@@ -33,14 +33,14 @@ import {
 // Lazily fetch a text file's head once the card is visible, so a folder full
 // of text files doesn't fire a request storm on mount.
 const TextPreview = (props: { obj: StoreObj }) => {
-  const { proxyLink } = useLink()
+  const { previewLink } = useLink()
   const [content, setContent] = createSignal<string>()
   const [failed, setFailed] = createSignal(false)
   let el: HTMLDivElement | undefined
   let io: IntersectionObserver | undefined
   const load = async () => {
     try {
-      const resp = await fetch(proxyLink(props.obj, true), {
+      const resp = await fetch(previewLink(props.obj, true), {
         headers: { Range: "bytes=0-8191" },
       })
       const text = await resp.text()
@@ -123,7 +123,7 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
   const obj = props.obj
   const kind = masonryCardKind(obj)
   const isImage = kind === "image"
-  const { rawLink } = useLink()
+  const { previewLink } = useLink()
   const { pushHref, to } = useRouter()
   const { show } = useContextMenu({ id: 1 })
   const typeIcon = (size: string) => (
@@ -176,7 +176,7 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
               objectFit="cover"
               fallback={<CenterLoading size="lg" h="160px" w="$full" />}
               fallbackErr={<Center h="160px">{typeIcon("48px")}</Center>}
-              src={obj.thumb || rawLink(obj)}
+              src={obj.thumb || previewLink(obj)}
               loading="lazy"
               css={{ transition: "filter 0.25s ease" }}
             />
