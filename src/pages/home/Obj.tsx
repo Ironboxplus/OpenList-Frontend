@@ -23,7 +23,13 @@ import {
   me,
 } from "~/store"
 import { UserMethods } from "~/types"
-import { loginUrlFor } from "~/utils"
+import {
+  authShare,
+  loginUrlFor,
+  notify,
+  setShareToken,
+  shareIdOf,
+} from "~/utils"
 import { FilesError, SlowLoadNotice } from "~/features/files/FilesState"
 import { shellActive } from "~/features/shell/topbar-slot"
 
@@ -39,7 +45,27 @@ export { objBoxRef }
 export const Obj = () => {
   const t = useT()
   const cardBg = useColorModeValue("white", "$neutral3")
-  const { pathname, searchParams, isShare, to } = useRouter()
+  const { pathname, searchParams, setSearchParams, isShare, to } = useRouter()
+  // The share prompt keeps what is typed here only: a share password is traded
+  // for a token and never stored (the folder prompt's cookie is not used).
+  const [sharePwd, setSharePwd] = createSignal("")
+  const tradeSharePassword = async (pwd: string) => {
+    const id = shareIdOf(pathname())
+    if (!id || !pwd) return false
+    const resp = await authShare(id, pwd)
+    if (resp.code === 200) {
+      setShareToken(id, resp.data.token)
+      return true
+    }
+    notify.error(resp.message)
+    return false
+  }
+  const enterSharePassword = async () => {
+    if (await tradeSharePassword(sharePwd())) {
+      setSharePwd("")
+      refresh(true)
+    }
+  }
   const { handlePathChange, refresh } = usePath()
   const pagination = getPagination()
   const page = createMemo(() => {
@@ -52,7 +78,14 @@ export const Obj = () => {
   createEffect(
     on([pathname, page], async ([pathname, page]) => {
       if (searchParams["pwd"]) {
-        setPassword(searchParams["pwd"])
+        if (isShare()) {
+          // An old link carries the share password: trade it for a token and
+          // take it out of the address bar.
+          await tradeSharePassword(searchParams["pwd"])
+          setSearchParams({ pwd: undefined }, { replace: true })
+        } else {
+          setPassword(searchParams["pwd"])
+        }
       }
       if (lastPathname) {
         recordHistory(lastPathname, lastPage)
@@ -135,9 +168,11 @@ export const Obj = () => {
                   ? t("shares.input_password")
                   : t("home.input_password")
               }
-              password={password}
-              setPassword={setPassword}
-              enterCallback={() => refresh(true)}
+              password={isShare() ? sharePwd : password}
+              setPassword={isShare() ? setSharePwd : setPassword}
+              enterCallback={() =>
+                isShare() ? enterSharePassword() : refresh(true)
+              }
             >
               <Show when={!isShare()}>
                 <Text>{t("global.have_account")}</Text>

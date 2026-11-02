@@ -72,7 +72,7 @@ export const useDownload = () => {
         } else {
           const resp = await fsList(
             pathJoin(pathname(), pre, obj.name),
-            password(),
+            isShare() ? "" : password(),
           )
           if (resp.code !== 200) {
             return resp.message

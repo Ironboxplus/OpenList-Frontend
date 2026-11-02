@@ -5,6 +5,7 @@ import {
   FsListResp,
   Obj,
   PResp,
+  Resp,
   FsSearchResp,
   RenameObj,
   ArchiveMeta,
@@ -22,6 +23,13 @@ import {
   SeedParseResult,
 } from "~/types"
 import { r } from "."
+
+/** Trades a share password for the access token the share's calls and links carry. */
+export const authShare = (
+  id: string,
+  password: string,
+): Promise<Resp<{ token: string }>> =>
+  r.post("/public/sharing_auth", { id, password })
 
 export const fsGet = (
   path: string = "/",

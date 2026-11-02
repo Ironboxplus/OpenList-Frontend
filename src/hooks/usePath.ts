@@ -14,12 +14,14 @@ import {
   shouldKeepState,
 } from "~/store"
 import {
+  clearShareToken,
   fsGet,
   fsList,
   handleRespWithoutNotify,
   log,
   notify,
   pathJoin,
+  shareIdOf,
 } from "~/utils"
 import { useFetch } from "./useFetch"
 import { useRouter } from "./useRouter"
@@ -42,11 +44,14 @@ export const resetGlobalPage = () => {
   setGlobalPage(1)
 }
 export const usePath = () => {
-  const { pathname, to, searchParams } = useRouter()
+  const { pathname, to, searchParams, isShare } = useRouter()
+  // A share is entered with its token (see utils/share-auth.ts), never with
+  // the password cookie of the folder prompt.
+  const pwd = () => (isShare() ? "" : password())
   const [, getObj] = useFetch((path: string) =>
     fsGet(
       path,
-      password(),
+      pwd(),
       new axios.CancelToken((c) => {
         cancelObj = c
       }),
@@ -70,7 +75,7 @@ export const usePath = () => {
       // setSearchParams(page);
       return fsList(
         arg?.path,
-        password(),
+        pwd(),
         page.index,
         page.size,
         arg?.force,
@@ -200,6 +205,10 @@ export const usePath = () => {
   }
 
   const handleErr = (msg: string, code?: number) => {
+    if (isShare() && (code === 401 || code === 403)) {
+      // The token is gone, expired or no longer fits the share's password.
+      clearShareToken(shareIdOf(pathname()))
+    }
     if (code === 403) {
       ObjStore.setState(State.NeedPassword)
       if (retry_pass) {

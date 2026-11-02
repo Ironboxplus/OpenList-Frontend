@@ -2,6 +2,7 @@ import axios from "axios"
 import { classifyAxiosError, requestPath } from "~/platform/api/classify"
 import { api, log } from "."
 import { getClientId } from "./client-id"
+import { bodyPath, getShareToken, shareIdOf } from "./share-auth"
 
 const instance = axios.create({
   baseURL: api + "/api",
@@ -15,7 +16,9 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   (config) => {
-    // do something before request is sent
+    // Calls about a password-protected share carry the visitor's share token.
+    const token = getShareToken(shareIdOf(bodyPath(config.data)))
+    if (token) config.headers["X-Share-Token"] = token
     return config
   },
   (error) => {

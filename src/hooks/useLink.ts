@@ -12,7 +12,7 @@ import {
   standardizePath,
 } from "~/utils"
 import { useRouter, useT, useUtil } from "."
-import { cookieStorage } from "@solid-primitives/storage"
+import { getShareToken, shareIdOf } from "~/utils/share-auth"
 
 type URLType = "preview" | "direct" | "proxy"
 
@@ -24,6 +24,7 @@ export const getLinkByDirAndObj = (
   isShare: boolean,
   encodeAll?: boolean,
 ) => {
+  const shareId = isShare ? shareIdOf(dir.endsWith("/") ? dir : dir + "/") : ""
   if (type !== "preview")
     dir = isShare
       ? dir.substring(3) /* remove /@s */
@@ -54,9 +55,11 @@ export const getLinkByDirAndObj = (
     ans += `${QP()}sign=${obj.sign}`
   }
   if (type !== "preview" && isShare) {
-    const pwd = cookieStorage.getItem("browser-password") || ""
-    if (pwd) {
-      ans += `${QP()}pwd=${encodeURIComponent(pwd)}`
+    // The share token, not the password: it is what the backend hands out for
+    // links, and it does not leave the visitor's password in a URL.
+    const token = getShareToken(shareId)
+    if (token) {
+      ans += `${QP()}auth=${encodeURIComponent(token)}`
     }
   }
   if (archive) {
@@ -142,6 +145,7 @@ export const useCopyLink = () => {
   const { copy } = useUtil()
   const { previewPagesText, rawLinksText } = useSelectedLink()
   const { currentObjLink, rawLink, objPath } = useLink()
+  const { isShare } = useRouter()
 
   // Waits for every subtitle lookup, then copies. A failed lookup still copies
   // the command, without that file's subtitles, and says so.
@@ -149,7 +153,7 @@ export const useCopyLink = () => {
     const { command, count, subtitleFailed } = await buildMpvCommandFor(objs, {
       linkOf: (obj) => rawLink(obj, true),
       pathOf: objPath,
-      password: password(),
+      password: isShare() ? "" : password(),
     })
     if (count === 0) return
     if (subtitleFailed) notify.warning(t("home.toolbar.mpv_subtitle_failed"))

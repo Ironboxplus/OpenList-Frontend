@@ -1,9 +1,5 @@
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
-let cookie = ""
-vi.mock("@solid-primitives/storage", () => ({
-  cookieStorage: { getItem: () => cookie },
-}))
 vi.mock("~/store", () => ({
   objStore: {},
   password: () => "",
@@ -15,12 +11,24 @@ vi.mock(".", () => ({ useRouter: vi.fn(), useT: vi.fn(), useUtil: vi.fn() }))
 
 import { Obj } from "~/types"
 import { mpvCommand } from "~/utils/mpv-command"
+import { setShareToken } from "~/utils/share-auth"
 import { getLinkByDirAndObj } from "../useLink"
+
+let cookie = ""
+beforeEach(() => {
+  localStorage.clear()
+  cookie = ""
+})
+const setToken = (t: string) => {
+  cookie = t
+  if (t) setShareToken("sid", t)
+}
 
 const obj = { name: "v.mkv" } as Obj
 
-describe("share direct link password", () => {
+describe("share direct link token", () => {
   const passwords = [
+    "x.y-z_0",
     "a&b",
     "a#b",
     "a+b",
@@ -33,25 +41,26 @@ describe("share direct link password", () => {
 
   it("round-trips through the query string", () => {
     for (const pwd of passwords) {
-      cookie = pwd
+      setToken(pwd)
       const link = getLinkByDirAndObj("/@s/sid", obj, "direct", true, true)
       const u = new URL(link)
-      expect(u.searchParams.get("pwd")).toBe(pwd)
+      expect(u.searchParams.get("auth")).toBe(pwd)
+      expect(u.searchParams.has("pwd")).toBe(false)
       expect(u.hash).toBe("")
       expect(u.pathname.endsWith("/sd/sid/v.mkv")).toBe(true)
     }
   })
 
-  it("adds no pwd without a password", () => {
-    cookie = ""
+  it("adds no auth without a token", () => {
+    setToken("")
     expect(
       getLinkByDirAndObj("/@s/sid", obj, "direct", true, true),
-    ).not.toContain("pwd")
+    ).not.toContain("auth")
   })
 
   it("still gives an mpv command with nothing unsafe inside the quotes", () => {
     for (const pwd of passwords.concat(['q"$`\!'])) {
-      cookie = pwd
+      setToken(pwd)
       const link = getLinkByDirAndObj("/@s/sid", obj, "direct", true, true)
       const cmd = mpvCommand([{ url: link, subUrls: [link] }])
       for (const m of cmd.matchAll(/"([^"]*)"/g)) {
