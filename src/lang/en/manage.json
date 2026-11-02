@@ -41,7 +41,8 @@
     "transcode": "Transcode",
     "plugins": "Plugins",
     "seed": "Seed",
-    "sessions": "Devices"
+    "sessions": "Devices",
+    "frp": "frp"
   },
   "title": "OpenList Management",
   "media_lib": {

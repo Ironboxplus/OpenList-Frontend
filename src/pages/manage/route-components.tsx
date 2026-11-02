@@ -20,6 +20,7 @@ export const entryComponents: Record<string, Component> = {
 export const routeComponents: Record<string, Component> = {
   [PROFILE_PATH]: lazy(() => import("./users/Profile")),
   "/sessions": lazy(() => import("./users/SessionsPage")),
+  "/frp": lazy(() => import("./frp/Frp")),
   "/settings/site": () => <CommonSettings group={Group.SITE} />,
   "/settings/style": () => <CommonSettings group={Group.STYLE} />,
   "/settings/preview": () => <CommonSettings group={Group.PREVIEW} />,

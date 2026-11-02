@@ -24,6 +24,7 @@ import { FiLogIn } from "solid-icons/fi"
 import { SiMetabase } from "solid-icons/si"
 import {
   TbArrowsUpDown,
+  TbNetwork,
   TbBook,
   TbFileExport,
   TbMovie,
@@ -389,6 +390,28 @@ export const SETTINGS: SettingContribution[] = [
       "peer",
       "storage sharing",
       "replication",
+    ],
+    { backend: ["go"] },
+  ),
+
+  item(
+    "frp",
+    "extensions",
+    "/@manage/frp",
+    TbNetwork,
+    [
+      "frp",
+      "内网穿透",
+      "隧道",
+      "穿透",
+      "反向代理",
+      "tunnel",
+      "reverse proxy",
+      "stcp",
+      "tcp",
+      "token",
+      "expose cluster",
+      "frps",
     ],
     { backend: ["go"] },
   ),

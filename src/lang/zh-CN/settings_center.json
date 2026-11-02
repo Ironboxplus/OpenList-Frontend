@@ -125,6 +125,10 @@
       "title": "插件",
       "description": "安装并管理扩展。"
     },
+    "frp": {
+      "title": "frp 内网穿透",
+      "description": "通过你的 frp 服务器从外网访问这个节点。"
+    },
     "cluster": {
       "title": "集群",
       "description": "在多个 OpenList 节点之间共享存储。"

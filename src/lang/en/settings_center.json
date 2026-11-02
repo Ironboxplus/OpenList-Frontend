@@ -125,6 +125,10 @@
       "title": "Plugins",
       "description": "Install and manage extensions."
     },
+    "frp": {
+      "title": "frp",
+      "description": "Reach this node from outside through your frp server."
+    },
     "cluster": {
       "title": "Cluster",
       "description": "Share storages between OpenList nodes."
