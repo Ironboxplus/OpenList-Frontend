@@ -203,7 +203,8 @@
     "favorited": "★ Favorited",
     "favorite": "☆ Favorite",
     "movie": "Movie",
-    "tv": "TV Series"
+    "tv": "TV Series",
+    "collection_members": "In this collection"
   },
   "common": {
     "loading": "Loading...",

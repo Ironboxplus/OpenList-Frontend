@@ -12,6 +12,7 @@ import {
 import { useT } from "~/hooks"
 import { resolveMediaCover } from "~/utils/media_cover"
 import { accentGradient } from "~/utils/accent"
+import { ratingBadges } from "~/features/media/logic"
 import {
   formatDuration,
   getMediaName,
@@ -64,6 +65,16 @@ export const MediaItemDetail = (props: MediaItemDetailProps) => {
       : "linear-gradient(135deg, #e2e8f0, #cbd5e1)",
   )
 
+  /** 每个评分来源一段（豆瓣 8.7 / IMDb 7.9）；后端没有分来源时退回单个评分 */
+  const videoRatingText = () => {
+    const item = props.item
+    const parts = ratingBadges(item.ratings).map(
+      (b) => `${t(`media.rating.${b.key}`)} ${b.text}`,
+    )
+    if (parts.length > 0) return parts.join(" / ")
+    return item.rating > 0 ? item.rating.toFixed(1) : ""
+  }
+
   const rows = createMemo<[string, string][]>(() => {
     const item = props.item
     const list: [string, string][] = []
@@ -81,10 +92,7 @@ export const MediaItemDetail = (props: MediaItemDetailProps) => {
           t("media.detail.genre"),
           item.genre?.split(",").filter(Boolean).join(" / "),
         )
-        push(
-          t("media.detail.rating"),
-          item.rating > 0 ? item.rating.toFixed(1) : "",
-        )
+        push(t("media.detail.rating"), videoRatingText())
         push(t("media.detail.cast"), cast.slice(0, 8).join(" / "))
         push(
           t("media.detail.season_episode"),

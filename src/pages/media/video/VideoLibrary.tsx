@@ -22,6 +22,7 @@ import {
 import {
   downloadMediaStrm,
   getMediaItem,
+  getMediaList,
   getMediaProgress,
   getMediaUserData,
   getSignedProxyUrl,
@@ -32,6 +33,11 @@ import {
 } from "~/utils/media_api"
 import type { MediaItem, EpisodeInfo } from "~/types"
 import { getMediaName, parseAuthors, parseEpisodes } from "~/types"
+import { cardRating, ratingBadges } from "~/features/media/logic"
+import { CoverMosaic } from "./CoverMosaic"
+import { RatingBadges } from "./RatingBadges"
+import { episodeRows, episodeText, type EpisodeRow } from "./episodes"
+import { videoKindLabel } from "./videoKind"
 import { base_path, ext, notify } from "~/utils"
 import { useT } from "~/hooks"
 import { OpenWithPlayer } from "~/components/OpenWithPlayer"
@@ -132,7 +138,7 @@ const VideoCard = (props: { item: MediaItem }) => {
         }}
       >
         <Show
-          when={props.item.cover}
+          when={resolveMediaCover(props.item) || props.item.child_posters?.[0]}
           fallback={
             <div
               style={{
@@ -150,7 +156,7 @@ const VideoCard = (props: { item: MediaItem }) => {
           }
         >
           <img
-            src={resolveMediaCover(props.item)}
+            src={resolveMediaCover(props.item) || props.item.child_posters?.[0]}
             alt={name()}
             style={{
               position: "absolute",
@@ -163,7 +169,7 @@ const VideoCard = (props: { item: MediaItem }) => {
           />
         </Show>
         {/* 评分角标 */}
-        <Show when={props.item.rating > 0}>
+        <Show when={cardRating(props.item.ratings) || props.item.rating > 0}>
           <div
             style={{
               position: "absolute",
@@ -177,7 +183,9 @@ const VideoCard = (props: { item: MediaItem }) => {
               "font-weight": "600",
             }}
           >
-            ⭐ {props.item.rating.toFixed(1)}
+            ⭐{" "}
+            {cardRating(props.item.ratings)?.text ??
+              props.item.rating.toFixed(1)}
           </div>
         </Show>
         {/* 悬浮详情 */}
@@ -803,7 +811,68 @@ const VideoPlayer = (props: {
 }
 
 // ==================== 视频详情页 ====================
-const VideoDetail = (props: { id: string; onBack: () => void }) => {
+/** The works inside a collection, as cards; a click opens that work. */
+const CollectionMembers = (props: {
+  path: string | undefined
+  titleColor: string
+  onOpen: (id: number) => void
+}) => {
+  const t = useT()
+  const [members] = createResource(
+    () => props.path,
+    async (path) => {
+      const resp = await getMediaList({
+        media_type: "video",
+        path,
+        page_size: 200,
+      })
+      return resp.code === 200 ? resp.data.content : []
+    },
+  )
+  return (
+    <Show when={(members() ?? []).length > 0}>
+      <div style={{ "margin-bottom": "24px" }}>
+        <h3
+          style={{
+            color: props.titleColor,
+            "font-size": "13px",
+            "font-weight": "600",
+            "text-transform": "uppercase",
+            "letter-spacing": "0.08em",
+            "margin-bottom": "12px",
+          }}
+        >
+          {t("media.video.collection_members")}
+        </h3>
+        <div
+          style={{
+            display: "grid",
+            "grid-template-columns": "repeat(auto-fill, minmax(140px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          <For each={members()}>
+            {(m) => (
+              <div
+                style={{ cursor: "pointer" }}
+                onClick={() => props.onOpen(m.id)}
+              >
+                <VideoCard item={m} />
+              </div>
+            )}
+          </For>
+        </div>
+      </div>
+    </Show>
+  )
+}
+
+const VideoDetail = (props: {
+  id: string
+  onBack: () => void
+  /** Opens another work from this page (the members of a collection). */
+  onOpen: (id: number) => void
+}) => {
   const t = useT()
   const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
@@ -910,13 +979,13 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
               ← 返回
             </button>
 
-            {/* 背景模糊层 */}
-            <Show when={data().cover}>
+            {/* 背景模糊层：有剧照背景图用背景图，否则用封面 */}
+            <Show when={data().backdrop_url || resolveMediaCover(data())}>
               <div
                 style={{
                   position: "fixed",
                   inset: "0",
-                  "background-image": `url(${resolveMediaCover(data())})`,
+                  "background-image": `url(${data().backdrop_url || resolveMediaCover(data())})`,
                   "background-size": "cover",
                   "background-position": "center",
                   filter: "blur(40px) brightness(0.2)",
@@ -937,23 +1006,34 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
               {/* 封面 */}
               <div style={{ "flex-shrink": "0" }}>
                 <Show
-                  when={data().cover}
+                  when={resolveMediaCover(data())}
                   fallback={
-                    <div
-                      style={{
-                        width: "220px",
-                        height: "330px",
-                        background: coverFallbackBg(),
-                        "border-radius": "12px",
-                        display: "flex",
-                        "align-items": "center",
-                        "justify-content": "center",
-                        "font-size": "64px",
-                        color: coverFallbackColor(),
-                      }}
+                    <Show
+                      when={(data().child_posters ?? []).length > 0}
+                      fallback={
+                        <div
+                          style={{
+                            width: "220px",
+                            height: "330px",
+                            background: coverFallbackBg(),
+                            "border-radius": "12px",
+                            display: "flex",
+                            "align-items": "center",
+                            "justify-content": "center",
+                            "font-size": "64px",
+                            color: coverFallbackColor(),
+                          }}
+                        >
+                          🎬
+                        </div>
+                      }
                     >
-                      🎬
-                    </div>
+                      <CoverMosaic
+                        urls={data().child_posters ?? []}
+                        width="220px"
+                        height="330px"
+                      />
+                    </Show>
                   }
                 >
                   <img
@@ -1038,6 +1118,24 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                   </button>
                 </div>
 
+                {/* 原名：和显示名不同才有意义 */}
+                <Show
+                  when={
+                    data().original_title &&
+                    data().original_title !== getMediaName(data())
+                  }
+                >
+                  <div
+                    style={{
+                      color: metaColor(),
+                      "font-size": "14px",
+                      "margin-bottom": "10px",
+                    }}
+                  >
+                    {data().original_title}
+                  </div>
+                </Show>
+
                 {/* 元信息行 */}
                 <div
                   style={{
@@ -1048,20 +1146,28 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                     "margin-bottom": "16px",
                   }}
                 >
-                  <Show when={data().rating > 0}>
-                    <span
-                      style={{
-                        background: "rgba(251,191,36,0.15)",
-                        border: "1px solid rgba(251,191,36,0.3)",
-                        "border-radius": "6px",
-                        padding: "3px 8px",
-                        color: "#fbbf24",
-                        "font-size": "14px",
-                        "font-weight": "600",
-                      }}
-                    >
-                      ⭐ {data().rating.toFixed(1)}
-                    </span>
+                  {/* 多源评分；后端还没有分来源的评分时退回单个 rating */}
+                  <Show
+                    when={ratingBadges(data().ratings).length > 0}
+                    fallback={
+                      <Show when={data().rating > 0}>
+                        <span
+                          style={{
+                            background: "rgba(251,191,36,0.15)",
+                            border: "1px solid rgba(251,191,36,0.3)",
+                            "border-radius": "6px",
+                            padding: "3px 8px",
+                            color: "#fbbf24",
+                            "font-size": "14px",
+                            "font-weight": "600",
+                          }}
+                        >
+                          ⭐ {data().rating.toFixed(1)}
+                        </span>
+                      </Show>
+                    }
+                  >
+                    <RatingBadges ratings={data().ratings} />
                   </Show>
                   <Show when={data().release_date}>
                     <span style={{ color: metaColor(), "font-size": "14px" }}>
@@ -1079,9 +1185,7 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                         "font-size": "12px",
                       }}
                     >
-                      {data().video_type === "movie"
-                        ? t("media.video.movie")
-                        : t("media.video.tv")}
+                      {videoKindLabel(t, data().video_type)}
                     </span>
                   </Show>
                 </div>
@@ -1138,7 +1242,12 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                 </Show>
 
                 {/* 无选集：直接显示播放按钮 */}
-                <Show when={parseEpisodes(data().episodes).length === 0}>
+                <Show
+                  when={
+                    episodeRows(data()).length === 0 &&
+                    data().video_type !== "collection"
+                  }
+                >
                   <div
                     style={{
                       display: "flex",
@@ -1166,9 +1275,9 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                 </Show>
 
                 {/* 选集列表（路径合并模式下有选集时显示） */}
-                <Show when={parseEpisodes(data().episodes).length > 0}>
+                <Show when={episodeRows(data()).length > 0}>
                   {(_) => {
-                    const episodes = parseEpisodes(data().episodes)
+                    const episodes = episodeRows(data())
                     return (
                       <div style={{ "margin-bottom": "24px" }}>
                         <h3
@@ -1198,17 +1307,18 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                             {(ep) => {
                               const isActive = () =>
                                 currentEpisode()?.file_name === ep.file_name
-                              const label =
-                                ep.index > 0
-                                  ? `第${ep.index}集${ep.title ? " " + ep.title : ""}`
-                                  : ep.title || ep.file_name
+                              const label = episodeText(ep)
                               return (
                                 <button
                                   onClick={() => {
                                     setCurrentEpisode(ep)
                                     setShowPlayer(true)
                                   }}
-                                  title={ep.file_name}
+                                  title={
+                                    ep.overview
+                                      ? `${ep.file_name}\n${ep.overview}`
+                                      : ep.file_name
+                                  }
                                   style={{
                                     background: isActive()
                                       ? accentGradient()
@@ -1243,9 +1353,61 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                             }}
                           </For>
                         </div>
+                        {/* 选中那一集的剧照和概述 */}
+                        <Show
+                          when={(() => {
+                            const cur = currentEpisode() as EpisodeRow | null
+                            return cur && (cur.overview || cur.still_url)
+                              ? cur
+                              : undefined
+                          })()}
+                        >
+                          {(cur) => (
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "12px",
+                                "margin-top": "12px",
+                                "align-items": "flex-start",
+                              }}
+                            >
+                              <Show when={cur().still_url}>
+                                <img
+                                  src={cur().still_url}
+                                  alt=""
+                                  loading="lazy"
+                                  style={{
+                                    width: "180px",
+                                    "border-radius": "8px",
+                                    "flex-shrink": "0",
+                                  }}
+                                />
+                              </Show>
+                              <p
+                                style={{
+                                  color: plotColor(),
+                                  "font-size": "13px",
+                                  "line-height": "1.6",
+                                  margin: "0",
+                                }}
+                              >
+                                {cur().overview}
+                              </p>
+                            </div>
+                          )}
+                        </Show>
                       </div>
                     )
                   }}
+                </Show>
+
+                {/* 合集：里面的作品 */}
+                <Show when={data().video_type === "collection"}>
+                  <CollectionMembers
+                    path={data().path}
+                    titleColor={plotTitleColor()}
+                    onOpen={props.onOpen}
+                  />
                 </Show>
 
                 {/* 剧情简介 */}
@@ -1305,7 +1467,7 @@ const VideoLibrary = () => {
               return (
                 <>
                   <Show
-                    when={item.cover}
+                    when={resolveMediaCover(item)}
                     fallback={<span style={{ "font-size": "20px" }}>🎬</span>}
                   >
                     <img
@@ -1385,7 +1547,11 @@ const VideoLibrary = () => {
           />
         }
       >
-        <VideoDetail id={selectedId()!} onBack={() => setSelectedId(null)} />
+        <VideoDetail
+          id={selectedId()!}
+          onBack={() => setSelectedId(null)}
+          onOpen={(id) => setSelectedId(String(id))}
+        />
       </Show>
     </MediaLayout>
   )
