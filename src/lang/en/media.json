@@ -1,16 +1,5 @@
 {
   "view_poster": "Posters",
-  "page": {
-    "all": "All",
-    "filter": "Type",
-    "disabled": "Media info is switched off on this server.",
-    "empty": "No scraped media yet.",
-    "empty_admin": "Mark a folder as a video library on the Files page to get started.",
-    "empty_admin_action": "Go to Files",
-    "more": "Load more",
-    "more_failed": "Could not load more.",
-    "legacy": "Legacy library"
-  },
   "library": {
     "badge": "Video library",
     "counts": "{{total}} titles · {{done}} identified",

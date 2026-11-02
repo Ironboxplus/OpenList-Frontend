@@ -67,13 +67,11 @@ const TYPE_ENTRIES: Record<MediaType, Omit<NavEntry, "id">> = {
 const enabledTypes = (types: MediaType[]): MediaType[] =>
   (Object.keys(TYPE_ENTRIES) as MediaType[]).filter((t) => types.includes(t))
 
-/** `/@media` itself has no page: it opens the first library that is on. */
+/** `/@media` itself has no page: it opens the first library that is on, or leaves when none is. */
 export const MediaIndex = () => {
   const first = () => enabledTypes(mediaStatus().types)[0]
   return (
-    <Navigate
-      href={joinBase(first() ? TYPE_ENTRIES[first()!].path : "/@media/legacy")}
-    />
+    <Navigate href={joinBase(first() ? TYPE_ENTRIES[first()!].path : "/")} />
   )
 }
 
@@ -85,13 +83,6 @@ const MediaNav = () => {
       id: type,
       ...TYPE_ENTRIES[type],
     }))
-    // The library of our own media backend; goes once spec 2.2 is done.
-    list.push({
-      id: "legacy",
-      label: "media.page.legacy",
-      path: "/@media/legacy",
-      icon: TbMovie,
-    })
     if (UserMethods.is_admin(me())) {
       list.push({
         id: "settings",

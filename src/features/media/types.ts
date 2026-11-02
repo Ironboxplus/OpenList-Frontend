@@ -62,12 +62,3 @@ export interface SearchCandidate {
   poster_url: string
   score: number
 }
-
-/** The kinds the library page lists (the server never lists "library" or "ignore"). */
-export type LibraryKind = "movie" | "tv" | "anime" | "collection"
-
-/** One page of GET /api/media/library: `total` counts what the user may see. */
-export interface LibraryPage {
-  content: MediaCard[]
-  total: number
-}

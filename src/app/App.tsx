@@ -70,9 +70,6 @@ const VideoLibrary = lazy(() => import("~/pages/media/video/VideoLibrary"))
 const MusicLibrary = lazy(() => import("~/pages/media/music/MusicLibrary"))
 const ImageLibrary = lazy(() => import("~/pages/media/image/ImageLibrary"))
 const BookLibrary = lazy(() => import("~/pages/media/book/BookLibrary"))
-// The first media backend's library, kept until its features are in the
-// upstream pages (spec 1d, 2.2).
-const LegacyLibrary = lazy(() => import("~/features/media/LibraryPage"))
 const PluginsPage = lazy(SECTION_LOADERS.plugins)
 
 /** Old `/@manage/tasks[/:type]` addresses now live on the Transfers page. */
@@ -195,7 +192,6 @@ const App: Component = () => {
                 <Route path="/music/*" component={MusicLibrary} />
                 <Route path="/image/*" component={ImageLibrary} />
                 <Route path="/books/*" component={BookLibrary} />
-                <Route path="/legacy" component={LegacyLibrary} />
               </Route>
               <Route path="/@plugins" element={<PluginsPage />} />
               <Route path="/@transfers" element={<Transfers />} />
