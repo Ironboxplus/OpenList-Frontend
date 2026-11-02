@@ -61,7 +61,19 @@
     "year": "{{year}}",
     "network_hint": "The server cannot reach {{provider}}. Run this on a PC that can, then it will show up here:",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "details": "Edit details",
+    "field_title": "Title",
+    "field_original": "Original title",
+    "field_year": "Year",
+    "field_overview": "Overview",
+    "image_poster": "Poster (pick a file, or give a url)",
+    "image_backdrop": "Background (pick a file, or give a url)",
+    "image_url": "Image url",
+    "save_details": "Save details",
+    "saving": "Saving…",
+    "pending": "Needs confirmation",
+    "open": "Edit media info"
   },
   "image": {
     "title": "🖼️ Photo Gallery",

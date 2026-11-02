@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For, Show } from "solid-js"
+import { createMemo, createSignal, For, Show, type JSX } from "solid-js"
 import { Button } from "~/components/ui/button"
 import {
   Dialog,
@@ -30,18 +30,13 @@ import {
   searchMedia,
   setMediaMeta,
 } from "./client"
+import type { EditorItem } from "./editor-item"
 import { baseName } from "./logic"
+import { MediaDetailsForm } from "./MediaDetailsForm"
 import { closeMediaEditor, invalidateMedia, mediaFs, mediaPath } from "./state"
 import type { MediaItem, MediaKind, SearchCandidate } from "./types"
 
-const KINDS: MediaKind[] = [
-  "movie",
-  "tv",
-  "anime",
-  "collection",
-  "library",
-  "ignore",
-]
+const KINDS: MediaKind[] = ["movie", "tv", "anime", "collection", "ignore"]
 const PROVIDERS = ["tmdb", "bgm"] as const
 type Provider = (typeof PROVIDERS)[number]
 
@@ -101,19 +96,21 @@ const CandidateRow = (props: {
   )
 }
 
-export const EditorBody = (props: { path: string }) => {
+/**
+ * The editor of one work. The host decides where `item` comes from (the video
+ * detail, the file browser) and what to do once the work changed on the server
+ * (`onChanged`) or the editor has nothing left to do (`onClose`: a match was
+ * applied, the info was cleared). `item` is undefined for a path with no media
+ * info yet.
+ */
+export const EditorBody = (props: {
+  path: string
+  item: EditorItem | undefined
+  onChanged: () => void
+  onClose?: () => void
+}) => {
   const t = useT()
-  // The folder on screen already has its item loaded; a child folder (opened
-  // from the context menu) is asked for separately.
-  const [own, setOwn] = createSignal<MediaItem | null>()
-  const loadOwn = () => {
-    if (mediaPath() === props.path) return
-    mediaClient.invalidate(props.path)
-    void mediaClient.get(props.path).then((fs) => setOwn(fs?.item ?? null))
-  }
-  loadOwn()
-  const item = (): MediaItem | undefined =>
-    (mediaPath() === props.path ? mediaFs()?.item : own()) ?? undefined
+  const item = () => props.item
   const [kind, setKind] = createSignal<MediaKind>(item()?.kind ?? "movie")
   const [locked, setLocked] = createSignal(item()?.locked ?? true)
   const [provider, setProvider] = createSignal<Provider>("tmdb")
@@ -161,17 +158,16 @@ export const EditorBody = (props: { path: string }) => {
     const out = await scrapeMedia(props.path, c.provider, c.id, locked())
     setBusy(false)
     if (!out.ok) return fail(out.message, out.category)
-    invalidateMedia(props.path)
+    props.onChanged()
     setStatus(t("media.editor.saved"))
-    closeMediaEditor()
+    props.onClose?.()
   }
 
   const changeKind = async (k: MediaKind) => {
     setKind(k)
     const out = await setMediaMeta({ path: props.path, kind: k })
     if (!out.ok) return fail(out.message, out.category)
-    invalidateMedia(props.path)
-    loadOwn()
+    props.onChanged()
   }
 
   const changeLock = async (v: boolean) => {
@@ -179,8 +175,7 @@ export const EditorBody = (props: { path: string }) => {
     if (!item()) return // nothing to lock yet: it is applied with the next pick
     const out = await setMediaMeta({ path: props.path, locked: v })
     if (!out.ok) return fail(out.message, out.category)
-    invalidateMedia(props.path)
-    loadOwn()
+    props.onChanged()
   }
 
   const clear = async () => {
@@ -189,8 +184,8 @@ export const EditorBody = (props: { path: string }) => {
     const out = await deleteMedia(props.path)
     setBusy(false)
     if (!out.ok) return fail(out.message, out.category)
-    invalidateMedia(props.path)
-    closeMediaEditor()
+    props.onChanged()
+    props.onClose?.()
   }
 
   const command = () => cliCommand(props.path, provider())
@@ -349,6 +344,16 @@ export const EditorBody = (props: { path: string }) => {
       </Show>
 
       <Show when={item()}>
+        {(it) => (
+          <MediaDetailsForm
+            item={it()}
+            onSaved={props.onChanged}
+            onFail={fail}
+          />
+        )}
+      </Show>
+
+      <Show when={item()}>
         <div class="flex items-center gap-2 border-t pt-3">
           <Button
             variant={confirmClear() ? "destructive" : "outline"}
@@ -368,10 +373,10 @@ export const EditorBody = (props: { path: string }) => {
 }
 
 /** Dialog on tablet and desktop, bottom sheet on phones. */
-export const MediaEditor = (props: { path: string }) => {
+const EditorShell = (props: { onClose: () => void; children: JSX.Element }) => {
   const t = useT()
   const onOpenChange = (o: boolean) => {
-    if (!o) closeMediaEditor()
+    if (!o) props.onClose()
   }
   return (
     <Show
@@ -382,7 +387,7 @@ export const MediaEditor = (props: { path: string }) => {
             <DialogHeader>
               <DialogTitle>{t("media.editor.title")}</DialogTitle>
             </DialogHeader>
-            <EditorBody path={props.path} />
+            {props.children}
           </DialogContent>
         </Dialog>
       }
@@ -398,11 +403,76 @@ export const MediaEditor = (props: { path: string }) => {
           <SheetHeader>
             <SheetTitle>{t("media.editor.title")}</SheetTitle>
           </SheetHeader>
-          <div class="mt-3">
-            <EditorBody path={props.path} />
-          </div>
+          <div class="mt-3">{props.children}</div>
         </SheetContent>
       </Sheet>
     </Show>
+  )
+}
+
+/** The editor in its dialog, for a host that already holds the work (the video detail). */
+export const MediaEditorDialog = (props: {
+  path: string
+  item: EditorItem | undefined
+  onChanged: () => void
+  onClose: () => void
+}) => (
+  <EditorShell onClose={props.onClose}>
+    <EditorBody
+      path={props.path}
+      item={props.item}
+      onChanged={props.onChanged}
+      onClose={props.onClose}
+    />
+  </EditorShell>
+)
+
+/** Temporary: the file browser's item (features/media/types) as the editor's. */
+const fromFsItem = (
+  it: MediaItem | null | undefined,
+): EditorItem | undefined =>
+  it
+    ? {
+        path: it.path,
+        kind: it.kind,
+        title: it.title,
+        original_title: it.original_title,
+        year: it.year,
+        overview: it.overview,
+        locked: it.locked,
+        confidence: it.confidence,
+        candidates: it.candidates ?? [],
+        cover: it.poster_url,
+      }
+    : undefined
+
+/** The editor of the file browser: dialog for a folder, fed from the folder's media info. */
+export const MediaEditor = (props: { path: string }) => {
+  // The folder on screen already has its item loaded; a child folder (opened
+  // from the context menu) is asked for separately.
+  const [own, setOwn] = createSignal<MediaItem | null>()
+  const loadOwn = () => {
+    if (mediaPath() === props.path) return
+    mediaClient.invalidate(props.path)
+    void mediaClient.get(props.path).then((fs) => setOwn(fs?.item ?? null))
+  }
+  loadOwn()
+  const loaded = () => mediaPath() === props.path || own() !== undefined
+  const item = () =>
+    fromFsItem(mediaPath() === props.path ? mediaFs()?.item : own())
+  return (
+    <EditorShell onClose={closeMediaEditor}>
+      <Show when={loaded()}>
+        <EditorBody
+          path={props.path}
+          item={item()}
+          onChanged={() => {
+            invalidateMedia(props.path)
+            loadOwn()
+          }}
+          onClose={closeMediaEditor}
+        />
+      </Show>
+    </EditorShell>
   )
 }

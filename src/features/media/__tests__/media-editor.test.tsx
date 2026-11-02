@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from "@solidjs/testing-library"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import type { MediaFs, MediaItem } from "../types"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import type { EditorItem } from "../editor-item"
 
 // ~/hooks and ~/store pull in hope-ui, which vitest cannot load.
 vi.mock("~/hooks", async () => {
@@ -27,45 +27,45 @@ vi.mock("../client", () => ({
   scrapeMedia: vi.fn(),
   deleteMedia: vi.fn(),
   setMediaMeta: vi.fn(),
+  uploadMediaImage: vi.fn(),
   mediaClient: { get: vi.fn(), invalidate: vi.fn() },
 }))
 
 import * as client from "../client"
 import { EditorBody } from "../MediaEditor"
-import { setMediaFor } from "../state"
 
-const item = (over: Partial<MediaItem> = {}): MediaItem => ({
+const item = (over: Partial<EditorItem> = {}): EditorItem => ({
   path: "/lib/Show",
   kind: "tv",
   title: "A Show",
-  year: 2021,
-  ratings: { imdb: 8.1, douban: 9.0 },
-  poster_url: "/api/media/asset/1?v=thumb&sign=x",
   original_title: "原名",
-  external_ids: {},
-  genres: ["Drama"],
-  overview: "x".repeat(200),
-  backdrop_url: "/api/media/asset/2?v=orig&sign=y",
-  source: "tmdb",
-  confidence: 1,
+  year: 2021,
+  overview: "plot",
   locked: false,
+  confidence: 1,
+  candidates: [],
+  cover: "",
   ...over,
 })
 
+const renderEditor = (it: EditorItem | undefined, onChanged = vi.fn()) => {
+  const onClose = vi.fn()
+  render(() => (
+    <EditorBody
+      path="/lib/Show"
+      item={it}
+      onChanged={onChanged}
+      onClose={onClose}
+    />
+  ))
+  return { onChanged, onClose }
+}
+
 afterEach(() => {
-  setMediaFor("", undefined)
   vi.clearAllMocks()
 })
 
 describe("EditorBody: search, pick, apply", () => {
-  beforeEach(() => {
-    setMediaFor("/lib/Show", {
-      item: item({ candidates: [] }),
-      children: [],
-      episodes: [],
-    } as MediaFs)
-  })
-
   it("searches the chosen source, lists results and applies one with the lock", async () => {
     vi.mocked(client.searchMedia).mockResolvedValue({
       ok: true,
@@ -89,7 +89,7 @@ describe("EditorBody: search, pick, apply", () => {
       ],
     })
     vi.mocked(client.scrapeMedia).mockResolvedValue({ ok: true, data: {} })
-    render(() => <EditorBody path="/lib/Show" />)
+    const { onChanged, onClose } = renderEditor(item())
     const q = document.querySelector("[data-editor-query]") as HTMLInputElement
     fireEvent.input(q, { target: { value: "hit show" } })
     fireEvent.click(document.querySelector("[data-editor-search]")!)
@@ -109,6 +109,8 @@ describe("EditorBody: search, pick, apply", () => {
       "tv/1",
       false,
     )
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(onChanged).toHaveBeenCalled()
   })
 
   it("an unreachable provider shows the CLI command to copy", async () => {
@@ -117,7 +119,7 @@ describe("EditorBody: search, pick, apply", () => {
       message: "network: dial tcp: i/o timeout",
       category: "network",
     })
-    render(() => <EditorBody path="/lib/Show" />)
+    renderEditor(item())
     fireEvent.click(document.querySelector("[data-editor-search]")!)
     await waitFor(() =>
       expect(document.querySelector("[data-editor-network]")).not.toBeNull(),
@@ -130,8 +132,8 @@ describe("EditorBody: search, pick, apply", () => {
   })
 
   it("lists the item's own candidates first", () => {
-    setMediaFor("/lib/Show", {
-      item: item({
+    renderEditor(
+      item({
         candidates: [
           {
             provider: "bgm",
@@ -143,14 +145,96 @@ describe("EditorBody: search, pick, apply", () => {
           },
         ],
       }),
-      children: [],
-      episodes: [],
-    } as MediaFs)
-    render(() => <EditorBody path="/lib/Show" />)
+    )
     expect(
       document.querySelector(
         "[data-editor-suggested] [data-candidate='bgm:265']",
       ),
     ).not.toBeNull()
+  })
+
+  it("does not offer the library kind, which the backend rejects", () => {
+    renderEditor(item())
+    const options = [
+      ...document.querySelectorAll<HTMLOptionElement>(
+        "[data-editor-kind] option",
+      ),
+    ].map((o) => o.value)
+    expect(options).toEqual(["movie", "tv", "anime", "collection", "ignore"])
+  })
+
+  it("a lock toggle sends nothing but the lock", async () => {
+    vi.mocked(client.setMediaMeta).mockResolvedValue({ ok: true, data: {} })
+    const { onChanged } = renderEditor(item({ locked: false }))
+    fireEvent.click(document.querySelector("[data-editor-lock]")!)
+    await waitFor(() => expect(client.setMediaMeta).toHaveBeenCalled())
+    expect(client.setMediaMeta).toHaveBeenCalledWith({
+      path: "/lib/Show",
+      locked: true,
+    })
+    expect(onChanged).toHaveBeenCalled()
+  })
+})
+
+describe("EditorBody: details", () => {
+  it("saves only the fields that changed", async () => {
+    vi.mocked(client.setMediaMeta).mockResolvedValue({ ok: true, data: {} })
+    const { onChanged } = renderEditor(item())
+    fireEvent.input(document.querySelector("[data-editor-title]")!, {
+      target: { value: "Renamed" },
+    })
+    fireEvent.click(document.querySelector("[data-editor-save-details]")!)
+    await waitFor(() => expect(client.setMediaMeta).toHaveBeenCalled())
+    expect(client.setMediaMeta).toHaveBeenCalledWith({
+      path: "/lib/Show",
+      title: "Renamed",
+    })
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it("stores a poster url first and references what the server answers", async () => {
+    vi.mocked(client.uploadMediaImage).mockResolvedValue({
+      ok: true,
+      data: { cover: "thumb:/media/x.jpg" },
+    })
+    vi.mocked(client.setMediaMeta).mockResolvedValue({ ok: true, data: {} })
+    renderEditor(item())
+    fireEvent.input(
+      document.querySelector('[data-editor-url="poster"]') as HTMLInputElement,
+      { target: { value: "https://img.example/p.jpg" } },
+    )
+    fireEvent.click(document.querySelector("[data-editor-save-details]")!)
+    await waitFor(() => expect(client.setMediaMeta).toHaveBeenCalled())
+    expect(client.uploadMediaImage).toHaveBeenCalledWith(
+      "/lib/Show",
+      "poster",
+      "https://img.example/p.jpg",
+    )
+    expect(client.setMediaMeta).toHaveBeenCalledWith({
+      path: "/lib/Show",
+      cover: "thumb:/media/x.jpg",
+    })
+  })
+
+  it("does not touch the work when the image could not be stored", async () => {
+    vi.mocked(client.uploadMediaImage).mockResolvedValue({
+      ok: false,
+      message: "download failed",
+    })
+    renderEditor(item())
+    fireEvent.input(
+      document.querySelector('[data-editor-url="poster"]') as HTMLInputElement,
+      { target: { value: "https://img.example/p.jpg" } },
+    )
+    fireEvent.click(document.querySelector("[data-editor-save-details]")!)
+    await waitFor(() =>
+      expect(document.querySelector("[data-editor-status]")).not.toBeNull(),
+    )
+    expect(client.setMediaMeta).not.toHaveBeenCalled()
+  })
+
+  it("has no details form for a path without media info", () => {
+    renderEditor(undefined)
+    expect(document.querySelector("[data-editor-details]")).toBeNull()
   })
 })

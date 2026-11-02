@@ -9,6 +9,7 @@ import {
   For,
   onMount,
   onCleanup,
+  lazy,
 } from "solid-js"
 import { useColorMode } from "@hope-ui/solid"
 import { MediaLayout } from "../MediaLayout"
@@ -32,7 +33,15 @@ import {
   setMediaFavorite,
 } from "~/utils/media_api"
 import type { MediaItem, EpisodeInfo } from "~/types"
-import { getMediaName, parseAuthors, parseEpisodes } from "~/types"
+import {
+  getMediaName,
+  isPendingMedia,
+  parseAuthors,
+  parseEpisodes,
+  UserMethods,
+} from "~/types"
+import { me } from "~/store"
+import { fromMediaItem } from "~/features/media/editor-item"
 import { cardRating, ratingBadges } from "~/features/media/logic"
 import { CoverMosaic } from "./CoverMosaic"
 import { RatingBadges } from "./RatingBadges"
@@ -811,6 +820,13 @@ const VideoPlayer = (props: {
 }
 
 // ==================== 视频详情页 ====================
+// 管理员的纠正弹窗只在点开时才加载
+const MediaEditorDialog = lazy(() =>
+  import("~/features/media/MediaEditor").then((m) => ({
+    default: m.MediaEditorDialog,
+  })),
+)
+
 /** The works inside a collection, as cards; a click opens that work. */
 const CollectionMembers = (props: {
   path: string | undefined
@@ -876,7 +892,7 @@ const VideoDetail = (props: {
   const t = useT()
   const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
-  const [item] = createResource(
+  const [item, { refetch }] = createResource(
     () => parseInt(props.id),
     async (id) => {
       const resp = await getMediaItem(id)
@@ -886,6 +902,7 @@ const VideoDetail = (props: {
   )
 
   const [showPlayer, setShowPlayer] = createSignal(false)
+  const [editing, setEditing] = createSignal(false)
   // 当前播放的选集（null 表示播放主文件）
   const [currentEpisode, setCurrentEpisode] = createSignal<EpisodeInfo | null>(
     null,
@@ -978,6 +995,15 @@ const VideoDetail = (props: {
             <button onClick={props.onBack} style={mediaBackBtn(isDark())}>
               ← 返回
             </button>
+
+            <Show when={editing()}>
+              <MediaEditorDialog
+                path={data().path ?? ""}
+                item={fromMediaItem(data())}
+                onChanged={() => void refetch()}
+                onClose={() => setEditing(false)}
+              />
+            </Show>
 
             {/* 背景模糊层：有剧照背景图用背景图，否则用封面 */}
             <Show when={data().backdrop_url || resolveMediaCover(data())}>
@@ -1117,6 +1143,43 @@ const VideoDetail = (props: {
                       : t("media.video.favorite")}
                   </button>
                 </div>
+
+                {/* 管理员：纠正入口。待确认的作品（置信度低或有候选）带一个提示 */}
+                <Show when={UserMethods.is_admin(me())}>
+                  <div
+                    style={{
+                      display: "flex",
+                      "align-items": "center",
+                      gap: "10px",
+                      "flex-wrap": "wrap",
+                      "margin-bottom": "10px",
+                    }}
+                  >
+                    <button
+                      data-media-edit
+                      onClick={() => setEditing(true)}
+                      style={mediaSecondaryBtn(isDark())}
+                    >
+                      {t("media.editor.open")}
+                    </button>
+                    <Show when={isPendingMedia(data())}>
+                      <span
+                        data-media-pending
+                        style={{
+                          color: "#f59e0b",
+                          "font-size": "12px",
+                        }}
+                      >
+                        {t("media.editor.pending")}
+                      </span>
+                    </Show>
+                    <Show when={data().locked}>
+                      <span style={{ color: metaColor(), "font-size": "12px" }}>
+                        🔒 {t("media.editor.lock")}
+                      </span>
+                    </Show>
+                  </div>
+                </Show>
 
                 {/* 原名：和显示名不同才有意义 */}
                 <Show
