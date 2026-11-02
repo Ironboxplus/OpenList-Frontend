@@ -1,6 +1,7 @@
 import axios from "axios"
 import { classifyAxiosError, requestPath } from "~/platform/api/classify"
 import { api, log } from "."
+import { getClientId } from "./client-id"
 
 const instance = axios.create({
   baseURL: api + "/api",
@@ -53,6 +54,9 @@ instance.interceptors.response.use(
 
 instance.defaults.headers.common["Authorization"] =
   localStorage.getItem("token") || ""
+
+// Only this app's own requests carry it; WebDAV and other clients do not.
+instance.defaults.headers.common["Client-Id"] = getClientId()
 
 export const changeToken = (token?: string) => {
   instance.defaults.headers.common["Authorization"] = token ?? ""
