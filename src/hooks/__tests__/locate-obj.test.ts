@@ -10,7 +10,7 @@ vi.mock("~/store", () => ({
 vi.mock(".", () => ({ useRouter: vi.fn(), useT: vi.fn(), useUtil: vi.fn() }))
 
 import { Obj } from "~/types"
-import { locateObj } from "../useLink"
+import { locateObj, objPathOf } from "../useLink"
 
 const obj = (name: string) => ({ name }) as Obj
 
@@ -39,5 +39,27 @@ describe("locateObj", () => {
       dir: "/@s/sid",
       obj: obj(""),
     })
+  })
+})
+
+describe("objPathOf", () => {
+  it("prefers the path the backend reports", () => {
+    const at = {
+      dir: "/trimmed",
+      obj: { ...obj("v.mkv"), virtual_path: "/real/dir/v.mkv" },
+    }
+    expect(objPathOf(at)).toBe("/real/dir/v.mkv")
+  })
+
+  it("joins the folder and the name without it", () => {
+    expect(objPathOf({ dir: "/a/dir", obj: obj("v.mkv") })).toBe("/a/dir/v.mkv")
+    // a single-file share is the share root itself
+    expect(objPathOf({ dir: "/@s/abc", obj: obj("") })).toBe("/@s/abc")
+  })
+
+  it("ignores an empty virtual_path", () => {
+    expect(
+      objPathOf({ dir: "/a", obj: { ...obj("f"), virtual_path: "" } }),
+    ).toBe("/a/f")
   })
 })

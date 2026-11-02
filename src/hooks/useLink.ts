@@ -99,6 +99,14 @@ export const locateObj = (
   return { dir, obj }
 }
 
+/**
+ * The full path of an object as the fs endpoints expect it: the one the backend
+ * reports (virtual_path) when there is one, else the folder it was listed in plus
+ * its name.
+ */
+export const objPathOf = (at: { dir: string; obj: Obj }) =>
+  at.obj.virtual_path || pathJoin(at.dir, at.obj.name).replace(/\/$/, "")
+
 // get download link by current state and pathname
 export const useLink = () => {
   const { pathname, isShare } = useRouter()
@@ -114,10 +122,7 @@ export const useLink = () => {
     return getLinkByDirAndObj(at.dir, at.obj, type, isShare(), encodeAll, opts)
   }
   /** The full path of obj as the fs endpoints expect it (shares: /@s/<id>/...). */
-  const objPath = (obj: Obj) => {
-    const at = locate(obj)
-    return pathJoin(at.dir, at.obj.name).replace(/\/$/, "")
-  }
+  const objPath = (obj: Obj) => objPathOf(locate(obj))
   const rawLink = (obj: Obj, encodeAll?: boolean) => {
     return getLinkByObj(obj, "direct", encodeAll)
   }

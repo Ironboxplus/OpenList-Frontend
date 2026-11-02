@@ -38,6 +38,11 @@ export interface Obj {
   type: ObjType
   mount_details?: MountDetails
   extra?: ObjExtra
+  /**
+   * The path the signed-in user addresses this object by in the other APIs
+   * (relative to their base path). Sent by fs/list and fs/get, not for shares.
+   */
+  virtual_path?: string
 }
 
 export type StoreObj = Obj & {
