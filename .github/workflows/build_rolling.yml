@@ -2,9 +2,10 @@
 #
 # This will:
 #
-# - Upload the release assets to GitHub (always git tagged `edge`).
+# - Upload the release assets to GitHub, git tagged `rolling` for main and `canary`
+#   for the canary branch (a node follows one of them: frontend_channel).
 #
-# This workflow can be triggered on pushes to the `main` branch, or manually via the GitHub Actions UI.
+# This workflow can be triggered on pushes to the `main` and `canary` branches, or manually via the GitHub Actions UI.
 
 name: Rolling Build
 
@@ -12,6 +13,7 @@ on:
   push:
     branches:
       - main
+      - canary
   workflow_dispatch:
     inputs:
       draft:
@@ -19,6 +21,10 @@ on:
         required: false
         default: true
         type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   rolling:
@@ -53,7 +59,18 @@ jobs:
         run: |
           version=$(cat dist/VERSION)
           echo "version=$version" >> $GITHUB_OUTPUT
-          echo "tag_name=edge" >> $GITHUB_OUTPUT
+          # one release tag per channel: main -> rolling, canary -> canary; the
+          # delete step below removes only this channel's release
+          if [ "$GITHUB_REF_NAME" = "canary" ]; then
+            echo "tag_name=canary" >> $GITHUB_OUTPUT
+            echo "channel_note=Canary build for one node (frontend_channel=canary); not what the other nodes follow." >> $GITHUB_OUTPUT
+          elif [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "tag_name=rolling" >> $GITHUB_OUTPUT
+            echo "channel_note=This is a development build and not intended for production use." >> $GITHUB_OUTPUT
+          else
+            echo "refusing to publish from $GITHUB_REF_NAME: only main (rolling) and canary publish" >&2
+            exit 1
+          fi
 
       - name: Remove the existing pre-release
         run: gh release delete ${{ steps.version.outputs.tag_name }} --cleanup-tag --yes || true
@@ -63,8 +80,8 @@ jobs:
       - name: Publish pre-release on GitHub
         run: |
           gh release create \
-            --title "Pre-release ${{ steps.version.outputs.version }}" \
-            --notes "Pre-release build for ${{ steps.version.outputs.version }}<br>This is a development build and not intended for production use." \
+            --title "${{ steps.version.outputs.tag_name == 'canary' && 'Canary' || 'Pre-release' }} ${{ steps.version.outputs.version }}" \
+            --notes "Build for ${{ steps.version.outputs.version }}<br>${{ steps.version.outputs.channel_note }}" \
             --prerelease \
             --draft=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.draft || false }} \
             ${{ steps.version.outputs.tag_name }} \
