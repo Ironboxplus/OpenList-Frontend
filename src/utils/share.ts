@@ -47,6 +47,40 @@ export const getExpireDate = (dateStr: string) => {
 }
 
 /**
+ * Whether a link is a share content link: /sd/ or /sad/ at the start of the
+ * path, after the site's base path (a folder that happens to be called sd does
+ * not count).
+ */
+export const isShareContentUrl = (url: string): boolean => {
+  if (!url) return false
+  // Drop scheme and host, then the base path, then look at the route.
+  const at = url.indexOf("://")
+  let path =
+    at < 0
+      ? url
+      : url.slice(
+          url.indexOf("/", at + 3) < 0 ? url.length : url.indexOf("/", at + 3),
+        )
+  if (base_path && path.startsWith(base_path + "/"))
+    path = path.slice(base_path.length)
+  const rest = path.startsWith("/sd/")
+    ? path.slice(4)
+    : path.startsWith("/sad/")
+      ? path.slice(5)
+      : ""
+  return rest !== "" && !rest.startsWith("?") && !rest.startsWith("#")
+}
+
+/** The HTTP status a HEAD of the link answers (HEAD is never counted by a share); 0 if it cannot be asked. */
+export const probeStatus = async (url: string): Promise<number> => {
+  try {
+    return (await fetch(url, { method: "HEAD" })).status
+  } catch {
+    return 0
+  }
+}
+
+/**
  * Marks a link to a share's file as a preview (preview=1), which a share that
  * switched downloads off still serves. Links to anything else, and links already
  * marked, come back unchanged. Downloads must not go through this.
