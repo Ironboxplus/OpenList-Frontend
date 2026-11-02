@@ -6,6 +6,7 @@ import {
   BsBucket,
   BsCameraFill,
   BsFront,
+  BsGearFill,
   BsHddNetwork,
   BsJoystick,
   BsMedium,
@@ -20,7 +21,17 @@ import { CgDatabase, CgShare } from "solid-icons/cg"
 import { FaSolidBook, FaSolidDatabase } from "solid-icons/fa"
 import { FiLogIn } from "solid-icons/fi"
 import { SiMetabase } from "solid-icons/si"
-import { TbArrowsUpDown, TbTopologyStar3 } from "solid-icons/tb"
+import {
+  TbArrowsUpDown,
+  TbBook,
+  TbFileExport,
+  TbMovie,
+  TbMusic,
+  TbPhoto,
+  TbSeeding,
+  TbTopologyStar3,
+  TbWorldSearch,
+} from "solid-icons/tb"
 import type { IconTypes } from "solid-icons"
 import { UserMethods, UserRole, type User } from "~/types"
 import { getBackendKind, type BackendKind } from "~/utils/backend"
@@ -232,6 +243,18 @@ export const SETTINGS: SettingContribution[] = [
     { permission: "general" },
   ),
 
+  item("seed", "storage", "/@manage/settings/seed", TbSeeding, [
+    "传输种子",
+    "种子",
+    "上传",
+    "torrent",
+    "cas",
+    "oss",
+    "sidecar",
+    "hash",
+    "piece size",
+  ]),
+
   // Indexing and background jobs
   item("indexes", "indexing", "/@manage/indexes", BsSearch, [
     "索引",
@@ -353,6 +376,75 @@ export const SETTINGS: SettingContribution[] = [
     ],
     { backend: ["go"] },
   ),
+
+  item("media-settings", "extensions", "/@manage/media/settings", BsGearFill, [
+    "媒体库",
+    "媒体",
+    "总开关",
+    "应用密钥",
+    "media",
+    "media library",
+    "emby",
+    "subsonic",
+    "app key",
+  ]),
+  item("media-scrape", "extensions", "/@manage/media/scrape", TbWorldSearch, [
+    "刮削",
+    "封面",
+    "缩略图",
+    "元数据",
+    "scrape",
+    "cover",
+    "thumbnail",
+    "tmdb",
+    "metadata",
+  ]),
+  item("media-strm", "extensions", "/@manage/media/strm", TbFileExport, [
+    "strm",
+    "外部播放器",
+    "strm files",
+    "generate strm",
+  ]),
+  item(
+    "media-transcode",
+    "extensions",
+    "/@manage/media/transcode",
+    BsCameraFill,
+    ["转码", "编码", "ffmpeg", "transcode", "encoding"],
+  ),
+  item("media-video", "extensions", "/@manage/media/video", TbMovie, [
+    "影视",
+    "电影",
+    "剧集",
+    "视频库",
+    "video library",
+    "movies",
+    "tv shows",
+  ]),
+  item("media-music", "extensions", "/@manage/media/music", TbMusic, [
+    "音乐",
+    "专辑",
+    "音乐库",
+    "music library",
+    "album",
+    "artist",
+  ]),
+  item("media-image", "extensions", "/@manage/media/image", TbPhoto, [
+    "图片",
+    "照片",
+    "图片库",
+    "photos",
+    "image library",
+    "gallery",
+  ]),
+  item("media-book", "extensions", "/@manage/media/book", TbBook, [
+    "图书",
+    "电子书",
+    "漫画",
+    "books",
+    "ebook",
+    "book library",
+  ]),
 
   // System maintenance
   item("global", "system", "/@manage/settings/global", BsJoystick, [

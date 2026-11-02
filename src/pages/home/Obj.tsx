@@ -10,7 +10,7 @@ import {
   Suspense,
   Switch,
 } from "solid-js"
-import { Error, Face404, FullLoading, LinkWithBase } from "~/components"
+import { Error, FullLoading, LinkWithBase } from "~/components"
 import { useObjTitle, usePath, useRouter, useT } from "~/hooks"
 import {
   getPagination,
@@ -64,10 +64,6 @@ export const Obj = () => {
     }),
   )
 
-  // The share is gone (expired / cancelled): both error layouts below show
-  // the 404 face for it.
-  const shareGone = () => isShare() && objStore.err === t("shares.share_gone")
-
   const isStorageError = createMemo(() => {
     const err = objStore.err
     return (
@@ -105,7 +101,6 @@ export const Obj = () => {
                 <Error
                   msg={objStore.err}
                   disableColor
-                  show404Face={shareGone()}
                   actions={
                     shouldShowStorageButton()
                       ? storageErrorActions()
@@ -114,9 +109,6 @@ export const Obj = () => {
                 />
               }
             >
-              <Show when={shareGone()}>
-                <Face404 />
-              </Show>
               <FilesError
                 msg={objStore.err}
                 onRetry={() => refresh(undefined, true)}

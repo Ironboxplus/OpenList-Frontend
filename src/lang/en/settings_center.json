@@ -77,6 +77,42 @@
       "title": "LDAP",
       "description": "Sign in with a directory server."
     },
+    "seed": {
+      "title": "Transfer seeds",
+      "description": "Sidecar formats and hashes generated for uploaded files."
+    },
+    "media-settings": {
+      "title": "Media library",
+      "description": "Master switch, Emby and Subsonic protocols, app keys."
+    },
+    "media-scrape": {
+      "title": "Media scraping",
+      "description": "Metadata sources, covers and thumbnail storage."
+    },
+    "media-strm": {
+      "title": "STRM files",
+      "description": "Generate .strm files for external players."
+    },
+    "media-transcode": {
+      "title": "Transcoding",
+      "description": "Transcoding settings for media playback."
+    },
+    "media-video": {
+      "title": "Movies and TV",
+      "description": "Scan paths and items of the video library."
+    },
+    "media-music": {
+      "title": "Music",
+      "description": "Scan paths and items of the music library."
+    },
+    "media-image": {
+      "title": "Photos",
+      "description": "Scan paths and items of the photo library."
+    },
+    "media-book": {
+      "title": "Books",
+      "description": "Scan paths and items of the book library."
+    },
     "plugins": {
       "title": "Plugins",
       "description": "Install and manage extensions."

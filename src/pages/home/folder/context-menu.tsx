@@ -112,6 +112,20 @@ export const ContextMenu = () => {
         <ItemContent name="share" />
       </Item>
       <Item
+        hidden={() =>
+          isShare() ||
+          !haveSelected() ||
+          selectedObjs().some((obj) => obj.is_dir)
+        }
+        onClick={() => {
+          bus.emit("generate_transfer_seed", {
+            paths: selectedObjs().map((obj) => pathJoin(pathname(), obj.name)),
+          })
+        }}
+      >
+        <ItemContent name="generate_transfer_seed" />
+      </Item>
+      <Item
         hidden={() => {
           return (
             isShare() ||

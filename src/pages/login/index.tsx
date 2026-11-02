@@ -162,10 +162,7 @@ const Login = () => {
           (data) => {
             notify.success(t("login.success"))
             changeToken(data.token)
-            to(
-              restoreRedirect(),
-              true,
-            )
+            to(restoreRedirect(), true)
           },
           (msg) => {
             notify.error(msg)
@@ -190,6 +187,8 @@ const Login = () => {
   })
 
   const Login = async () => {
+    if (loading()) return
+
     if (!useauthn()) {
       if (remember() === "true") {
         localStorage.setItem("username", username())
@@ -204,10 +203,7 @@ const Login = () => {
         (data) => {
           notify.success(t("login.success"))
           changeToken(data.token)
-          to(
-            restoreRedirect(),
-            true,
-          )
+          to(restoreRedirect(), true)
         },
         (msg, code) => {
           if (!needOpt() && code === 402) {
@@ -254,7 +250,13 @@ const Login = () => {
               name="otp"
               placeholder={t("login.otp-tips")}
               value={opt()}
-              onInput={(e) => setOpt(e.currentTarget.value)}
+              onInput={(e) => {
+                const code = e.currentTarget.value
+                setOpt(code)
+                if (/^\d{6}$/.test(code)) {
+                  void Login()
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   Login()
@@ -339,10 +341,7 @@ const Login = () => {
           colorScheme="accent"
           onClick={() => {
             changeToken()
-            to(
-              restoreRedirect(),
-              true,
-            )
+            to(restoreRedirect(), true)
           }}
         >
           {t("login.use_guest")}

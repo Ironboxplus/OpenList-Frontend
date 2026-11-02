@@ -11,10 +11,12 @@ import {
   Component,
   createEffect,
   createSignal,
+  JSX,
   lazy,
   Match,
   onCleanup,
   Show,
+  Suspense,
   Switch,
 } from "solid-js"
 import { Portal } from "solid-js/web"
@@ -61,6 +63,27 @@ const Transfers = lazy(SECTION_LOADERS.transfers)
 const Dashboard = lazy(SECTION_LOADERS.dashboard)
 const Library = lazy(SECTION_LOADERS.media)
 const PluginsPage = lazy(SECTION_LOADERS.plugins)
+const VideoLibrary = lazy(() => import("~/pages/media/video/VideoLibrary"))
+const MusicLibrary = lazy(() => import("~/pages/media/music/MusicLibrary"))
+const ImageLibrary = lazy(() => import("~/pages/media/image/ImageLibrary"))
+const BookLibrary = lazy(() => import("~/pages/media/book/BookLibrary"))
+// The player sits above every media page but is only needed inside the
+// library: lazy, so it stays out of the entry chunk.
+const MusicPlayer = lazy(() =>
+  import("~/pages/media/music/player").then((m) => ({
+    default: m.MusicPlayer,
+  })),
+)
+
+/** A page of the upstream media library, with its persistent music player. */
+const MediaPage = (props: { children: JSX.Element }) => (
+  <>
+    <Suspense fallback={null}>
+      <MusicPlayer />
+    </Suspense>
+    {props.children}
+  </>
+)
 
 /** Old `/@manage/tasks[/:type]` addresses now live on the Transfers page. */
 const TasksRedirect = () => {
@@ -174,6 +197,38 @@ const App: Component = () => {
             <Route path="/" component={ShellLayout}>
               <Route path="/@dashboard" element={<Dashboard />} />
               <Route path="/@media" element={<Library />} />
+              <Route
+                path="/@media/video/*"
+                element={
+                  <MediaPage>
+                    <VideoLibrary />
+                  </MediaPage>
+                }
+              />
+              <Route
+                path="/@media/music/*"
+                element={
+                  <MediaPage>
+                    <MusicLibrary />
+                  </MediaPage>
+                }
+              />
+              <Route
+                path="/@media/image/*"
+                element={
+                  <MediaPage>
+                    <ImageLibrary />
+                  </MediaPage>
+                }
+              />
+              <Route
+                path="/@media/books/*"
+                element={
+                  <MediaPage>
+                    <BookLibrary />
+                  </MediaPage>
+                }
+              />
               <Route path="/@plugins" element={<PluginsPage />} />
               <Route path="/@transfers" element={<Transfers />} />
               <Route path="/@manage/*" element={<Manage />} />

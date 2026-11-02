@@ -3,7 +3,8 @@ import { Card } from "~/components/ui/card"
 import { cn } from "~/utils/cn"
 
 export interface SettingsSectionProps {
-  title: string
+  /** Without a title (and description, actions) the card has no header. */
+  title?: string
   description?: string
   /** Buttons that belong to the whole card (right of the title). */
   actions?: JSX.Element
@@ -24,17 +25,23 @@ export const SettingsSection = (props: SettingsSectionProps) => (
     data-section={props.id}
     class={cn("flex flex-col", props.class)}
   >
-    <header class="flex flex-wrap items-start justify-between gap-2 px-4 pb-1 pt-4 sm:px-6 sm:pt-5">
-      <div class="min-w-0">
-        <h2 class="text-base font-semibold leading-tight">{props.title}</h2>
-        <Show when={props.description}>
-          <p class="mt-1 text-sm text-muted-foreground">{props.description}</p>
+    <Show when={props.title || props.description || props.actions}>
+      <header class="flex flex-wrap items-start justify-between gap-2 px-4 pb-1 pt-4 sm:px-6 sm:pt-5">
+        <div class="min-w-0">
+          <Show when={props.title}>
+            <h2 class="text-base font-semibold leading-tight">{props.title}</h2>
+          </Show>
+          <Show when={props.description}>
+            <p class="mt-1 text-sm text-muted-foreground">
+              {props.description}
+            </p>
+          </Show>
+        </div>
+        <Show when={props.actions}>
+          <div class="flex flex-wrap items-center gap-2">{props.actions}</div>
         </Show>
-      </div>
-      <Show when={props.actions}>
-        <div class="flex flex-wrap items-center gap-2">{props.actions}</div>
-      </Show>
-    </header>
+      </header>
+    </Show>
     <div class="flex flex-col divide-y divide-border px-4 pb-2 sm:px-6">
       {props.children}
     </div>

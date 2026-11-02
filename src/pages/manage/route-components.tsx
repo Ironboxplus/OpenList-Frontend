@@ -29,6 +29,7 @@ export const routeComponents: Record<string, Component> = {
   "/settings/ftp": () => <CommonSettings group={Group.FTP} />,
   "/settings/traffic": () => <CommonSettings group={Group.TRAFFIC} />,
   "/settings/other": lazy(() => import("./settings/Other")),
+  "/settings/seed": lazy(() => import("./settings/Seed")),
   "/users": lazy(() => import("./users/Users")),
   "/storages": lazy(() => import("./storages/Storages")),
   "/shares": lazy(() => import("./shares/Shares")),
@@ -37,4 +38,20 @@ export const routeComponents: Record<string, Component> = {
   "/indexes": lazy(() => import("./indexes/index_page")),
   "/backup-restore": lazy(() => import("./backup-restore")),
   "/about": lazy(() => import("./About")),
+  "/media/settings": lazy(() => import("./media/MediaSettingsPage")),
+  "/media/scrape": lazy(() => import("./media/MediaScrapePage")),
+  "/media/strm": lazy(() => import("./media/MediaStrmPage")),
+  "/media/transcode": () => <CommonSettings group={Group.TRANSCODE} />,
+  "/media/video": lazy(() =>
+    import("./media/MediaManage").then((m) => ({ default: m.VideoManage })),
+  ),
+  "/media/music": lazy(() =>
+    import("./media/MediaManage").then((m) => ({ default: m.MusicManage })),
+  ),
+  "/media/image": lazy(() =>
+    import("./media/MediaManage").then((m) => ({ default: m.ImageManage })),
+  ),
+  "/media/book": lazy(() =>
+    import("./media/MediaManage").then((m) => ({ default: m.BookManage })),
+  ),
 }

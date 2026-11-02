@@ -77,6 +77,42 @@
       "title": "LDAP",
       "description": "使用目录服务登录。"
     },
+    "seed": {
+      "title": "传输种子",
+      "description": "为上传文件生成的辅助种子格式与哈希。"
+    },
+    "media-settings": {
+      "title": "媒体库",
+      "description": "总开关、Emby 与 Subsonic 协议、应用密钥。"
+    },
+    "media-scrape": {
+      "title": "媒体刮削",
+      "description": "元数据来源、封面与缩略图存储。"
+    },
+    "media-strm": {
+      "title": "STRM 文件",
+      "description": "为外部播放器生成 .strm 文件。"
+    },
+    "media-transcode": {
+      "title": "转码",
+      "description": "媒体播放的转码设置。"
+    },
+    "media-video": {
+      "title": "影视",
+      "description": "视频库的扫描路径与条目。"
+    },
+    "media-music": {
+      "title": "音乐",
+      "description": "音乐库的扫描路径与条目。"
+    },
+    "media-image": {
+      "title": "图片",
+      "description": "图片库的扫描路径与条目。"
+    },
+    "media-book": {
+      "title": "图书",
+      "description": "图书库的扫描路径与条目。"
+    },
     "plugins": {
       "title": "插件",
       "description": "安装并管理扩展。"
