@@ -80,6 +80,7 @@ jobs:
       - name: Publish pre-release on GitHub
         run: |
           gh release create \
+            --target "$GITHUB_SHA" \
             --title "${{ steps.version.outputs.tag_name == 'canary' && 'Canary' || 'Pre-release' }} ${{ steps.version.outputs.version }}" \
             --notes "Build for ${{ steps.version.outputs.version }}<br>${{ steps.version.outputs.channel_note }}" \
             --prerelease \
