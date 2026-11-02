@@ -50,7 +50,83 @@ export interface MediaItem {
   folder_path: string // 扫描根路径（恒定为扫描路径，与 file_name + album_name 组合唯一）
   episodes: string // 选集信息 JSON 字符串，格式：[{file_name,index,title},...]
   scraped_at: string | null
+  // ---- 识别与整理（后端 internal/model/media_curation.go 的 MediaCuration） ----
+  original_title?: string
+  /** JSON 字符串：{"tmdb":"tv/890","imdb":"tt0112159",...}，用 parseExternalIds 解析 */
+  external_ids?: string
+  backdrop?: string
+  /** manual | rule | scraper */
+  source?: string
+  /** 规则或匹配有多确定，0-1；低于 MEDIA_PENDING_CONFIDENCE 算待确认 */
+  confidence?: number
+  /** 锁定后扫描和刮削不再覆盖已刮削的字段 */
+  locked?: boolean
+  /** JSON 字符串，只有管理员收得到；用 parseCandidates 解析 */
+  candidates?: string
+  // ---- 公开接口附带的视图字段（server/handles/media_view.go 的 MediaItemView） ----
+  /** 条目所在路径，相对用户的 base path */
+  path?: string
+  /** 多源评分，来源 tmdb/douban/imdb/bgm/rt；只有文字时（如 "93%"）为字符串 */
+  ratings?: Record<string, number | string>
+  backdrop_url?: string
+  /** 仅合集：最多 4 张成员封面 */
+  child_posters?: string[]
+  /** 仅详情：按集列表 */
+  episode_list?: MediaEpisodeView[]
 }
+
+/** 后端的 MediaPendingConfidence：低于它（且没锁定）的条目等人确认。 */
+export const MEDIA_PENDING_CONFIDENCE = 0.6
+
+/** 视频条目的 video_type：movie/tv/anime/collection，ignore 是被规则判为非作品的目录（不会列出）。 */
+export type VideoKind = "movie" | "tv" | "anime" | "collection" | "ignore"
+
+/** 一集（详情接口的 episode_list）。 */
+export interface MediaEpisodeView {
+  file_name: string
+  season: number
+  episode: number
+  title: string
+  overview: string
+  still_url?: string
+}
+
+/** 低置信度时给人选的候选（后端 model.MediaCandidate）。 */
+export interface MediaCandidate {
+  provider: string
+  id: string
+  title: string
+  year: number
+  poster_url: string
+  score: number
+}
+
+const parseJSON = <T>(raw: string | undefined, fallback: T): T => {
+  if (!raw) return fallback
+  try {
+    const v = JSON.parse(raw)
+    return v === null || typeof v !== typeof fallback ? fallback : (v as T)
+  } catch {
+    return fallback
+  }
+}
+
+export const parseExternalIds = (
+  item: Pick<MediaItem, "external_ids">,
+): Record<string, string> => parseJSON(item.external_ids, {})
+
+export const parseCandidates = (
+  item: Pick<MediaItem, "candidates">,
+): MediaCandidate[] => {
+  const v = parseJSON<unknown>(item.candidates, [])
+  return Array.isArray(v) ? (v as MediaCandidate[]) : []
+}
+
+/** 没锁定，且置信度低或有候选：等人确认。 */
+export const isPendingMedia = (item: MediaItem): boolean =>
+  !item.locked &&
+  ((item.confidence ?? 1) < MEDIA_PENDING_CONFIDENCE ||
+    parseCandidates(item).length > 0)
 
 // 解析 episodes JSON 字符串。
 // JSON 合法但不是数组（如 "{}"）时必须返回空数组：调用方会直接当列表用（.length / <For>），
@@ -119,6 +195,10 @@ export interface MediaListQuery {
   keyword?: string
   type_tag?: string
   content_tag?: string
+  /** 视频的 video_type，逗号分隔，如 "movie,anime" */
+  kind?: string
+  /** 某目录下的子项，相对用户的 base path */
+  path?: string
 }
 
 // 解析 authors JSON 字符串。

@@ -66,7 +66,7 @@ export const searchMedia = (
   kind?: MediaKind,
 ) =>
   wrap<SearchCandidate[]>(
-    apiGet("/admin/media/search", {
+    apiGet("/admin/media/curate/search", {
       params: { provider, q, ...(kind && kind !== "ignore" ? { kind } : {}) },
     }),
   )
@@ -78,16 +78,57 @@ export const scrapeMedia = (
   lock: boolean,
 ) =>
   wrap<unknown>(
-    apiPost("/admin/media/scrape", { body: { path, provider, id, lock } }),
+    apiPost("/admin/media/curate/scrape", {
+      body: { path, provider, id, lock },
+    }),
   )
 
 export const deleteMedia = (path: string) =>
-  wrap<{ deleted: number }>(apiPost("/admin/media/delete", { body: { path } }))
+  wrap<{ deleted: number }>(
+    apiPost("/admin/media/curate/delete", { body: { path } }),
+  )
 
-export const setMediaMeta = (body: {
+/**
+ * Body of POST /api/admin/media/curate/set (backend model.MediaSetReq): only the
+ * fields given are written, so a lock toggle sends nothing but `locked`.
+ */
+export interface MediaSetBody {
   path: string
   kind?: MediaKind
+  title?: string
+  original_title?: string
+  year?: number
+  external_ids?: Record<string, string>
+  genres?: string[]
+  overview?: string
+  cover?: string
+  backdrop?: string
   locked?: boolean
-}) => wrap<unknown>(apiPost("/admin/media/set", { body }))
+}
+
+export const setMediaMeta = (body: MediaSetBody) =>
+  wrap<unknown>(apiPost("/admin/media/curate/set", { body }))
+
+/**
+ * Stores a poster or backdrop for the work at `path` (a file the admin picked,
+ * or a url the server downloads) and answers with the cover reference. It does
+ * not touch the work: pass the reference to setMediaMeta as `cover`/`backdrop`.
+ */
+export const uploadMediaImage = (
+  path: string,
+  role: "poster" | "backdrop",
+  source: File | string,
+) =>
+  wrap<{ cover: string }>(
+    apiPost("/admin/media/curate/image", {
+      params: { path, role },
+      body: (() => {
+        if (typeof source === "string") return { url: source }
+        const form = new FormData()
+        form.append("file", source)
+        return form
+      })(),
+    }),
+  )
 
 export type { MediaCandidate }
