@@ -1,5 +1,6 @@
 import { TbPlus } from "solid-icons/tb"
 import { createSignal } from "solid-js"
+import { TbFlame, TbLock } from "solid-icons/tb"
 import { Badge } from "~/components/ui/badge"
 import { StatusBadge, type StatusTone } from "~/components/ui/status-badge"
 import {
@@ -16,6 +17,7 @@ import {
   UserMethods,
   UserPermissions,
 } from "~/types"
+import { formatDateCompact } from "~/utils/str"
 import {
   handleResp,
   handleRespWithNotifySuccess,
@@ -29,6 +31,7 @@ const STATUS_TONE: Record<string, StatusTone> = {
   work: "success",
   disabled: "neutral",
   invalid: "error",
+  consumed: "warning",
   denied: "warning",
 }
 
@@ -66,26 +69,49 @@ const Shares = () => {
       ? s.files[0] + t("shares.files_etc", { more: s.files.length - 1 })
       : s.files[0]
   }
+  // Burn after read is a limit of 1 when no explicit limit is set.
+  const limitOf = (s: ShareInfo) =>
+    s.max_accessed > 0 ? s.max_accessed : s.burn_after_read ? 1 : 0
   const accessedText = (s: ShareInfo) =>
-    s.max_accessed > 0 ? `${s.accessed} / ${s.max_accessed}` : `${s.accessed}`
+    limitOf(s) > 0 ? `${s.accessed} / ${limitOf(s)}` : `${s.accessed}`
+  const lastAccessText = (s: ShareInfo) =>
+    formatDateCompact(s.last_access_at ?? undefined)
+  const lastAccessTitle = (s: ShareInfo) =>
+    s.last_access_at ? new Date(s.last_access_at).toLocaleString() : ""
   const expiresText = (s: ShareInfo) =>
     s.expires ? new Date(s.expires).toLocaleString() : ""
   const status = (s: ShareInfo) => {
     if (s.disabled) return "disabled"
-    if (
-      (s.max_accessed > 0 && s.accessed >= s.max_accessed) ||
-      s.files.length === 0 ||
-      (s.expires && new Date(s.expires) < new Date())
-    )
+    if (s.consumed_at || (limitOf(s) > 0 && s.accessed >= limitOf(s)))
+      return "consumed"
+    if (s.files.length === 0 || (s.expires && new Date(s.expires) < new Date()))
       return "invalid"
     if (s.creator === me().username && !canShare()) return "denied"
     return "work"
   }
   const StatusChip = (props: { share: ShareInfo }) => (
-    <StatusBadge
-      tone={STATUS_TONE[status(props.share)]}
-      label={t(`shares.status_list.${status(props.share)}`)}
-    />
+    <span class="inline-flex flex-wrap items-center gap-1">
+      <StatusBadge
+        tone={STATUS_TONE[status(props.share)]}
+        label={t(`shares.status_list.${status(props.share)}`)}
+      />
+      {props.share.has_password ? (
+        <Badge variant="outline" title={t("shares.pwd")}>
+          <TbLock class="size-3" />
+        </Badge>
+      ) : null}
+      {props.share.burn_after_read ? (
+        <Badge variant="outline" title={t("shares.burn_after_read")}>
+          <TbFlame class="size-3" />
+        </Badge>
+      ) : null}
+      {props.share.allow_preview === false ? (
+        <Badge variant="outline">{t("shares.no_preview")}</Badge>
+      ) : null}
+      {props.share.allow_download === false ? (
+        <Badge variant="outline">{t("shares.no_download")}</Badge>
+      ) : null}
+    </span>
   )
   const Creator = (props: { share: ShareInfo }) =>
     props.share.creator_role < 0 ? null : (
@@ -183,6 +209,26 @@ const Shares = () => {
             sort: (s) => s.accessed,
           },
           {
+            id: "views",
+            header: t("shares.views"),
+            cell: (s) => s.view_count ?? 0,
+            sort: (s) => s.view_count ?? 0,
+          },
+          {
+            id: "downloads",
+            header: t("shares.downloads"),
+            cell: (s) => s.download_count ?? 0,
+            sort: (s) => s.download_count ?? 0,
+          },
+          {
+            id: "last_access",
+            header: t("shares.last_access"),
+            cell: (s) => (
+              <span title={lastAccessTitle(s)}>{lastAccessText(s)}</span>
+            ),
+            sort: (s) => s.last_access_at ?? "",
+          },
+          {
             id: "status",
             header: t("shares.status"),
             cell: (s) => <StatusChip share={s} />,
@@ -202,6 +248,12 @@ const Shares = () => {
               <dd class="break-all font-mono">{s.id}</dd>
               <dt class="text-muted-foreground">{t("shares.accessed")}</dt>
               <dd>{accessedText(s)}</dd>
+              <dt class="text-muted-foreground">{t("shares.views")}</dt>
+              <dd>{s.view_count ?? 0}</dd>
+              <dt class="text-muted-foreground">{t("shares.downloads")}</dt>
+              <dd>{s.download_count ?? 0}</dd>
+              <dt class="text-muted-foreground">{t("shares.last_access")}</dt>
+              <dd>{lastAccessText(s)}</dd>
               {s.expires ? (
                 <>
                   <dt class="text-muted-foreground">{t("shares.expires")}</dt>

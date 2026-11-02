@@ -15,7 +15,8 @@
     "disabled": "Disabled",
     "invalid": "Invalid",
     "work": "Work",
-    "denied": "No permission"
+    "denied": "No permission",
+    "consumed": "Used up"
   },
   "remark": "Remark",
   "readme": "Description",
@@ -51,5 +52,10 @@
   "not_found": "This share does not exist.",
   "expired_or_used_up": "This share has expired or been used up.",
   "preview_disabled": "The owner of this share disabled preview.",
-  "download_disabled": "The owner of this share disabled download."
+  "download_disabled": "The owner of this share disabled download.",
+  "views": "Views",
+  "downloads": "Downloads",
+  "last_access": "Last access",
+  "no_preview": "No preview",
+  "no_download": "No download"
 }
