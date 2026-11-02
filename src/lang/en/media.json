@@ -8,7 +8,8 @@
     "empty_admin": "Mark a folder as a video library on the Files page to get started.",
     "empty_admin_action": "Go to Files",
     "more": "Load more",
-    "more_failed": "Could not load more."
+    "more_failed": "Could not load more.",
+    "legacy": "Legacy library"
   },
   "library": {
     "badge": "Video library",
@@ -336,5 +337,11 @@
     "item_authors": "Authors/Cast (JSON array)",
     "rating_label": "Rating (0-10)",
     "summary": "Summary"
+  },
+  "accent": {
+    "title": "Theme color",
+    "reset": "Follow site default",
+    "on": "Theme color: media pages only (on)",
+    "off": "Theme color: off"
   }
 }

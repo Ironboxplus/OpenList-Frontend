@@ -11,12 +11,10 @@ import {
   Component,
   createEffect,
   createSignal,
-  JSX,
   lazy,
   Match,
   onCleanup,
   Show,
-  Suspense,
   Switch,
 } from "solid-js"
 import { Portal } from "solid-js/web"
@@ -36,6 +34,7 @@ import {
   type StartupFailure,
 } from "~/features/shell/states"
 import { setArchiveExtensions } from "~/store/archive"
+import { setMediaStatus, type MediaStatus } from "~/store/media"
 import { base_path, bus, joinBase } from "~/utils"
 import { onSettingsLoaded } from "./boot"
 import { SECTION_LOADERS } from "~/features/shell/nav-items"
@@ -61,29 +60,20 @@ const ShellLayout = () => (
 )
 const Transfers = lazy(SECTION_LOADERS.transfers)
 const Dashboard = lazy(SECTION_LOADERS.dashboard)
-const Library = lazy(SECTION_LOADERS.media)
-const PluginsPage = lazy(SECTION_LOADERS.plugins)
+const MediaSection = lazy(SECTION_LOADERS.media)
+const MediaIndex = lazy(() =>
+  import("~/pages/media/MediaSection").then((m) => ({
+    default: m.MediaIndex,
+  })),
+)
 const VideoLibrary = lazy(() => import("~/pages/media/video/VideoLibrary"))
 const MusicLibrary = lazy(() => import("~/pages/media/music/MusicLibrary"))
 const ImageLibrary = lazy(() => import("~/pages/media/image/ImageLibrary"))
 const BookLibrary = lazy(() => import("~/pages/media/book/BookLibrary"))
-// The player sits above every media page but is only needed inside the
-// library: lazy, so it stays out of the entry chunk.
-const MusicPlayer = lazy(() =>
-  import("~/pages/media/music/player").then((m) => ({
-    default: m.MusicPlayer,
-  })),
-)
-
-/** A page of the upstream media library, with its persistent music player. */
-const MediaPage = (props: { children: JSX.Element }) => (
-  <>
-    <Suspense fallback={null}>
-      <MusicPlayer />
-    </Suspense>
-    {props.children}
-  </>
-)
+// The first media backend's library, kept until its features are in the
+// upstream pages (spec 1d, 2.2).
+const LegacyLibrary = lazy(() => import("~/features/media/LibraryPage"))
+const PluginsPage = lazy(SECTION_LOADERS.plugins)
 
 /** Old `/@manage/tasks[/:type]` addresses now live on the Transfers page. */
 const TasksRedirect = () => {
@@ -139,10 +129,11 @@ const App: Component = () => {
   const boot = async () => {
     if (retrying()) return
     setRetrying(true)
-    const [settings, archive, init] = await Promise.all([
+    const [settings, archive, init, media] = await Promise.all([
       api<Record<string, string>>("get", "/public/settings"),
       api<string[]>("get", "/public/archive_extensions"),
       api<InitStatus>("get", "/public/init_status"),
+      api<MediaStatus>("get", "/public/media_status"),
     ])
     if (settings.ok) onSettingsLoaded(settings.data)
     const state = startupStateFor({
@@ -156,6 +147,8 @@ const App: Component = () => {
     } else {
       setStartup(undefined)
     }
+    // Backends without a media library answer 404: no libraries to list.
+    setMediaStatus(media.ok ? media.data : undefined)
     if (archive.ok) setArchiveExtensions(archive.data)
     else console.warn("archive_extensions unavailable", archive.error)
     setRetrying(false)
@@ -196,39 +189,14 @@ const App: Component = () => {
             />
             <Route path="/" component={ShellLayout}>
               <Route path="/@dashboard" element={<Dashboard />} />
-              <Route path="/@media" element={<Library />} />
-              <Route
-                path="/@media/video/*"
-                element={
-                  <MediaPage>
-                    <VideoLibrary />
-                  </MediaPage>
-                }
-              />
-              <Route
-                path="/@media/music/*"
-                element={
-                  <MediaPage>
-                    <MusicLibrary />
-                  </MediaPage>
-                }
-              />
-              <Route
-                path="/@media/image/*"
-                element={
-                  <MediaPage>
-                    <ImageLibrary />
-                  </MediaPage>
-                }
-              />
-              <Route
-                path="/@media/books/*"
-                element={
-                  <MediaPage>
-                    <BookLibrary />
-                  </MediaPage>
-                }
-              />
+              <Route path="/@media" component={MediaSection}>
+                <Route path="/" component={MediaIndex} />
+                <Route path="/video/*" component={VideoLibrary} />
+                <Route path="/music/*" component={MusicLibrary} />
+                <Route path="/image/*" component={ImageLibrary} />
+                <Route path="/books/*" component={BookLibrary} />
+                <Route path="/legacy" component={LegacyLibrary} />
+              </Route>
               <Route path="/@plugins" element={<PluginsPage />} />
               <Route path="/@transfers" element={<Transfers />} />
               <Route path="/@manage/*" element={<Manage />} />

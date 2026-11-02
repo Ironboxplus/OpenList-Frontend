@@ -4,7 +4,6 @@ import {
   createEffect,
   Show,
   For,
-  onMount,
   onCleanup,
 } from "solid-js"
 import { Dynamic } from "solid-js/web"
@@ -34,7 +33,6 @@ import { accentBar, accentGradient } from "~/utils/accent"
 import { resolveMediaCover } from "~/utils/media_cover"
 import { OpenWithPlayer } from "~/components/OpenWithPlayer"
 import { useT } from "~/hooks"
-import { mediaEnabled, mediaSidebarOpen } from "~/store/media"
 
 /**
  * 全局音乐播放器：播放状态、音频元素、全屏歌词页与底部播放条。
@@ -842,18 +840,8 @@ export const MusicPlayer = () => {
     return s.playlist[s.currentIndex]
   }
 
-  // 底部播放器只占右侧内容区：桌面端且侧栏展开时让出 216px
-  const [isDesktop, setIsDesktop] = createSignal(true)
-  onMount(() => {
-    const mq = window.matchMedia("(min-width: 768px)")
-    const update = () => setIsDesktop(mq.matches)
-    update()
-    mq.addEventListener("change", update)
-    onCleanup(() => mq.removeEventListener("change", update))
-  })
-  const barLeft = () =>
-    mediaEnabled() && mediaSidebarOpen() && isDesktop() ? "216px" : "0"
-
+  // 底部播放器只占壳层的内容区：左边让出侧栏，手机上让出底部标签栏
+  // （--shell-content-left/right 由 AppShell 的内容框设置，不在壳层里时为 0）
   // ===== 底栏滚动歌词：复用 parseLRC，外部 .lrc 优先于内嵌歌词 =====
   // 仅在歌词文本变化时才重新解析（依赖 currentIndex / externalLyrics / 当前 item.lyrics）
   const miniLyricLines = createMemo(() => {
@@ -925,9 +913,9 @@ export const MusicPlayer = () => {
         <div
           style={{
             position: "fixed",
-            bottom: "0",
-            left: barLeft(),
-            right: "0",
+            bottom: "var(--shell-bottom, 0px)",
+            left: "var(--shell-content-left, 0px)",
+            right: "var(--shell-content-right, 0px)",
             "z-index": "150",
             background: "rgba(10,14,26,0.96)",
             "backdrop-filter": "blur(24px)",

@@ -127,7 +127,7 @@ export const activeNavId = (pathname: string): NavId | undefined => {
 export const SECTION_LOADERS: Record<NavId, () => Promise<{ default: any }>> = {
   dashboard: () => import("~/features/dashboard/DashboardPage"),
   files: () => import("~/pages/home/Layout"),
-  media: () => import("~/features/media/LibraryPage"),
+  media: () => import("~/pages/media/MediaSection"),
   transfers: () => import("~/features/transfers/TransfersPage"),
   plugins: () => import("~/features/plugins/PluginsPage"),
   settings: () => import("~/pages/manage"),

@@ -46,30 +46,8 @@ export const setMediaStatus = (status?: Partial<MediaStatus> | null) => {
   })
 }
 
-/** 媒体库总开关（关闭时前端不渲染任何媒体库入口） */
-export const mediaEnabled = () => mediaStatus().enabled
-
 /** 某个媒体类型是否启用 */
 export const mediaTypeEnabled = (type: MediaType) =>
   mediaStatus().types.includes(type)
 
-/** 侧边栏展开状态，持久化到 localStorage */
-const stored =
-  typeof localStorage !== "undefined"
-    ? localStorage.getItem("media-sidebar-open")
-    : null
-// 默认展开：媒体库启用后侧边栏直接可见，用户手动收起后记住选择
-const [mediaSidebarOpen, setMediaSidebarOpenRaw] = createSignal(
-  stored === null ? true : stored === "true",
-)
-
-export const setMediaSidebarOpen = (open: boolean) => {
-  setMediaSidebarOpenRaw(open)
-  try {
-    localStorage.setItem("media-sidebar-open", String(open))
-  } catch {
-    /* ignore */
-  }
-}
-
-export { mediaSidebarOpen, mediaStatus }
+export { mediaStatus }
