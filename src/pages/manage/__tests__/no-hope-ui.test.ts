@@ -10,6 +10,13 @@ const EXEMPT = [
   "plugins/index.tsx",
   // Used only by the upstream plugin page above.
   "common/DeletePopover.tsx",
+  // Upstream media library and transfer-seed settings pages: same reason.
+  "media/MediaManage.tsx",
+  "media/MediaScrapePage.tsx",
+  "media/MediaSettingsPage.tsx",
+  "media/MediaStrmPage.tsx",
+  "media/ThumbnailSettings.tsx",
+  "settings/Seed.tsx",
 ]
 
 const files = import.meta.glob("../**/*.{ts,tsx}", {
