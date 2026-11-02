@@ -39,9 +39,14 @@ export const ProxyDialog = (props: ProxyDialogProps) => {
     if (props.open) setP(reconcile(clone(props.initial ?? emptyProxy())))
   })
 
-  // The other proxies of the page: an edited one does not clash with its old self.
-  const others = createMemo(() => props.all.filter((_, i) => i !== props.index))
-  const errors = createMemo(() => proxyErrors(p, [...others(), p]))
+  // The page's list as it would be if this proxy were saved now: an edited one in its
+  // own slot (so it does not clash with its old self), a new one at the end.
+  const slot = () => (props.index >= 0 ? props.index : props.all.length)
+  const errors = createMemo(() => {
+    const list = [...props.all]
+    list[slot()] = p
+    return proxyErrors(p, list, slot())
+  })
   const secretShown = () => (p.secret.kind === "set" ? p.secret.value : "")
 
   return (

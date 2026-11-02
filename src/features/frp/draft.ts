@@ -80,11 +80,19 @@ export const draftFromView = (v: FrpView): FrpDraft => ({
   proxies: (v.proxies ?? []).map(proxyFromView),
 })
 
-/** An i18n key under `frp.errors.` per problem, in the order the user meets them. */
-export const proxyErrors = (p: ProxyDraft, all: ProxyDraft[]): string[] => {
+/**
+ * An i18n key under `frp.errors.` per problem, in the order the user meets them.
+ * `index` is where `p` sits in `all` (the page's list, with an edited proxy in its
+ * own slot): it is the one entry the name is not compared with.
+ */
+export const proxyErrors = (
+  p: ProxyDraft,
+  all: ProxyDraft[],
+  index: number,
+): string[] => {
   const errors: string[] = []
   if (!NAME_RE.test(p.name)) errors.push("name_invalid")
-  else if (all.filter((o) => o !== p && o.name === p.name).length > 0)
+  else if (all.some((o, i) => i !== index && o.name === p.name))
     errors.push("name_duplicate")
   if (p.type === "http") {
     if (parseDomains(p.domains).length === 0 && p.subdomain.trim() === "")
@@ -115,7 +123,7 @@ export const draftErrors = (d: FrpDraft): string[] => {
     errors.push("port_invalid")
   if (d.proxies.length === 0) errors.push("no_proxy")
   if (d.proxies.length > MAX_PROXIES) errors.push("too_many_proxies")
-  if (d.proxies.some((p) => proxyErrors(p, d.proxies).length > 0))
+  if (d.proxies.some((p, i) => proxyErrors(p, d.proxies, i).length > 0))
     errors.push("proxy_invalid")
   return errors
 }

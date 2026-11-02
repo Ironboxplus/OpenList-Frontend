@@ -97,35 +97,57 @@ describe("parseDomains", () => {
 })
 
 describe("proxy validation", () => {
+  // proxyErrors(p, list, i): p is list[i], the one entry its name is not compared with
+  const alone = (p: ReturnType<typeof emptyProxy>) => proxyErrors(p, [p], 0)
+
   it("checks the name like the backend", () => {
     const p = { ...emptyProxy(), name: "bad name", subdomain: "x" }
-    expect(proxyErrors(p, [p])).toContain("name_invalid")
+    expect(alone(p)).toContain("name_invalid")
     const ok = { ...emptyProxy(), name: "good-1_x", subdomain: "x" }
-    expect(proxyErrors(ok, [ok])).toEqual([])
+    expect(alone(ok)).toEqual([])
   })
   it("finds duplicate names", () => {
     const a = { ...emptyProxy(), name: "a", subdomain: "x" }
     const b = { ...emptyProxy(), name: "a", subdomain: "y" }
-    expect(proxyErrors(b, [a, b])).toContain("name_duplicate")
+    expect(proxyErrors(b, [a, b], 1)).toContain("name_duplicate")
+    expect(proxyErrors(a, [a, b], 0)).toContain("name_duplicate")
+  })
+  it("an edited proxy does not clash with its own old self", () => {
+    const old = { ...emptyProxy(), id: "p1", name: "web", subdomain: "x" }
+    const other = { ...emptyProxy(), id: "p2", name: "raw", subdomain: "y" }
+    // edited without a rename: a copy with the same name in the same slot
+    expect(proxyErrors({ ...old }, [{ ...old }, other], 0)).toEqual([])
+    // renamed to its own old name again, or to a fresh one
+    expect(proxyErrors({ ...old, name: "web2" }, [old, other], 0)).toEqual([])
+    // but not onto another proxy's name
+    expect(proxyErrors({ ...old, name: "raw" }, [old, other], 0)).toContain(
+      "name_duplicate",
+    )
+    // a new proxy goes at the end of the list
+    expect(
+      proxyErrors(
+        { ...emptyProxy(), name: "web", subdomain: "z" },
+        [old, other, { ...emptyProxy(), name: "web", subdomain: "z" }],
+        2,
+      ),
+    ).toContain("name_duplicate")
   })
   it("needs a host for http, a port for tcp, a key for stcp", () => {
     const http = { ...emptyProxy(), name: "h" }
-    expect(proxyErrors(http, [http])).toContain("http_needs_host")
+    expect(alone(http)).toContain("http_needs_host")
     const tcp = {
       ...emptyProxy(),
       name: "t",
       type: "tcp" as const,
       remotePort: "70000",
     }
-    expect(proxyErrors(tcp, [tcp])).toContain("tcp_needs_port")
+    expect(alone(tcp)).toContain("tcp_needs_port")
     const stcp = { ...emptyProxy(), name: "s", type: "stcp" as const }
-    expect(proxyErrors(stcp, [stcp])).toContain("stcp_needs_secret")
+    expect(alone(stcp)).toContain("stcp_needs_secret")
     // a stored key counts, a cleared one does not
-    expect(proxyErrors({ ...stcp, secretSet: true }, [stcp])).toEqual([])
+    expect(alone({ ...stcp, secretSet: true })).toEqual([])
     expect(
-      proxyErrors({ ...stcp, secretSet: true, secret: { kind: "clear" } }, [
-        stcp,
-      ]),
+      alone({ ...stcp, secretSet: true, secret: { kind: "clear" } }),
     ).toContain("stcp_needs_secret")
   })
 })
