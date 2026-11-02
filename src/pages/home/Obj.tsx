@@ -77,22 +77,23 @@ export const Obj = () => {
   let lastPage: number | undefined
   createEffect(
     on([pathname, page], async ([pathname, page]) => {
-      if (searchParams["pwd"]) {
-        if (isShare()) {
-          // An old link carries the share password: trade it for a token and
-          // take it out of the address bar.
-          await tradeSharePassword(searchParams["pwd"])
-          setSearchParams({ pwd: undefined }, { replace: true })
-        } else {
-          setPassword(searchParams["pwd"])
-        }
-      }
+      // An old share link carries the password in its address.
+      const oldPwd = searchParams["pwd"]
+      if (oldPwd && !isShare()) setPassword(oldPwd)
       if (lastPathname) {
         recordHistory(lastPathname, lastPage)
       }
       lastPathname = pathname
       lastPage = page
       useObjTitle()
+      if (oldPwd && isShare()) {
+        // Trade it for a token before the first request, and take it out of
+        // the address bar once the page is up.
+        await tradeSharePassword(oldPwd)
+        await handlePathChange(pathname, page)
+        setSearchParams({ pwd: undefined }, { replace: true })
+        return
+      }
       await handlePathChange(pathname, page)
     }),
   )

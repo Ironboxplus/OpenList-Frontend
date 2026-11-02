@@ -86,8 +86,7 @@ export const probeStatus = async (url: string): Promise<number> => {
  * marked, come back unchanged. Downloads must not go through this.
  */
 export const asPreview = (url: string): string => {
-  if (!url || !/\/sad?\/[^?#]/.test(url) || /[?&]preview=1(&|#|$)/.test(url))
-    return url
+  if (!isShareContentUrl(url) || /[?&]preview=1(&|#|$)/.test(url)) return url
   const hash = url.indexOf("#")
   const head = hash < 0 ? url : url.slice(0, hash)
   const tail = hash < 0 ? "" : url.slice(hash)
