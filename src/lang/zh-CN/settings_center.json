@@ -65,6 +65,10 @@
       "title": "用户",
       "description": "账户、角色与权限。"
     },
+    "sessions": {
+      "title": "登录设备",
+      "description": "谁在哪些设备上登录，以及每个用户最多可用几台设备。"
+    },
     "metas": {
       "title": "元信息",
       "description": "目录密码、隐藏文件与说明文件规则。"
