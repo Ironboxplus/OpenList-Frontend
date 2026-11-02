@@ -31,6 +31,7 @@ import users from "./users.json"
 export const dict = {
   br,
   common,
+  frp,
   dashboard,
   drivers,
   errors,
