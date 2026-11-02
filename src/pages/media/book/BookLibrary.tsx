@@ -250,7 +250,7 @@ const BookCard = (props: { item: MediaItem }) => {
           }
         >
           <img
-            src={resolveMediaCover(props.item.cover)}
+            src={resolveMediaCover(props.item)}
             alt={name()}
             style={{
               position: "absolute",
@@ -470,7 +470,7 @@ const BookDetail = (props: { id: string; onBack: () => void }) => {
                 }
               >
                 <img
-                  src={resolveMediaCover(data().cover)}
+                  src={resolveMediaCover(data())}
                   style={{
                     width: "180px",
                     height: "252px",
@@ -725,7 +725,7 @@ const BookLibrary = () => {
                     fallback={<span style={{ "font-size": "20px" }}>📚</span>}
                   >
                     <img
-                      src={resolveMediaCover(item.cover)}
+                      src={resolveMediaCover(item)}
                       style={{
                         width: "32px",
                         height: "44px",

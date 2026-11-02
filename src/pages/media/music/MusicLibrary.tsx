@@ -109,7 +109,7 @@ const AlbumCard = (props: { album: AlbumInfo }) => {
           }
         >
           <img
-            src={resolveMediaCover(props.album.cover)}
+            src={resolveMediaCover(props.album)}
             alt={props.album.album_name}
             style={{
               position: "absolute",
@@ -223,7 +223,7 @@ const AlbumDetail = (props: { album: AlbumInfo; onBack: () => void }) => {
           }
         >
           <img
-            src={resolveMediaCover(props.album.cover)}
+            src={resolveMediaCover(props.album)}
             style={{
               width: "180px",
               height: "180px",
@@ -964,7 +964,7 @@ const MusicLibrary = () => {
                               }
                             >
                               <img
-                                src={resolveMediaCover(track.cover)}
+                                src={resolveMediaCover(track)}
                                 alt={getMediaName(track)}
                                 loading="lazy"
                                 style={{

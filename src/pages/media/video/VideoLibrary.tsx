@@ -150,7 +150,7 @@ const VideoCard = (props: { item: MediaItem }) => {
           }
         >
           <img
-            src={resolveMediaCover(props.item.cover)}
+            src={resolveMediaCover(props.item)}
             alt={name()}
             style={{
               position: "absolute",
@@ -916,7 +916,7 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                 style={{
                   position: "fixed",
                   inset: "0",
-                  "background-image": `url(${resolveMediaCover(data().cover)})`,
+                  "background-image": `url(${resolveMediaCover(data())})`,
                   "background-size": "cover",
                   "background-position": "center",
                   filter: "blur(40px) brightness(0.2)",
@@ -957,7 +957,7 @@ const VideoDetail = (props: { id: string; onBack: () => void }) => {
                   }
                 >
                   <img
-                    src={resolveMediaCover(data().cover)}
+                    src={resolveMediaCover(data())}
                     alt={getMediaName(data())}
                     style={{
                       width: "220px",
@@ -1309,7 +1309,7 @@ const VideoLibrary = () => {
                     fallback={<span style={{ "font-size": "20px" }}>🎬</span>}
                   >
                     <img
-                      src={resolveMediaCover(item.cover)}
+                      src={resolveMediaCover(item)}
                       style={{
                         width: "40px",
                         height: "58px",

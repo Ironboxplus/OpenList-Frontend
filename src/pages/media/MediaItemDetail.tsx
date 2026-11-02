@@ -201,7 +201,7 @@ export const MediaItemDetail = (props: MediaItemDetailProps) => {
           }
         >
           <img
-            src={resolveMediaCover(props.item.cover)}
+            src={resolveMediaCover(props.item)}
             alt={getMediaName(props.item)}
             style={{
               width: "100%",

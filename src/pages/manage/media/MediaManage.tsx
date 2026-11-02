@@ -1219,7 +1219,7 @@ export const MediaManagePage = (props: MediaManagePageProps) => {
                             }
                           >
                             <img
-                              src={resolveMediaCover(item.cover)}
+                              src={resolveMediaCover(item)}
                               loading="lazy"
                               alt={item.scraped_name || item.file_name}
                               style={{

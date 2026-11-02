@@ -350,7 +350,7 @@ const LyricsPage = () => {
           position: "absolute",
           inset: "0",
           background: currentItem()?.cover
-            ? `url(${resolveMediaCover(currentItem()?.cover)}) center/cover no-repeat`
+            ? `url(${resolveMediaCover(currentItem())}) center/cover no-repeat`
             : "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
           filter: "blur(80px) brightness(0.25) saturate(2)",
           transform: "scale(1.3)",
@@ -493,7 +493,7 @@ const LyricsPage = () => {
                 }
               >
                 <img
-                  src={resolveMediaCover(currentItem()?.cover)}
+                  src={resolveMediaCover(currentItem())}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -1006,7 +1006,7 @@ export const MusicPlayer = () => {
                   fallback={<TbMusic size={22} style={{ opacity: 0.8 }} />}
                 >
                   <img
-                    src={resolveMediaCover(currentItem()?.cover)}
+                    src={resolveMediaCover(currentItem())}
                     style={{
                       width: "100%",
                       height: "100%",

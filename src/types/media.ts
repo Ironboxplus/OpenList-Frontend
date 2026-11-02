@@ -23,6 +23,8 @@ export interface MediaItem {
   scraped_name: string
   description: string
   cover: string
+  /** 后端给出的可直接使用的（带签名的）封面地址；有则优先于 cover */
+  cover_url?: string
   release_date: string
   rating: number
   genre: string
@@ -67,6 +69,7 @@ export interface AlbumInfo {
   album_name: string
   album_artist: string
   cover: string
+  cover_url?: string
   release_date: string
   track_count: number
   scan_path_id: number
