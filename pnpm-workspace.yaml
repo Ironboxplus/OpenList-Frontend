@@ -1,6 +1,8 @@
 allowBuilds:
   "@swc/core": true
   core-js: true
+  # jassub dependency; its postinstall only refreshes a system font list
+  lfa-ponyfill: false
   esbuild: true
 patchedDependencies:
   # if https://github.com/chenxch/vite-plugin-dynamic-base/pull/36 is merged,
