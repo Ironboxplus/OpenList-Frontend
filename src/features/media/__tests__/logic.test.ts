@@ -174,6 +174,7 @@ describe("createMediaClient", () => {
     },
     children: [],
     episodes: [],
+    libraries: [],
   })
 
   it("asks once per directory and answers repeats from the cache", async () => {

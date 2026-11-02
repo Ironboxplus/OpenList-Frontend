@@ -1,26 +1,71 @@
-import { api, apiGet, apiPost } from "~/platform/api/client"
-import { password } from "~/store"
-import { createMediaClient } from "./logic"
-import type {
-  MediaCandidate,
-  MediaFs,
-  MediaKind,
-  SearchCandidate,
-} from "./types"
+import {
+  api,
+  apiGet,
+  apiPost,
+  legacyCode,
+  type ApiResult,
+} from "~/platform/api/client"
+import { me } from "~/store"
+import type { MediaItem as ApiItem, MediaScanPath } from "~/types"
+import { absoluteOf, cardOf, episodesOf, itemOf, relativeTo } from "./adapt"
+import { baseName, createMediaClient, normPath } from "./logic"
+import type { MediaCandidate, MediaKind, SearchCandidate } from "./types"
 
-/** The one client of the session: LRU of 50 directories, off after a 404. */
-export const mediaClient = createMediaClient(async (path) => {
-  const out = await apiPost<MediaFs>("/fs/media", {
-    body: { path, password: password() },
+/** Children of a directory, all pages of it (a library holds hundreds of works). */
+const listChildren = async (path: string): Promise<ApiResult<ApiItem[]>> => {
+  const PAGE = 200
+  const MAX_PAGES = 10
+  const all: ApiItem[] = []
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const out = await apiGet<{ content: ApiItem[] | null; total: number }>(
+      "/fs/media/list",
+      { params: { media_type: "video", path, page, page_size: PAGE } },
+    )
+    if (!out.ok) return out
+    all.push(...(out.data.content ?? []))
+    if (all.length >= out.data.total || !out.data.content?.length) break
+  }
+  return { ok: true, data: all }
+}
+
+/** The work at `path` with its episodes; a miss (404) is "no item", not a failure. */
+const itemAt = async (path: string): Promise<ApiResult<ApiItem | null>> => {
+  const out = await apiGet<ApiItem>("/fs/media/by_path", { params: { path } })
+  if (out.ok) return out
+  return legacyCode(out.error) === 404 ? { ok: true, data: null } : out
+}
+
+/** The video libraries the user can see, in the file browser's paths. */
+const visibleLibraries = async (): Promise<string[]> => {
+  const out = await apiGet<MediaScanPath[]>("/fs/media/scan_paths", {
+    params: { media_type: "video" },
   })
-  if (!out.ok) return { ok: false, status: out.error.httpStatus }
-  const d = out.data
+  if (!out.ok) return []
+  const base = me()?.base_path
+  return (out.data ?? [])
+    .map((p) => relativeTo(p.path, base))
+    .filter((p): p is string => p !== undefined)
+}
+
+/**
+ * The one client of the session: LRU of 50 directories, off after a 404 of the
+ * listing (the backend has no media library, or it is switched off).
+ */
+export const mediaClient = createMediaClient(async (path) => {
+  const [list, own, libraries] = await Promise.all([
+    listChildren(path),
+    itemAt(path),
+    visibleLibraries(),
+  ])
+  if (!list.ok) return { ok: false, status: legacyCode(list.error) }
+  if (!own.ok) return { ok: false, status: legacyCode(own.error) }
   return {
     ok: true,
     data: {
-      item: d?.item ?? null,
-      children: d?.children ?? [],
-      episodes: d?.episodes ?? [],
+      item: own.data ? itemOf(own.data) : null,
+      children: list.data.map(cardOf),
+      episodes: episodesOf(own.data?.episode_list),
+      libraries,
     },
   }
 })
@@ -118,5 +163,37 @@ export const uploadMediaImage = (
       })(),
     }),
   )
+
+/**
+ * A video library is a video scan path. Marking a folder creates one at it (the
+ * scan itself is started from the media settings); unmarking deletes it.
+ */
+export const markLibrary = (path: string) =>
+  wrap<MediaScanPath>(
+    apiPost("/admin/media/scan_paths/create", {
+      body: {
+        media_type: "video",
+        name: baseName(path) || path,
+        path: absoluteOf(path, me()?.base_path),
+        path_merge: false,
+        enable_scrape: true,
+      },
+    }),
+  )
+
+export const unmarkLibrary = async (
+  path: string,
+): Promise<EditorOutcome<unknown>> => {
+  const list = await wrap<MediaScanPath[]>(
+    apiGet("/admin/media/scan_paths", { params: { media_type: "video" } }),
+  )
+  if (!list.ok) return list
+  const abs = absoluteOf(path, me()?.base_path)
+  const found = (list.data ?? []).find((p) => normPath(p.path) === abs)
+  if (!found?.id) return { ok: false, message: "not a library" }
+  return wrap<unknown>(
+    apiPost("/admin/media/scan_paths/delete", { params: { id: found.id } }),
+  )
+}
 
 export type { MediaCandidate }

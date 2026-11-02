@@ -7,7 +7,7 @@ import { UserMethods } from "~/types"
 import { api } from "~/utils/config"
 import { cn } from "~/utils/cn"
 import { assetSrc, ratingBadges } from "./logic"
-import { mediaFs, mediaPath, openMediaEditor } from "./state"
+import { isLibrary, mediaFs, mediaPath, openMediaEditor } from "./state"
 import type { MediaItem } from "./types"
 
 const OVERVIEW_FOLD = 90
@@ -211,7 +211,7 @@ export const MediaHeader = () => {
     const it = mediaFs()?.item
     return it &&
       it.kind !== "ignore" &&
-      it.kind !== "library" &&
+      !isLibrary() &&
       mediaPath() === pathname()
       ? it
       : undefined

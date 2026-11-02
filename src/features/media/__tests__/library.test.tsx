@@ -25,9 +25,10 @@ import type { MediaFs } from "../types"
 
 const lib = (children: MediaFs["children"] = []): MediaFs =>
   ({
-    item: { kind: "library", title: "Anime", path: "/lib" },
+    item: null,
     children,
     episodes: [],
+    libraries: ["/lib"],
   }) as unknown as MediaFs
 
 afterEach(() => {
@@ -69,6 +70,7 @@ describe("video library", () => {
       item: { kind: "movie" },
       children: [],
       episodes: [],
+      libraries: [],
     } as unknown as MediaFs)
     const b = render(() => <LibraryBadge />)
     expect(b.container.querySelector("[data-library-badge]")).toBeNull()

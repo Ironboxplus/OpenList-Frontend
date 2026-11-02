@@ -17,16 +17,16 @@ vi.mock("~/components/ui/dropdown-menu", () => ({
   ),
 }))
 vi.mock("../client", () => ({
-  setMediaMeta: vi.fn(async () => ({ ok: true })),
-  deleteMedia: vi.fn(async () => ({ ok: true })),
+  markLibrary: vi.fn(async () => ({ ok: true })),
+  unmarkLibrary: vi.fn(async () => ({ ok: true })),
 }))
 
 import { LibraryMenuItem } from "../../files/LibraryMenuItem"
 import * as client from "../client"
 import { setMediaInvalidator, setMediaFor } from "../state"
 
-const fsOf = (kind: string) =>
-  ({ item: { kind }, children: [], episodes: [] }) as unknown as MediaFs
+const fsOf = (libraries: string[]) =>
+  ({ item: null, children: [], episodes: [], libraries }) as unknown as MediaFs
 
 afterEach(() => {
   cleanup()
@@ -36,31 +36,27 @@ afterEach(() => {
 })
 
 describe("library toggle", () => {
-  it("marks an ordinary folder as a locked library, then refreshes it and its parent", async () => {
+  it("marks an ordinary folder as a library (a video scan path), then refreshes it and its parent", async () => {
     const seen: (string | undefined)[] = []
     setMediaInvalidator((p) => seen.push(p))
-    setMediaFor("/lib/Movies", fsOf("movie"))
+    setMediaFor("/lib/Movies", fsOf([]))
     const v = render(() => <LibraryMenuItem />)
     expect(v.getByText("media.library.set")).toBeTruthy()
     fireEvent.click(v.getByText("media.library.set"))
     await waitFor(() =>
-      expect(client.setMediaMeta).toHaveBeenCalledWith({
-        path: "/lib/Movies",
-        kind: "library",
-        locked: true,
-      }),
+      expect(client.markLibrary).toHaveBeenCalledWith("/lib/Movies"),
     )
     await waitFor(() => expect(seen).toEqual(["/lib", "/lib/Movies"]))
   })
 
-  it("removes the mark with a delete when it already is a library", async () => {
-    setMediaFor("/lib/Movies", fsOf("library"))
+  it("removes the scan path when the folder already is a library", async () => {
+    setMediaFor("/lib/Movies", fsOf(["/lib/Movies"]))
     const v = render(() => <LibraryMenuItem />)
     fireEvent.click(v.getByText("media.library.unset"))
     await waitFor(() =>
-      expect(client.deleteMedia).toHaveBeenCalledWith("/lib/Movies"),
+      expect(client.unmarkLibrary).toHaveBeenCalledWith("/lib/Movies"),
     )
-    expect(client.setMediaMeta).not.toHaveBeenCalled()
+    expect(client.markLibrary).not.toHaveBeenCalled()
   })
 
   it("is hidden until the backend has answered for this folder", () => {

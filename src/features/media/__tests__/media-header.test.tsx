@@ -107,6 +107,7 @@ describe("MediaHeaderCard", () => {
       item: item(),
       children: [],
       episodes: [],
+      libraries: [],
     } as MediaFs)
     render(() => <MediaHeaderCard item={item()} />)
     fireEvent.click(document.querySelector("[data-media-edit]")!)

@@ -21,7 +21,7 @@ import { BsPlayCircleFill } from "solid-icons/bs"
 import { isArchive } from "~/store/archive"
 import { TbBooks, TbMovie, TbTerminal2 } from "solid-icons/tb"
 import {
-  cardFor,
+  isLibraryPath,
   mediaReady,
   openMediaEditor,
   toggleLibrary,
@@ -205,7 +205,7 @@ export const ContextMenu = () => {
             !UserMethods.is_admin(me()) ||
             !mediaReady() ||
             !props?.is_dir ||
-            (cardFor(props.name)?.kind === "library") !== false
+            isLibraryPath(pathJoin(pathname(), props.name))
           }
           onClick={({ props }) => {
             void toggleLibrary(pathJoin(pathname(), props.name), false)
@@ -221,7 +221,7 @@ export const ContextMenu = () => {
             !UserMethods.is_admin(me()) ||
             !mediaReady() ||
             !props?.is_dir ||
-            (cardFor(props.name)?.kind === "library") !== true
+            !isLibraryPath(pathJoin(pathname(), props.name))
           }
           onClick={({ props }) => {
             void toggleLibrary(pathJoin(pathname(), props.name), true)

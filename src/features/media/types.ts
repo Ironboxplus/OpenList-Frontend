@@ -1,8 +1,9 @@
-// Wire types of POST /api/fs/media and the admin media endpoints. The source of
-// truth is server/handles/media.go in the backend.
+// What the file browser's media view works with. adapt.ts builds it from the
+// public media API (GET /api/fs/media/list and /by_path, types/media.ts); the
+// admin endpoints (/api/admin/media/curate/*) take and answer these shapes. The
+// source of truth is server/handles/media*.go in the backend.
 
-export type MediaKind =
-  "movie" | "tv" | "anime" | "collection" | "library" | "ignore"
+export type MediaKind = "movie" | "tv" | "anime" | "collection" | "ignore"
 
 export interface MediaCard {
   path: string
@@ -49,6 +50,11 @@ export interface MediaFs {
   item: MediaItem | null
   children: MediaCard[]
   episodes: MediaEpisode[]
+  /**
+   * The video libraries (scan paths) the user can see, as paths in the file
+   * browser's terms. A folder in this list is a library.
+   */
+  libraries: string[]
 }
 
 /** One result of GET /api/admin/media/search. */

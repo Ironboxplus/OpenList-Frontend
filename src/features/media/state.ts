@@ -7,6 +7,7 @@ import { objStore } from "~/store"
 import {
   cardsByName,
   episodeMap,
+  normPath,
   preferPoster,
   readChoice,
   writeChoice,
@@ -31,8 +32,17 @@ const mediaChildren = createMemo(
   () => mediaFs()?.children.filter((c) => c.kind !== "ignore") ?? [],
 )
 
+/** `path` is a video library (a video scan path), as far as the user can see. */
+export const isLibraryPath = (path: string): boolean => {
+  const p = normPath(path)
+  return mediaFs()?.libraries.includes(p) ?? false
+}
+
 /** The current folder is a video library (an admin marked it as one). */
-export const isLibrary = (): boolean => mediaFs()?.item?.kind === "library"
+export const isLibrary = (): boolean => {
+  const path = mediaPath()
+  return path !== undefined && isLibraryPath(path)
+}
 
 /** Library numbers for the TopBar: sub-folders in total, and how many are identified. */
 export const libraryCounts = () => ({
@@ -92,12 +102,10 @@ export const mediaTick = tick
 
 /** Admin: mark this folder as a video library, or take the mark away again. */
 export const toggleLibrary = async (path: string, marked: boolean) => {
-  const { setMediaMeta, deleteMedia } = await import("./client")
-  const out = marked
-    ? await deleteMedia(path)
-    : await setMediaMeta({ path, kind: "library", locked: true })
+  const { markLibrary, unmarkLibrary } = await import("./client")
+  const out = marked ? await unmarkLibrary(path) : await markLibrary(path)
   if (out.ok) {
-    // The parent folder's cards carry this folder's kind too.
+    // The parent folder lists the libraries it can see too.
     invalidateMedia(path.slice(0, path.lastIndexOf("/")) || "/")
     invalidateMedia(path)
   }

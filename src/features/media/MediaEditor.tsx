@@ -427,7 +427,7 @@ export const MediaEditorDialog = (props: {
   </EditorShell>
 )
 
-/** Temporary: the file browser's item (features/media/types) as the editor's. */
+/** The file browser's item (types.ts) as the editor's. */
 const fromFsItem = (
   it: MediaItem | null | undefined,
 ): EditorItem | undefined =>
