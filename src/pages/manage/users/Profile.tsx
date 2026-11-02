@@ -9,6 +9,7 @@ import { getSettingBool, me, setMe } from "~/store"
 import { PEmptyResp, Type, UserMethods, UserPermissions } from "~/types"
 import { handleResp, loginUrlFor, notify, r } from "~/utils"
 import { PublicKeys } from "./PublicKeys"
+import { Sessions } from "./Sessions"
 import { WebauthnCredentials } from "./Webauthnitems"
 
 const Profile = () => {
@@ -218,6 +219,8 @@ const Profile = () => {
       <Show when={UserMethods.can(me(), UserPermissions.indexOf("ftp_read"))}>
         <PublicKeys isMine={true} userId={me().id} />
       </Show>
+
+      <Sessions />
     </div>
   )
 }

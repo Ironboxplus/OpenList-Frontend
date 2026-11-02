@@ -60,5 +60,23 @@
     "fingerprint": "Fingerprint",
     "last_used": "Last used time",
     "operation": "Operation"
+  },
+  "sessions": {
+    "heading": "Signed-in devices",
+    "admin_heading": "All signed-in devices",
+    "description": "Browsers and apps currently signed in. Ending a session signs that device out.",
+    "device": "Device",
+    "user": "User",
+    "ip": "IP",
+    "last_active": "Last active",
+    "created_at": "Signed in",
+    "current": "This device",
+    "unknown_device": "Unknown device",
+    "empty": "No active sessions.",
+    "evict": "Sign out",
+    "sign_out_here": "Sign out this device",
+    "evict_confirm": "Sign out {{name}}?",
+    "evict_current_confirm": "This is the device you are using. You will be signed out.",
+    "evicted": "Signed out."
   }
 }
