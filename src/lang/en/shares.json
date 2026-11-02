@@ -39,5 +39,13 @@
   "input_password": "Please enter Share Code",
   "share_gone": "This share has expired or been cancelled",
   "copy_msg": "Copy link",
-  "no_permission_tip": "To create a share, you need \"Share\" permission."
+  "no_permission_tip": "To create a share, you need \"Share\" permission.",
+  "burn_after_read": "Burn after read",
+  "burn_after_read_help": "The share closes after the first visitor starts reading it, the same as a maximum access count of 1. Previewing counts as reading.",
+  "allow_preview": "Allow preview",
+  "allow_preview_help": "Players, the image viewer, document viewers and thumbnails may open the files.",
+  "allow_download": "Allow download",
+  "allow_download_help": "The download button and direct links are offered to visitors.",
+  "policy_note": "These switches are a policy for this page and for well-behaved clients, not copy protection. Anyone who can view a file can also save its bytes.",
+  "max_accessed_help": "0 means unlimited, or 1 when burn after read is on. Each visitor (by IP) counts once per 30 minutes."
 }

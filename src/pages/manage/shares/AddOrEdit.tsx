@@ -1,5 +1,6 @@
 import { batch, createMemo, createSignal, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
+import { Alert, AlertDescription } from "~/components/ui/alert"
 import { DataState } from "~/components/ui/data-state"
 import {
   driverFromRaw,
@@ -43,7 +44,13 @@ const AddOrEdit = () => {
   const init = async () => {
     if (!id) {
       batch(() => {
-        setShare(reconcile({} as Share))
+        setShare(
+          reconcile({
+            burn_after_read: false,
+            allow_preview: true,
+            allow_download: true,
+          } as Share),
+        )
         setFiles("")
         setFilesValid(false)
         setExpireString("")
@@ -115,6 +122,21 @@ const AddOrEdit = () => {
       }}
       value={share[props.name]}
       onChange={(raw) => setShare(props.name, String(raw) as never)}
+    />
+  )
+
+  const Flag = (props: {
+    name: "burn_after_read" | "allow_preview" | "allow_download"
+  }) => (
+    <FieldRenderer
+      field={{
+        id: props.name,
+        type: Type.Bool,
+        labelKey: `shares.${props.name}`,
+        helpKey: `shares.${props.name}_help`,
+      }}
+      value={share[props.name]}
+      onChange={(raw) => setShare(props.name, raw === true)}
     />
   )
 
@@ -196,6 +218,7 @@ const AddOrEdit = () => {
               id: "max_accessed",
               type: Type.Number,
               labelKey: "shares.max_accessed",
+              helpKey: "shares.max_accessed_help",
             }}
             value={share.max_accessed}
             onChange={(raw) =>
@@ -205,6 +228,12 @@ const AddOrEdit = () => {
               )
             }
           />
+          <Flag name="burn_after_read" />
+          <Flag name="allow_preview" />
+          <Flag name="allow_download" />
+          <Alert variant="info">
+            <AlertDescription>{t("shares.policy_note")}</AlertDescription>
+          </Alert>
           <Show when={id}>
             <FieldRenderer
               field={{

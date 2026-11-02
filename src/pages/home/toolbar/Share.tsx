@@ -11,6 +11,7 @@ import {
 import { batch, createSignal, Match, onCleanup, Switch } from "solid-js"
 import {
   Button,
+  Checkbox,
   createDisclosure,
   HStack,
   IconButton,
@@ -59,6 +60,7 @@ export const Share = () => {
           expires: null,
           pwd: "",
           max_accessed: 0,
+          burn_after_read: false,
           order_by: OrderBy.None,
           order_direction: OrderDirection.None,
           extract_folder: ExtractFolder.None,
@@ -230,6 +232,15 @@ export const Share = () => {
                     setShare("max_accessed", parseInt(e.currentTarget.value))
                   }}
                 />
+                <Checkbox
+                  size="sm"
+                  checked={share.burn_after_read}
+                  onChange={(e: { currentTarget: HTMLInputElement }) =>
+                    setShare("burn_after_read", e.currentTarget.checked)
+                  }
+                >
+                  {t("shares.burn_after_read")}
+                </Checkbox>
                 <Text size="sm">{t("shares.expires")}</Text>
                 <Input
                   size="sm"
