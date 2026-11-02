@@ -1,4 +1,11 @@
-import { objStore, password, selectedObjs, State, me } from "~/store"
+import {
+  downloadDenied,
+  objStore,
+  password,
+  selectedObjs,
+  State,
+  me,
+} from "~/store"
 import { Obj, ArchiveObj } from "~/types"
 import {
   base_path,
@@ -163,10 +170,16 @@ export const useCopyLink = () => {
   const { previewPagesText, rawLinksText } = useSelectedLink()
   const { currentObjLink, rawLink, objPath } = useLink()
   const { isShare } = useRouter()
+  const denied = () => {
+    if (!downloadDenied()) return false
+    notify.warning(t("shares.download_disabled"))
+    return true
+  }
 
   // Waits for every subtitle lookup, then copies. A failed lookup still copies
   // the command, without that file's subtitles, and says so.
   const copyMpv = async (objs: Obj[]) => {
+    if (denied()) return
     const { command, count, subtitleFailed } = await buildMpvCommandFor(objs, {
       linkOf: (obj) => rawLink(obj, true),
       pathOf: objPath,
@@ -181,9 +194,11 @@ export const useCopyLink = () => {
       copy(previewPagesText())
     },
     copySelectedRawLink: (encodeAll?: boolean) => {
+      if (denied()) return
       copy(rawLinksText(encodeAll))
     },
     copyCurrentRawLink: (encodeAll?: boolean) => {
+      if (denied()) return
       copy(currentObjLink(encodeAll))
     },
     /** Whether the selection holds anything mpv can play (entries hide otherwise). */

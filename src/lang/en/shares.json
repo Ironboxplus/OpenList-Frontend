@@ -47,5 +47,9 @@
   "allow_download": "Allow download",
   "allow_download_help": "The download button and direct links are offered to visitors.",
   "policy_note": "These switches are a policy for this page and for well-behaved clients, not copy protection. Anyone who can view a file can also save its bytes.",
-  "max_accessed_help": "0 means unlimited, or 1 when burn after read is on. Each visitor (by IP) counts once per 30 minutes."
+  "max_accessed_help": "0 means unlimited, or 1 when burn after read is on. Each visitor (by IP) counts once per 30 minutes.",
+  "not_found": "This share does not exist.",
+  "expired_or_used_up": "This share has expired or been used up.",
+  "preview_disabled": "The owner of this share disabled preview.",
+  "download_disabled": "The owner of this share disabled download."
 }

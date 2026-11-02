@@ -1,5 +1,10 @@
 import axios from "axios"
-import { local, password, selectedObjs as _selectedObjs } from "~/store"
+import {
+  downloadDenied,
+  local,
+  password,
+  selectedObjs as _selectedObjs,
+} from "~/store"
 import { fsList, notify, pathBase, pathJoin } from "~/utils"
 import { getLinkByDirAndObj, useRouter, useT } from "~/hooks"
 import { useSelectedLink } from "~/hooks"
@@ -40,15 +45,23 @@ async function getSaveDir(rpc_url: string, rpc_secret: string) {
 export const useDownload = () => {
   const { rawLinks } = useSelectedLink()
   const t = useT()
+  // The owner of a share can switch downloads off; say so instead of failing.
+  const denied = () => {
+    if (!downloadDenied()) return false
+    notify.warning(t("shares.download_disabled"))
+    return true
+  }
   const { pathname, isShare } = useRouter()
   return {
     batchDownloadSelected: () => {
+      if (denied()) return
       const urls = rawLinks(true)
       urls.forEach((url) => {
         window.open(url, "_blank")
       })
     },
     sendToAria2: async () => {
+      if (denied()) return
       const selectedObjs = _selectedObjs()
       const fetchFolderStructure = async (
         pre: string,
@@ -161,6 +174,7 @@ export const useDownload = () => {
       }
     },
     playlistDownloadSelected: () => {
+      if (denied()) return
       const selectedObjs = _selectedObjs().filter((obj) => !obj.is_dir)
       let saveName = pathBase(pathname())
       if (selectedObjs.length === 1) {

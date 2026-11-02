@@ -29,6 +29,8 @@ export type FsListResp = Resp<{
   // Disk usage of the storage the current directory belongs to (undefined at the
   // virtual storages-root or when hidden). Drives the header disk-usage widget.
   mount_details?: MountDetails
+  allow_preview?: boolean
+  allow_download?: boolean
 }>
 
 export type SearchNode = {
@@ -49,6 +51,9 @@ export type FsGetResp = Resp<
     header: string
     provider: string
     related: Obj[]
+    // Only on share paths; a share may switch either use off.
+    allow_preview?: boolean
+    allow_download?: boolean
   }
 >
 

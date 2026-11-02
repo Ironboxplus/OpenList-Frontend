@@ -24,6 +24,7 @@ import {
   shareIdOf,
 } from "~/utils"
 import { useFetch } from "./useFetch"
+import { useT } from "./useT"
 import { useRouter } from "./useRouter"
 
 let first_fetch = true
@@ -44,6 +45,7 @@ export const resetGlobalPage = () => {
   setGlobalPage(1)
 }
 export const usePath = () => {
+  const t = useT()
   const { pathname, to, searchParams, isShare } = useRouter()
   // A share is entered with its token (see utils/share-auth.ts), never with
   // the password cookie of the folder prompt.
@@ -134,6 +136,7 @@ export const usePath = () => {
         ObjStore.setObj(data)
         ObjStore.setProvider(data.provider)
         ObjStore.setMountDetails(data.mount_details)
+        ObjStore.setShareLimits(data.allow_preview, data.allow_download)
         if (data.is_dir) {
           setPathAs(path)
           handleFolder(path, index)
@@ -192,6 +195,7 @@ export const usePath = () => {
         // (cache-backed), so no extra request is made per click. undefined at the
         // storages-root clears the previous folder's storage so it isn't stale.
         ObjStore.setMountDetails(data.mount_details)
+        ObjStore.setShareLimits(data.allow_preview, data.allow_download)
         shouldKeepState() || ObjStore.setState(State.Folder)
       },
       onlyList
@@ -210,10 +214,19 @@ export const usePath = () => {
       clearShareToken(shareIdOf(pathname()))
     }
     if (code === 403) {
+      // On a share this is only ever "password required or wrong".
       ObjStore.setState(State.NeedPassword)
       if (retry_pass) {
         notify.error(msg)
       }
+    } else if (isShare() && code === 429) {
+      // Too many wrong passwords: stay on the prompt and say wait.
+      ObjStore.setState(State.NeedPassword)
+      notify.error(msg)
+    } else if (isShare() && code === 404) {
+      ObjStore.setErr(t("shares.not_found"))
+    } else if (isShare() && code === 410) {
+      ObjStore.setErr(t("shares.expired_or_used_up"))
     } else {
       const basePath = me().base_path
       if (

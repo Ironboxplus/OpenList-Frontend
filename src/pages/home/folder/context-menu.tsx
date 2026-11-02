@@ -7,6 +7,7 @@ import { createMemo, For, Show } from "solid-js"
 import { bus, convertURL, isMpvMedia, notify, torrentParse } from "~/utils"
 import { ObjType, UserMethods } from "~/types"
 import {
+  downloadDenied,
   getSettingBool,
   haveSelected,
   me,
@@ -245,6 +246,10 @@ export const ContextMenu = () => {
         </Item>
         <Item
           onClick={({ props }) => {
+            if (downloadDenied()) {
+              notify.warning(t("shares.download_disabled"))
+              return
+            }
             if (props.is_dir) {
               if (!canPackageDownload()) {
                 notify.warning(t("home.toolbar.package_download_disabled"))

@@ -42,6 +42,9 @@ const [objStore, setObjStore] = createStore<
   typeof initialObjStore & {
     write?: boolean
     write_content_bypass?: boolean
+    // What the share being browsed allows; unset outside shares (all allowed).
+    allow_preview?: boolean
+    allow_download?: boolean
   }
 >(initialObjStore)
 
@@ -60,6 +63,9 @@ export const ObjStore = {
   },
   setMountDetails: (mountDetails?: MountDetails) => {
     setObjStore("mountDetails", mountDetails)
+  },
+  setShareLimits: (allow_preview?: boolean, allow_download?: boolean) => {
+    setObjStore({ allow_preview, allow_download })
   },
   setRawUrl: (raw_url: string) => {
     setObjStore("raw_url", raw_url)
@@ -231,6 +237,9 @@ export const toggleCheckbox = () => {
 }
 
 export { objStore }
+/** The share being browsed switched downloads off (a policy, see the share form). */
+export const downloadDenied = () => objStore.allow_download === false
+export const previewDenied = () => objStore.allow_preview === false
 // browser password
 const [_password, _setPassword] = createSignal<string>(
   cookieStorage.getItem("browser-password") || "",

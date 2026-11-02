@@ -1,5 +1,11 @@
 import { Component, lazy } from "solid-js"
-import { getIframePreviews, me, getSettingBool, isArchive } from "~/store"
+import {
+  getIframePreviews,
+  me,
+  getSettingBool,
+  isArchive,
+  previewDenied,
+} from "~/store"
 import { Obj, ObjType, UserMethods, UserPermissions, ArchiveObj } from "~/types"
 import { ext } from "~/utils"
 import { generateIframePreview } from "./iframe"
@@ -219,8 +225,10 @@ export const getPreviews = (
     (!isShare() && getSettingBool("preview_download_by_default")) ||
     (isShare() && getSettingBool("share_preview_download_by_default"))
   const isInArchive = !!(file as ArchiveObj).archive
+  // A share whose owner switched preview off offers the download page only.
+  const noPreview = isShare() && previewDenied()
   // internal previews
-  if (!isShare() || getSettingBool("share_preview")) {
+  if (!noPreview && (!isShare() || getSettingBool("share_preview"))) {
     previews.forEach((preview) => {
       if (preview.provider && !preview.provider.test(file.provider)) {
         return
@@ -248,7 +256,7 @@ export const getPreviews = (
     })
   }
   // iframe previews
-  const iframePreviews = getIframePreviews(file.name)
+  const iframePreviews = noPreview ? [] : getIframePreviews(file.name)
   const matchedIframePreviews = iframePreviews.map((preview) => ({
     key: `iframe-${preview.key}`,
     name: preview.key, // TODO: Add name field to backend
@@ -284,7 +292,7 @@ export const getPreviews = (
     // Case 2: No other previews found for a small file.
     // Add "Download" first, then suggest default text previews.
     res.push(downloadComponent)
-    if (!isShare() || getSettingBool("share_preview")) {
+    if (!noPreview && (!isShare() || getSettingBool("share_preview"))) {
       const textPreviewsToAdd = previews
         .filter((p) =>
           ["markdown", "markdown_with_word_wrap", "text_editor"].includes(

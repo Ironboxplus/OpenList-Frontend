@@ -37,6 +37,7 @@ import { UserMethods } from "~/types"
 import { invalidateMedia, mediaReady, openMediaEditor } from "../media/state"
 import { isTocVisible, setTocDisabled } from "~/components"
 import {
+  downloadDenied,
   haveSelected,
   me,
   selectAll,
@@ -235,19 +236,21 @@ export const ActionBar = () => {
             onClick={tool("delete")}
           />
         </Show>
-        <DropdownMenu placement="bottom-start">
-          <DropdownMenuTrigger
-            aria-label={t("files.download")}
-            data-action="download"
-            class={barButton}
-          >
-            <TbDownload class="size-4" />
-            <span class="hidden lg:inline">{t("files.download")}</span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DownloadItems />
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Show when={!downloadDenied()}>
+          <DropdownMenu placement="bottom-start">
+            <DropdownMenuTrigger
+              aria-label={t("files.download")}
+              data-action="download"
+              class={barButton}
+            >
+              <TbDownload class="size-4" />
+              <span class="hidden lg:inline">{t("files.download")}</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DownloadItems />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </Show>
         <DropdownMenu placement="bottom-start">
           <DropdownMenuTrigger
             aria-label={tt("more")}
