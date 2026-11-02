@@ -63,7 +63,15 @@ describe("share editor payloads", () => {
     setValue(document.getElementById("readme")!, "# hi")
     setValue(document.getElementById("header")!, "# head")
     await clickButton("Add")
-    expectGolden("share-create", lastCall("POST", "/share/create")!.body)
+    const body = lastCall("POST", "/share/create")!.body as Record<
+      string,
+      unknown
+    >
+    expectGolden("share-create", body)
+    // the three lifecycle switches default to: open for preview and download, not burning
+    expect(body.burn_after_read).toBe(false)
+    expect(body.allow_preview).toBe(true)
+    expect(body.allow_download).toBe(true)
     expect(router.to).toHaveBeenCalledWith("/@manage/shares", false, {
       replace: true,
     })

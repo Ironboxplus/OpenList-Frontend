@@ -9,5 +9,8 @@
   "max_accessed": 7,
   "expires": "2030-01-01T00:00:00.000Z",
   "readme": "# hi",
-  "header": "# head"
+  "header": "# head",
+  "burn_after_read": false,
+  "allow_preview": true,
+  "allow_download": true
 }

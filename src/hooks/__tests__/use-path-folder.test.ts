@@ -11,6 +11,7 @@ vi.mock("../useRouter", () => ({
     pathname: () => "/a/dir",
     to: vi.fn(),
     searchParams: {},
+    isShare: () => false,
   }),
 }))
 
