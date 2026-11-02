@@ -167,6 +167,9 @@ export const uploadMediaImage = (
 /**
  * A video library is a video scan path. Marking a folder creates one at it (the
  * scan itself is started from the media settings); unmarking deletes it.
+ * `path_merge` is what makes the folders directly under a library its works
+ * (one item per folder, with its episodes, kind identified); without it the scan
+ * stores one item per video file and the poster wall of the library is empty.
  */
 export const markLibrary = (path: string) =>
   wrap<MediaScanPath>(
@@ -175,7 +178,7 @@ export const markLibrary = (path: string) =>
         media_type: "video",
         name: baseName(path) || path,
         path: absoluteOf(path, me()?.base_path),
-        path_merge: false,
+        path_merge: true,
         enable_scrape: true,
       },
     }),
