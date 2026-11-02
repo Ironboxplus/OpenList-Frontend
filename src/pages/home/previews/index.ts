@@ -1,5 +1,6 @@
 import { Component, lazy } from "solid-js"
 import {
+  getSetting,
   getIframePreviews,
   me,
   getSettingBool,
@@ -9,6 +10,7 @@ import {
 import { Obj, ObjType, UserMethods, UserPermissions, ArchiveObj } from "~/types"
 import { ext } from "~/utils"
 import { generateIframePreview } from "./iframe"
+import { applyPreviewOverride, parsePreviewSettings } from "./override"
 import { useRouter, useT } from "~/hooks"
 
 type Ext = string[] | "*" | ((name: string) => boolean)
@@ -311,5 +313,11 @@ export const getPreviews = (
     // Add "Download" as the last fallback option in the high-priority list.
     res.push(downloadComponent)
   }
-  return res.concat(subsequent)
+  // The site's per-extension order and switches (preview_settings).
+  return applyPreviewOverride(
+    res.concat(subsequent),
+    parsePreviewSettings(getSetting("preview_settings"))[
+      ext(file.name).toLowerCase()
+    ],
+  )
 }
