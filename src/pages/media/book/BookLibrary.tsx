@@ -16,7 +16,7 @@ import {
   getMediaStreamUrl,
 } from "~/utils/media_api"
 import type { MediaItem, EpisodeInfo } from "~/types"
-import { getMediaName, parseAuthors, parseEpisodes } from "~/types"
+import { mediaTitle, parseAuthors, parseEpisodes } from "~/types"
 import { api } from "~/utils"
 import { encodePath } from "~/utils/path"
 import { TbArrowLeft, TbBook, TbStarFilled, TbX } from "solid-icons/tb"
@@ -42,7 +42,7 @@ const BookReader = (props: {
   const signedUrls = createSignedMediaUrls(resolvedPath)
   const fileUrl = () => signedUrls()?.proxied ?? ""
   const downloadUrl = () => signedUrls()?.direct ?? ""
-  const readerTitle = () => props.title ?? getMediaName(props.item)
+  const readerTitle = () => props.title ?? mediaTitle(props.item)
   const fileNameForExt = () => {
     const path = props.filePath ?? props.item.file_name ?? ""
     return path.split("/").pop() ?? path
@@ -106,14 +106,14 @@ const BookReader = (props: {
           <Show when={isPDF() && fileUrl()}>
             <PdfReader
               url={fileUrl()}
-              title={getMediaName(props.item)}
+              title={mediaTitle(props.item)}
               itemId={props.item.id}
             />
           </Show>
           <Show when={isEpub() && fileUrl()}>
             <EpubReader
               url={fileUrl()}
-              title={getMediaName(props.item)}
+              title={mediaTitle(props.item)}
               itemId={props.item.id}
             />
           </Show>
@@ -191,7 +191,7 @@ const BookCard = (props: { item: MediaItem }) => {
   const titleColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
   const subColor = createMemo(() => (isDark() ? "#64748b" : "#94a3b8"))
   const badgeColor = createMemo(() => (isDark() ? "#94a3b8" : "#64748b"))
-  const name = () => getMediaName(props.item)
+  const name = () => mediaTitle(props.item)
   const [hover, setHover] = createSignal(false)
   const authors = () => parseAuthors(props.item.authors)
   return (
@@ -504,8 +504,17 @@ const BookDetail = (props: { id: string; onBack: () => void }) => {
                   color: titleColor(),
                 }}
               >
-                {getMediaName(data())}
+                {mediaTitle(data())}
               </h1>
+              <Show
+                when={
+                  data().alt_title && data().alt_title !== mediaTitle(data())
+                }
+              >
+                <div class="mb-2 text-sm text-muted-foreground">
+                  {data().alt_title}
+                </div>
+              </Show>
               <Show when={parseAuthors(data().authors).length > 0}>
                 <div
                   style={{
@@ -760,7 +769,7 @@ const BookLibrary = () => {
                         "white-space": "nowrap",
                       }}
                     >
-                      {getMediaName(item)}
+                      {mediaTitle(item)}
                     </div>
                     <div
                       style={{

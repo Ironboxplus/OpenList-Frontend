@@ -1,7 +1,7 @@
 // The public media API's items (types/media.ts MediaItem, the shape of
 // /api/fs/media/list and /by_path) as the file browser's cards and header item
 // (types.ts). Pure.
-import { getMediaName, parseCandidates, parseExternalIds } from "~/types"
+import { mediaTitle, parseCandidates, parseExternalIds } from "~/types"
 import type { MediaItem as ApiItem, MediaEpisodeView } from "~/types"
 import { resolveMediaCover } from "~/utils/media_cover"
 import { normPath } from "./logic"
@@ -19,7 +19,7 @@ const yearOf = (v: ApiItem): number =>
 export const cardOf = (v: ApiItem): MediaCard => ({
   path: v.path ?? "",
   kind: kindOf(v),
-  title: getMediaName(v),
+  title: mediaTitle(v),
   year: yearOf(v),
   ratings: v.ratings ?? {},
   poster_url: resolveMediaCover(v),

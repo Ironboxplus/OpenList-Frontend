@@ -37,7 +37,7 @@ import {
   setMediaFavorite,
 } from "~/utils/media_api"
 import type { MediaItem, AlbumInfo } from "~/types"
-import { getMediaName, formatDuration } from "~/types"
+import { mediaTitle, formatDuration } from "~/types"
 import { notify } from "~/utils"
 import { useT } from "~/hooks"
 import { playPlaylist, playTrack } from "./player"
@@ -228,7 +228,7 @@ const AlbumDetail = (props: { album: AlbumInfo; onBack: () => void }) => {
                     {track.track_number || i() + 1}
                   </span>
                   <div class="min-w-0 flex-1 truncate text-sm">
-                    {getMediaName(track)}
+                    {mediaTitle(track)}
                   </div>
                   <span class="text-xs text-muted-foreground">
                     {formatDuration(track.duration)}
@@ -584,14 +584,14 @@ const MusicLibrary = () => {
                             >
                               <img
                                 src={resolveMediaCover(track)}
-                                alt={getMediaName(track)}
+                                alt={mediaTitle(track)}
                                 loading="lazy"
                                 class="size-10 shrink-0 rounded-md object-cover"
                               />
                             </Show>
                             <div class="min-w-0 flex-1">
                               <div class="truncate text-sm">
-                                {getMediaName(track)}
+                                {mediaTitle(track)}
                               </div>
                               <div class="truncate text-xs text-muted-foreground">
                                 {[track.album_name, track.album_artist]

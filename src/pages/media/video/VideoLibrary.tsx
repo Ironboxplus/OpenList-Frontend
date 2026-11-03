@@ -44,7 +44,7 @@ import {
 } from "~/utils/media_api"
 import type { MediaItem, EpisodeInfo } from "~/types"
 import {
-  getMediaName,
+  mediaTitle,
   isPendingMedia,
   parseAuthors,
   parseEpisodes,
@@ -132,7 +132,7 @@ const VideoCard = (props: { item: MediaItem }) => {
   const coverBg = createMemo(() => (isDark() ? "#1e293b" : "#e2e8f0"))
   const titleColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
   const subColor = createMemo(() => (isDark() ? "#64748b" : "#94a3b8"))
-  const name = () => getMediaName(props.item)
+  const name = () => mediaTitle(props.item)
   const [hover, setHover] = createSignal(false)
   const authors = () => parseAuthors(props.item.authors)
   // 目录聚合条目没有有意义的单文件大小，改为显示集数
@@ -386,7 +386,7 @@ const ArtplayerView = (props: {
   // 签名 + 编码后的代理地址，在 onMount 里异步取得
   let directUrl = ""
   const videoUrl = () => directUrl
-  const videoTitle = () => props.title ?? getMediaName(props.item)
+  const videoTitle = () => props.title ?? mediaTitle(props.item)
 
   onMount(async () => {
     if (!playerContainer) return
@@ -813,7 +813,7 @@ const VideoPlayer = (props: {
 }) => {
   const t = useT()
   const videoPath = () => props.filePath ?? mediaItemPath(props.item)
-  const videoTitle = () => props.title ?? getMediaName(props.item)
+  const videoTitle = () => props.title ?? mediaTitle(props.item)
   const episodeIndex = () => props.episodeIndex ?? 0
 
   const [choice, setChoice] = createSignal<PlayerChoice>(getPlayerChoice())
@@ -1164,7 +1164,7 @@ const VideoDetail = (props: {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = `${getMediaName(item)}${suffix}.strm`
+    link.download = `${mediaTitle(item)}${suffix}.strm`
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -1283,7 +1283,7 @@ const VideoDetail = (props: {
                 >
                   <img
                     src={resolveMediaCover(data())}
-                    alt={getMediaName(data())}
+                    alt={mediaTitle(data())}
                     style={{
                       width: "220px",
                       height: "330px",
@@ -1315,7 +1315,7 @@ const VideoDetail = (props: {
                       "line-height": "1.2",
                     }}
                   >
-                    {getMediaName(data())}
+                    {mediaTitle(data())}
                   </h1>
                   <Button
                     variant="outline"
@@ -1389,11 +1389,12 @@ const VideoDetail = (props: {
                   </div>
                 </Show>
 
-                {/* 原名：和显示名不同才有意义 */}
+                {/* 副标题（另一个标题或原名）：和显示名不同才有意义 */}
                 <Show
                   when={
-                    data().original_title &&
-                    data().original_title !== getMediaName(data())
+                    (data().alt_title || data().original_title) &&
+                    (data().alt_title || data().original_title) !==
+                      mediaTitle(data())
                   }
                 >
                   <div
@@ -1403,7 +1404,7 @@ const VideoDetail = (props: {
                       "margin-bottom": "10px",
                     }}
                   >
-                    {data().original_title}
+                    {data().alt_title || data().original_title}
                   </div>
                 </Show>
 
@@ -1512,7 +1513,7 @@ const VideoDetail = (props: {
                     title={
                       currentEpisode()
                         ? isVersionSet(data())
-                          ? `${getMediaName(data())} · ${versionLabelOf(currentEpisode()!.file_name)}`
+                          ? `${mediaTitle(data())} · ${versionLabelOf(currentEpisode()!.file_name)}`
                           : currentEpisode()!.index > 0
                             ? t("media.video.episode_n_title", {
                                 index: currentEpisode()!.index,
@@ -1843,7 +1844,7 @@ const VideoLibrary = () => {
                         "white-space": "nowrap",
                       }}
                     >
-                      {getMediaName(item)}
+                      {mediaTitle(item)}
                     </div>
                     <div
                       style={{

@@ -1,6 +1,6 @@
 // What the media editor needs to know about the work it edits, independent of
 // where the host got it from (the video detail page, the file browser). Pure.
-import { getMediaName, parseCandidates } from "~/types"
+import { mediaTitle, parseCandidates } from "~/types"
 import type { MediaCandidate, MediaItem } from "~/types"
 import { resolveMediaCover } from "~/utils/media_cover"
 import type { MediaSetBody } from "./client"
@@ -26,7 +26,7 @@ const KNOWN: readonly string[] = ["movie", "tv", "anime", "collection"]
 export const fromMediaItem = (it: MediaItem): EditorItem => ({
   path: it.path ?? "",
   kind: (KNOWN.includes(it.video_type) ? it.video_type : "movie") as MediaKind,
-  title: getMediaName(it),
+  title: mediaTitle(it),
   original_title: it.original_title ?? "",
   year: Number((it.release_date ?? "").slice(0, 4)) || 0,
   overview: it.plot || it.description || "",

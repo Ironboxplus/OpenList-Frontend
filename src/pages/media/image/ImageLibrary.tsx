@@ -4,7 +4,7 @@ import { accent } from "~/utils/accent"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
 import type { MediaItem } from "~/types"
-import { getMediaName } from "~/types"
+import { mediaTitle } from "~/types"
 import { createSignedProxyUrl, mediaItemPath } from "~/utils/media_api"
 import { useT } from "~/hooks"
 import { formatMediaSize } from "../ui"
@@ -96,7 +96,7 @@ const ImageViewer = (props: {
           }}
         >
           <span style={{ color: "rgba(255,255,255,0.7)", "font-size": "14px" }}>
-            {getMediaName(current())}
+            {mediaTitle(current())}
           </span>
           <div style={{ display: "flex", gap: "8px" }}>
             <span
@@ -185,7 +185,7 @@ const ImageViewer = (props: {
         {/* 图片 */}
         <img
           src={imageUrl()}
-          alt={getMediaName(current())}
+          alt={mediaTitle(current())}
           style={{
             "max-width": "90vw",
             "max-height": "85vh",
@@ -325,7 +325,7 @@ const ImageCard = (props: { item: MediaItem }) => {
     >
       <img
         src={imageUrl()}
-        alt={getMediaName(props.item)}
+        alt={mediaTitle(props.item)}
         style={{
           width: "100%",
           height: "auto",
@@ -355,7 +355,7 @@ const ImageCard = (props: { item: MediaItem }) => {
               "margin-bottom": "3px",
             }}
           >
-            {getMediaName(props.item)}
+            {mediaTitle(props.item)}
           </div>
           <div
             style={{
@@ -438,7 +438,7 @@ const ImageLibrary = () => {
                     "white-space": "nowrap",
                   }}
                 >
-                  {getMediaName(item)}
+                  {mediaTitle(item)}
                 </div>
                 <div
                   style={{

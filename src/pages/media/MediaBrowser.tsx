@@ -20,7 +20,7 @@ import {
 import { notify } from "~/utils"
 import { useT } from "~/hooks"
 import type { MediaItem, MediaType, MediaScanPath } from "~/types"
-import { getMediaName } from "~/types"
+import { mediaTitle } from "~/types"
 import { Button } from "~/components/ui/button"
 import { ChipTabs } from "~/components/ui/chip-tabs"
 import { DataState } from "~/components/ui/data-state"
@@ -583,7 +583,7 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
                         ) : (
                           <>
                             <TbMovie class="size-5 shrink-0 text-muted-foreground" />
-                            <span class="text-sm">{getMediaName(item)}</span>
+                            <span class="text-sm">{mediaTitle(item)}</span>
                           </>
                         )}
                         <Show when={props.enableFavorites}>

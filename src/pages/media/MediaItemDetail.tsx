@@ -18,7 +18,7 @@ import { accentGradient } from "~/utils/accent"
 import { ratingBadges } from "~/features/media/logic"
 import {
   formatDuration,
-  getMediaName,
+  mediaTitle,
   parseAuthors,
   type MediaItem,
 } from "~/types"
@@ -165,7 +165,7 @@ export const MediaItemDetail = (props: MediaItemDetailProps) => {
         >
           <img
             src={resolveMediaCover(props.item)}
-            alt={getMediaName(props.item)}
+            alt={mediaTitle(props.item)}
             class="size-full object-cover"
           />
         </Show>
@@ -201,7 +201,7 @@ export const MediaItemDetail = (props: MediaItemDetailProps) => {
 
       {/* 标题 */}
       <div class="mb-1 break-words text-base font-semibold leading-snug">
-        {getMediaName(props.item)}
+        {mediaTitle(props.item)}
       </div>
       <div class="mb-3 break-all text-xs text-muted-foreground">
         {props.item.file_name}

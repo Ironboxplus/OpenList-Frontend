@@ -23,6 +23,10 @@ export interface MediaItem {
   hidden: boolean
   // 刮削信息
   scraped_name: string
+  /** The title to show, chosen by the backend's media_title_source setting. */
+  display_title?: string
+  /** The other title (original or scraped), shown muted on the detail page. */
+  alt_title?: string
   description: string
   cover: string
   /** 后端给出的可直接使用的（带签名的）封面地址；有则优先于 cover */
@@ -231,10 +235,13 @@ export function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`
 }
 
-// 获取媒体显示名称
-export function getMediaName(item: MediaItem): string {
-  return item.scraped_name || item.file_name || ""
+// 获取媒体显示名称：后端按 media_title_source 给出的 display_title 优先
+export function mediaTitle(item: MediaItem): string {
+  return item.display_title || item.scraped_name || item.file_name || ""
 }
+
+/** Kept for the call sites that predate mediaTitle. */
+export const getMediaName = mediaTitle
 
 // 获取媒体文件的VFS路径（folder_path + "/" + file_name）
 // 可选传入 episodeFileName 用于播放文件夹条目中的某个选集

@@ -28,7 +28,7 @@ import {
   saveMediaProgress,
 } from "~/utils/media_api"
 import type { MediaItem } from "~/types"
-import { formatDuration, getMediaName } from "~/types"
+import { formatDuration, mediaTitle } from "~/types"
 import { accentBar, accentGradient } from "~/utils/accent"
 import { resolveMediaCover } from "~/utils/media_cover"
 import { OpenWithPlayer } from "~/components/OpenWithPlayer"
@@ -535,7 +535,7 @@ const LyricsPage = () => {
                   "white-space": "nowrap",
                 }}
               >
-                {getMediaName(currentItem()!)}
+                {mediaTitle(currentItem()!)}
               </div>
               <div
                 style={{ color: "rgba(255,255,255,0.55)", "font-size": "14px" }}
@@ -1023,7 +1023,7 @@ export const MusicPlayer = () => {
                     "letter-spacing": "-0.01em",
                   }}
                 >
-                  {getMediaName(currentItem()!)}
+                  {mediaTitle(currentItem()!)}
                 </div>
                 <div
                   style={{
