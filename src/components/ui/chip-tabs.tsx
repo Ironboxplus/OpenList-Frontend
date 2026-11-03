@@ -36,7 +36,7 @@ export const ChipTabs = <K extends string>(props: {
           aria-selected={props.value === item.key}
           class={cn(
             focusRing,
-            "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-foreground transition-colors",
+            "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm text-foreground transition-colors",
             props.value === item.key
               ? "border-primary bg-primary text-primary-foreground"
               : "bg-card hover:bg-accent",

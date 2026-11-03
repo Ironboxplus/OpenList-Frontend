@@ -46,7 +46,7 @@ export const DashboardCard = (props: {
             onClick={() => open()()}
             class={cn(
               focusRing,
-              "flex items-center gap-2 rounded-md bg-transparent text-left text-sm font-semibold",
+              "flex min-h-8 items-center gap-2 rounded-md bg-transparent text-left text-sm font-semibold",
             )}
           >
             {heading}

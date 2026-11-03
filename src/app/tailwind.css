@@ -26,6 +26,15 @@
 @source not "../plugins/builtin/stats/__tests__";
 
 /*
+ * hope-ui toasts are fixed to the top edge, over the TopBar's search and task
+ * buttons. Inside the shell they start below the bar (bar height plus gap).
+ */
+html.shell-wide .hope-notification__list,
+html.shell-phone .hope-notification__list {
+  top: 3.75rem !important;
+}
+
+/*
  * Phone shell: the bottom tab bar is `position: fixed`, so Home's own fixed
  * toolbars (right-hand toggle, selection bar) must sit above it.
  */

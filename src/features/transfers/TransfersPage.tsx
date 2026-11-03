@@ -13,6 +13,7 @@ import {
 } from "solid-js"
 import { Button } from "~/components/ui/button"
 import { ChipTabs } from "~/components/ui/chip-tabs"
+import { DataState } from "~/components/ui/data-state"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -234,9 +235,9 @@ const TransfersPage = () => {
     </div>
   )
   const empty = (key: string) => (
-    <p class="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-      {t(`transfers.empty.${key}`)}
-    </p>
+    <DataState empty emptyText={t(`transfers.empty.${key}`)}>
+      {null}
+    </DataState>
   )
 
   return (
@@ -306,12 +307,14 @@ const TransfersPage = () => {
         }
       >
         <Show when={query().trim() && inFilter().length === 0}>
-          <p
-            data-testid="search-no-match"
-            class="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground"
-          >
-            {t("transfers.search.no_match", { q: query().trim() })}
-          </p>
+          <div data-testid="search-no-match">
+            <DataState
+              empty
+              emptyText={t("transfers.search.no_match", { q: query().trim() })}
+            >
+              {null}
+            </DataState>
+          </div>
         </Show>
         <Section
           testid="section-active"
