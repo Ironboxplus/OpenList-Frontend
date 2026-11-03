@@ -1,4 +1,3 @@
-import { Heading, Text, VStack } from "@hope-ui/solid"
 import CommonSettings from "../settings/Common"
 import { useT } from "~/hooks"
 import { Group } from "~/types"
@@ -22,19 +21,11 @@ const SCRAPE_KEYS = [
 const MediaScrapePage = () => {
   const t = useT()
   return (
-    <VStack
-      w="$full"
-      alignItems="stretch"
-      spacing="$4"
-      p={{ "@initial": "$3", "@md": "$6" }}
-      maxW="1300px"
-    >
-      <VStack alignItems="flex-start" spacing="2px">
-        <Heading size="lg">{t("manage.sidemenu.media_scrape")}</Heading>
-        <Text fontSize="$sm" color="$neutral11">
-          {t("manage.media_lib.scrape_desc")}
-        </Text>
-      </VStack>
+    <div class="flex w-full flex-col gap-4">
+      <h1 class="sr-only">{t("manage.sidemenu.media_scrape")}</h1>
+      <p class="m-0 text-sm text-muted-foreground">
+        {t("manage.media_lib.scrape_desc")}
+      </p>
       <CommonSettings
         group={Group.MEDIA}
         keys={SCRAPE_KEYS}
@@ -44,7 +35,7 @@ const MediaScrapePage = () => {
           return mode !== "local"
         }}
       />
-    </VStack>
+    </div>
   )
 }
 

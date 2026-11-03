@@ -1,4 +1,5 @@
-import { Box, Button, HStack, Heading, Text, VStack } from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
+import { SettingsSection } from "~/features/settings/form/SettingsSection"
 import { createSignal, onMount } from "solid-js"
 import CommonSettings from "../settings/Common"
 import { useT } from "~/hooks"
@@ -51,56 +52,46 @@ const MediaStrmPage = () => {
   }
 
   return (
-    <VStack
-      w="$full"
-      alignItems="stretch"
-      spacing="$4"
-      p={{ "@initial": "$3", "@md": "$6" }}
-      maxW="1300px"
-    >
-      <VStack alignItems="flex-start" spacing="2px">
-        <Heading size="lg">{t("manage.sidemenu.media_strm")}</Heading>
-        <Text fontSize="$sm" color="$neutral11">
-          {t("manage.media_lib.strm_desc")}
-        </Text>
-      </VStack>
+    <div class="flex w-full flex-col gap-4">
+      <h1 class="sr-only">{t("manage.sidemenu.media_strm")}</h1>
+      <p class="m-0 text-sm text-muted-foreground">
+        {t("manage.media_lib.strm_desc")}
+      </p>
 
       <CommonSettings group={Group.MEDIA} keys={STRM_KEYS} />
 
-      <Box bgColor="$neutral1" rounded="$lg" border="1px solid $neutral4">
-        <HStack px="$4" py="$3" borderBottom="1px solid $neutral4">
-          <Heading size="sm">{t("manage.media_lib.strm_manual")}</Heading>
-        </HStack>
-        <VStack spacing="$3" alignItems="stretch" p="$4">
-          <Text fontSize="$sm" color="$neutral11">
+      <SettingsSection title={t("manage.media_lib.strm_manual")}>
+        <div class="flex flex-col gap-3 py-4">
+          <p class="m-0 text-sm text-muted-foreground">
             {t("manage.media_lib.strm_output")}
             {mediaStatus().strm_same_dir
               ? t("manage.media_lib.strm_output_same_dir")
               : mediaStatus().strm_path ||
                 t("manage.media_lib.strm_output_missing")}
-          </Text>
-          <HStack spacing="$2" flexWrap="wrap">
+          </p>
+          <div class="flex flex-wrap gap-2">
             {GENERATE_TYPES.map((item) => (
               <Button
+                variant="outline"
                 size="sm"
-                loading={generating() === item.type}
+                disabled={generating() === item.type}
                 onClick={() => generate(item.type)}
               >
                 {t(item.label)}
               </Button>
             ))}
             <Button
+              variant="outline"
               size="sm"
-              variant="ghost"
-              loading={generating() === "all"}
+              disabled={generating() === "all"}
               onClick={() => generate()}
             >
               {t("manage.media_lib.strm_gen_all")}
             </Button>
-          </HStack>
-        </VStack>
-      </Box>
-    </VStack>
+          </div>
+        </div>
+      </SettingsSection>
+    </div>
   )
 }
 

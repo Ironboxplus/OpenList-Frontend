@@ -12,6 +12,7 @@ import init from "./init.json"
 import frp from "./frp.json"
 import login from "./login.json"
 import manage from "./manage.json"
+import manage_media from "./manage_media.json"
 import media from "./media.json"
 import metas from "./metas.json"
 import palette from "./palette.json"
@@ -43,7 +44,12 @@ export const dict = {
   indexes,
   init,
   login,
-  manage,
+  // manage_media adds the media pages' texts (ours) beside the Crowdin-managed file.
+  manage: {
+    ...manage,
+    sidemenu: { ...manage.sidemenu, ...manage_media.sidemenu },
+    media_lib: { ...manage.media_lib, ...manage_media.media_lib },
+  },
   media,
   metas,
   palette,

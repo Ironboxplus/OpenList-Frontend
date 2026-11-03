@@ -1,34 +1,21 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Box,
-  Button,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  Heading,
-  Input,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectTrigger,
-  SelectValue,
-  Spinner,
-  Switch,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
 import { Show, createSignal, onMount } from "solid-js"
+import { Alert, AlertDescription } from "~/components/ui/alert"
+import { Button } from "~/components/ui/button"
+import { Input } from "~/components/ui/input"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import { Skeleton } from "~/components/ui/skeleton"
+import {
+  Switch,
+  SwitchControl,
+  SwitchLabel,
+  SwitchThumb,
+} from "~/components/ui/switch"
+import { SettingsSection } from "~/features/settings/form/SettingsSection"
 import { useT } from "~/hooks"
 import type { MediaConfig } from "~/types"
 import { notify } from "~/utils"
 import { adminGetMediaConfigs, adminSaveMediaConfig } from "~/utils/media_api"
+import { Field } from "./Field"
 
 interface ThumbnailSettingsProps {
   mediaType: "image" | "book"
@@ -119,122 +106,88 @@ export const ThumbnailSettings = (props: ThumbnailSettingsProps) => {
   }
 
   return (
-    <Box bgColor="$neutral1" rounded="$lg" border="1px solid $neutral4">
-      <HStack
-        px="$4"
-        py="$3"
-        borderBottom="1px solid $neutral4"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <VStack alignItems="flex-start" spacing="2px">
-          <Heading size="sm">
-            {props.mediaType === "image"
-              ? t("manage.media_lib.thumb_image_title")
-              : t("manage.media_lib.thumb_book_title")}
-          </Heading>
-          <Text fontSize="$xs" color="$neutral11">
-            {t("manage.media_lib.thumb_scope", {
-              type:
-                props.mediaType === "image"
-                  ? t("manage.media_lib.type_image")
-                  : t("manage.media_lib.type_book"),
-            })}
-          </Text>
-        </VStack>
-        <Button colorScheme="accent" loading={saving()} onClick={save}>
+    <SettingsSection
+      title={
+        props.mediaType === "image"
+          ? t("manage.media_lib.thumb_image_title")
+          : t("manage.media_lib.thumb_book_title")
+      }
+      description={t("manage.media_lib.thumb_scope", {
+        type:
+          props.mediaType === "image"
+            ? t("manage.media_lib.type_image")
+            : t("manage.media_lib.type_book"),
+      })}
+      actions={
+        <Button disabled={saving()} onClick={save}>
           {t("manage.media_lib.save")}
         </Button>
-      </HStack>
-
-      <Show
-        when={!loading()}
-        fallback={
-          <HStack justifyContent="center" py="$8">
-            <Spinner />
-          </HStack>
-        }
-      >
-        <VStack spacing="$4" alignItems="stretch" p="$4">
+      }
+    >
+      <Show when={!loading()} fallback={<Skeleton class="my-4 h-24 w-full" />}>
+        <div class="flex flex-col gap-4 py-4">
           <Show when={props.mediaType === "image"}>
-            <FormControl display="flex" alignItems="center" gap="$2" w="auto">
-              <FormLabel m="0">{t("manage.media_lib.thumb_store")}</FormLabel>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Switch
+                class="flex items-center gap-2"
                 checked={storeThumbnail()}
-                onChange={(e) => setStoreThumbnail(e.currentTarget.checked)}
-              />
-              <FormHelperText m="0">
+                onChange={setStoreThumbnail}
+              >
+                <SwitchControl>
+                  <SwitchThumb />
+                </SwitchControl>
+                <SwitchLabel class="text-sm font-medium">
+                  {t("manage.media_lib.thumb_store")}
+                </SwitchLabel>
+              </Switch>
+              <span class="text-xs text-muted-foreground">
                 {t("manage.media_lib.thumb_store_tips")}
-              </FormHelperText>
-            </FormControl>
+              </span>
+            </div>
           </Show>
 
-          <FormControl>
-            <FormLabel>{t("manage.media_lib.thumb_mode")}</FormLabel>
-            <Select
-              value={mode()}
-              onChange={(v) => setMode(v as "base64" | "local")}
-            >
-              <SelectTrigger>
-                <SelectValue />
-                <SelectIcon />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectListbox>
-                  <SelectOption value="base64">
-                    <SelectOptionText>
-                      {t("manage.media_lib.mode_base64")}
-                    </SelectOptionText>
-                    <SelectOptionIndicator />
-                  </SelectOption>
-                  <SelectOption value="runtime">
-                    <SelectOptionText>
-                      {t("manage.media_lib.mode_runtime")}
-                    </SelectOptionText>
-                    <SelectOptionIndicator />
-                  </SelectOption>
-                  <SelectOption value="local">
-                    <SelectOptionText>
-                      {t("manage.media_lib.mode_local")}
-                    </SelectOptionText>
-                    <SelectOptionIndicator />
-                  </SelectOption>
-                </SelectListbox>
-              </SelectContent>
-            </Select>
-            <FormHelperText>
-              {mode() === "base64"
+          <Field
+            label={t("manage.media_lib.thumb_mode")}
+            help={
+              mode() === "base64"
                 ? t("manage.media_lib.mode_base64_tips")
                 : mode() === "runtime"
                   ? t("manage.media_lib.mode_runtime_tips")
-                  : t("manage.media_lib.mode_local_tips")}
-            </FormHelperText>
-          </FormControl>
+                  : t("manage.media_lib.mode_local_tips")
+            }
+          >
+            <SimpleSelect
+              aria-label={t("manage.media_lib.thumb_mode")}
+              options={[
+                { value: "base64", label: t("manage.media_lib.mode_base64") },
+                { value: "runtime", label: t("manage.media_lib.mode_runtime") },
+                { value: "local", label: t("manage.media_lib.mode_local") },
+              ]}
+              value={mode()}
+              onChange={(v) => setMode(v as "base64" | "runtime" | "local")}
+            />
+          </Field>
 
           <Show when={mode() === "local"}>
-            <FormControl>
-              <FormLabel>{t("manage.media_lib.thumb_path")}</FormLabel>
+            <Field
+              label={t("manage.media_lib.thumb_path")}
+              help={t("manage.media_lib.thumb_path_tips_local")}
+            >
               <Input
                 placeholder="/imgs"
                 value={path()}
                 onInput={(e) => setPath(e.currentTarget.value)}
               />
-              <FormHelperText>
-                {mode() === "runtime"
-                  ? t("manage.media_lib.thumb_path_tips_runtime")
-                  : t("manage.media_lib.thumb_path_tips_local")}
-              </FormHelperText>
-            </FormControl>
+            </Field>
           </Show>
 
-          <Alert status="info" variant="subtle">
-            <AlertIcon />
+          <Alert variant="info">
             <AlertDescription>
-              <Text fontSize="$sm">{t("manage.media_lib.thumb_rerun")}</Text>
+              {t("manage.media_lib.thumb_rerun")}
             </AlertDescription>
           </Alert>
-        </VStack>
+        </div>
       </Show>
-    </Box>
+    </SettingsSection>
   )
 }

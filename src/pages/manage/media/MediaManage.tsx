@@ -1,46 +1,57 @@
+import { Dynamic } from "solid-js/web"
 import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Badge,
-  Box,
-  Button,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  Heading,
-  Icon,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectTrigger,
-  SelectValue,
-  Spinner,
+  TbAlertTriangle,
+  TbBook,
+  TbChevronLeft,
+  TbChevronRight,
+  TbChevronsLeft,
+  TbChevronsRight,
+  TbDots,
+  TbMovie,
+  TbMusic,
+  TbPhoto,
+  TbPlus,
+} from "solid-icons/tb"
+import { Alert, AlertDescription } from "~/components/ui/alert"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { Card } from "~/components/ui/card"
+import { ChipTabs } from "~/components/ui/chip-tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu"
+import { Input, Textarea } from "~/components/ui/input"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import {
   Switch,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Textarea,
-  Th,
-  Thead,
+  SwitchControl,
+  SwitchLabel,
+  SwitchThumb,
+} from "~/components/ui/switch"
+import {
   Tooltip,
-  Tr,
-  VStack,
-} from "@hope-ui/solid"
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip"
+import { Field } from "./Field"
+import { ConfirmDialog } from "~/features/settings/form/ConfirmDialog"
+import {
+  ResourceList,
+  type ResourceColumn,
+  type RowAction,
+} from "~/features/settings/form/ResourceList"
 import {
   For,
   Show,
@@ -60,7 +71,6 @@ import type {
 } from "~/types"
 import { notify, r } from "~/utils"
 import { useT } from "~/hooks"
-import { TbAlertTriangle } from "solid-icons/tb"
 import {
   adminClearMediaDB,
   adminClearMediaScanPathDB,
@@ -88,7 +98,6 @@ import { resolveMediaCover } from "~/utils/media_cover"
 interface MediaManagePageProps {
   mediaType: MediaType
   title: string
-  icon: string
 }
 
 interface ConfirmState {
@@ -700,6 +709,11 @@ export const MediaManagePage = (props: MediaManagePageProps) => {
     scanPaths().find((p) => p.id === id)?.path ||
     "-"
 
+  const coverIcon = () =>
+    ({ video: TbMovie, music: TbMusic, image: TbPhoto, book: TbBook })[
+      props.mediaType
+    ]
+
   const supportsThumbnailSettings = () =>
     props.mediaType === "image" || props.mediaType === "book"
 
@@ -715,637 +729,471 @@ export const MediaManagePage = (props: MediaManagePageProps) => {
     return list
   })
 
+  const pathActions = (sp: MediaScanPath): RowAction<MediaScanPath>[] => [
+    {
+      id: "scan",
+      label: t("media.admin.scan"),
+      onSelect: handleScanPath,
+      disabled: scanning(),
+    },
+    {
+      id: "export",
+      label: t("media.admin.export"),
+      onSelect: handleExportScanPath,
+    },
+    {
+      id: "import",
+      label: t("media.admin.import"),
+      onSelect: handleImportScanPath,
+    },
+    {
+      id: "clear",
+      label: t("media.admin.clear"),
+      destructive: true,
+      onSelect: handleClearScanPathDB,
+    },
+    {
+      id: "delete",
+      label: t("global.delete"),
+      destructive: true,
+      onSelect: handleDeleteScanPath,
+    },
+  ]
+
+  const yesNo = (on: boolean | undefined) => (
+    <Badge variant={on ? "success" : "outline"}>
+      {on ? t("media.admin.yes") : t("media.admin.no")}
+    </Badge>
+  )
+
+  const pathColumns = (): ResourceColumn<MediaScanPath>[] => [
+    {
+      id: "name",
+      header: t("media.admin.col_path_name"),
+      cell: (sp) => sp.name || "-",
+      class: "font-medium",
+    },
+    {
+      id: "path",
+      header: t("media.admin.col_scan_path"),
+      cell: (sp) => <span class="font-mono text-xs">{sp.path}</span>,
+    },
+    {
+      id: "type_tag",
+      header: t("media.admin.col_type_tags"),
+      cell: (sp) => (
+        <Show when={sp.type_tag}>
+          <Badge variant="info">{sp.type_tag}</Badge>
+        </Show>
+      ),
+    },
+    {
+      id: "content_tags",
+      header: t("media.admin.col_content_tags"),
+      cell: (sp) => (
+        <div class="flex flex-wrap gap-1">
+          <For each={(sp.content_tags || "").split(",").filter(Boolean)}>
+            {(tag) => <Badge variant="secondary">{tag.trim()}</Badge>}
+          </For>
+        </div>
+      ),
+    },
+    {
+      id: "path_merge",
+      header: t("media.admin.col_path_merge"),
+      cell: (sp) => yesNo(sp.path_merge),
+    },
+    {
+      id: "scrape",
+      header: t("media.admin.col_scrape"),
+      cell: (sp) => yesNo(sp.enable_scrape),
+    },
+    {
+      id: "last_scan",
+      header: t("media.admin.col_last_scan"),
+      class: "whitespace-nowrap text-xs text-muted-foreground",
+      cell: (sp) =>
+        sp.last_scan_at
+          ? new Date(sp.last_scan_at).toLocaleString(undefined, {
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : t("media.admin.never"),
+    },
+  ]
+
+  const itemActions = (item: MediaItem): RowAction<MediaItem>[] => [
+    {
+      id: "delete",
+      label: t("global.delete"),
+      destructive: true,
+      onSelect: () =>
+        handleDeleteItem(item.id, item.scraped_name || item.file_name),
+    },
+  ]
+
+  const itemColumns = (): ResourceColumn<MediaItem>[] => [
+    {
+      id: "file_name",
+      header: t("media.admin.col_file_name"),
+      class: "max-w-[200px]",
+      cell: (item) => (
+        <span
+          title={item.file_name}
+          class="block truncate text-xs text-muted-foreground"
+        >
+          {item.file_name}
+        </span>
+      ),
+    },
+    {
+      id: "name",
+      header: t("media.admin.col_name"),
+      class: "max-w-[180px]",
+      cell: (item) => (
+        <span class="block truncate font-medium">
+          {item.scraped_name || item.file_name}
+        </span>
+      ),
+    },
+    {
+      id: "cover",
+      header: t("media.admin.col_cover"),
+      cell: (item) => (
+        <Show
+          when={item.cover}
+          fallback={
+            <div class="flex h-16 w-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <Dynamic component={coverIcon()} class="size-5" />
+            </div>
+          }
+        >
+          <img
+            src={resolveMediaCover(item)}
+            loading="lazy"
+            alt={item.scraped_name || item.file_name}
+            class="h-16 w-12 rounded-md border bg-muted object-cover"
+          />
+        </Show>
+      ),
+    },
+    {
+      id: "scan_path",
+      header: t("media.admin.col_scan_path"),
+      class: "text-xs text-muted-foreground",
+      cell: (item) => getScanPathName(item.scan_path_id),
+    },
+    {
+      id: "release_date",
+      header: t("media.admin.col_release_date"),
+      class: "whitespace-nowrap text-xs text-muted-foreground",
+      cell: (item) => item.release_date?.slice(0, 10) || "-",
+    },
+    {
+      id: "rating",
+      header: t("media.admin.col_rating"),
+      class: "text-xs text-muted-foreground",
+      cell: (item) => (item.rating > 0 ? item.rating.toFixed(1) : "-"),
+    },
+    {
+      id: "hidden",
+      header: t("media.admin.col_hidden"),
+      cell: (item) => (
+        <Switch
+          checked={item.hidden}
+          onChange={async (on) => {
+            await adminUpdateMediaItem({ ...item, hidden: on })
+            refetchItems()
+          }}
+        >
+          <SwitchControl aria-label={t("media.admin.col_hidden")}>
+            <SwitchThumb />
+          </SwitchControl>
+        </Switch>
+      ),
+    },
+  ]
+
+  const perPageOptions = () =>
+    (props.mediaType === "image" ? [15, 25, 50, 75, 100] : [5, 10, 20]).map(
+      (n) => ({ value: String(n), label: String(n) }),
+    )
+
   return (
-    <VStack
-      p={{ "@initial": "$3", "@md": "$6" }}
-      spacing="$4"
-      alignItems="stretch"
-      maxW="1300px"
-    >
-      {/* 标题 */}
-      <HStack spacing="$3" alignItems="center">
-        <Text fontSize="$2xl">{props.icon}</Text>
-        <VStack alignItems="flex-start" spacing="2px">
-          <Heading size="lg">{props.title}</Heading>
-          <Text fontSize="$sm" color="$neutral11">
-            {t("media.admin.desc")}
-          </Text>
-        </VStack>
-      </HStack>
+    <div class="flex w-full flex-col gap-4">
+      {/* The crumb is the page title; this keeps the heading for assistive tech. */}
+      <h1 class="sr-only">{props.title}</h1>
 
       {/* 工具栏：页签 + 操作按钮 + 当前类型开关（原「基础配置」合并到这里） */}
-      <Box bgColor="$neutral1" rounded="$lg" border="1px solid $neutral4">
-        <VStack px="$4" py="$3" spacing="$2" alignItems="stretch">
-          <HStack
-            justifyContent="space-between"
-            alignItems="center"
-            flexWrap="wrap"
-            gap="$2"
-          >
-            <HStack spacing="$1" flexWrap="wrap">
-              <For each={tabItems()}>
-                {(item) => (
-                  <Button
-                    size="sm"
-                    variant={tab() === item.key ? "subtle" : "ghost"}
-                    colorScheme={tab() === item.key ? "accent" : "neutral"}
-                    onClick={() => setTab(item.key)}
-                  >
-                    {item.label}
-                  </Button>
-                )}
-              </For>
-            </HStack>
-            <HStack
-              spacing="$1"
-              alignItems="center"
-              justifyContent="flex-end"
-              flexWrap="wrap"
+      <Card class="flex flex-col gap-3 p-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <ChipTabs
+            label="tabs"
+            items={tabItems()}
+            value={tab()}
+            onChange={setTab}
+          />
+          <div class="ml-auto flex flex-wrap items-center gap-2">
+            <Button size="sm" disabled={scanning()} onClick={handleScanAll}>
+              {t("media.admin.scan_all")}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={scraping()}
+              onClick={handleScrape}
             >
-              <Button
-                size="xs"
-                colorScheme="success"
-                loading={scanning()}
-                onClick={handleScanAll}
+              {t("media.admin.scrape_now")}
+            </Button>
+            <DropdownMenu placement="bottom-end">
+              <DropdownMenuTrigger
+                as={Button}
+                variant="outline"
+                size="sm"
+                aria-label={t("common.more_actions")}
               >
-                {t("media.admin.scan_all")}
-              </Button>
-              <Button
-                size="xs"
-                colorScheme="warning"
-                loading={scraping()}
-                onClick={handleScrape}
-              >
-                {t("media.admin.scrape_now")}
-              </Button>
-              <Button size="xs" variant="outline" onClick={handleExportAll}>
-                {t("media.admin.export_all")}
-              </Button>
-              <Button size="xs" variant="outline" onClick={handleImportAll}>
-                {t("media.admin.import_data")}
-              </Button>
-              <Button size="xs" variant="ghost" onClick={handleDeleteInvalid}>
-                {t("media.admin.delete_invalid")}
-              </Button>
-              <Button size="xs" variant="ghost" onClick={handleClearScrape}>
-                {t("media.admin.clear_scrape")}
-              </Button>
-              <Button
-                size="xs"
-                variant="ghost"
-                colorScheme="danger"
-                onClick={handleClearAll}
-              >
-                {t("media.admin.clear_all")}
-              </Button>
-              <Button size="xs" variant="ghost" onClick={handleGenerateStrm}>
-                {t("media.admin.generate_strm")}
-              </Button>
-              <FormControl
-                display="flex"
-                alignItems="center"
-                gap="$2"
-                w="auto"
-                ml="$2"
-              >
-                <FormLabel m="0" fontSize="$sm">
-                  {t("media.admin.enable_library", { title: props.title })}
-                </FormLabel>
-                <Switch
-                  checked={config().enabled}
-                  onChange={(e) =>
-                    setConfig((c) => ({
-                      ...c,
-                      enabled: e.currentTarget.checked,
-                    }))
-                  }
-                />
-              </FormControl>
-              <Button
-                size="xs"
-                colorScheme="accent"
-                loading={configSaving()}
-                onClick={handleSaveConfig}
-              >
-                {t("media.admin.save_config")}
-              </Button>
-              <Tooltip label={t("media.admin.signing_warning")} placement="top">
-                <Box
-                  as="span"
-                  display="inline-flex"
-                  alignItems="center"
-                  color="$warning9"
-                  cursor="help"
-                  ml="$1"
+                <TbDots class="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onSelect={handleExportAll}>
+                  {t("media.admin.export_all")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleImportAll}>
+                  {t("media.admin.import_data")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleGenerateStrm}>
+                  {t("media.admin.generate_strm")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleDeleteInvalid}>
+                  {t("media.admin.delete_invalid")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleClearScrape}>
+                  {t("media.admin.clear_scrape")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  class="text-destructive focus:text-destructive"
+                  onSelect={handleClearAll}
                 >
-                  <Icon as={TbAlertTriangle} boxSize="$5" />
-                </Box>
-              </Tooltip>
-            </HStack>
-          </HStack>
-          <Show when={progress()}>
-            <Alert status="success" variant="subtle">
-              <AlertIcon />
-              <AlertDescription>
-                {progress()!.status}
-                <Show when={(progress()?.total ?? 0) > 0}>
-                  {" "}
-                  ({progress()!.current} / {progress()!.total})
-                </Show>
-              </AlertDescription>
-            </Alert>
-          </Show>
-        </VStack>
-      </Box>
+                  {t("media.admin.clear_all")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 border-t pt-3">
+          <Switch
+            class="flex items-center gap-2"
+            checked={config().enabled}
+            onChange={(on) => setConfig((c) => ({ ...c, enabled: on }))}
+          >
+            <SwitchControl>
+              <SwitchThumb />
+            </SwitchControl>
+            <SwitchLabel class="text-sm">
+              {t("media.admin.enable_library", { title: props.title })}
+            </SwitchLabel>
+          </Switch>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={configSaving()}
+            onClick={handleSaveConfig}
+          >
+            {t("media.admin.save_config")}
+          </Button>
+          <Tooltip placement="top">
+            <TooltipTrigger
+              as="span"
+              class="inline-flex cursor-help items-center text-warning"
+              aria-label={t("media.admin.signing_warning")}
+            >
+              <TbAlertTriangle class="size-5" />
+            </TooltipTrigger>
+            <TooltipContent class="max-w-xs">
+              {t("media.admin.signing_warning")}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <Show when={progress()}>
+          <Alert variant="success">
+            <AlertDescription>
+              {progress()!.status}
+              <Show when={(progress()?.total ?? 0) > 0}>
+                {" "}
+                ({progress()!.current} / {progress()!.total})
+              </Show>
+            </AlertDescription>
+          </Alert>
+        </Show>
+      </Card>
 
       {/* 扫描路径 */}
       <Show when={tab() === "paths"}>
-        <Box bgColor="$neutral1" rounded="$lg" border="1px solid $neutral4">
-          <HStack
-            px="$4"
-            py="$3"
-            borderBottom="1px solid $neutral4"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Text fontWeight="$semibold">
-              {t("media.admin.scan_paths_count", { count: scanPaths().length })}
-            </Text>
-            <Button
-              size="sm"
-              colorScheme="accent"
-              onClick={handleOpenCreateScanPath}
-            >
-              {t("media.admin.add_path")}
-            </Button>
-          </HStack>
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>{t("media.admin.col_path_name")}</Th>
-                <Th>{t("media.admin.col_scan_path")}</Th>
-                <Th>{t("media.admin.col_type_tags")}</Th>
-                <Th>{t("media.admin.col_content_tags")}</Th>
-                <Th>{t("media.admin.col_path_merge")}</Th>
-                <Th>{t("media.admin.col_scrape")}</Th>
-                <Th>{t("media.admin.col_last_scan")}</Th>
-                <Th>{t("media.admin.col_actions")}</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              <Show
-                when={scanPaths().length > 0}
-                fallback={
-                  <Tr>
-                    <Td colSpan={8}>
-                      <Text textAlign="center" color="$neutral11" py="$6">
-                        {t("media.admin.no_scan_paths")}
-                      </Text>
-                    </Td>
-                  </Tr>
-                }
-              >
-                <For each={scanPaths()}>
-                  {(sp) => (
-                    <Tr>
-                      <Td>{sp.name || "-"}</Td>
-                      <Td>
-                        <Text fontFamily="$mono" fontSize="$xs">
-                          {sp.path}
-                        </Text>
-                      </Td>
-                      <Td>
-                        <Show when={sp.type_tag}>
-                          <Badge colorScheme="info">{sp.type_tag}</Badge>
-                        </Show>
-                      </Td>
-                      <Td>
-                        <HStack spacing="$1" flexWrap="wrap">
-                          <For
-                            each={(sp.content_tags || "")
-                              .split(",")
-                              .filter(Boolean)}
-                          >
-                            {(tag) => (
-                              <Badge colorScheme="accent">{tag.trim()}</Badge>
-                            )}
-                          </For>
-                        </HStack>
-                      </Td>
-                      <Td>
-                        <Text
-                          fontSize="$xs"
-                          color={sp.path_merge ? "$success11" : "$neutral11"}
-                        >
-                          {sp.path_merge
-                            ? t("media.admin.yes")
-                            : t("media.admin.no")}
-                        </Text>
-                      </Td>
-                      <Td>
-                        <Text
-                          fontSize="$xs"
-                          color={sp.enable_scrape ? "$success11" : "$neutral11"}
-                        >
-                          {sp.enable_scrape
-                            ? t("media.admin.yes")
-                            : t("media.admin.no")}
-                        </Text>
-                      </Td>
-                      <Td>
-                        <Text fontSize="$xs" color="$neutral11">
-                          {sp.last_scan_at
-                            ? new Date(sp.last_scan_at).toLocaleString(
-                                "zh-CN",
-                                {
-                                  month: "2-digit",
-                                  day: "2-digit",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                },
-                              )
-                            : t("media.admin.never")}
-                        </Text>
-                      </Td>
-                      <Td>
-                        <HStack spacing="$1" flexWrap="nowrap">
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            loading={scanning()}
-                            onClick={() => handleScanPath(sp)}
-                          >
-                            {t("media.admin.scan")}
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            colorScheme="success"
-                            onClick={() => handleOpenEditScanPath(sp)}
-                          >
-                            {t("media.admin.edit")}
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            onClick={() => handleExportScanPath(sp)}
-                          >
-                            {t("media.admin.export")}
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            onClick={() => handleImportScanPath(sp)}
-                          >
-                            {t("media.admin.import")}
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            colorScheme="warning"
-                            onClick={() => handleClearScanPathDB(sp)}
-                          >
-                            {t("media.admin.clear")}
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            colorScheme="danger"
-                            onClick={() => handleDeleteScanPath(sp)}
-                          >
-                            {t("global.delete")}
-                          </Button>
-                        </HStack>
-                      </Td>
-                    </Tr>
-                  )}
-                </For>
+        <ResourceList
+          title={t("media.admin.scan_paths_count", {
+            count: scanPaths().length,
+          })}
+          rows={scanPaths()}
+          rowKey={(sp) => sp.id ?? sp.path}
+          columns={pathColumns()}
+          card={{
+            title: (sp) => sp.name || sp.path,
+            badges: (sp) => (
+              <Show when={sp.type_tag}>
+                <Badge variant="info">{sp.type_tag}</Badge>
               </Show>
-            </Tbody>
-          </Table>
-        </Box>
+            ),
+            body: (sp) => (
+              <span class="font-mono text-xs break-all">{sp.path}</span>
+            ),
+          }}
+          primary={() => ({
+            id: "edit",
+            label: t("media.admin.edit"),
+            onSelect: handleOpenEditScanPath,
+          })}
+          actions={pathActions}
+          emptyText={t("media.admin.no_scan_paths")}
+          toolbarActions={[
+            {
+              id: "add",
+              label: t("media.admin.add_path"),
+              icon: <TbPlus class="mr-1.5 size-4" />,
+              onSelect: handleOpenCreateScanPath,
+            },
+          ]}
+        />
       </Show>
 
       {/* 媒体管理 */}
       <Show when={tab() === "items"}>
-        <Box bgColor="$neutral1" rounded="$lg" border="1px solid $neutral4">
-          <VStack
-            px="$4"
-            py="$3"
-            spacing="$2"
-            borderBottom="1px solid $neutral4"
-            alignItems="stretch"
-          >
-            <Text fontWeight="$semibold">
-              {t("media.admin.items_total", { total: total() })}
-            </Text>
-            <HStack spacing="$2" flexWrap="wrap" alignItems="center">
-              <Box w="200px">
-                <Select
+        <div class="flex flex-col gap-3">
+          <ResourceList
+            title={t("media.admin.items_total", { total: total() })}
+            rows={items()}
+            rowKey={(item) => item.id}
+            columns={itemColumns()}
+            loading={itemsData.loading}
+            card={{
+              title: (item) => item.scraped_name || item.file_name,
+              body: (item) => (
+                <span class="break-all text-xs">{item.file_name}</span>
+              ),
+            }}
+            primary={() => ({
+              id: "edit",
+              label: t("media.admin.edit"),
+              onSelect: (item: MediaItem) => {
+                setEditingItem({ ...item })
+                setShowEditModal(true)
+              },
+            })}
+            actions={itemActions}
+            emptyText={t("media.admin.no_items")}
+            toolbar={
+              <>
+                <SimpleSelect
+                  class="h-9 w-48"
+                  aria-label={t("media.admin.all_paths")}
+                  options={[
+                    { value: "0", label: t("media.admin.all_paths") },
+                    ...scanPaths().map((sp) => ({
+                      value: String(sp.id),
+                      label: sp.name || sp.path,
+                    })),
+                  ]}
                   value={String(filterScanPathId())}
                   onChange={(v) => {
                     setFilterScanPathId(Number(v))
                     setPage(1)
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                    <SelectIcon />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectListbox>
-                      <SelectOption value="0">
-                        <SelectOptionText>
-                          {t("media.admin.all_paths")}
-                        </SelectOptionText>
-                        <SelectOptionIndicator />
-                      </SelectOption>
-                      <For each={scanPaths()}>
-                        {(sp) => (
-                          <SelectOption value={String(sp.id)}>
-                            <SelectOptionText>
-                              {sp.name || sp.path}
-                            </SelectOptionText>
-                            <SelectOptionIndicator />
-                          </SelectOption>
-                        )}
-                      </For>
-                    </SelectListbox>
-                  </SelectContent>
-                </Select>
-              </Box>
-              <Input
-                placeholder={t("media.admin.search_placeholder")}
-                w="200px"
-                value={searchInput()}
-                onInput={(e) => handleSearchInput(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    if (searchTimer) clearTimeout(searchTimer)
-                    setFilterKeyword(searchInput())
-                    setPage(1)
-                  }
-                }}
-              />
-              <HStack spacing="$1" alignItems="center">
-                <Text fontSize="$sm" color="$neutral11">
+                />
+                <Input
+                  class="w-48"
+                  placeholder={t("media.admin.search_placeholder")}
+                  aria-label={t("media.admin.search_placeholder")}
+                  value={searchInput()}
+                  onInput={(e) => handleSearchInput(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (searchTimer) clearTimeout(searchTimer)
+                      setFilterKeyword(searchInput())
+                      setPage(1)
+                    }
+                  }}
+                />
+                <div class="flex items-center gap-2 text-sm text-muted-foreground">
                   {t("media.admin.per_page")}
-                </Text>
-                <Box w="90px">
-                  <Select
+                  <SimpleSelect
+                    class="h-9 w-20"
+                    aria-label={t("media.admin.per_page")}
+                    options={perPageOptions()}
                     value={String(pageSize())}
                     onChange={(v) => {
                       setPageSize(Number(v))
                       setPage(1)
                     }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                      <SelectIcon />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectListbox>
-                        <For
-                          each={
-                            props.mediaType === "image"
-                              ? [15, 25, 50, 75, 100]
-                              : [5, 10, 20]
-                          }
-                        >
-                          {(n) => (
-                            <SelectOption value={String(n)}>
-                              <SelectOptionText>{String(n)}</SelectOptionText>
-                              <SelectOptionIndicator />
-                            </SelectOption>
-                          )}
-                        </For>
-                      </SelectListbox>
-                    </SelectContent>
-                  </Select>
-                </Box>
-                <Text fontSize="$sm" color="$neutral11">
+                  />
                   {props.mediaType === "image"
                     ? t("media.admin.unit_image")
                     : t("media.admin.unit_item")}
-                </Text>
-              </HStack>
-            </HStack>
-          </VStack>
-
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>{t("media.admin.col_file_name")}</Th>
-                <Th>{t("media.admin.col_name")}</Th>
-                <Th>{t("media.admin.col_cover")}</Th>
-                <Th>{t("media.admin.col_scan_path")}</Th>
-                <Th>{t("media.admin.col_release_date")}</Th>
-                <Th>{t("media.admin.col_rating")}</Th>
-                <Th>{t("media.admin.col_hidden")}</Th>
-                <Th>{t("media.admin.col_actions")}</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              <Show
-                when={!itemsData.loading}
-                fallback={
-                  <Tr>
-                    <Td colSpan={8}>
-                      <HStack justifyContent="center" py="$8">
-                        <Spinner />
-                      </HStack>
-                    </Td>
-                  </Tr>
-                }
-              >
-                <Show
-                  when={items().length > 0}
-                  fallback={
-                    <Tr>
-                      <Td colSpan={8}>
-                        <Text textAlign="center" color="$neutral11" py="$8">
-                          {t("media.admin.no_items")}
-                        </Text>
-                      </Td>
-                    </Tr>
-                  }
-                >
-                  <For each={items()}>
-                    {(item) => (
-                      <Tr>
-                        <Td maxW="200px">
-                          <span
-                            title={item.file_name}
-                            style={{
-                              display: "block",
-                              "font-size": "12px",
-                              overflow: "hidden",
-                              "text-overflow": "ellipsis",
-                              "white-space": "nowrap",
-                            }}
-                          >
-                            {item.file_name}
-                          </span>
-                        </Td>
-                        <Td maxW="180px">
-                          <span
-                            style={{
-                              display: "block",
-                              "font-size": "14px",
-                              "font-weight": "500",
-                              overflow: "hidden",
-                              "text-overflow": "ellipsis",
-                              "white-space": "nowrap",
-                            }}
-                          >
-                            {item.scraped_name || item.file_name}
-                          </span>
-                        </Td>
-                        <Td>
-                          <Show
-                            when={item.cover}
-                            fallback={
-                              <Box
-                                w="48px"
-                                h="64px"
-                                rounded="$md"
-                                bgColor="$neutral3"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                              >
-                                <Text fontSize="$xl">{props.icon}</Text>
-                              </Box>
-                            }
-                          >
-                            <img
-                              src={resolveMediaCover(item)}
-                              loading="lazy"
-                              alt={item.scraped_name || item.file_name}
-                              style={{
-                                width: "48px",
-                                height: "64px",
-                                "object-fit": "cover",
-                                "border-radius": "6px",
-                                border: "1px solid rgba(128,128,128,0.25)",
-                                "background-color": "rgba(128,128,128,0.08)",
-                              }}
-                            />
-                          </Show>
-                        </Td>
-                        <Td>
-                          <Text fontSize="$xs" color="$neutral11">
-                            {getScanPathName(item.scan_path_id)}
-                          </Text>
-                        </Td>
-                        <Td>
-                          <Text fontSize="$xs" color="$neutral11">
-                            {item.release_date?.slice(0, 10) || "-"}
-                          </Text>
-                        </Td>
-                        <Td>
-                          <Text fontSize="$xs" color="$neutral11">
-                            {item.rating > 0 ? item.rating.toFixed(1) : "-"}
-                          </Text>
-                        </Td>
-                        <Td>
-                          <Switch
-                            checked={item.hidden}
-                            onChange={async (e) => {
-                              await adminUpdateMediaItem({
-                                ...item,
-                                hidden: e.currentTarget.checked,
-                              })
-                              refetchItems()
-                            }}
-                          />
-                        </Td>
-                        <Td>
-                          <HStack spacing="$1">
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditingItem({ ...item })
-                                setShowEditModal(true)
-                              }}
-                            >
-                              {t("media.admin.edit")}
-                            </Button>
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              colorScheme="danger"
-                              onClick={() =>
-                                handleDeleteItem(
-                                  item.id,
-                                  item.scraped_name || item.file_name,
-                                )
-                              }
-                            >
-                              {t("global.delete")}
-                            </Button>
-                          </HStack>
-                        </Td>
-                      </Tr>
-                    )}
-                  </For>
-                </Show>
-              </Show>
-            </Tbody>
-          </Table>
+                </div>
+              </>
+            }
+          />
 
           {/* 分页 */}
           <Show when={total() > 0}>
-            <HStack
-              justifyContent="center"
-              alignItems="center"
-              spacing="$2"
-              py="$3"
-              borderTop="1px solid $neutral4"
-            >
+            <div class="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
               <Button
-                size="xs"
-                variant="ghost"
+                size="sm"
+                variant="outline"
+                aria-label={t("media.browser.first_page")}
                 disabled={page() <= 1}
                 onClick={() => setPage(1)}
               >
-                «
+                <TbChevronsLeft class="size-4" />
               </Button>
               <Button
-                size="xs"
-                variant="ghost"
+                size="sm"
+                variant="outline"
                 disabled={page() <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
+                <TbChevronLeft class="mr-1 size-4" />
                 {t("media.admin.prev_page")}
               </Button>
-              <Text fontSize="$sm" color="$neutral11">
+              <span>
                 {t("media.admin.page_info", {
                   page: page(),
                   totalPages: totalPages(),
                   total: total(),
                 })}
-              </Text>
+              </span>
               <Button
-                size="xs"
-                variant="ghost"
+                size="sm"
+                variant="outline"
                 disabled={page() >= totalPages()}
                 onClick={() => setPage((p) => Math.min(totalPages(), p + 1))}
               >
                 {t("media.admin.next_page")}
+                <TbChevronRight class="ml-1 size-4" />
               </Button>
               <Button
-                size="xs"
-                variant="ghost"
+                size="sm"
+                variant="outline"
+                aria-label={t("media.browser.last_page")}
                 disabled={page() >= totalPages()}
                 onClick={() => setPage(totalPages())}
               >
-                »
+                <TbChevronsRight class="size-4" />
               </Button>
-            </HStack>
+            </div>
           </Show>
-        </Box>
+        </div>
       </Show>
 
       {/* 缩略图设置（图片 / 书籍） */}
@@ -1354,263 +1202,216 @@ export const MediaManagePage = (props: MediaManagePageProps) => {
       </Show>
 
       {/* 扫描路径弹窗 */}
-      <Modal
-        opened={showScanPathModal()}
-        onClose={() => setShowScanPathModal(false)}
-        size="lg"
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {editingScanPath()?.id
-              ? t("media.admin.edit_scan_path")
-              : t("media.admin.add_scan_path")}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing="$4" alignItems="stretch">
-              <FormControl>
-                <FormLabel>{t("media.admin.col_path_name")}</FormLabel>
-                <Input
-                  placeholder={t("media.admin.name_placeholder")}
-                  value={editingScanPath()?.name ?? ""}
-                  onInput={(e) =>
-                    setEditingScanPath((sp) => ({
-                      ...sp!,
-                      name: e.currentTarget.value,
-                    }))
-                  }
-                />
-                <FormHelperText>{t("media.admin.name_helper")}</FormHelperText>
-              </FormControl>
-              <FormControl>
-                <FormLabel>{t("media.admin.col_scan_path")}</FormLabel>
-                <Input
-                  placeholder="/movies"
-                  value={editingScanPath()?.path ?? "/"}
-                  onInput={(e) =>
-                    setEditingScanPath((sp) => ({
-                      ...sp!,
-                      path: e.currentTarget.value,
-                    }))
-                  }
-                />
-                <FormHelperText>
-                  {t("media.admin.scan_path_helper")}
-                </FormHelperText>
-              </FormControl>
-              <FormControl>
-                <FormLabel>{t("media.admin.col_type_tags")}</FormLabel>
-                <Input
-                  placeholder={t("media.admin.type_tag_placeholder")}
-                  value={editingScanPath()?.type_tag ?? ""}
-                  onInput={(e) =>
-                    setEditingScanPath((sp) => ({
-                      ...sp!,
-                      type_tag: e.currentTarget.value,
-                    }))
-                  }
-                />
-                <FormHelperText>
-                  {t("media.admin.type_tag_helper")}
-                </FormHelperText>
-              </FormControl>
-              <FormControl>
-                <FormLabel>{t("media.admin.col_content_tags")}</FormLabel>
-                <Input
-                  placeholder={t("media.admin.content_tags_placeholder")}
-                  value={editingScanPath()?.content_tags ?? ""}
-                  onInput={(e) =>
-                    setEditingScanPath((sp) => ({
-                      ...sp!,
-                      content_tags: e.currentTarget.value,
-                    }))
-                  }
-                />
-                <FormHelperText>
-                  {t("media.admin.content_tags_helper")}
-                </FormHelperText>
-              </FormControl>
-              <HStack spacing="$6" flexWrap="wrap">
-                <FormControl
-                  display="flex"
-                  alignItems="center"
-                  gap="$2"
-                  w="auto"
-                >
-                  <FormLabel m="0">
-                    {t("media.admin.path_merge_mode")}
-                  </FormLabel>
-                  <Switch
-                    checked={editingScanPath()?.path_merge ?? false}
-                    onChange={(e) =>
-                      setEditingScanPath((sp) => ({
-                        ...sp!,
-                        path_merge: e.currentTarget.checked,
-                      }))
-                    }
-                  />
-                </FormControl>
-                <FormControl
-                  display="flex"
-                  alignItems="center"
-                  gap="$2"
-                  w="auto"
-                >
-                  <FormLabel m="0">{t("media.admin.enable_scrape")}</FormLabel>
-                  <Switch
-                    checked={editingScanPath()?.enable_scrape ?? true}
-                    onChange={(e) =>
-                      setEditingScanPath((sp) => ({
-                        ...sp!,
-                        enable_scrape: e.currentTarget.checked,
-                      }))
-                    }
-                  />
-                </FormControl>
-              </HStack>
-              <Text fontSize="$xs" color="$neutral11">
-                {t("media.admin.media_type_fixed", { type: props.title })}
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack spacing="$2">
-              <Button
-                variant="ghost"
-                onClick={() => setShowScanPathModal(false)}
+      <Dialog open={showScanPathModal()} onOpenChange={setShowScanPathModal}>
+        <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingScanPath()?.id
+                ? t("media.admin.edit_scan_path")
+                : t("media.admin.add_scan_path")}
+            </DialogTitle>
+            <DialogDescription class="sr-only">
+              {t("media.admin.media_type_fixed", { type: props.title })}
+            </DialogDescription>
+          </DialogHeader>
+          <div class="flex flex-col gap-4">
+            <Field
+              label={t("media.admin.col_path_name")}
+              help={t("media.admin.name_helper")}
+            >
+              <Input
+                placeholder={t("media.admin.name_placeholder")}
+                value={editingScanPath()?.name ?? ""}
+                onInput={(e) =>
+                  setEditingScanPath((sp) => ({
+                    ...sp!,
+                    name: e.currentTarget.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field
+              label={t("media.admin.col_scan_path")}
+              help={t("media.admin.scan_path_helper")}
+            >
+              <Input
+                placeholder="/movies"
+                value={editingScanPath()?.path ?? "/"}
+                onInput={(e) =>
+                  setEditingScanPath((sp) => ({
+                    ...sp!,
+                    path: e.currentTarget.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field
+              label={t("media.admin.col_type_tags")}
+              help={t("media.admin.type_tag_helper")}
+            >
+              <Input
+                placeholder={t("media.admin.type_tag_placeholder")}
+                value={editingScanPath()?.type_tag ?? ""}
+                onInput={(e) =>
+                  setEditingScanPath((sp) => ({
+                    ...sp!,
+                    type_tag: e.currentTarget.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field
+              label={t("media.admin.col_content_tags")}
+              help={t("media.admin.content_tags_helper")}
+            >
+              <Input
+                placeholder={t("media.admin.content_tags_placeholder")}
+                value={editingScanPath()?.content_tags ?? ""}
+                onInput={(e) =>
+                  setEditingScanPath((sp) => ({
+                    ...sp!,
+                    content_tags: e.currentTarget.value,
+                  }))
+                }
+              />
+            </Field>
+            <div class="flex flex-wrap gap-x-6 gap-y-3">
+              <Switch
+                class="flex items-center gap-2"
+                checked={editingScanPath()?.path_merge ?? false}
+                onChange={(on) =>
+                  setEditingScanPath((sp) => ({ ...sp!, path_merge: on }))
+                }
               >
-                {t("global.cancel")}
-              </Button>
-              <Button
-                colorScheme="accent"
-                loading={scanPathSaving()}
-                onClick={handleSaveScanPath}
+                <SwitchControl>
+                  <SwitchThumb />
+                </SwitchControl>
+                <SwitchLabel class="text-sm">
+                  {t("media.admin.path_merge_mode")}
+                </SwitchLabel>
+              </Switch>
+              <Switch
+                class="flex items-center gap-2"
+                checked={editingScanPath()?.enable_scrape ?? true}
+                onChange={(on) =>
+                  setEditingScanPath((sp) => ({ ...sp!, enable_scrape: on }))
+                }
               >
-                {t("global.save")}
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+                <SwitchControl>
+                  <SwitchThumb />
+                </SwitchControl>
+                <SwitchLabel class="text-sm">
+                  {t("media.admin.enable_scrape")}
+                </SwitchLabel>
+              </Switch>
+            </div>
+            <p class="m-0 text-xs text-muted-foreground">
+              {t("media.admin.media_type_fixed", { type: props.title })}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setShowScanPathModal(false)}
+            >
+              {t("global.cancel")}
+            </Button>
+            <Button disabled={scanPathSaving()} onClick={handleSaveScanPath}>
+              {t("global.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 条目编辑弹窗 */}
-      <Modal
-        opened={showEditModal()}
-        onClose={() => setShowEditModal(false)}
-        size="lg"
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{t("media.admin.edit_item_title")}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing="$3" alignItems="stretch">
-              <For
-                each={[
-                  { key: "scraped_name", label: t("media.admin.item_name") },
-                  { key: "cover", label: t("media.admin.item_cover_url") },
-                  {
-                    key: "release_date",
-                    label: t("media.admin.item_release_date"),
-                  },
-                  { key: "genre", label: t("media.admin.item_genre") },
-                  { key: "authors", label: t("media.admin.item_authors") },
-                ]}
-              >
-                {(field) => (
-                  <FormControl>
-                    <FormLabel>{field.label}</FormLabel>
-                    <Input
-                      value={
-                        ((editingItem() as any)?.[field.key] as string) ?? ""
-                      }
-                      onInput={(e) =>
-                        setEditingItem((item) => ({
-                          ...item!,
-                          [field.key]: e.currentTarget.value,
-                        }))
-                      }
-                    />
-                  </FormControl>
-                )}
-              </For>
-              <FormControl>
-                <FormLabel>{t("media.admin.rating_label")}</FormLabel>
-                <Input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={editingItem()?.rating ?? 0}
-                  onInput={(e) =>
-                    setEditingItem((item) => ({
-                      ...item!,
-                      rating: parseFloat(e.currentTarget.value),
-                    }))
-                  }
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>{t("media.admin.summary")}</FormLabel>
-                <Textarea
-                  rows={3}
-                  value={editingItem()?.description ?? ""}
-                  onInput={(e) =>
-                    setEditingItem((item) => ({
-                      ...item!,
-                      description: e.currentTarget.value,
-                    }))
-                  }
-                />
-              </FormControl>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack spacing="$2">
-              <Button variant="ghost" onClick={() => setShowEditModal(false)}>
-                {t("global.cancel")}
-              </Button>
-              <Button colorScheme="accent" onClick={handleSaveItem}>
-                {t("global.save")}
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <Dialog open={showEditModal()} onOpenChange={setShowEditModal}>
+        <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{t("media.admin.edit_item_title")}</DialogTitle>
+            <DialogDescription class="sr-only">
+              {t("media.admin.edit_item_title")}
+            </DialogDescription>
+          </DialogHeader>
+          <div class="flex flex-col gap-3">
+            <For
+              each={[
+                { key: "scraped_name", label: t("media.admin.item_name") },
+                { key: "cover", label: t("media.admin.item_cover_url") },
+                {
+                  key: "release_date",
+                  label: t("media.admin.item_release_date"),
+                },
+                { key: "genre", label: t("media.admin.item_genre") },
+                { key: "authors", label: t("media.admin.item_authors") },
+              ]}
+            >
+              {(field) => (
+                <Field label={field.label}>
+                  <Input
+                    value={
+                      ((editingItem() as any)?.[field.key] as string) ?? ""
+                    }
+                    onInput={(e) =>
+                      setEditingItem((item) => ({
+                        ...item!,
+                        [field.key]: e.currentTarget.value,
+                      }))
+                    }
+                  />
+                </Field>
+              )}
+            </For>
+            <Field label={t("media.admin.rating_label")}>
+              <Input
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={editingItem()?.rating ?? 0}
+                onInput={(e) =>
+                  setEditingItem((item) => ({
+                    ...item!,
+                    rating: parseFloat(e.currentTarget.value),
+                  }))
+                }
+              />
+            </Field>
+            <Field label={t("media.admin.summary")}>
+              <Textarea
+                rows={3}
+                value={editingItem()?.description ?? ""}
+                onInput={(e) =>
+                  setEditingItem((item) => ({
+                    ...item!,
+                    description: e.currentTarget.value,
+                  }))
+                }
+              />
+            </Field>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+              {t("global.cancel")}
+            </Button>
+            <Button onClick={handleSaveItem}>{t("global.save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 确认弹窗 */}
-      <Modal
-        opened={!!confirmState()}
-        onClose={() => setConfirmState(null)}
-        size="md"
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{confirmState()?.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text fontSize="$sm" css={{ whiteSpace: "pre-line" }}>
-              {confirmState()?.message}
-            </Text>
-          </ModalBody>
-          <ModalFooter>
-            <HStack spacing="$2">
-              <Button variant="ghost" onClick={() => setConfirmState(null)}>
-                {t("global.cancel")}
-              </Button>
-              <Button
-                colorScheme={confirmState()?.danger ? "danger" : "accent"}
-                loading={confirming()}
-                onClick={runConfirm}
-              >
-                {confirmState()?.confirmText || t("global.confirm")}
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </VStack>
+      <ConfirmDialog
+        open={!!confirmState()}
+        onOpenChange={(open) => !open && setConfirmState(null)}
+        title={confirmState()?.title ?? ""}
+        description={
+          <span class="whitespace-pre-line">{confirmState()?.message}</span>
+        }
+        confirmLabel={confirmState()?.confirmText}
+        destructive={confirmState()?.danger}
+        loading={confirming()}
+        onConfirm={runConfirm}
+      />
+    </div>
   )
 }
 
@@ -1619,43 +1420,27 @@ export const MediaManagePage = (props: MediaManagePageProps) => {
 export const VideoManage = () => {
   const t = useT()
   return (
-    <MediaManagePage
-      mediaType="video"
-      title={t("media.admin.title_video")}
-      icon="🎬"
-    />
+    <MediaManagePage mediaType="video" title={t("media.admin.title_video")} />
   )
 }
 
 export const MusicManage = () => {
   const t = useT()
   return (
-    <MediaManagePage
-      mediaType="music"
-      title={t("media.admin.title_music")}
-      icon="🎵"
-    />
+    <MediaManagePage mediaType="music" title={t("media.admin.title_music")} />
   )
 }
 
 export const ImageManage = () => {
   const t = useT()
   return (
-    <MediaManagePage
-      mediaType="image"
-      title={t("media.admin.title_image")}
-      icon="🖼️"
-    />
+    <MediaManagePage mediaType="image" title={t("media.admin.title_image")} />
   )
 }
 
 export const BookManage = () => {
   const t = useT()
   return (
-    <MediaManagePage
-      mediaType="book"
-      title={t("media.admin.title_book")}
-      icon="📚"
-    />
+    <MediaManagePage mediaType="book" title={t("media.admin.title_book")} />
   )
 }

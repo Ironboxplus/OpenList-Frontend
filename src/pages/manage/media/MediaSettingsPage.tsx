@@ -1,24 +1,15 @@
+import { Alert, AlertDescription } from "~/components/ui/alert"
+import { Button } from "~/components/ui/button"
+import { Input } from "~/components/ui/input"
 import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Box,
-  Button,
-  Divider,
-  FormControl,
-  FormLabel,
-  HStack,
-  Heading,
-  Input,
   Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  VStack,
-} from "@hope-ui/solid"
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table"
+import { SettingsSection } from "~/features/settings/form/SettingsSection"
 import { For, Show, createSignal, onMount } from "solid-js"
 import CommonSettings from "../settings/Common"
 import { useT } from "~/hooks"
@@ -98,185 +89,137 @@ const MediaSettingsPage = () => {
     }
   }
 
+  const Protocol = (p: {
+    name: string
+    enabled: boolean
+    url: string
+    disabledKey: string
+  }) => (
+    <div class="flex items-center justify-between gap-3 py-3">
+      <div class="min-w-0">
+        <div class="font-medium">{p.name}</div>
+        <div class="break-all text-xs text-muted-foreground">
+          {p.enabled
+            ? p.url
+            : t("manage.media_lib.protocol_disabled", { key: p.disabledKey })}
+        </div>
+      </div>
+      <Show when={p.enabled}>
+        <Button variant="ghost" size="sm" onClick={() => copy(p.url)}>
+          {t("manage.media_lib.copy_url")}
+        </Button>
+      </Show>
+    </div>
+  )
+
   return (
-    <VStack
-      spacing="$5"
-      alignItems="stretch"
-      p={{ "@initial": "$3", "@md": "$6" }}
-      maxW="1300px"
-    >
-      <VStack alignItems="flex-start" spacing="2px">
-        <Heading size="lg">{t("manage.media_lib.base_title")}</Heading>
-        <Text fontSize="$sm" color="$neutral11">
-          {t("manage.media_lib.base_desc")}
-        </Text>
-      </VStack>
+    <div class="flex w-full flex-col gap-4">
+      <h1 class="sr-only">{t("manage.media_lib.base_title")}</h1>
+      <p class="m-0 text-sm text-muted-foreground">
+        {t("manage.media_lib.base_desc")}
+      </p>
 
       {/* 服务端设置项：直接复用后台的 SettingItem 渲染器 */}
       <CommonSettings group={Group.MEDIA} keys={BASE_KEYS} />
 
-      <Divider />
-
       {/* 协议接入 */}
-      <Box bgColor="$neutral1" rounded="$lg" border="1px solid $neutral4">
-        <HStack px="$4" py="$3" borderBottom="1px solid $neutral4">
-          <Heading size="sm">{t("manage.media_lib.protocol")}</Heading>
-        </HStack>
-        <VStack spacing="$3" alignItems="stretch" p="$4">
-          <HStack justifyContent="space-between" alignItems="center">
-            <VStack alignItems="flex-start" spacing="2px">
-              <Text fontWeight="$medium">Emby</Text>
-              <Text fontSize="$xs" color="$neutral11">
-                {mediaStatus().emby_enabled
-                  ? mediaStatus().emby_base_url
-                  : t("manage.media_lib.protocol_disabled", {
-                      key: "media_emby_enabled",
-                    })}
-              </Text>
-            </VStack>
-            <Show when={mediaStatus().emby_enabled}>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => copy(mediaStatus().emby_base_url)}
-              >
-                {t("manage.media_lib.copy_url")}
-              </Button>
-            </Show>
-          </HStack>
-          <Divider />
-          <HStack justifyContent="space-between" alignItems="center">
-            <VStack alignItems="flex-start" spacing="2px">
-              <Text fontWeight="$medium">OpenSubsonic</Text>
-              <Text fontSize="$xs" color="$neutral11">
-                {mediaStatus().subsonic_enabled
-                  ? mediaStatus().subsonic_base_url
-                  : t("manage.media_lib.protocol_disabled", {
-                      key: "media_subsonic_enabled",
-                    })}
-              </Text>
-            </VStack>
-            <Show when={mediaStatus().subsonic_enabled}>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => copy(mediaStatus().subsonic_base_url)}
-              >
-                {t("manage.media_lib.copy_url")}
-              </Button>
-            </Show>
-          </HStack>
-          <Divider />
-          <Text fontSize="$xs" color="$neutral11">
-            {t("manage.media_lib.protocol_auth_tip")}
-          </Text>
-        </VStack>
-      </Box>
+      <SettingsSection title={t("manage.media_lib.protocol")}>
+        <Protocol
+          name="Emby"
+          enabled={mediaStatus().emby_enabled}
+          url={mediaStatus().emby_base_url}
+          disabledKey="media_emby_enabled"
+        />
+        <Protocol
+          name="OpenSubsonic"
+          enabled={mediaStatus().subsonic_enabled}
+          url={mediaStatus().subsonic_base_url}
+          disabledKey="media_subsonic_enabled"
+        />
+        <p class="m-0 py-3 text-xs text-muted-foreground">
+          {t("manage.media_lib.protocol_auth_tip")}
+        </p>
+      </SettingsSection>
 
       {/* 应用密钥 */}
-      <Box bgColor="$neutral1" rounded="$lg" border="1px solid $neutral4">
-        <HStack
-          px="$4"
-          py="$3"
-          borderBottom="1px solid $neutral4"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <VStack alignItems="flex-start" spacing="2px">
-            <Heading size="sm">{t("manage.media_lib.app_keys")}</Heading>
-            <Text fontSize="$xs" color="$neutral11">
-              {t("manage.media_lib.app_keys_desc")}
-            </Text>
-          </VStack>
-          <HStack spacing="$2">
-            <FormControl display="flex" alignItems="center" gap="$2" w="auto">
-              <FormLabel m="0" fontSize="$sm">
-                {t("manage.media_lib.key_note")}
-              </FormLabel>
-              <Input
-                w="200px"
-                placeholder={t("manage.media_lib.key_note_placeholder")}
-                value={keyName()}
-                onInput={(e) => setKeyName(e.currentTarget.value)}
-              />
-            </FormControl>
-            <Button size="sm" colorScheme="accent" onClick={createKey}>
-              {t("manage.media_lib.create")}
-            </Button>
-          </HStack>
-        </HStack>
-        <VStack spacing="$3" alignItems="stretch" p="$4">
+      <SettingsSection
+        title={t("manage.media_lib.app_keys")}
+        description={t("manage.media_lib.app_keys_desc")}
+        actions={
+          <>
+            <Input
+              class="h-9 w-48"
+              aria-label={t("manage.media_lib.key_note")}
+              placeholder={t("manage.media_lib.key_note_placeholder")}
+              value={keyName()}
+              onInput={(e) => setKeyName(e.currentTarget.value)}
+            />
+            <Button onClick={createKey}>{t("manage.media_lib.create")}</Button>
+          </>
+        }
+      >
+        <div class="flex flex-col gap-3 py-4">
           <Show when={plainKey()}>
-            <Alert status="warning" variant="subtle">
-              <AlertIcon />
+            <Alert variant="warning">
               <AlertDescription>
-                <VStack alignItems="flex-start" spacing="$1">
-                  <Text fontWeight="$medium">
-                    {t("manage.media_lib.key_once")}
-                  </Text>
-                  <HStack spacing="$2" alignItems="center">
-                    <Text css={{ fontFamily: "$mono", wordBreak: "break-all" }}>
-                      {plainKey()}
-                    </Text>
-                    <Button size="xs" onClick={() => copy(plainKey())}>
-                      {t("manage.media_lib.copy")}
-                    </Button>
-                  </HStack>
-                </VStack>
+                <div class="font-medium">{t("manage.media_lib.key_once")}</div>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                  <span class="break-all font-mono">{plainKey()}</span>
+                  <Button size="sm" onClick={() => copy(plainKey())}>
+                    {t("manage.media_lib.copy")}
+                  </Button>
+                </div>
               </AlertDescription>
             </Alert>
           </Show>
           <Table>
-            <Thead>
-              <Tr>
-                <Th>{t("manage.media_lib.key_note")}</Th>
-                <Th>{t("manage.media_lib.key_prefix")}</Th>
-                <Th>{t("manage.media_lib.key_last_used")}</Th>
-                <Th />
-              </Tr>
-            </Thead>
-            <Tbody>
+            <TableHeader>
+              <TableRow class="hover:bg-transparent">
+                <TableHead>{t("manage.media_lib.key_note")}</TableHead>
+                <TableHead>{t("manage.media_lib.key_prefix")}</TableHead>
+                <TableHead>{t("manage.media_lib.key_last_used")}</TableHead>
+                <TableHead class="w-px" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               <For
                 each={keys()}
                 fallback={
-                  <Tr>
-                    <Td colSpan={4}>
-                      <Text color="$neutral11">
-                        {t("manage.media_lib.no_keys")}
-                      </Text>
-                    </Td>
-                  </Tr>
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      class="py-6 text-center text-muted-foreground"
+                    >
+                      {t("manage.media_lib.no_keys")}
+                    </TableCell>
+                  </TableRow>
                 }
               >
                 {(key) => (
-                  <Tr>
-                    <Td>{key.name}</Td>
-                    <Td>
-                      <Text css={{ fontFamily: "$mono" }}>{key.prefix}…</Text>
-                    </Td>
-                    <Td>
-                      <Text fontSize="$xs" color="$neutral11">
-                        {key.last_used_at || t("manage.media_lib.key_never")}
-                      </Text>
-                    </Td>
-                    <Td>
+                  <TableRow>
+                    <TableCell>{key.name}</TableCell>
+                    <TableCell class="font-mono">{key.prefix}…</TableCell>
+                    <TableCell class="text-xs text-muted-foreground">
+                      {key.last_used_at || t("manage.media_lib.key_never")}
+                    </TableCell>
+                    <TableCell class="text-right">
                       <Button
-                        size="xs"
+                        size="sm"
                         variant="ghost"
-                        colorScheme="danger"
+                        class="text-destructive hover:text-destructive"
                         onClick={() => removeKey(key)}
                       >
                         {t("manage.media_lib.delete")}
                       </Button>
-                    </Td>
-                  </Tr>
+                    </TableCell>
+                  </TableRow>
                 )}
               </For>
-            </Tbody>
+            </TableBody>
           </Table>
-        </VStack>
-      </Box>
-    </VStack>
+        </div>
+      </SettingsSection>
+    </div>
   )
 }
 
