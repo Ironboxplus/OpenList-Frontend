@@ -10,8 +10,11 @@ import {
   onMount,
   onCleanup,
   lazy,
+  Switch,
+  Match,
 } from "solid-js"
 import { useColorMode } from "@hope-ui/solid"
+import { Portal } from "solid-js/web"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
 import {
@@ -46,6 +49,13 @@ import { cardRating, ratingBadges } from "~/features/media/logic"
 import { CoverMosaic } from "./CoverMosaic"
 import { RatingBadges } from "./RatingBadges"
 import { episodeRows, episodeText, type EpisodeRow } from "./episodes"
+import { MediaMovi } from "./MediaMovi"
+import {
+  getPlayerChoice,
+  pickEngine,
+  setPlayerChoice,
+  type PlayerChoice,
+} from "./player-choice"
 import { videoKindLabel } from "./videoKind"
 import { base_path, ext, notify } from "~/utils"
 import { useT } from "~/hooks"
@@ -303,13 +313,23 @@ const VideoCard = (props: { item: MediaItem }) => {
 }
 
 // ==================== 内嵌视频播放器 ====================
-const VideoPlayer = (props: {
+// 云端转码的决策结果：由覆盖层先问好，再决定用哪个播放器
+interface TranscodeDecision {
+  masterUrl: string
+  jobId?: string
+  profile?: string
+}
+
+/** Artplayer 引擎：直链、HLS、mpegts、mediabunny 与云端转码都在这里 */
+const ArtplayerView = (props: {
   item: MediaItem
   // 可选：指定播放的文件路径和标题（用于选集播放）
   filePath?: string
   title?: string
   episodeIndex?: number
-  onClose: () => void
+  resumeSeconds: number
+  transcode?: TranscodeDecision
+  onTime: (seconds: number) => void
 }) => {
   const t = useT()
   let playerContainer: HTMLDivElement | undefined
@@ -333,46 +353,18 @@ const VideoPlayer = (props: {
     directUrl = await getSignedProxyUrl(videoPath())
     if (disposed || !playerContainer) return
 
-    // 读取上次播放进度，用于续播
-    let resumeSeconds = 0
-    try {
-      const prog = await getMediaProgress(
-        props.item.id,
-        props.episodeIndex ?? 0,
-      )
-      if (prog.code === 200 && prog.data && !prog.data.played) {
-        resumeSeconds = prog.data.position_ticks / 10_000_000
-      }
-    } catch {
-      // 忽略进度读取失败
-    }
-    if (disposed) return
-
-    // ---- 云端转码判断 ----
-    // 播放前先调用后端转码决策接口，如果需要转码则使用 HLS master_url 播放
+    // 续播位置与云端转码决策由覆盖层取得（见 VideoPlayer）
+    const resumeSeconds = props.resumeSeconds
     let useTranscode = false
     let actualUrl = videoUrl()
-    try {
-      const filePath = videoPath()
-      const tcResp = await requestTranscodePlay(filePath)
-      if (
-        tcResp.code === 200 &&
-        tcResp.data?.transcode &&
-        tcResp.data.master_url
-      ) {
-        useTranscode = true
-        actualUrl = tcResp.data.master_url
-        fileExt = "m3u8"
-        console.log(
-          `[transcode] 媒体库使用云端转码播放: job=${tcResp.data.job_id}, profile=${tcResp.data.profile}`,
-        )
-      }
-    } catch (e) {
-      // 转码接口失败（可能未开启），静默降级到直链播放
-      console.debug("[transcode] 转码接口不可用，使用直链播放", e)
+    if (props.transcode) {
+      useTranscode = true
+      actualUrl = props.transcode.masterUrl
+      fileExt = "m3u8"
+      console.log(
+        `[transcode] 媒体库使用云端转码播放: job=${props.transcode.jobId}, profile=${props.transcode.profile}`,
+      )
     }
-    // 等待转码响应期间若已卸载，放弃初始化，避免产生无人销毁的播放器实例
-    if (disposed) return
 
     // 【预加载策略】
     // 1. 不在创建播放器时主动预取，避免点击视频立即触发数据加载；
@@ -683,6 +675,7 @@ const VideoPlayer = (props: {
       }
     })
     player.on("video:timeupdate", () => {
+      props.onTime(player?.currentTime || 0)
       const now = Date.now()
       if (now - lastSavedAt < 10_000) return
       lastSavedAt = now
@@ -756,66 +749,215 @@ const VideoPlayer = (props: {
   })
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: "0",
-        "z-index": "200",
-        background: "#000",
-        display: "flex",
-        "flex-direction": "column",
-      }}
-    >
+    <div style={{ width: "100%", height: "100%" }}>
       {/* Artplayer 自带加载层在自动播放被拦截时会一直转圈，直接隐藏 */}
       <style>{`.art-loading { display: none !important; }`}</style>
-      {/* 顶部栏 */}
+      <div ref={playerContainer} style={{ width: "100%", height: "100%" }} />
+    </div>
+  )
+}
+
+/**
+ * 全屏播放覆盖层：先取续播位置并问云端转码决策，再按所选播放器打开。
+ * 默认 movi；转码（HLS master）一律走 Artplayer；也可以交给外部播放器。
+ */
+const VideoPlayer = (props: {
+  item: MediaItem
+  // 可选：指定播放的文件路径和标题（用于选集播放）
+  filePath?: string
+  title?: string
+  episodeIndex?: number
+  onNextEpisode?: () => void
+  onClose: () => void
+}) => {
+  const t = useT()
+  const videoPath = () => props.filePath ?? mediaItemPath(props.item)
+  const videoTitle = () => props.title ?? getMediaName(props.item)
+  const episodeIndex = () => props.episodeIndex ?? 0
+
+  const [choice, setChoice] = createSignal<PlayerChoice>(getPlayerChoice())
+  // movi 取不到流时只在本次覆盖层内退回 Artplayer，不改存下的选择
+  const [moviFailed, setMoviFailed] = createSignal(false)
+  // 切换播放器时从当前位置接着放
+  let lastTime = 0
+
+  const [prep] = createResource(async () => {
+    let resume = 0
+    try {
+      const prog = await getMediaProgress(props.item.id, episodeIndex())
+      if (prog.code === 200 && prog.data && !prog.data.played) {
+        resume = prog.data.position_ticks / 10_000_000
+      }
+    } catch {
+      // 忽略进度读取失败
+    }
+    // 播放前先调用后端转码决策接口，如果需要转码则使用 HLS master_url 播放
+    let transcode: TranscodeDecision | undefined
+    try {
+      const tcResp = await requestTranscodePlay(videoPath())
+      if (
+        tcResp.code === 200 &&
+        tcResp.data?.transcode &&
+        tcResp.data.master_url
+      ) {
+        transcode = {
+          masterUrl: tcResp.data.master_url,
+          jobId: tcResp.data.job_id,
+          profile: tcResp.data.profile,
+        }
+      }
+    } catch (e) {
+      // 转码接口失败（可能未开启），静默降级到直链播放
+      console.debug("[transcode] 转码接口不可用，使用直链播放", e)
+    }
+    return { resume, transcode }
+  })
+
+  const engine = () =>
+    pickEngine(moviFailed() ? "artplayer" : choice(), !!prep()?.transcode)
+  const resumeAt = () => (lastTime > 5 ? lastTime : (prep()?.resume ?? 0))
+
+  // 挂到 body 并抬到外壳侧栏（z 1200）之上，但仍低于弹出菜单（hope 1400+）：
+  // 否则侧栏/顶栏会盖住覆盖层的顶部栏（返回、选播放器）
+  return (
+    <Portal>
       <div
         style={{
+          position: "fixed",
+          inset: "0",
+          "z-index": "1300",
+          background: "#000",
           display: "flex",
-          "align-items": "center",
-          gap: "12px",
-          padding: "10px 16px",
-          background: "rgba(0,0,0,0.8)",
-          "flex-shrink": "0",
+          "flex-direction": "column",
         }}
       >
-        <button
-          onClick={props.onClose}
+        {/* 顶部栏 */}
+        <div
           style={{
-            background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            "border-radius": "8px",
-            color: "#94a3b8",
-            padding: "6px 14px",
-            cursor: "pointer",
-            "font-size": "13px",
+            display: "flex",
+            "align-items": "center",
+            gap: "12px",
+            padding: "10px 16px",
+            background: "rgba(0,0,0,0.8)",
+            "flex-shrink": "0",
           }}
         >
-          ← 返回
-        </button>
-        <span
-          style={{
-            color: "#e2e8f0",
-            "font-size": "14px",
-            "font-weight": "500",
-          }}
-        >
-          {videoTitle()}
-        </span>
-        <div style={{ "margin-left": "auto" }}>
-          <OpenWithPlayer
-            itemId={props.item.id}
-            path={props.filePath}
-            name={props.title ?? props.item.file_name}
-          />
+          <button
+            onClick={props.onClose}
+            style={{
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              "border-radius": "8px",
+              color: "#94a3b8",
+              padding: "6px 14px",
+              cursor: "pointer",
+              "font-size": "13px",
+            }}
+          >
+            ← 返回
+          </button>
+          <span
+            style={{
+              color: "#e2e8f0",
+              "font-size": "14px",
+              "font-weight": "500",
+            }}
+          >
+            {videoTitle()}
+          </span>
+          <div
+            style={{
+              "margin-left": "auto",
+              display: "flex",
+              "align-items": "center",
+              gap: "8px",
+            }}
+          >
+            <Show when={props.onNextEpisode}>
+              <button
+                id="media-next-episode"
+                onClick={() => props.onNextEpisode?.()}
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  "border-radius": "8px",
+                  color: "#94a3b8",
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  "font-size": "13px",
+                }}
+              >
+                {t("media.video.next_episode")}
+              </button>
+            </Show>
+            <select
+              id="media-player-choice"
+              aria-label={t("media.video.player_choice")}
+              title={
+                prep()?.transcode
+                  ? t("media.video.player_transcode_note")
+                  : t("media.video.player_choice")
+              }
+              disabled={!!prep()?.transcode}
+              value={engine()}
+              onChange={(e) => {
+                const v = e.currentTarget.value as PlayerChoice
+                setMoviFailed(false)
+                setPlayerChoice(v)
+                setChoice(v)
+              }}
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                "border-radius": "8px",
+                color: "#e2e8f0",
+                padding: "6px 10px",
+                "font-size": "13px",
+              }}
+            >
+              <option value="movi">movi</option>
+              <option value="artplayer">Artplayer</option>
+            </select>
+            <OpenWithPlayer
+              itemId={props.item.id}
+              path={props.filePath}
+              name={props.title ?? props.item.file_name}
+            />
+          </div>
+        </div>
+
+        {/* 播放区域 */}
+        <div style={{ flex: "1", position: "relative", background: "#000" }}>
+          <Show when={prep()}>
+            {(p) => (
+              <Switch>
+                <Match when={engine() === "movi"}>
+                  <MediaMovi
+                    itemId={props.item.id}
+                    episodeIndex={episodeIndex()}
+                    path={videoPath()}
+                    resumeSeconds={resumeAt()}
+                    onFail={() => setMoviFailed(true)}
+                    onTime={(s) => (lastTime = s)}
+                  />
+                </Match>
+                <Match when={engine() === "artplayer"}>
+                  <ArtplayerView
+                    item={props.item}
+                    filePath={props.filePath}
+                    title={props.title}
+                    episodeIndex={props.episodeIndex}
+                    resumeSeconds={resumeAt()}
+                    transcode={p().transcode}
+                    onTime={(s) => (lastTime = s)}
+                  />
+                </Match>
+              </Switch>
+            )}
+          </Show>
         </div>
       </div>
-
-      {/* 播放区域 */}
-      <div style={{ flex: "1", position: "relative", background: "#000" }}>
-        <div ref={playerContainer} style={{ width: "100%", height: "100%" }} />
-      </div>
-    </div>
+    </Portal>
   )
 }
 
@@ -903,6 +1045,16 @@ const VideoDetail = (props: {
 
   const [showPlayer, setShowPlayer] = createSignal(false)
   const [editing, setEditing] = createSignal(false)
+  // 播放中的下一集（按选集列表顺序）；最后一集或不是选集播放时没有
+  const nextEpisode = () => {
+    const cur = currentEpisode()
+    const it = item()
+    if (!cur || !it) return undefined
+    const rows = episodeRows(it)
+    const i = rows.findIndex((e) => e.file_name === cur.file_name)
+    const next = i >= 0 ? rows[i + 1] : undefined
+    return next ? () => setCurrentEpisode(next) : undefined
+  }
   // 当前播放的选集（null 表示播放主文件）
   const [currentEpisode, setCurrentEpisode] = createSignal<EpisodeInfo | null>(
     null,
@@ -1284,9 +1436,17 @@ const VideoDetail = (props: {
                 </Show>
 
                 {/* 播放器（全屏覆盖层） */}
-                <Show when={showPlayer()}>
+                <Show
+                  when={
+                    showPlayer()
+                      ? `e:${currentEpisode()?.file_name ?? ""}`
+                      : undefined
+                  }
+                  keyed
+                >
                   <VideoPlayer
                     item={data()}
+                    onNextEpisode={nextEpisode()}
                     filePath={
                       currentEpisode()
                         ? `${data().folder_path?.replace(/\/$/, "")}/${data().file_name}/${currentEpisode()!.file_name}`
