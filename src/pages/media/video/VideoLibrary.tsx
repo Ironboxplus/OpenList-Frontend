@@ -157,7 +157,10 @@ const VideoCard = (props: { item: MediaItem }) => {
         }}
       >
         <Show
-          when={resolveMediaCover(props.item) || props.item.child_posters?.[0]}
+          when={
+            resolveMediaCover(props.item) ||
+            (props.item.child_posters ?? []).length > 0
+          }
           fallback={
             <div
               style={{
@@ -174,18 +177,39 @@ const VideoCard = (props: { item: MediaItem }) => {
             </div>
           }
         >
-          <img
-            src={resolveMediaCover(props.item) || props.item.child_posters?.[0]}
-            alt={name()}
-            style={{
-              position: "absolute",
-              inset: "0",
-              width: "100%",
-              height: "100%",
-              "object-fit": "cover",
-            }}
-            loading="lazy"
-          />
+          {/* 合集没有自己的封面：成员封面拼成 2x2，只有一张时直接用它 */}
+          <Show
+            when={
+              !resolveMediaCover(props.item) &&
+              (props.item.child_posters ?? []).length > 1
+            }
+            fallback={
+              <img
+                src={
+                  resolveMediaCover(props.item) || props.item.child_posters?.[0]
+                }
+                alt={name()}
+                style={{
+                  position: "absolute",
+                  inset: "0",
+                  width: "100%",
+                  height: "100%",
+                  "object-fit": "cover",
+                }}
+                loading="lazy"
+              />
+            }
+          >
+            <div style={{ position: "absolute", inset: "0" }}>
+              <CoverMosaic
+                urls={props.item.child_posters ?? []}
+                width="100%"
+                height="100%"
+                radius="0"
+                flat
+              />
+            </div>
+          </Show>
         </Show>
         {/* 评分角标 */}
         <Show when={cardRating(props.item.ratings) || props.item.rating > 0}>
@@ -1690,11 +1714,11 @@ const VideoLibrary = () => {
               return (
                 <>
                   <Show
-                    when={resolveMediaCover(item)}
+                    when={resolveMediaCover(item) || item.child_posters?.[0]}
                     fallback={<span style={{ "font-size": "20px" }}>🎬</span>}
                   >
                     <img
-                      src={resolveMediaCover(item)}
+                      src={resolveMediaCover(item) || item.child_posters?.[0]}
                       style={{
                         width: "40px",
                         height: "58px",

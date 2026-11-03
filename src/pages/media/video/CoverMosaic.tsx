@@ -9,6 +9,8 @@ export const CoverMosaic = (props: {
   width: string
   height: string
   radius?: string
+  /** No drop shadow, for a mosaic that fills a card cover. */
+  flat?: boolean
 }) => (
   <div
     style={{
@@ -20,7 +22,7 @@ export const CoverMosaic = (props: {
       height: props.height,
       overflow: "hidden",
       "border-radius": props.radius ?? "12px",
-      "box-shadow": "0 20px 60px rgba(0,0,0,0.5)",
+      "box-shadow": props.flat ? "none" : "0 20px 60px rgba(0,0,0,0.5)",
     }}
   >
     <For each={props.urls.slice(0, 4)}>
