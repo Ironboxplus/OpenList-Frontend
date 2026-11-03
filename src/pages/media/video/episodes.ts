@@ -102,8 +102,14 @@ const rawRows = (item: MediaItem): EpisodeRow[] => {
   })
 }
 
-/** "S01E03 · Title" when the backend knows season and episode, else "第3集 Title". */
-export const episodeText = (row: EpisodeRow): string => {
+/** "S01E03 · Title" when the backend knows season and episode, else "Episode 3 Title". */
+export const episodeText = (
+  row: EpisodeRow,
+  t: (
+    key: "media.video.episode_n_title",
+    params: { index: number; title: string },
+  ) => string,
+): string => {
   const title = (row.title ?? "").trim()
   if (
     row.season !== undefined &&
@@ -113,6 +119,8 @@ export const episodeText = (row: EpisodeRow): string => {
     const label = episodeLabel(row.season, row.episode)
     return title ? `${label} · ${title}` : label
   }
-  if (row.index > 0) return `第${row.index}集${title ? " " + title : ""}`
+  if (row.index > 0) {
+    return t("media.video.episode_n_title", { index: row.index, title }).trim()
+  }
   return title || row.file_name
 }

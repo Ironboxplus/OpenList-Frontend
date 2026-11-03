@@ -56,6 +56,7 @@ import { cardRating, ratingBadges } from "~/features/media/logic"
 import { CoverMosaic } from "./CoverMosaic"
 import { RatingBadges } from "./RatingBadges"
 import { episodeRows, episodeText, type EpisodeRow } from "./episodes"
+import { VersionPicker } from "./VersionPicker"
 import { MediaMovi } from "./MediaMovi"
 import {
   isVersionSet,
@@ -1109,6 +1110,8 @@ const VideoDetail = (props: {
     const rows = versionRows(it)
     return rows.find((r) => r.index === versionIndex()) ?? rows[0]
   }
+  // an episode that exists in several release folders: the one whose versions are open
+  const [openEpisode, setOpenEpisode] = createSignal<EpisodeRow | null>(null)
   const versionLabelOf = (fileName: string) => {
     const it = item()
     const rows = it ? versionRows(it) : []
@@ -1541,50 +1544,11 @@ const VideoDetail = (props: {
                     }}
                   >
                     <Show when={isVersionSet(data())}>
-                      <div
-                        data-version-picker
-                        style={{
-                          display: "flex",
-                          gap: "6px",
-                          "flex-wrap": "wrap",
-                          "align-items": "center",
-                        }}
-                      >
-                        <For each={versionRows(data())}>
-                          {(v) => (
-                            <button
-                              data-version={v.index}
-                              onClick={() => setVersionIndex(v.index)}
-                              title={v.file_name}
-                              style={{
-                                background:
-                                  chosenVersion()?.index === v.index
-                                    ? accentGradient()
-                                    : isDark()
-                                      ? "rgba(255,255,255,0.06)"
-                                      : "rgba(0,0,0,0.05)",
-                                border: "none",
-                                "border-radius": "999px",
-                                color:
-                                  chosenVersion()?.index === v.index
-                                    ? "white"
-                                    : isDark()
-                                      ? "#94a3b8"
-                                      : "#475569",
-                                padding: "6px 12px",
-                                "font-size": "12px",
-                                cursor: "pointer",
-                                "max-width": "260px",
-                                overflow: "hidden",
-                                "text-overflow": "ellipsis",
-                                "white-space": "nowrap",
-                              }}
-                            >
-                              {versionLabelOf(v.file_name)}
-                            </button>
-                          )}
-                        </For>
-                      </div>
+                      <VersionPicker
+                        rows={versionRows(data())}
+                        value={chosenVersion()?.file_name}
+                        onChange={(r) => setVersionIndex(r.index)}
+                      />
                     </Show>
                     <MediaPlayButton
                       itemId={data().id}
@@ -1652,12 +1616,32 @@ const VideoDetail = (props: {
                         >
                           <For each={episodes}>
                             {(ep) => {
+                              const rowsOf = [ep, ...(ep.versions ?? [])]
                               const isActive = () =>
-                                currentEpisode()?.file_name === ep.file_name
-                              const label = episodeText(ep)
+                                rowsOf.some(
+                                  (r) =>
+                                    currentEpisode()?.file_name === r.file_name,
+                                )
+                              const label = `${episodeText(ep, t)}${
+                                ep.versions?.length
+                                  ? ` · ${t("media.video.versions", { n: rowsOf.length })}`
+                                  : ""
+                              }`
                               return (
                                 <button
+                                  data-episode-versions={
+                                    ep.versions?.length ? "" : undefined
+                                  }
                                   onClick={() => {
+                                    if (ep.versions?.length) {
+                                      setOpenEpisode(
+                                        openEpisode()?.file_name ===
+                                          ep.file_name
+                                          ? null
+                                          : ep,
+                                      )
+                                      return
+                                    }
                                     setCurrentEpisode(ep)
                                     setShowPlayer(true)
                                   }}
@@ -1701,6 +1685,24 @@ const VideoDetail = (props: {
                             }}
                           </For>
                         </div>
+                        {/* 有多个版本的那一集：选一个版本再播放 */}
+                        <Show when={openEpisode()}>
+                          {(ep) => (
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                              <span class="text-xs text-muted-foreground">
+                                {episodeText(ep(), t)}
+                              </span>
+                              <VersionPicker
+                                rows={[ep(), ...(ep().versions ?? [])]}
+                                value={currentEpisode()?.file_name}
+                                onChange={(r) => {
+                                  setCurrentEpisode(r)
+                                  setShowPlayer(true)
+                                }}
+                              />
+                            </div>
+                          )}
+                        </Show>
                         {/* 选中那一集的剧照和概述 */}
                         <Show
                           when={(() => {

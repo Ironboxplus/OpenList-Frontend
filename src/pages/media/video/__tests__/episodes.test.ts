@@ -66,27 +66,35 @@ describe("episodeRows", () => {
   })
 })
 
+const t = (
+  _key: "media.video.episode_n_title",
+  p: { index: number; title: string },
+) => `Episode ${p.index} ${p.title}`
+
 describe("episodeText", () => {
   it("prints season and episode when known", () => {
     expect(
-      episodeText({
-        file_name: "a",
-        index: 3,
-        title: "Third",
-        season: 1,
-        episode: 3,
-      }),
+      episodeText(
+        {
+          file_name: "a",
+          index: 3,
+          title: "Third",
+          season: 1,
+          episode: 3,
+        },
+        t,
+      ),
     ).toBe("S01E03 · Third")
   })
 
   it("falls back to the index, then the title, then the file name", () => {
-    expect(episodeText({ file_name: "a", index: 3, title: "Third" })).toBe(
-      "第3集 Third",
+    expect(episodeText({ file_name: "a", index: 3, title: "Third" }, t)).toBe(
+      "Episode 3 Third",
     )
-    expect(episodeText({ file_name: "a", index: 0, title: "Special" })).toBe(
+    expect(episodeText({ file_name: "a", index: 0, title: "Special" }, t)).toBe(
       "Special",
     )
-    expect(episodeText({ file_name: "a.mkv", index: 0, title: "" })).toBe(
+    expect(episodeText({ file_name: "a.mkv", index: 0, title: "" }, t)).toBe(
       "a.mkv",
     )
   })
