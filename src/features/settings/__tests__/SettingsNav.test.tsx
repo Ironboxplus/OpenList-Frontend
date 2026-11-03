@@ -65,6 +65,18 @@ describe("SettingsNav", () => {
     ).toBe("cluster")
   })
 
+  it("is absent on the settings home, with or without a trailing slash", () => {
+    for (const pathname of ["/@manage", "/@manage/"]) {
+      const { container } = nav({ pathname })
+      expect(container.querySelector("[data-settings-nav]")).toBeNull()
+    }
+  })
+
+  it("is present on a sub-page", () => {
+    const { container } = nav({ pathname: "/@manage/users" })
+    expect(container.querySelector("[data-settings-nav]")).not.toBeNull()
+  })
+
   it("navigates through the router", () => {
     const { container } = nav()
     fireEvent.click(

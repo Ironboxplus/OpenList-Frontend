@@ -43,8 +43,15 @@ export const entryFor = (
   return best
 }
 
+const trimSlash = (pathname: string) =>
+  pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname
+
+/** The settings landing page; pathname is already relative to the base path. */
+export const isSettingsHome = (pathname: string) =>
+  trimSlash(pathname) === SETTINGS_HOME
+
 export const settingsCrumbs = (pathname: string, hash = ""): Crumb[] => {
-  const p = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname
+  const p = trimSlash(pathname)
   if (p === SETTINGS_HOME) return [{ key: SETTINGS_KEY }]
   const home: Crumb = { key: SETTINGS_KEY, href: SETTINGS_HOME }
   if (p === PROFILE_PATH) return [home, { key: "shell.nav.profile" }]

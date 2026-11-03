@@ -1,10 +1,10 @@
-import { For } from "solid-js"
+import { For, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { focusRing } from "~/components/ui/focus"
 import { useRouter, useT } from "~/hooks"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
-import { entryFor } from "./crumbs"
+import { entryFor, isSettingsHome } from "./crumbs"
 import { openSetting } from "./open"
 import type { SettingContribution, SettingsSection } from "./registry"
 
@@ -12,7 +12,8 @@ import type { SettingContribution, SettingsSection } from "./registry"
  * Secondary navigation of the settings area (not on phones): the registry
  * groups and pages, icon-only below 1280px and with labels from there on. The
  * shell sidebar is the primary nav and the only thing the user folds, so
- * there is no "Settings" row nor a fold button in here.
+ * there is no "Settings" row nor a fold button in here. The landing page
+ * lists every page itself, so the nav is left out there.
  */
 export const SettingsNav = (props: {
   sections: SettingsSection[]
@@ -48,32 +49,35 @@ export const SettingsNav = (props: {
     </a>
   )
   return (
-    <nav
-      aria-label={t("settings.nav.label")}
-      data-settings-nav
-      class={cn(
-        "sticky hidden w-14 shrink-0 flex-col gap-3 overflow-y-auto border-r bg-card p-2 text-card-foreground sm:flex xl:w-[220px]",
-      )}
-      style={{
-        top: "var(--shell-top, 0px)",
-        height: "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))",
-      }}
-    >
-      <div class="flex flex-1 flex-col gap-3">
-        <For each={props.sections}>
-          {(section) => (
-            <section class="flex flex-col gap-0.5">
-              <hr class="mx-2 border-border first:hidden xl:hidden" />
-              <h2 class="hidden px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground xl:block">
-                {t(section.title)}
-              </h2>
-              <For each={section.items}>
-                {(entry) => <Item entry={entry} />}
-              </For>
-            </section>
-          )}
-        </For>
-      </div>
-    </nav>
+    <Show when={!isSettingsHome(props.pathname)}>
+      <nav
+        aria-label={t("settings.nav.label")}
+        data-settings-nav
+        class={cn(
+          "sticky hidden w-14 shrink-0 flex-col gap-3 overflow-y-auto border-r bg-card p-2 text-card-foreground sm:flex xl:w-[220px]",
+        )}
+        style={{
+          top: "var(--shell-top, 0px)",
+          height:
+            "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))",
+        }}
+      >
+        <div class="flex flex-1 flex-col gap-3">
+          <For each={props.sections}>
+            {(section) => (
+              <section class="flex flex-col gap-0.5">
+                <hr class="mx-2 border-border first:hidden xl:hidden" />
+                <h2 class="hidden px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground xl:block">
+                  {t(section.title)}
+                </h2>
+                <For each={section.items}>
+                  {(entry) => <Item entry={entry} />}
+                </For>
+              </section>
+            )}
+          </For>
+        </div>
+      </nav>
+    </Show>
   )
 }
