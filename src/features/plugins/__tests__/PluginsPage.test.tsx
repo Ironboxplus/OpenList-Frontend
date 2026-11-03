@@ -25,6 +25,7 @@ import {
   unregisterPlugin,
   type Plugin,
 } from "~/plugins/registry"
+import { topBarSlots } from "../../shell/topbar-slot"
 import PluginsPage from "../PluginsPage"
 import { pluginRows } from "../model"
 
@@ -73,6 +74,14 @@ describe("pluginRows", () => {
   })
 })
 
+// The system-plugins link lives in the TopBar's right slot; the page registers it.
+const PageWithTopBar = () => (
+  <>
+    <div data-topbar>{topBarSlots()?.right?.({ phone: false })}</div>
+    <PluginsPage />
+  </>
+)
+
 describe("PluginsPage", () => {
   it("lists every registered plugin with id, version and slots", () => {
     render(() => <PluginsPage />)
@@ -108,11 +117,11 @@ describe("PluginsPage", () => {
   })
 
   it("links to system plugins for admins only, and offers no install or delete", () => {
-    const { unmount } = render(() => <PluginsPage />)
+    const { unmount } = render(() => <PageWithTopBar />)
     expect(screen.queryByTestId("system-plugins-link")).toBeNull()
     unmount()
     h.admin.v = true
-    render(() => <PluginsPage />)
+    render(() => <PageWithTopBar />)
     expect(screen.getByTestId("system-plugins-link").getAttribute("href")).toBe(
       "/@manage/plugins",
     )
