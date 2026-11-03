@@ -26,6 +26,7 @@
   "sort": {
     "title": "Sort",
     "default": "Default (storage order)",
+    "current": "Sort: {{value}}",
     "by": "Sort by",
     "asc": "Ascending",
     "desc": "Descending"

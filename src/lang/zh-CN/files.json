@@ -26,6 +26,7 @@
   "sort": {
     "title": "排序",
     "default": "默认（存储顺序）",
+    "current": "排序：{{value}}",
     "by": "排序方式",
     "asc": "升序",
     "desc": "降序"

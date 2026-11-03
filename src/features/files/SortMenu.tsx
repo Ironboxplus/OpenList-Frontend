@@ -41,6 +41,14 @@ export const useFolderSort = () => {
       saveSortState(pathname(), { orderBy, reverse })
       sortObjs(orderBy, reverse)
     },
+    // "Sort: Name ↑" / "Sort: Default (storage order)"
+    summary: () => {
+      const v = state()?.orderBy
+      const value = v
+        ? `${t(`home.obj.${v}`)} ${state()?.reverse ? "↓" : "↑"}`
+        : t("files.sort.default")
+      return t("files.sort.current", { value })
+    },
     // the objects were sorted here; list again to get the storage's order back
     reset: () => {
       clearSortState(pathname())
@@ -64,22 +72,27 @@ export const FolderSortItems = () => {
   )
 }
 
-export const FolderSortMenu = (props: { class: string }) => {
-  const t = useT()
+/**
+ * The sort button of the Files toolbar row: the same button as its neighbours,
+ * icon and the current choice. `labelClass` lets the bar hide the text where
+ * there is no room.
+ */
+export const FolderSortMenu = (props: {
+  class: string
+  labelClass?: string
+  placement?: "bottom-start" | "bottom-end"
+}) => {
   const s = useFolderSort()
-  const active = () => {
-    const v = s.value()
-    return v ? t(`home.obj.${v}`) : s.defaultLabel
-  }
   return (
-    <DropdownMenu placement="bottom-end">
+    <DropdownMenu placement={props.placement ?? "bottom-start"}>
       <DropdownMenuTrigger
-        aria-label={`${t("files.sort.title")}: ${active()}`}
-        title={`${t("files.sort.title")}: ${active()}`}
+        aria-label={s.summary()}
+        title={s.summary()}
         data-files-sort
         class={props.class}
       >
-        <TbArrowsSort class="size-5" />
+        <TbArrowsSort class="size-4" />
+        <span class={props.labelClass}>{s.summary()}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <FolderSortItems />

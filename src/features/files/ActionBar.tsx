@@ -47,6 +47,7 @@ import {
 import { cn } from "~/utils/cn"
 import { CopyLinkItems, DownloadItems } from "./BatchMenus"
 import { runTool, useFileAbilities, type ToolName } from "./file-actions"
+import { FolderSortMenu } from "./SortMenu"
 
 const barButton = cn(
   focusRing,
@@ -126,6 +127,7 @@ export const ActionBar = () => {
                 onClick={tool("offline_download")}
               />
             </Show>
+            <FolderSortMenu class={barButton} labelClass="hidden lg:inline" />
             <div class="flex-1" />
             <ActionButton
               name="refresh"

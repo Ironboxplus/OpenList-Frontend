@@ -48,7 +48,8 @@ import {
 } from "../media/state"
 import { Breadcrumb } from "../shell/Breadcrumb"
 import { PhoneSelectionHeader } from "./PhoneActions"
-import { FolderSortItems, FolderSortMenu } from "./SortMenu"
+import { FolderSortItems } from "./SortMenu"
+import { useFileAbilities } from "./file-actions"
 import { selectionMode } from "./selection-mode"
 
 const LAYOUTS: Record<LayoutType, IconTypes> = {
@@ -257,6 +258,8 @@ const layoutOn = () => objStore.state === State.Folder
 /** Right side of the TopBar on the Files page: plugin widgets and the view. Searching is the command palette's (it offers "search this folder"). */
 export const FilesTopRight = (props: { phone: boolean }) => {
   const t = useT()
+  const can = useFileAbilities()
+  const fab = () => can.create() || can.offline()
   return (
     <>
       <PluginSlot name="header-right" />
@@ -289,8 +292,11 @@ export const FilesTopRight = (props: { phone: boolean }) => {
                     )}
                   </For>
                   <PosterMenuItem />
-                  <DropdownMenuSeparator />
-                  <FolderSortItems />
+                  {/* with a floating + the sort lives in its sheet */}
+                  <Show when={!fab()}>
+                    <DropdownMenuSeparator />
+                    <FolderSortItems />
+                  </Show>
                 </Show>
                 <Show when={UserMethods.is_admin(me())}>
                   <DropdownMenuSeparator />
@@ -303,7 +309,6 @@ export const FilesTopRight = (props: { phone: boolean }) => {
         }
       >
         <Show when={layoutOn()}>
-          <FolderSortMenu class={iconButton} />
           <DropdownMenu placement="bottom-end">
             <DropdownMenuTrigger
               aria-label={t("files.view")}

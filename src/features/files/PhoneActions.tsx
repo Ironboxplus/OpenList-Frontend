@@ -38,6 +38,7 @@ import { TAB_BAR_HEIGHT } from "../shell/viewport"
 import { CopyLinkItems, DownloadItems } from "./BatchMenus"
 import { runTool, useFileAbilities, type ToolName } from "./file-actions"
 import { cancelSelection } from "./selection-mode"
+import { FolderSortMenu } from "./SortMenu"
 
 const sheetRow =
   focusRing +
@@ -114,6 +115,7 @@ export const PhoneFab = () => {
                 </button>
               )}
             </For>
+            <FolderSortMenu class={sheetRow} placement="bottom-start" />
           </div>
         </SheetContent>
       </Sheet>
