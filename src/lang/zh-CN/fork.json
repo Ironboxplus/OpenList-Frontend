@@ -130,6 +130,12 @@
     "search_index-tips": "无索引（实时搜索）：不建立任何索引，每次搜索都实时遍历存储，目录树很大时会很慢，并受下方各项限制约束。默认仍为“无”。",
     "search_indexs": {
       "no_index": "无索引（实时搜索）"
+    },
+    "media_title_source": "标题来源",
+    "media_title_source-tips": "媒体页面显示哪种标题：文件名，或刮削得到的标题。手动设置或锁定的标题始终按所设显示。",
+    "media_title_sources": {
+      "file": "文件名",
+      "scraped": "刮削标题"
     }
   },
   "shares": {

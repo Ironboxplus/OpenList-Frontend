@@ -351,5 +351,11 @@
   "version": "Version",
   "video_autoplay": "Video autoplay",
   "video_types": "Video types",
-  "webauthn_login_enabled": "WebAuthn login enabled"
+  "webauthn_login_enabled": "WebAuthn login enabled",
+  "media_title_source": "Title source",
+  "media_title_source-tips": "Which title the media pages show: the file name, or the title from scraping. A title you set or locked by hand is always shown as set.",
+  "media_title_sources": {
+    "file": "File name",
+    "scraped": "Scraped title"
+  }
 }
