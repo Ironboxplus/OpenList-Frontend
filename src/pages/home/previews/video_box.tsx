@@ -5,7 +5,6 @@ import {
   Anchor,
   Tooltip,
   HStack,
-  Switch,
   Icon,
   IconButton,
 } from "@hope-ui/solid"
@@ -37,6 +36,12 @@ import Artplayer from "artplayer"
 import { SelectWrapper } from "~/components"
 import { BsArrowRight } from "solid-icons/bs"
 import { TbTerminal2 } from "solid-icons/tb"
+import {
+  Switch as KitSwitch,
+  SwitchControl,
+  SwitchLabel,
+  SwitchThumb,
+} from "~/components/ui/switch"
 import { VideoTreeList } from "./VideoTreeList"
 
 Artplayer.PLAYBACK_RATE = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4]
@@ -240,21 +245,19 @@ export const VideoBox = (props: {
       {props.children}
       <Show when={videoName() !== ""}>
         <HStack spacing="$2" w="$full" alignItems="center">
-          <Switch
-            css={{
-              whiteSpace: "nowrap",
-            }}
+          <KitSwitch
+            class="flex items-center gap-2 whitespace-nowrap text-sm"
             defaultChecked={autoNext === "true"}
-            onChange={(e: { currentTarget: HTMLInputElement }) => {
-              props.onAutoNextChange(e.currentTarget.checked)
-              localStorage.setItem(
-                "video_auto_next",
-                e.currentTarget.checked.toString(),
-              )
+            onChange={(on) => {
+              props.onAutoNextChange(on)
+              localStorage.setItem("video_auto_next", on.toString())
             }}
           >
-            {t("home.preview.auto_next")}
-          </Switch>
+            <SwitchControl>
+              <SwitchThumb />
+            </SwitchControl>
+            <SwitchLabel>{t("home.preview.auto_next")}</SwitchLabel>
+          </KitSwitch>
         </HStack>
         <VideoTreeList
           currentPath={pathDir(pathname())}

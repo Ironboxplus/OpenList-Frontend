@@ -1,17 +1,4 @@
-import {
-  Image,
-  Center,
-  Flex,
-  Heading,
-  Text,
-  Input,
-  Button,
-  useColorModeValue,
-  HStack,
-  VStack,
-  Checkbox,
-  Icon,
-} from "@hope-ui/solid"
+import { useColorModeValue } from "@hope-ui/solid"
 import { createMemo, createSignal, Show, onMount, onCleanup } from "solid-js"
 import { SwitchColorMode, SwitchLanguageWhite } from "~/components"
 import { useFetch, useLoading, useT, useTitle, useRouter } from "~/hooks"
@@ -26,11 +13,18 @@ import {
   resolveRedirect,
 } from "~/utils"
 import { PResp, Resp } from "~/types"
-import LoginBg from "./LoginBg"
 import { createStorageSignal } from "@solid-primitives/storage"
 import { getSetting, getSettingBool } from "~/store"
 import { SSOLogin } from "./SSOLogin"
 import { IoFingerPrint } from "solid-icons/io"
+import { Button } from "~/components/ui/button"
+import { Card } from "~/components/ui/card"
+import {
+  Checkbox,
+  CheckboxControl,
+  CheckboxLabel,
+} from "~/components/ui/checkbox"
+import { Input } from "~/components/ui/input"
 const supported = () =>
   !!globalThis.PublicKeyCredential?.parseRequestOptionsFromJSON
 
@@ -42,7 +36,6 @@ const Login = () => {
     return `${t("login.login_to")} ${getSetting("site_title")}`
   })
   useTitle(title)
-  const bgColor = useColorModeValue("white", "$neutral1")
   const [username, setUsername] = createSignal(
     localStorage.getItem("username") || "",
   )
@@ -225,23 +218,12 @@ const Login = () => {
   }
 
   return (
-    <Center zIndex="$docked" w="$full" h="100vh">
-      <VStack
-        bgColor={bgColor()}
-        rounded="$xl"
-        p="24px"
-        w={{
-          "@initial": "90%",
-          "@sm": "364px",
-        }}
-        spacing="$4"
-      >
-        <Flex alignItems="center" justifyContent="space-around">
-          <Image mr="$2" boxSize="$12" src={logo()} />
-          <Heading color="$info9" fontSize="$2xl">
-            {title()}
-          </Heading>
-        </Flex>
+    <div class="fixed inset-0 z-10 flex items-center justify-center overflow-auto bg-muted p-4">
+      <Card class="flex w-full max-w-[380px] flex-col gap-4 p-6">
+        <div class="flex items-center justify-center gap-3">
+          <img class="size-12" src={logo()} alt="" />
+          <h1 class="m-0 text-xl font-semibold">{title()}</h1>
+        </div>
         <Show
           when={!needOpt()}
           fallback={
@@ -267,6 +249,7 @@ const Login = () => {
         >
           <Input
             name="username"
+            autocomplete="username"
             placeholder={t("login.username-tips")}
             value={username()}
             onInput={(e) => setUsername(e.currentTarget.value)}
@@ -274,6 +257,7 @@ const Login = () => {
           <Show when={!useauthn()}>
             <Input
               name="password"
+              autocomplete="current-password"
               placeholder={t("login.password-tips")}
               type="password"
               value={password()}
@@ -285,60 +269,36 @@ const Login = () => {
               }}
             />
           </Show>
-          <Flex
-            px="$1"
-            w="$full"
-            fontSize="$sm"
-            color="$neutral10"
-            justifyContent="space-between"
-            alignItems="center"
-          >
+          <div class="flex items-center justify-between text-sm text-muted-foreground">
             <Checkbox
+              class="flex items-center gap-2"
               checked={remember() === "true"}
-              onChange={() =>
-                setRemember(remember() === "true" ? "false" : "true")
-              }
+              onChange={(on) => setRemember(on ? "true" : "false")}
             >
-              {t("login.remember")}
+              <CheckboxControl />
+              <CheckboxLabel>{t("login.remember")}</CheckboxLabel>
             </Checkbox>
-            <Text as="a" target="_blank" href={t("login.forget_url")}>
+            <a target="_blank" href={t("login.forget_url")}>
               {t("login.forget")}
-            </Text>
-          </Flex>
+            </a>
+          </div>
         </Show>
-        <HStack w="$full" spacing="$2">
-          <Show when={!useauthn()}>
-            <Button
-              colorScheme="primary"
-              w="$full"
-              onClick={() => {
-                if (needOpt()) {
-                  setOpt("")
-                } else {
-                  setUsername("")
-                  setPassword("")
-                }
-              }}
-            >
-              {t("login.clear")}
-            </Button>
-          </Show>
-          <Button w="$full" loading={loading()} onClick={Login}>
-            {t("login.login")}
-          </Button>
-        </HStack>
+        <Button class="w-full" disabled={loading()} onClick={Login}>
+          {t("login.login")}
+        </Button>
         <Show when={ldapLoginEnabled}>
           <Checkbox
-            w="$full"
+            class="flex items-center gap-2 text-sm"
             checked={useLdap() === true}
-            onChange={() => setUseLdap(!useLdap())}
+            onChange={setUseLdap}
           >
-            {ldapLoginTips}
+            <CheckboxControl />
+            <CheckboxLabel>{ldapLoginTips}</CheckboxLabel>
           </Checkbox>
         </Show>
         <Button
-          w="$full"
-          colorScheme="accent"
+          class="w-full"
+          variant="secondary"
           onClick={() => {
             changeToken()
             to(restoreRedirect(), true)
@@ -346,29 +306,23 @@ const Login = () => {
         >
           {t("login.use_guest")}
         </Button>
-        <Flex
-          mt="$2"
-          justifyContent="space-evenly"
-          alignItems="center"
-          color="$neutral10"
-          w="$full"
-        >
+        <div class="flex items-center justify-evenly pt-1 text-muted-foreground">
           <SwitchLanguageWhite />
           <SwitchColorMode />
           <SSOLogin />
           <Show when={AuthnSignEnabled}>
-            <Icon
-              cursor="pointer"
-              boxSize="$8"
-              as={IoFingerPrint}
-              p="$0_5"
-              onclick={AuthnSwitch}
-            />
+            <button
+              type="button"
+              aria-label="WebAuthn"
+              class="bg-transparent p-0.5 text-inherit"
+              onClick={AuthnSwitch}
+            >
+              <IoFingerPrint class="size-8" />
+            </button>
           </Show>
-        </Flex>
-      </VStack>
-      <LoginBg />
-    </Center>
+        </div>
+      </Card>
+    </div>
   )
 }
 

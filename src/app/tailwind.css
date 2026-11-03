@@ -17,6 +17,10 @@
 @source "../pages/media";
 @source not "../pages/media/__tests__";
 @source "../components/MediaPlayButton.tsx";
+/* Pieces of the Files page that are on the kit (preview picker, auto-next switch) and the login card. */
+@source "../pages/home/file/File.tsx";
+@source "../pages/home/previews/video_box.tsx";
+@source "../pages/login";
 /* The built-in stats plugin renders a dashboard card with utilities. */
 @source "../plugins/builtin/stats";
 @source not "../plugins/builtin/stats/__tests__";

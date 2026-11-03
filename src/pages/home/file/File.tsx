@@ -1,7 +1,8 @@
 import { HStack, Text, VStack } from "@hope-ui/solid"
 import { createMemo, ErrorBoundary, onCleanup, Show, Suspense } from "solid-js"
 import { Dynamic } from "solid-js/web"
-import { Error, FullLoading, SelectWrapper } from "~/components"
+import { Error, FullLoading } from "~/components"
+import { SimpleSelect } from "~/components/ui/simple-select"
 import { ObjStore, objStore, previewDenied } from "~/store"
 import { useRouter, useT } from "~/hooks"
 import { asPreview, isShareContentUrl, probeStatus } from "~/utils"
@@ -53,8 +54,9 @@ const File = () => {
           <Text color="$neutral11">{t("shares.preview_disabled")}</Text>
         </Show>
         <HStack w="$full" spacing="$2">
-          <SelectWrapper
-            alwaysShowBorder
+          <SimpleSelect
+            class="min-w-40"
+            aria-label={t("files.preview_player")}
             value={cur()?.key || ""}
             onChange={(key) => {
               setSearchParams({ preview: key }, { replace: true })

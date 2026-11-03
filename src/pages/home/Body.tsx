@@ -4,6 +4,7 @@ import { AnnouncementCard } from "~/features/files/AnnouncementCard"
 import { DirTasksCard } from "~/features/files/DirTasksCard"
 import { FilesFrame } from "~/features/files/FilesFrame"
 import { shellActive } from "~/features/shell/topbar-slot"
+import { objStore, State } from "~/store"
 import { Container } from "./Container"
 import { Nav } from "./Nav"
 import { Obj } from "./Obj"
@@ -46,7 +47,10 @@ export const Body = () => (
         footer share one container so nothing is off-centre. */}
     <FilesFrame>
       <VStack class="body" py="$3" minH="70vh" w="$full" gap="$4">
-        <AnnouncementCard />
+        {/* the welcome card belongs to folder listings, not to a file preview */}
+        <Show when={objStore.state !== State.File}>
+          <AnnouncementCard />
+        </Show>
         <Readme files={["header.md", "top.md", "index.md"]} fromMeta="header" />
         <MediaController />
         <DirTasksCard />
