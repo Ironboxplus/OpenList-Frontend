@@ -1,4 +1,5 @@
-﻿import { createSignal, Show, For, onCleanup, onMount } from "solid-js"
+import { Portal } from "solid-js/web"
+import { createSignal, Show, For, onCleanup, onMount } from "solid-js"
 import { accent } from "~/utils/accent"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
@@ -58,219 +59,223 @@ const ImageViewer = (props: {
     if (document.fullscreenElement) document.exitFullscreen()
   })
 
+  // Portalled to body and above the shell chrome (side nav 1200, content-panel
+  // mask 1101), like the video overlay; dialogs and toasts (1400+) stay above.
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: "0",
-        "z-index": "300",
-        background: "rgba(0,0,0,0.95)",
-        display: "flex",
-        "flex-direction": "column",
-        "align-items": "center",
-        "justify-content": "center",
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) props.onClose()
-      }}
-    >
-      {/* 顶部工具栏 */}
+    <Portal>
       <div
         style={{
-          position: "absolute",
-          top: "0",
-          left: "0",
-          right: "0",
-          padding: "16px 20px",
+          position: "fixed",
+          inset: "0",
+          "z-index": "1300",
+          background: "rgba(0,0,0,0.95)",
           display: "flex",
+          "flex-direction": "column",
           "align-items": "center",
-          "justify-content": "space-between",
-          background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
-          "z-index": "1",
-        }}
-      >
-        <span style={{ color: "rgba(255,255,255,0.7)", "font-size": "14px" }}>
-          {getMediaName(current())}
-        </span>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <span
-            style={{
-              color: "rgba(255,255,255,0.5)",
-              "font-size": "13px",
-              "line-height": "32px",
-            }}
-          >
-            {currentIndex() + 1} / {props.items.length}
-          </span>
-          <button
-            onClick={toggleFullscreen}
-            style={viewerBtnStyle}
-            title={t("media.image.fullscreen")}
-          >
-            {isFullscreen() ? "⊡" : "⊞"}
-          </button>
-          <button
-            onClick={() => setScale((s) => Math.min(s + 0.25, 4))}
-            style={viewerBtnStyle}
-            title={t("media.image.zoom_in")}
-          >
-            +
-          </button>
-          <button
-            onClick={() => setScale((s) => Math.max(s - 0.25, 0.25))}
-            style={viewerBtnStyle}
-            title={t("media.image.zoom_out")}
-          >
-            −
-          </button>
-          <button
-            onClick={() => setScale(1)}
-            style={viewerBtnStyle}
-            title={t("media.image.reset")}
-          >
-            ↺
-          </button>
-          <button
-            onClick={props.onClose}
-            style={{
-              ...viewerBtnStyle,
-              background: "rgba(239,68,68,0.2)",
-              color: "#f87171",
-            }}
-            title={t("media.image.close")}
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      {/* 上一张 */}
-      <button
-        onClick={prev}
-        style={{
-          position: "absolute",
-          left: "16px",
-          top: "50%",
-          transform: "translateY(-50%)",
-          background: "rgba(255,255,255,0.1)",
-          border: "none",
-          "border-radius": "50%",
-          width: "48px",
-          height: "48px",
-          color: "white",
-          "font-size": "20px",
-          cursor: "pointer",
-          "z-index": "1",
-          transition: "background 0.2s",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(255,255,255,0.2)"
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(255,255,255,0.1)"
-        }}
-      >
-        ‹
-      </button>
-
-      {/* 图片 */}
-      <img
-        src={imageUrl()}
-        alt={getMediaName(current())}
-        style={{
-          "max-width": "90vw",
-          "max-height": "85vh",
-          "object-fit": "contain",
-          transform: `scale(${scale()})`,
-          transition: "transform 0.2s ease",
-          "border-radius": "4px",
-          "user-select": "none",
-        }}
-        draggable={false}
-      />
-
-      {/* 下一张 */}
-      <button
-        onClick={next}
-        style={{
-          position: "absolute",
-          right: "16px",
-          top: "50%",
-          transform: "translateY(-50%)",
-          background: "rgba(255,255,255,0.1)",
-          border: "none",
-          "border-radius": "50%",
-          width: "48px",
-          height: "48px",
-          color: "white",
-          "font-size": "20px",
-          cursor: "pointer",
-          "z-index": "1",
-          transition: "background 0.2s",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(255,255,255,0.2)"
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(255,255,255,0.1)"
-        }}
-      >
-        ›
-      </button>
-
-      {/* 底部缩略图条 */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "0",
-          left: "0",
-          right: "0",
-          padding: "12px 20px",
-          display: "flex",
-          gap: "6px",
-          "overflow-x": "auto",
-          background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
           "justify-content": "center",
         }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) props.onClose()
+        }}
       >
-        <For
-          each={props.items.slice(
-            Math.max(0, currentIndex() - 5),
-            currentIndex() + 6,
-          )}
-        >
-          {(item, i) => {
-            const realIndex = Math.max(0, currentIndex() - 5) + i()
-            const thumbUrl = createSignedProxyUrl(() => mediaItemPath(item))
-            return (
-              <img
-                src={thumbUrl()}
-                onClick={() => {
-                  setCurrentIndex(realIndex)
-                  setScale(1)
-                }}
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  "object-fit": "cover",
-                  "border-radius": "4px",
-                  cursor: "pointer",
-                  opacity: realIndex === currentIndex() ? "1" : "0.5",
-                  border:
-                    realIndex === currentIndex()
-                      ? `2px solid ${accent()}`
-                      : "2px solid transparent",
-                  transition: "opacity 0.2s",
-                  "flex-shrink": "0",
-                }}
-                loading="lazy"
-              />
-            )
+        {/* 顶部工具栏 */}
+        <div
+          style={{
+            position: "absolute",
+            top: "0",
+            left: "0",
+            right: "0",
+            padding: "16px 20px",
+            display: "flex",
+            "align-items": "center",
+            "justify-content": "space-between",
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+            "z-index": "1",
           }}
-        </For>
+        >
+          <span style={{ color: "rgba(255,255,255,0.7)", "font-size": "14px" }}>
+            {getMediaName(current())}
+          </span>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <span
+              style={{
+                color: "rgba(255,255,255,0.5)",
+                "font-size": "13px",
+                "line-height": "32px",
+              }}
+            >
+              {currentIndex() + 1} / {props.items.length}
+            </span>
+            <button
+              onClick={toggleFullscreen}
+              style={viewerBtnStyle}
+              title={t("media.image.fullscreen")}
+            >
+              {isFullscreen() ? "⊡" : "⊞"}
+            </button>
+            <button
+              onClick={() => setScale((s) => Math.min(s + 0.25, 4))}
+              style={viewerBtnStyle}
+              title={t("media.image.zoom_in")}
+            >
+              +
+            </button>
+            <button
+              onClick={() => setScale((s) => Math.max(s - 0.25, 0.25))}
+              style={viewerBtnStyle}
+              title={t("media.image.zoom_out")}
+            >
+              −
+            </button>
+            <button
+              onClick={() => setScale(1)}
+              style={viewerBtnStyle}
+              title={t("media.image.reset")}
+            >
+              ↺
+            </button>
+            <button
+              onClick={props.onClose}
+              style={{
+                ...viewerBtnStyle,
+                background: "rgba(239,68,68,0.2)",
+                color: "#f87171",
+              }}
+              title={t("media.image.close")}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* 上一张 */}
+        <button
+          onClick={prev}
+          style={{
+            position: "absolute",
+            left: "16px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "rgba(255,255,255,0.1)",
+            border: "none",
+            "border-radius": "50%",
+            width: "48px",
+            height: "48px",
+            color: "white",
+            "font-size": "20px",
+            cursor: "pointer",
+            "z-index": "1",
+            transition: "background 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.2)"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.1)"
+          }}
+        >
+          ‹
+        </button>
+
+        {/* 图片 */}
+        <img
+          src={imageUrl()}
+          alt={getMediaName(current())}
+          style={{
+            "max-width": "90vw",
+            "max-height": "85vh",
+            "object-fit": "contain",
+            transform: `scale(${scale()})`,
+            transition: "transform 0.2s ease",
+            "border-radius": "4px",
+            "user-select": "none",
+          }}
+          draggable={false}
+        />
+
+        {/* 下一张 */}
+        <button
+          onClick={next}
+          style={{
+            position: "absolute",
+            right: "16px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "rgba(255,255,255,0.1)",
+            border: "none",
+            "border-radius": "50%",
+            width: "48px",
+            height: "48px",
+            color: "white",
+            "font-size": "20px",
+            cursor: "pointer",
+            "z-index": "1",
+            transition: "background 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.2)"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.1)"
+          }}
+        >
+          ›
+        </button>
+
+        {/* 底部缩略图条 */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "0",
+            left: "0",
+            right: "0",
+            padding: "12px 20px",
+            display: "flex",
+            gap: "6px",
+            "overflow-x": "auto",
+            background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
+            "justify-content": "center",
+          }}
+        >
+          <For
+            each={props.items.slice(
+              Math.max(0, currentIndex() - 5),
+              currentIndex() + 6,
+            )}
+          >
+            {(item, i) => {
+              const realIndex = Math.max(0, currentIndex() - 5) + i()
+              const thumbUrl = createSignedProxyUrl(() => mediaItemPath(item))
+              return (
+                <img
+                  src={thumbUrl()}
+                  onClick={() => {
+                    setCurrentIndex(realIndex)
+                    setScale(1)
+                  }}
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    "object-fit": "cover",
+                    "border-radius": "4px",
+                    cursor: "pointer",
+                    opacity: realIndex === currentIndex() ? "1" : "0.5",
+                    border:
+                      realIndex === currentIndex()
+                        ? `2px solid ${accent()}`
+                        : "2px solid transparent",
+                    transition: "opacity 0.2s",
+                    "flex-shrink": "0",
+                  }}
+                  loading="lazy"
+                />
+              )
+            }}
+          </For>
+        </div>
       </div>
-    </div>
+    </Portal>
   )
 }
 

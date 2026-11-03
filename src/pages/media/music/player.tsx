@@ -6,7 +6,7 @@ import {
   For,
   onCleanup,
 } from "solid-js"
-import { Dynamic } from "solid-js/web"
+import { Dynamic, Portal } from "solid-js/web"
 import {
   TbArrowRight,
   TbArrowsShuffle,
@@ -331,489 +331,497 @@ const LyricsPage = () => {
     setPlayerState((s) => ({ ...s, currentTime: time }))
   }
 
+  // Portalled to body and above the shell chrome (side nav 1200, content-panel
+  // mask 1101), like the video overlay; dialogs and toasts (1400+) stay above.
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: "0",
-        "z-index": "200",
-        display: "flex",
-        "flex-direction": "column",
-        overflow: "hidden",
-      }}
-    >
-      {/* 专辑封面模糊背景 */}
+    <Portal>
       <div
         style={{
-          position: "absolute",
+          position: "fixed",
           inset: "0",
-          background: currentItem()?.cover
-            ? `url(${resolveMediaCover(currentItem())}) center/cover no-repeat`
-            : "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
-          filter: "blur(80px) brightness(0.25) saturate(2)",
-          transform: "scale(1.3)",
-          transition: "background 0.8s ease",
-        }}
-      />
-      {/* 深色遮罩 */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "0",
-          background: "rgba(0,0,0,0.55)",
-        }}
-      />
-
-      {/* 顶部栏 */}
-      <div
-        style={{
-          position: "relative",
-          "z-index": "1",
+          "z-index": "1300",
           display: "flex",
-          "align-items": "center",
-          "justify-content": "space-between",
-          padding: "20px 28px",
+          "flex-direction": "column",
+          overflow: "hidden",
         }}
       >
-        <button
-          onClick={() => setPlayerState((s) => ({ ...s, showLyrics: false }))}
-          title={t("media.player.collapse_lyrics")}
-          style={{
-            background: "rgba(255,255,255,0.1)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            "border-radius": "10px",
-            color: "rgba(255,255,255,0.8)",
-            padding: "8px 16px",
-            "font-size": "13px",
-            cursor: "pointer",
-            display: "flex",
-            "align-items": "center",
-            gap: "6px",
-            "backdrop-filter": "blur(10px)",
-          }}
-        >
-          <TbChevronDown size={16} />
-          {t("media.player.collapse")}
-        </button>
+        {/* 专辑封面模糊背景 */}
         <div
           style={{
             position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "rgba(255,255,255,0.5)",
-            "font-size": "13px",
+            inset: "0",
+            background: currentItem()?.cover
+              ? `url(${resolveMediaCover(currentItem())}) center/cover no-repeat`
+              : "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
+            filter: "blur(80px) brightness(0.25) saturate(2)",
+            transform: "scale(1.3)",
+            transition: "background 0.8s ease",
           }}
-        >
-          {t("media.player.now_playing")}
-        </div>
-        <div style={{ width: "80px" }} />
-      </div>
-
-      {/* 主内容区 */}
-      <div
-        style={{
-          position: "relative",
-          "z-index": "1",
-          flex: "1",
-          display: "flex",
-          gap: "40px",
-          "align-items": "stretch",
-          overflow: "hidden",
-          padding: "0 40px",
-          width: "100%",
-          "max-width": "1150px",
-          margin: "0 auto",
-        }}
-      >
-        {/* 左侧：封面 + 信息 + 控制 */}
+        />
+        {/* 深色遮罩 */}
         <div
           style={{
-            width: "340px",
-            "flex-shrink": "0",
+            position: "absolute",
+            inset: "0",
+            background: "rgba(0,0,0,0.55)",
+          }}
+        />
+
+        {/* 顶部栏 */}
+        <div
+          style={{
+            position: "relative",
+            "z-index": "1",
             display: "flex",
-            "flex-direction": "column",
             "align-items": "center",
-            "justify-content": "center",
-            gap: "20px",
-            padding: "0 20px 80px",
+            "justify-content": "space-between",
+            padding: "20px 28px",
           }}
         >
-          {/* 旋转唱片 */}
-          <div
+          <button
+            onClick={() => setPlayerState((s) => ({ ...s, showLyrics: false }))}
+            title={t("media.player.collapse_lyrics")}
             style={{
-              position: "relative",
-              width: "220px",
-              height: "220px",
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              "border-radius": "10px",
+              color: "rgba(255,255,255,0.8)",
+              padding: "8px 16px",
+              "font-size": "13px",
+              cursor: "pointer",
+              display: "flex",
+              "align-items": "center",
+              gap: "6px",
+              "backdrop-filter": "blur(10px)",
             }}
           >
-            {/* 唱片外圈 */}
+            <TbChevronDown size={16} />
+            {t("media.player.collapse")}
+          </button>
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "rgba(255,255,255,0.5)",
+              "font-size": "13px",
+            }}
+          >
+            {t("media.player.now_playing")}
+          </div>
+          <div style={{ width: "80px" }} />
+        </div>
+
+        {/* 主内容区 */}
+        <div
+          style={{
+            position: "relative",
+            "z-index": "1",
+            flex: "1",
+            display: "flex",
+            gap: "40px",
+            "align-items": "stretch",
+            overflow: "hidden",
+            padding: "0 40px",
+            width: "100%",
+            "max-width": "1150px",
+            margin: "0 auto",
+          }}
+        >
+          {/* 左侧：封面 + 信息 + 控制 */}
+          <div
+            style={{
+              width: "340px",
+              "flex-shrink": "0",
+              display: "flex",
+              "flex-direction": "column",
+              "align-items": "center",
+              "justify-content": "center",
+              gap: "20px",
+              padding: "0 20px 80px",
+            }}
+          >
+            {/* 旋转唱片 */}
             <div
               style={{
-                position: "absolute",
-                inset: "-12px",
-                "border-radius": "50%",
-                background:
-                  "radial-gradient(circle, #2a2a2a 30%, #1a1a1a 60%, #111 100%)",
-                "box-shadow":
-                  "0 0 60px rgba(24,144,255,0.35), 0 20px 60px rgba(0,0,0,0.6)",
-                animation: playerState().playing
-                  ? "spin 20s linear infinite"
-                  : "none",
-              }}
-            />
-            {/* 封面图 */}
-            <div
-              style={{
-                position: "absolute",
-                inset: "0",
-                "border-radius": "50%",
-                overflow: "hidden",
-                animation: playerState().playing
-                  ? "spin 20s linear infinite"
-                  : "none",
+                position: "relative",
+                width: "220px",
+                height: "220px",
               }}
             >
-              <Show
-                when={currentItem()?.cover}
-                fallback={
-                  <div
+              {/* 唱片外圈 */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "-12px",
+                  "border-radius": "50%",
+                  background:
+                    "radial-gradient(circle, #2a2a2a 30%, #1a1a1a 60%, #111 100%)",
+                  "box-shadow":
+                    "0 0 60px rgba(24,144,255,0.35), 0 20px 60px rgba(0,0,0,0.6)",
+                  animation: playerState().playing
+                    ? "spin 20s linear infinite"
+                    : "none",
+                }}
+              />
+              {/* 封面图 */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "0",
+                  "border-radius": "50%",
+                  overflow: "hidden",
+                  animation: playerState().playing
+                    ? "spin 20s linear infinite"
+                    : "none",
+                }}
+              >
+                <Show
+                  when={currentItem()?.cover}
+                  fallback={
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        background: accentGradient(),
+                        display: "flex",
+                        "align-items": "center",
+                        "justify-content": "center",
+                      }}
+                    >
+                      <TbMusic size={72} style={{ opacity: 0.85 }} />
+                    </div>
+                  }
+                >
+                  <img
+                    src={resolveMediaCover(currentItem())}
                     style={{
                       width: "100%",
                       height: "100%",
-                      background: accentGradient(),
-                      display: "flex",
-                      "align-items": "center",
-                      "justify-content": "center",
+                      "object-fit": "cover",
                     }}
-                  >
-                    <TbMusic size={72} style={{ opacity: 0.85 }} />
-                  </div>
-                }
-              >
-                <img
-                  src={resolveMediaCover(currentItem())}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    "object-fit": "cover",
-                  }}
-                />
-              </Show>
-            </div>
-            {/* 中心圆点 */}
-            <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: "20px",
-                height: "20px",
-                "border-radius": "50%",
-                background: "#1a1a2e",
-                border: "3px solid #333",
-                "z-index": "2",
-              }}
-            />
-          </div>
-
-          {/* 歌曲信息 */}
-          <div style={{ "text-align": "center" }}>
-            <div
-              style={{
-                color: "white",
-                "font-size": "20px",
-                "font-weight": "700",
-                "letter-spacing": "-0.02em",
-                "margin-bottom": "6px",
-                "max-width": "280px",
-                overflow: "hidden",
-                "text-overflow": "ellipsis",
-                "white-space": "nowrap",
-              }}
-            >
-              {getMediaName(currentItem()!)}
-            </div>
-            <div
-              style={{ color: "rgba(255,255,255,0.55)", "font-size": "14px" }}
-            >
-              {currentItem()?.album_artist || t("media.music.unknown_artist")}
-            </div>
-          </div>
-
-          {/* 进度条 */}
-          <div style={{ width: "100%", "max-width": "280px" }}>
-            <div
-              style={{
-                height: "4px",
-                background: "rgba(255,255,255,0.15)",
-                "border-radius": "2px",
-                cursor: "pointer",
-                position: "relative",
-                "margin-bottom": "8px",
-              }}
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect()
-                const ratio = (e.clientX - rect.left) / rect.width
-                const audio = initAudio()
-                audio.currentTime = ratio * playerState().duration
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  background: accentBar(),
-                  "border-radius": "2px",
-                  width: `${
-                    playerState().duration > 0
-                      ? (playerState().currentTime / playerState().duration) *
-                        100
-                      : 0
-                  }%`,
-                  transition: "width 0.5s linear",
-                }}
-              />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                "justify-content": "space-between",
-                color: "rgba(255,255,255,0.4)",
-                "font-size": "11px",
-              }}
-            >
-              <span>
-                {formatDuration(Math.floor(playerState().currentTime))}
-              </span>
-              <span>{formatDuration(Math.floor(playerState().duration))}</span>
-            </div>
-          </div>
-
-          {/* 播放控制 */}
-          <div
-            style={{ display: "flex", "align-items": "center", gap: "16px" }}
-          >
-            <button
-              onClick={() => {
-                const modes: Array<"none" | "all" | "one" | "shuffle"> = [
-                  "none",
-                  "all",
-                  "one",
-                  "shuffle",
-                ]
-                const cur = modes.indexOf(playerState().loopMode)
-                setPlayerState((s) => ({
-                  ...s,
-                  loopMode: modes[(cur + 1) % modes.length],
-                }))
-              }}
-              style={lyricsCtrlBtn}
-              title={t("media.player.loop_mode")}
-            >
-              <Dynamic component={loopIcon()} size={18} />
-            </button>
-            <button
-              onClick={playPrev}
-              style={lyricsCtrlBtn}
-              title={t("media.player.prev")}
-            >
-              <TbPlayerSkipBackFilled size={18} />
-            </button>
-            <button
-              onClick={togglePlay}
-              style={{
-                width: "52px",
-                height: "52px",
-                "border-radius": "50%",
-                background: accentGradient(),
-                border: "none",
-                color: "white",
-                "font-size": "20px",
-                cursor: "pointer",
-                display: "flex",
-                "align-items": "center",
-                "justify-content": "center",
-                "box-shadow": "0 4px 20px rgba(24,144,255,0.5)",
-                transition: "transform 0.15s, box-shadow 0.15s",
-              }}
-            >
-              <Dynamic
-                component={
-                  playerState().playing
-                    ? TbPlayerPauseFilled
-                    : TbPlayerPlayFilled
-                }
-                size={22}
-              />
-            </button>
-            <button
-              onClick={playNext}
-              style={lyricsCtrlBtn}
-              title={t("media.player.next")}
-            >
-              <TbPlayerSkipForwardFilled size={18} />
-            </button>
-            <div style={{ width: "32px" }} />
-          </div>
-        </div>
-
-        {/* 右侧：滚动歌词 */}
-        <div
-          style={{
-            flex: "1",
-            "min-width": "0",
-            "max-width": "680px",
-            display: "flex",
-            "flex-direction": "column",
-            overflow: "hidden",
-            padding: "20px 0 100px 0",
-          }}
-        >
-          <Show
-            when={lyrics().length > 0}
-            fallback={
-              <div
-                style={{
-                  flex: "1",
-                  display: "flex",
-                  "align-items": "center",
-                  "justify-content": "center",
-                  color: "rgba(255,255,255,0.3)",
-                  "font-size": "16px",
-                  "flex-direction": "column",
-                  gap: "12px",
-                }}
-              >
-                <TbMusic size={40} style={{ opacity: 0.6 }} />
-                <span>{t("media.player.no_lyrics")}</span>
+                  />
+                </Show>
               </div>
-            }
-          >
-            <div style={{ position: "relative", flex: "1", "min-height": "0" }}>
+              {/* 中心圆点 */}
               <div
-                ref={lyricsContainerRef}
-                onWheel={pauseAutoScroll}
-                onTouchMove={pauseAutoScroll}
                 style={{
-                  height: "100%",
-                  "overflow-y": "auto",
-                  "overflow-x": "hidden",
-                  "scroll-behavior": "smooth",
-                  "padding-top": "36vh",
-                  "padding-bottom": "40vh",
-                  "scrollbar-width": "none",
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "20px",
+                  height: "20px",
+                  "border-radius": "50%",
+                  background: "#1a1a2e",
+                  border: "3px solid #333",
+                  "z-index": "2",
+                }}
+              />
+            </div>
+
+            {/* 歌曲信息 */}
+            <div style={{ "text-align": "center" }}>
+              <div
+                style={{
+                  color: "white",
+                  "font-size": "20px",
+                  "font-weight": "700",
+                  "letter-spacing": "-0.02em",
+                  "margin-bottom": "6px",
+                  "max-width": "280px",
+                  overflow: "hidden",
+                  "text-overflow": "ellipsis",
+                  "white-space": "nowrap",
+                }}
+              >
+                {getMediaName(currentItem()!)}
+              </div>
+              <div
+                style={{ color: "rgba(255,255,255,0.55)", "font-size": "14px" }}
+              >
+                {currentItem()?.album_artist || t("media.music.unknown_artist")}
+              </div>
+            </div>
+
+            {/* 进度条 */}
+            <div style={{ width: "100%", "max-width": "280px" }}>
+              <div
+                style={{
+                  height: "4px",
+                  background: "rgba(255,255,255,0.15)",
+                  "border-radius": "2px",
+                  cursor: "pointer",
+                  position: "relative",
+                  "margin-bottom": "8px",
+                }}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const ratio = (e.clientX - rect.left) / rect.width
+                  const audio = initAudio()
+                  audio.currentTime = ratio * playerState().duration
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    "flex-direction": "column",
-                    "align-items": "center",
-                    width: "100%",
+                    height: "100%",
+                    background: accentBar(),
+                    "border-radius": "2px",
+                    width: `${
+                      playerState().duration > 0
+                        ? (playerState().currentTime / playerState().duration) *
+                          100
+                        : 0
+                    }%`,
+                    transition: "width 0.5s linear",
                   }}
-                >
-                  <For each={lyrics()}>
-                    {(line, i) => (
-                      <div
-                        ref={(el: HTMLDivElement) => {
-                          lineRefs[i()] = el
-                        }}
-                        onClick={() => {
-                          seekTo(line.time)
-                          resumeAutoScroll()
-                        }}
-                        title={t("media.player.jump_to_line")}
-                        style={{
-                          "min-height": "52px",
-                          display: "flex",
-                          "align-items": "center",
-                          "justify-content": "center",
-                          gap: "12px",
-                          cursor: "pointer",
-                          "max-width": "100%",
-                          padding: "4px 8px",
-                          "text-align": "center",
-                          "font-size":
-                            i() === currentLyricIndex() ? "22px" : "16px",
-                          "font-weight":
-                            i() === currentLyricIndex() ? "700" : "400",
-                          color:
-                            i() === currentLyricIndex()
-                              ? "white"
-                              : Math.abs(i() - currentLyricIndex()) === 1
-                                ? "rgba(255,255,255,0.45)"
-                                : Math.abs(i() - currentLyricIndex()) === 2
-                                  ? "rgba(255,255,255,0.25)"
-                                  : "rgba(255,255,255,0.12)",
-                          transition:
-                            "all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-                          "letter-spacing":
-                            i() === currentLyricIndex() ? "0.02em" : "0",
-                          "text-shadow":
-                            i() === currentLyricIndex()
-                              ? "0 0 30px rgba(24,144,255,0.6)"
-                              : "none",
-                        }}
-                      >
-                        <span>{line.text}</span>
-                        <Show when={i() === currentLyricIndex()}>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              "align-items": "center",
-                              gap: "4px",
-                              padding: "2px 10px",
-                              "border-radius": "999px",
-                              border: "1px solid rgba(255,255,255,0.45)",
-                              color: "rgba(255,255,255,0.85)",
-                              "font-size": "11px",
-                              "font-weight": "500",
-                              "flex-shrink": "0",
-                              "font-variant-numeric": "tabular-nums",
-                            }}
-                          >
-                            <TbPlayerPlayFilled size={9} />
-                            {formatDuration(Math.floor(line.time))}
-                          </span>
-                        </Show>
-                      </div>
-                    )}
-                  </For>
-                </div>
+                />
               </div>
+              <div
+                style={{
+                  display: "flex",
+                  "justify-content": "space-between",
+                  color: "rgba(255,255,255,0.4)",
+                  "font-size": "11px",
+                }}
+              >
+                <span>
+                  {formatDuration(Math.floor(playerState().currentTime))}
+                </span>
+                <span>
+                  {formatDuration(Math.floor(playerState().duration))}
+                </span>
+              </div>
+            </div>
 
-              {/* 手动滚动时暂停自动跟随，可一键回到当前行 */}
-              <Show when={!autoScroll()}>
-                <button
-                  onClick={resumeAutoScroll}
+            {/* 播放控制 */}
+            <div
+              style={{ display: "flex", "align-items": "center", gap: "16px" }}
+            >
+              <button
+                onClick={() => {
+                  const modes: Array<"none" | "all" | "one" | "shuffle"> = [
+                    "none",
+                    "all",
+                    "one",
+                    "shuffle",
+                  ]
+                  const cur = modes.indexOf(playerState().loopMode)
+                  setPlayerState((s) => ({
+                    ...s,
+                    loopMode: modes[(cur + 1) % modes.length],
+                  }))
+                }}
+                style={lyricsCtrlBtn}
+                title={t("media.player.loop_mode")}
+              >
+                <Dynamic component={loopIcon()} size={18} />
+              </button>
+              <button
+                onClick={playPrev}
+                style={lyricsCtrlBtn}
+                title={t("media.player.prev")}
+              >
+                <TbPlayerSkipBackFilled size={18} />
+              </button>
+              <button
+                onClick={togglePlay}
+                style={{
+                  width: "52px",
+                  height: "52px",
+                  "border-radius": "50%",
+                  background: accentGradient(),
+                  border: "none",
+                  color: "white",
+                  "font-size": "20px",
+                  cursor: "pointer",
+                  display: "flex",
+                  "align-items": "center",
+                  "justify-content": "center",
+                  "box-shadow": "0 4px 20px rgba(24,144,255,0.5)",
+                  transition: "transform 0.15s, box-shadow 0.15s",
+                }}
+              >
+                <Dynamic
+                  component={
+                    playerState().playing
+                      ? TbPlayerPauseFilled
+                      : TbPlayerPlayFilled
+                  }
+                  size={22}
+                />
+              </button>
+              <button
+                onClick={playNext}
+                style={lyricsCtrlBtn}
+                title={t("media.player.next")}
+              >
+                <TbPlayerSkipForwardFilled size={18} />
+              </button>
+              <div style={{ width: "32px" }} />
+            </div>
+          </div>
+
+          {/* 右侧：滚动歌词 */}
+          <div
+            style={{
+              flex: "1",
+              "min-width": "0",
+              "max-width": "680px",
+              display: "flex",
+              "flex-direction": "column",
+              overflow: "hidden",
+              padding: "20px 0 100px 0",
+            }}
+          >
+            <Show
+              when={lyrics().length > 0}
+              fallback={
+                <div
                   style={{
-                    position: "absolute",
-                    bottom: "12px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    background: "rgba(255,255,255,0.14)",
-                    border: "1px solid rgba(255,255,255,0.25)",
-                    color: "white",
-                    "border-radius": "999px",
-                    padding: "6px 16px",
-                    "font-size": "12px",
-                    cursor: "pointer",
-                    "backdrop-filter": "blur(10px)",
-                    "z-index": "3",
+                    flex: "1",
+                    display: "flex",
+                    "align-items": "center",
+                    "justify-content": "center",
+                    color: "rgba(255,255,255,0.3)",
+                    "font-size": "16px",
+                    "flex-direction": "column",
+                    gap: "12px",
                   }}
                 >
-                  {t("media.player.back_to_current")}
-                </button>
-              </Show>
-            </div>
-          </Show>
-        </div>
-      </div>
+                  <TbMusic size={40} style={{ opacity: 0.6 }} />
+                  <span>{t("media.player.no_lyrics")}</span>
+                </div>
+              }
+            >
+              <div
+                style={{ position: "relative", flex: "1", "min-height": "0" }}
+              >
+                <div
+                  ref={lyricsContainerRef}
+                  onWheel={pauseAutoScroll}
+                  onTouchMove={pauseAutoScroll}
+                  style={{
+                    height: "100%",
+                    "overflow-y": "auto",
+                    "overflow-x": "hidden",
+                    "scroll-behavior": "smooth",
+                    "padding-top": "36vh",
+                    "padding-bottom": "40vh",
+                    "scrollbar-width": "none",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      "flex-direction": "column",
+                      "align-items": "center",
+                      width: "100%",
+                    }}
+                  >
+                    <For each={lyrics()}>
+                      {(line, i) => (
+                        <div
+                          ref={(el: HTMLDivElement) => {
+                            lineRefs[i()] = el
+                          }}
+                          onClick={() => {
+                            seekTo(line.time)
+                            resumeAutoScroll()
+                          }}
+                          title={t("media.player.jump_to_line")}
+                          style={{
+                            "min-height": "52px",
+                            display: "flex",
+                            "align-items": "center",
+                            "justify-content": "center",
+                            gap: "12px",
+                            cursor: "pointer",
+                            "max-width": "100%",
+                            padding: "4px 8px",
+                            "text-align": "center",
+                            "font-size":
+                              i() === currentLyricIndex() ? "22px" : "16px",
+                            "font-weight":
+                              i() === currentLyricIndex() ? "700" : "400",
+                            color:
+                              i() === currentLyricIndex()
+                                ? "white"
+                                : Math.abs(i() - currentLyricIndex()) === 1
+                                  ? "rgba(255,255,255,0.45)"
+                                  : Math.abs(i() - currentLyricIndex()) === 2
+                                    ? "rgba(255,255,255,0.25)"
+                                    : "rgba(255,255,255,0.12)",
+                            transition:
+                              "all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                            "letter-spacing":
+                              i() === currentLyricIndex() ? "0.02em" : "0",
+                            "text-shadow":
+                              i() === currentLyricIndex()
+                                ? "0 0 30px rgba(24,144,255,0.6)"
+                                : "none",
+                          }}
+                        >
+                          <span>{line.text}</span>
+                          <Show when={i() === currentLyricIndex()}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                "align-items": "center",
+                                gap: "4px",
+                                padding: "2px 10px",
+                                "border-radius": "999px",
+                                border: "1px solid rgba(255,255,255,0.45)",
+                                color: "rgba(255,255,255,0.85)",
+                                "font-size": "11px",
+                                "font-weight": "500",
+                                "flex-shrink": "0",
+                                "font-variant-numeric": "tabular-nums",
+                              }}
+                            >
+                              <TbPlayerPlayFilled size={9} />
+                              {formatDuration(Math.floor(line.time))}
+                            </span>
+                          </Show>
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </div>
 
-      <style>{`
+                {/* 手动滚动时暂停自动跟随，可一键回到当前行 */}
+                <Show when={!autoScroll()}>
+                  <button
+                    onClick={resumeAutoScroll}
+                    style={{
+                      position: "absolute",
+                      bottom: "12px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      background: "rgba(255,255,255,0.14)",
+                      border: "1px solid rgba(255,255,255,0.25)",
+                      color: "white",
+                      "border-radius": "999px",
+                      padding: "6px 16px",
+                      "font-size": "12px",
+                      cursor: "pointer",
+                      "backdrop-filter": "blur(10px)",
+                      "z-index": "3",
+                    }}
+                  >
+                    {t("media.player.back_to_current")}
+                  </button>
+                </Show>
+              </div>
+            </Show>
+          </div>
+        </div>
+
+        <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
-    </div>
+      </div>
+    </Portal>
   )
 }
 

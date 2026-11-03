@@ -1,3 +1,4 @@
+import { Portal } from "solid-js/web"
 import { resolveMediaCover } from "~/utils/media_cover"
 import { accentGradient } from "~/utils/accent"
 import { createSignal, createResource, createMemo, Show, For } from "solid-js"
@@ -48,118 +49,122 @@ const BookReader = (props: {
   const isPDF = () => ext() === "pdf"
   const isEpub = () => ext() === "epub"
 
+  // Portalled to body and above the shell chrome (side nav 1200, content-panel
+  // mask 1101), like the video overlay; dialogs and toasts (1400+) stay above.
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: "0",
-        "z-index": "200",
-        background: "#1a1a2e",
-        display: "flex",
-        "flex-direction": "column",
-      }}
-    >
-      {/* 顶部标题栏 */}
+    <Portal>
       <div
         style={{
+          position: "fixed",
+          inset: "0",
+          "z-index": "1300",
+          background: "#1a1a2e",
           display: "flex",
-          "align-items": "center",
-          gap: "12px",
-          padding: "10px 20px",
-          background: "rgba(0,0,0,0.6)",
-          "border-bottom": "1px solid rgba(255,255,255,0.08)",
-          "flex-shrink": "0",
+          "flex-direction": "column",
         }}
       >
-        <span style={{ "font-size": "18px" }}>📖</span>
-        <span
+        {/* 顶部标题栏 */}
+        <div
           style={{
-            color: "#e2e8f0",
-            "font-size": "14px",
-            "font-weight": "500",
-            flex: "1",
-            overflow: "hidden",
-            "text-overflow": "ellipsis",
-            "white-space": "nowrap",
+            display: "flex",
+            "align-items": "center",
+            gap: "12px",
+            padding: "10px 20px",
+            background: "rgba(0,0,0,0.6)",
+            "border-bottom": "1px solid rgba(255,255,255,0.08)",
+            "flex-shrink": "0",
           }}
         >
-          {readerTitle()}
-        </span>
-        <button
-          onClick={props.onClose}
-          style={{ ...readerBtnStyle, color: "#f87171" }}
-          title={t("global.close")}
-        >
-          ✕ {t("global.close")}
-        </button>
-      </div>
-
-      {/* 阅读器主体 */}
-      <div style={{ flex: "1", overflow: "hidden" }}>
-        <Show when={isPDF() && fileUrl()}>
-          <PdfReader
-            url={fileUrl()}
-            title={getMediaName(props.item)}
-            itemId={props.item.id}
-          />
-        </Show>
-        <Show when={isEpub() && fileUrl()}>
-          <EpubReader
-            url={fileUrl()}
-            title={getMediaName(props.item)}
-            itemId={props.item.id}
-          />
-        </Show>
-        <Show when={!isPDF() && !isEpub()}>
-          <div
+          <span style={{ "font-size": "18px" }}>📖</span>
+          <span
             style={{
+              color: "#e2e8f0",
+              "font-size": "14px",
+              "font-weight": "500",
               flex: "1",
-              display: "flex",
-              "align-items": "center",
-              "justify-content": "center",
-              "flex-direction": "column",
-              gap: "16px",
-              color: "#475569",
-              height: "100%",
+              overflow: "hidden",
+              "text-overflow": "ellipsis",
+              "white-space": "nowrap",
             }}
           >
-            <div style={{ "font-size": "64px" }}>📄</div>
-            <div style={{ "font-size": "16px" }}>
-              {t("media.book.unsupported_format", {
-                ext: ext().toUpperCase(),
-              })}
-            </div>
-            <a
-              href={downloadUrl() || "#"}
-              target="_blank"
-              rel="noopener"
-              onClick={async (e) => {
-                e.preventDefault()
-                // 签名直链在打开阅读器时已经预取，正常情况下点击是同步打开，
-                // Safari/部分 Chrome 不会把它判定为“非用户手势”而拦截。
-                // 这里用直链而不是 /p 代理：代理会让大文件流量全部走服务端，
-                // 且 force 参数会阻止 302 到网盘直链。
-                const ready = downloadUrl()
-                if (ready) {
-                  window.open(ready, "_blank", "noopener")
-                  return
-                }
-                // 极端情况下签名还没就绪：退化为当前页跳转，不会被弹窗拦截
-                const resp = await getMediaStreamUrl({ path: resolvedPath() })
-                const url =
-                  resp.code === 200 && resp.data?.url
-                    ? resp.data.url
-                    : `${api}/d${encodePath(resolvedPath())}`
-                location.assign(url)
+            {readerTitle()}
+          </span>
+          <button
+            onClick={props.onClose}
+            style={{ ...readerBtnStyle, color: "#f87171" }}
+            title={t("global.close")}
+          >
+            ✕ {t("global.close")}
+          </button>
+        </div>
+
+        {/* 阅读器主体 */}
+        <div style={{ flex: "1", overflow: "hidden" }}>
+          <Show when={isPDF() && fileUrl()}>
+            <PdfReader
+              url={fileUrl()}
+              title={getMediaName(props.item)}
+              itemId={props.item.id}
+            />
+          </Show>
+          <Show when={isEpub() && fileUrl()}>
+            <EpubReader
+              url={fileUrl()}
+              title={getMediaName(props.item)}
+              itemId={props.item.id}
+            />
+          </Show>
+          <Show when={!isPDF() && !isEpub()}>
+            <div
+              style={{
+                flex: "1",
+                display: "flex",
+                "align-items": "center",
+                "justify-content": "center",
+                "flex-direction": "column",
+                gap: "16px",
+                color: "#475569",
+                height: "100%",
               }}
-              style={{ ...mediaPrimaryBtn(), "text-decoration": "none" }}
             >
-              ⬇ {t("media.book.download_file")}
-            </a>
-          </div>
-        </Show>
+              <div style={{ "font-size": "64px" }}>📄</div>
+              <div style={{ "font-size": "16px" }}>
+                {t("media.book.unsupported_format", {
+                  ext: ext().toUpperCase(),
+                })}
+              </div>
+              <a
+                href={downloadUrl() || "#"}
+                target="_blank"
+                rel="noopener"
+                onClick={async (e) => {
+                  e.preventDefault()
+                  // 签名直链在打开阅读器时已经预取，正常情况下点击是同步打开，
+                  // Safari/部分 Chrome 不会把它判定为“非用户手势”而拦截。
+                  // 这里用直链而不是 /p 代理：代理会让大文件流量全部走服务端，
+                  // 且 force 参数会阻止 302 到网盘直链。
+                  const ready = downloadUrl()
+                  if (ready) {
+                    window.open(ready, "_blank", "noopener")
+                    return
+                  }
+                  // 极端情况下签名还没就绪：退化为当前页跳转，不会被弹窗拦截
+                  const resp = await getMediaStreamUrl({ path: resolvedPath() })
+                  const url =
+                    resp.code === 200 && resp.data?.url
+                      ? resp.data.url
+                      : `${api}/d${encodePath(resolvedPath())}`
+                  location.assign(url)
+                }}
+                style={{ ...mediaPrimaryBtn(), "text-decoration": "none" }}
+              >
+                ⬇ {t("media.book.download_file")}
+              </a>
+            </div>
+          </Show>
+        </div>
       </div>
-    </div>
+    </Portal>
   )
 }
 
