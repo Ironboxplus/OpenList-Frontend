@@ -31,8 +31,12 @@ export const SettingsTopLeft = (props: {
       fallback={
         <Breadcrumb
           attrs={{ "data-settings-crumbs": "" }}
-          items={crumbs().map((c) => ({
+          items={crumbs().map((c, i, all) => ({
             href: c.href,
+            // A deeper page (add/edit) has no crumb of its own: its page
+            // crumb is a link back and the last crumb is current only when
+            // it has no href.
+            current: i === all.length - 1 && !c.href,
             label: <span>{t(c.key)}</span>,
           }))}
           onNavigate={to}

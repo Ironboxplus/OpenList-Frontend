@@ -6,8 +6,10 @@ import { joinBase } from "~/utils/path"
 
 export interface BreadcrumbItem {
   label: JSX.Element
-  /** Router path (base not applied). Absent: plain text (a group, or the last item). */
+  /** Router path (base not applied). Absent: plain text (a group, or the current page). */
   href?: string
+  /** The page being viewed: plain text with aria-current, never a link. */
+  current?: boolean
 }
 
 const plain = "no-underline hover:no-underline"
@@ -45,8 +47,7 @@ export const Breadcrumb = (props: {
       <ol class="m-0 flex list-none items-center gap-0.5 p-0 text-sm">
         <For each={props.items}>
           {(item, i) => {
-            const last = () => i() === props.items.length - 1
-            const target = () => (last() ? undefined : item.href)
+            const target = () => (item.current ? undefined : item.href)
             return (
               <>
                 <Show when={i() > 0}>
@@ -57,10 +58,10 @@ export const Breadcrumb = (props: {
                     when={target()}
                     fallback={
                       <span
-                        aria-current={last() ? "page" : undefined}
+                        aria-current={item.current ? "page" : undefined}
                         class={cn(
                           "flex items-center gap-1.5 px-1.5 py-1",
-                          last()
+                          item.current
                             ? "font-medium text-foreground"
                             : "text-muted-foreground",
                         )}

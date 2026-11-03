@@ -97,7 +97,7 @@ describe("SettingsNav", () => {
 describe("SettingsTopLeft", () => {
   it("phone: back button to the settings home plus the page title", () => {
     const { container } = render(() => (
-      <SettingsTopLeft pathname="/@manage/settings/traffic" hash="" />
+      <SettingsTopLeft phone pathname="/@manage/settings/traffic" hash="" />
     ))
     expect(container.textContent).toContain("Traffic")
     fireEvent.click(container.querySelector("[data-settings-back]")!)
@@ -106,7 +106,7 @@ describe("SettingsTopLeft", () => {
 
   it("phone: no back button on the settings home", () => {
     const { container } = render(() => (
-      <SettingsTopLeft pathname="/@manage" hash="" />
+      <SettingsTopLeft phone pathname="/@manage" hash="" />
     ))
     expect(container.querySelector("[data-settings-back]")).toBeNull()
     expect(container.textContent).toContain("Settings")

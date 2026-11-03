@@ -104,8 +104,9 @@ const DesktopCrumbs = () => {
   return (
     <Breadcrumb
       attrs={{ "data-files-crumbs": "" }}
-      items={crumbs().map((crumb) => ({
+      items={crumbs().map((crumb, i, all) => ({
         href: crumb.href,
+        current: i === all.length - 1,
         label: <CrumbLabel crumb={crumb} />,
       }))}
       onNavigate={to}

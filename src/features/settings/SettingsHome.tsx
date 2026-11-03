@@ -71,10 +71,9 @@ export const SettingsHome = (props: { items: SettingContribution[] }) => {
   )
   return (
     <div class="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-8">
+      {/* The TopBar crumb is the visible title (as on Files); keep it for screen readers. */}
       <header class="flex flex-col gap-1">
-        <h1 class="text-xl font-semibold text-foreground">
-          {t("settings.home.title")}
-        </h1>
+        <h1 class="sr-only">{t("settings.home.title")}</h1>
         <p class="text-sm text-muted-foreground">
           {t("settings.home.subtitle")}
         </p>
