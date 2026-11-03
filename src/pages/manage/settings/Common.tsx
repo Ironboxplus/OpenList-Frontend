@@ -78,7 +78,7 @@ const CommonSettings = (props: CommonSettingsProps) => {
             disabled={g.loading() || g.saving()}
             onClick={g.loadDefaults}
           >
-            {t("manage.load_default_setting")}
+            {t("settings.form.load_default")}
           </Button>
         }
       >

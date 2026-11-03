@@ -44,7 +44,7 @@ export const TopBar = (props: { pathname: string; phone?: boolean }) => {
         <Show
           when={topBarSlots()?.left}
           fallback={
-            <span class="text-sm font-medium text-muted-foreground">
+            <span class="px-1.5 text-sm font-medium text-foreground">
               {title()}
             </span>
           }

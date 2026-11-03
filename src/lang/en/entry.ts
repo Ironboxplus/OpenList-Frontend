@@ -23,6 +23,7 @@ import settings_other from "./settings_other.json"
 import settings from "./settings.json"
 import settings_center from "./settings_center.json"
 import settings_form from "./settings_form.json"
+import settings_seed from "./settings_seed.json"
 import shares from "./shares.json"
 import storages from "./storages.json"
 import tasks from "./tasks.json"
@@ -48,6 +49,7 @@ export const dict = {
   palette,
   plugins,
   settings_other,
+  settings_seed,
   // settings_center adds settings.groups.* / settings.items.* / settings.home.*
   // and settings_form adds settings.form.* and the S3 / other page texts,
   // beside the per-setting labels without touching the Crowdin-managed file.

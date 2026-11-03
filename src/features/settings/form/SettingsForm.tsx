@@ -59,7 +59,7 @@ export const SettingsForm = (props: SettingsFormProps) => {
             type="submit"
             disabled={!props.dirty || props.saving || props.invalid}
           >
-            {props.saveLabel ?? t("global.save")}
+            {props.saveLabel ?? t("settings.form.save")}
           </Button>
         </div>
       </div>

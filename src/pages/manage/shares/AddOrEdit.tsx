@@ -146,7 +146,7 @@ const AddOrEdit = () => {
       invalid={!expireValid() || !filesValid()}
       saving={saving()}
       resetting={shareLoading()}
-      saveLabel={t(`global.${id ? "save" : "add"}`)}
+      saveLabel={t(`settings.form.${id ? "save" : "add"}`)}
       onSave={submit}
       onReset={init}
     >

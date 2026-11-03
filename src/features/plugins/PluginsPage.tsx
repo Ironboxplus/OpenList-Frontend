@@ -10,26 +10,29 @@ import { plugins, setPluginEnabled } from "~/plugins/registry"
 import { me } from "~/store"
 import { UserMethods } from "~/types"
 import { NavLink } from "../shell/NavLink"
+import { useTopBarSlots } from "../shell/topbar-slot"
 import { pluginRows } from "./model"
 
 const PluginsPage = () => {
   const t = useT()
   useTitle(() => t("shell.nav.plugins"))
   const rows = createMemo(() => pluginRows(plugins()))
+  useTopBarSlots(() => ({
+    right: () => (
+      <Show when={UserMethods.is_admin(me())}>
+        <NavLink
+          path="/@manage/plugins"
+          data-testid="system-plugins-link"
+          class="mr-2 whitespace-nowrap text-sm text-primary underline-offset-4 hover:underline"
+        >
+          {t("plugins.page.manage_system")}
+        </NavLink>
+      </Show>
+    ),
+  }))
   return (
     <div class="mx-auto flex w-full max-w-[1000px] flex-col gap-4 p-4 sm:p-6">
-      <div class="flex flex-wrap items-center gap-3">
-        <h1 class="text-xl font-semibold">{t("shell.nav.plugins")}</h1>
-        <Show when={UserMethods.is_admin(me())}>
-          <NavLink
-            path="/@manage/plugins"
-            data-testid="system-plugins-link"
-            class="ml-auto text-sm text-primary underline-offset-4 hover:underline"
-          >
-            {t("plugins.page.manage_system")}
-          </NavLink>
-        </Show>
-      </div>
+      <h1 class="sr-only">{t("shell.nav.plugins")}</h1>
       <p class="m-0 text-sm text-muted-foreground">
         {t("plugins.page.browser_only")}
       </p>

@@ -27,6 +27,7 @@ import {
   touchesPath,
   type OpenTarget,
 } from "../files/tasks-for-path"
+import { useTopBarSlots } from "../shell/topbar-slot"
 import { me } from "~/store"
 import { UserMethods } from "~/types"
 import type { UnifiedTask } from "~/platform/contracts/task"
@@ -111,6 +112,23 @@ const TransfersPage = () => {
 
   const isAdmin = () => UserMethods.is_admin(me())
   const syncOn = () => isAdmin() && transfers.syncAvailable()
+  useTopBarSlots(() => ({
+    right: () => (
+      <Show when={syncOn()}>
+        <div class="mr-1 flex items-center gap-2">
+          <BandwidthPopover />
+          <Button
+            size="sm"
+            data-testid="new-sync"
+            onClick={() => setNewOpen(true)}
+          >
+            <TbPlus class="mr-1.5 size-4" />
+            {t("transfers.sync.new_job")}
+          </Button>
+        </div>
+      </Show>
+    ),
+  }))
 
   const filter = createMemo<FilterKey>(() => {
     const v = Array.isArray(params.type) ? params.type[0] : params.type
@@ -223,22 +241,8 @@ const TransfersPage = () => {
 
   return (
     <div class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6">
-      <div class="flex flex-wrap items-center gap-3">
-        <h1 class="text-xl font-semibold">{t("transfers.title")}</h1>
-        <Show when={syncOn()}>
-          <div class="ml-auto flex flex-wrap gap-2">
-            <BandwidthPopover />
-            <Button
-              size="sm"
-              data-testid="new-sync"
-              onClick={() => setNewOpen(true)}
-            >
-              <TbPlus class="mr-1.5 size-4" />
-              {t("transfers.sync.new_job")}
-            </Button>
-          </div>
-        </Show>
-      </div>
+      {/* the TopBar carries the visible title; this keeps the page landmark */}
+      <h1 class="sr-only">{t("transfers.title")}</h1>
 
       <Show when={pathFilter()}>
         {(p) => (

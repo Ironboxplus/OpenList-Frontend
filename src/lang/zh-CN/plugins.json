@@ -1,0 +1,77 @@
+{
+  "title": "插件",
+  "page": {
+    "browser_only": "这些插件运行在当前浏览器里。关闭某个插件只影响此浏览器，设置会记在本机，不会改动服务器。",
+    "empty": "没有已注册的浏览器插件。",
+    "version": "版本 {{version}}",
+    "contributes": "出现在",
+    "toggle": "启用 {{name}}",
+    "manage_system": "管理系统插件"
+  },
+  "name": "插件名称",
+  "type": "类型",
+  "version": "版本",
+  "author": "作者",
+  "status_col": "状态",
+  "empty_desc": "暂无描述",
+  "subtitle": "通过上传 ZIP 文件或第三方链接安装、管理和配置 OpenList 扩展",
+  "search_placeholder": "按名称、ID、描述或权限搜索插件...",
+  "filter_type": "按类型筛选",
+  "types": {
+    "all": "全部类型",
+    "ui": "界面与小组件",
+    "preview": "预览器",
+    "tool": "工具",
+    "theme": "主题与特效",
+    "integration": "集成",
+    "system": "系统核心"
+  },
+  "status": {
+    "enabled": "已启用",
+    "disabled": "已停用",
+    "builtin": "内置",
+    "custom": "自定义",
+    "high_privilege": "高权限"
+  },
+  "actions": {
+    "install": "安装插件",
+    "reinstall": "重新安装",
+    "uninstall": "卸载",
+    "config": "设置",
+    "view_details": "详情",
+    "enable": "启用",
+    "disable": "停用",
+    "export": "导出配置",
+    "import": "导入配置",
+    "refresh": "刷新",
+    "save": "保存设置",
+    "cancel": "取消",
+    "install_url": "通过链接安装"
+  },
+  "install_modal": {
+    "install_type": "安装来源",
+    "zip_tab": "上传 ZIP 包",
+    "url_tab": "通过链接安装",
+    "zip_file_label": "插件 ZIP 包",
+    "zip_drop_title": "点击选择或拖入插件 ZIP 文件",
+    "zip_drop_help": "支持包含 plugin.json / manifest.json 的开源插件压缩包",
+    "url_label": "插件清单链接",
+    "url_placeholder": "例如：https://raw.githubusercontent.com/.../plugin.json",
+    "url_help": "支持开源插件的 JSON 清单链接（GitHub Raw、jsDelivr、unpkg 等）",
+    "high_privilege_label": "授予系统高权限（Root / 管理员权限）",
+    "high_privilege_help": "允许直接访问底层文件系统接口、重载存储驱动、读写全站设置以及发起原始 HTTP 请求",
+    "fetch_and_install": "获取并安装"
+  },
+  "config_modal": {
+    "title": "插件配置",
+    "no_config": "此插件没有需要配置的参数。",
+    "save_success": "插件配置已保存"
+  },
+  "delete_confirm": "确定要卸载并移除此插件吗？此操作无法撤销。",
+  "import_modal": {
+    "title": "导入插件备份",
+    "paste_json": "在此粘贴插件 JSON 数据",
+    "import_success": "插件已导入"
+  },
+  "empty_installed": "还没有安装任何插件。点击“安装插件”上传 ZIP 包或通过链接安装。"
+}

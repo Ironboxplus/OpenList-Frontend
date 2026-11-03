@@ -155,7 +155,7 @@ const AddOrEdit = () => {
       dirty={dirty()}
       saving={saving()}
       resetting={loading()}
-      saveLabel={t(`global.${id ? "save" : "add"}`)}
+      saveLabel={t(`settings.form.${id ? "save" : "add"}`)}
       onSave={submit}
       onReset={init}
     >

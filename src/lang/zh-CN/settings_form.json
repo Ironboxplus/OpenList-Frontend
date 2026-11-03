@@ -17,7 +17,10 @@
     "share_content": "页面内容",
     "meta_access": "访问",
     "meta_content": "内容",
-    "cluster_config": "本节点"
+    "cluster_config": "本节点",
+    "save": "保存",
+    "add": "添加",
+    "load_default": "载入默认设置"
   },
   "s3_generate": "生成密钥",
   "s3_restart_to_apply": "S3 服务的修改需要重启后生效。",
