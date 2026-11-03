@@ -23,7 +23,13 @@ const Manage = () => {
   const routes = getRoutes()
   const sections = createMemo(() => groupSettings(visibleSettings(me())))
   useTopBarSlots(() => ({
-    left: () => <SettingsTopLeft pathname={pathname()} hash={location.hash} />,
+    left: (ctx) => (
+      <SettingsTopLeft
+        pathname={pathname()}
+        hash={location.hash}
+        phone={ctx.phone}
+      />
+    ),
   }))
 
   return (

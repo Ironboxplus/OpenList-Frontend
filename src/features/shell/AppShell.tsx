@@ -99,11 +99,7 @@ const AppShell = (props: ParentProps) => {
 
   const wide = () => shown() && viewport() !== "phone"
   const phone = () => shown() && viewport() === "phone"
-  // The settings pages are a page of their own (menu on the left, a titled
-  // card): on tablet and desktop the bar above them would only repeat that.
-  // Phones keep it for the way back.
-  const topBar = () =>
-    shown() && !(activeNavId(pathname()) === "settings" && !phone())
+  const topBar = () => shown()
 
   createEffect(() => setPhoneShell(phone()))
   onCleanup(() => setPhoneShell(false))

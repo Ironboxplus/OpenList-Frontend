@@ -112,3 +112,46 @@ describe("SettingsTopLeft", () => {
     expect(container.textContent).toContain("Settings")
   })
 })
+
+describe("SettingsTopLeft breadcrumb (tablet and desktop)", () => {
+  const crumbs = (pathname: string, hash = "") =>
+    render(() => <SettingsTopLeft pathname={pathname} hash={hash} />)
+
+  it("home: a single current crumb, no links", () => {
+    const { container } = crumbs("/@manage")
+    expect(container.querySelectorAll("li")).toHaveLength(1)
+    expect(container.querySelector("a")).toBeNull()
+    expect(
+      container.querySelector('[aria-current="page"]')?.textContent,
+    ).toContain("Settings")
+  })
+
+  it("sub-page: Settings is a link home, the page is current", () => {
+    const { container } = crumbs("/@manage/users")
+    const nav = container.querySelector("nav[data-settings-crumbs] > ol")
+    expect(nav).not.toBeNull()
+    const links = container.querySelectorAll("a")
+    expect(links).toHaveLength(1)
+    expect(links[0].getAttribute("href")).toBe("/@manage")
+    expect(
+      container.querySelector('[aria-current="page"]')?.textContent,
+    ).toContain("Users")
+    fireEvent.click(links[0])
+    expect(to).toHaveBeenCalledWith("/@manage")
+  })
+
+  it("a modifier-click is left to the browser", () => {
+    const { container } = crumbs("/@manage/users")
+    fireEvent.click(container.querySelector("a")!, { ctrlKey: true })
+    expect(to).not.toHaveBeenCalled()
+  })
+
+  it("deeper page: the group is plain text, the page links to its route", () => {
+    const { container } = crumbs("/@manage/users/5")
+    expect(container.querySelectorAll("li")).toHaveLength(3)
+    const hrefs = [...container.querySelectorAll("a")].map((a) =>
+      a.getAttribute("href"),
+    )
+    expect(hrefs).toEqual(["/@manage", "/@manage/users"])
+  })
+})

@@ -1,7 +1,6 @@
 import { LibraryBadge, LibraryMenuItem } from "./LibraryMenuItem"
 import {
   TbArrowLeft,
-  TbChevronRight,
   TbDots,
   TbHome,
   TbLayoutGrid,
@@ -12,7 +11,7 @@ import {
   TbColumns,
 } from "solid-icons/tb"
 import type { IconTypes } from "solid-icons"
-import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js"
+import { createMemo, createSignal, For, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import {
   DropdownMenu,
@@ -46,6 +45,7 @@ import {
   openMediaEditor,
   posterActive,
 } from "../media/state"
+import { Breadcrumb } from "../shell/Breadcrumb"
 import { PhoneSelectionHeader } from "./PhoneActions"
 import { selectionMode } from "./selection-mode"
 
@@ -96,66 +96,21 @@ const CrumbLabel = (props: { crumb: FileCrumb; iconOnly?: boolean }) => {
   )
 }
 
-/** Tablet/desktop: scrollable breadcrumb that keeps the last segment in view. */
+/** Tablet/desktop: the shared TopBar breadcrumb over the folder path. */
 const DesktopCrumbs = () => {
-  const { crumbs, go } = useCrumbs()
+  const { crumbs } = useCrumbs()
   const { setPathAs } = usePath()
-  let box: HTMLElement | undefined
-  createEffect(
-    on(crumbs, () => {
-      queueMicrotask(() => {
-        if (box) box.scrollLeft = box.scrollWidth
-      })
-    }),
-  )
+  const { to } = useRouter()
   return (
-    <nav
-      ref={box}
-      aria-label="breadcrumb"
-      data-files-crumbs
-      class="min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-    >
-      <ol class="m-0 flex list-none items-center gap-0.5 p-0 text-sm">
-        <For each={crumbs()}>
-          {(crumb, i) => {
-            const last = () => i() === crumbs().length - 1
-            return (
-              <>
-                <Show when={i() > 0}>
-                  <TbChevronRight class="size-3.5 shrink-0 text-muted-foreground" />
-                </Show>
-                <li class="shrink-0">
-                  <Show
-                    when={!last()}
-                    fallback={
-                      <span
-                        aria-current="page"
-                        class="flex items-center gap-1.5 px-1.5 py-1 font-medium text-foreground"
-                      >
-                        <CrumbLabel crumb={crumb} />
-                      </span>
-                    }
-                  >
-                    <a
-                      href={joinBase(crumb.href)}
-                      onClick={go(crumb)}
-                      onMouseEnter={() => setPathAs(decodeURI(crumb.href))}
-                      class={cn(
-                        focusRing,
-                        plain,
-                        "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                      )}
-                    >
-                      <CrumbLabel crumb={crumb} />
-                    </a>
-                  </Show>
-                </li>
-              </>
-            )
-          }}
-        </For>
-      </ol>
-    </nav>
+    <Breadcrumb
+      attrs={{ "data-files-crumbs": "" }}
+      items={crumbs().map((crumb) => ({
+        href: crumb.href,
+        label: <CrumbLabel crumb={crumb} />,
+      }))}
+      onNavigate={to}
+      onHover={(href) => setPathAs(decodeURI(href))}
+    />
   )
 }
 
