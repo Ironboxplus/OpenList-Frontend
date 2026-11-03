@@ -202,6 +202,7 @@
     "player_transcode_note": "Cloud transcode plays in Artplayer",
     "next_episode": "Next episode",
     "versions": "{{n}} versions",
+    "version_original": "Original",
     "mode_reload_confirm": "Switching player mode requires a page reload. Reload now?",
     "audio_fallback": "Unsupported audio codec, switched to MediaBunny audio decoding",
     "strm_failed": "Failed to download STRM",

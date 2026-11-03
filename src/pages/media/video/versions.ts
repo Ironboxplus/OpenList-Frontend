@@ -33,11 +33,15 @@ const tokensOf = (name: string): string[] =>
 /**
  * Names the versions of one film by what tells them apart: the tokens of each
  * file name (split on dots, spaces, dashes, underscores, brackets and path
- * separators) that are not in every other name, in their order. A version with
- * nothing of its own, or one whose label another version shares, is named by
- * its file name without the extension.
+ * separators) that are not in every other name, in their order. When exactly
+ * one version has nothing of its own it is the plain original and gets
+ * `original`. Several with nothing of their own, or a label another version
+ * shares, are named by the file name without the extension.
  */
-export const versionLabels = (names: readonly string[]): string[] => {
+export const versionLabels = (
+  names: readonly string[],
+  original = "Original",
+): string[] => {
   const sets = names.map(
     (n) => new Set(tokensOf(n).map((t) => t.toLowerCase())),
   )
@@ -48,7 +52,9 @@ export const versionLabels = (names: readonly string[]): string[] => {
     })
     return mine.join(" ")
   })
-  return labels.map((l, i) =>
-    l && labels.filter((x) => x === l).length === 1 ? l : baseName(names[i]),
-  )
+  const bare = labels.filter((l) => !l).length
+  return labels.map((l, i) => {
+    if (!l) return bare === 1 ? original : baseName(names[i])
+    return labels.filter((x) => x === l).length === 1 ? l : baseName(names[i])
+  })
 }

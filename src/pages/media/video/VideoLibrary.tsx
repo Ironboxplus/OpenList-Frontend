@@ -1111,7 +1111,10 @@ const VideoDetail = (props: {
   const versionLabelOf = (fileName: string) => {
     const it = item()
     const rows = it ? versionRows(it) : []
-    const labels = versionLabels(rows.map((r) => r.file_name))
+    const labels = versionLabels(
+      rows.map((r) => r.file_name),
+      t("media.video.version_original"),
+    )
     const i = rows.findIndex((r) => r.file_name === fileName)
     return i >= 0 ? labels[i] : fileName
   }

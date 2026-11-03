@@ -35,14 +35,29 @@ describe("versionLabels", () => {
   it("names a re-encode by the tokens its file name adds", () => {
     const labels = versionLabels([FLIPPED_AV1, FLIPPED])
     expect(labels[0]).toBe("av1 recode")
-    // nothing of its own: the file name without the extension
-    expect(labels[1]).toBe(FLIPPED.replace(/\.mkv$/, ""))
+    // nothing of its own, and the only one: the plain original
+    expect(labels[1]).toBe("Original")
   })
 
   it("names the built-in-subtitle cut by what differs", () => {
     const labels = versionLabels([LAMBS, LAMBS_SUB])
     expect(labels[1]).toBe("sub built in")
-    expect(labels[0]).toBe(LAMBS.replace(/\.mkv$/, ""))
+    expect(labels[0]).toBe("Original")
+  })
+
+  it("uses the given word for the original", () => {
+    expect(versionLabels([FLIPPED_AV1, FLIPPED], "原版")).toEqual([
+      "av1 recode",
+      "原版",
+    ])
+  })
+
+  it("falls back to file names when several versions have nothing of their own", () => {
+    expect(versionLabels(["a.mkv", "a.MKV", "a.av1.mkv"])).toEqual([
+      "a",
+      "a",
+      "av1",
+    ])
   })
 
   it("tells release folders apart by the folder tokens", () => {
