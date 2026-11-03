@@ -17,8 +17,9 @@ import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
 import { layout } from "~/store"
 import { ContextMenu } from "./context-menu"
 import { Pager } from "./Pager"
-import { useLink, useT } from "~/hooks"
-import { objStore, local } from "~/store"
+import { useLink, useRouter, useT } from "~/hooks"
+import { loadSortState } from "./sort-state"
+import { objStore, local, sortObjs, type OrderBy } from "~/store"
 import { ObjType } from "~/types"
 import { bus } from "~/utils"
 import lightGallery from "lightgallery"
@@ -39,6 +40,19 @@ const PosterWall = lazy(() => import("./PosterWall"))
 
 const Folder = () => {
   const { previewLink } = useLink()
+  const { pathname } = useRouter()
+  // Only the list's header used to apply the remembered sort; every view shares
+  // the toolbar's sort menu now, so the folder applies it for all of them each
+  // time a listing (or another page of it) arrives.
+  createEffect(
+    on(
+      () => objStore.objs.length,
+      (n) => {
+        const saved = n > 0 ? loadSortState(pathname()) : null
+        if (saved) sortObjs(saved.orderBy as OrderBy, saved.reverse)
+      },
+    ),
+  )
   const images = createMemo(() =>
     objStore.objs.filter((obj) => obj.type === ObjType.IMAGE),
   )

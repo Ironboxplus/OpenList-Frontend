@@ -6,7 +6,6 @@ import {
   createSignal,
   For,
   Show,
-  onMount,
 } from "solid-js"
 import { AiOutlineArrowUp } from "solid-icons/ai"
 import { useT, useRouter } from "~/hooks"
@@ -214,8 +213,8 @@ export const ListTitle = (props: {
 const ListLayout = () => {
   const { pathname } = useRouter()
 
-  const [initialOrder, setInitialOrder] = createSignal<OrderBy>()
-  const [initialReverse, setInitialReverse] = createSignal(false)
+  // The toolbar's sort menu writes the same state, so the header follows it.
+  const saved = createMemo(() => loadSortState(pathname()))
 
   const { registerSelectContainer, captureContentMenu } = useSelectWithMouse()
   registerSelectContainer()
@@ -236,15 +235,6 @@ const ListLayout = () => {
       <MediaListItem obj={obj} index={index} />
     </Show>
   )
-
-  onMount(() => {
-    const saved = loadSortState(pathname())
-    if (saved) {
-      setInitialOrder(saved.orderBy as OrderBy)
-      setInitialReverse(saved.reverse)
-      sortObjs(saved.orderBy as OrderBy, saved.reverse)
-    }
-  })
 
   const onDragOver = (e: DragEvent) => {
     const items = Array.from(e.dataTransfer?.items ?? [])
@@ -268,8 +258,8 @@ const ListLayout = () => {
     >
       <ListTitle
         sortCallback={sortObjs}
-        initialOrder={initialOrder()}
-        initialReverse={initialReverse()}
+        initialOrder={saved()?.orderBy as OrderBy | undefined}
+        initialReverse={saved()?.reverse}
         compact={useMediaRows()}
       />
       <Show

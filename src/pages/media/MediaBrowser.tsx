@@ -22,6 +22,14 @@ import { notify } from "~/utils"
 import { useT } from "~/hooks"
 import type { MediaItem, MediaType, MediaScanPath } from "~/types"
 import { getMediaName } from "~/types"
+import { Button } from "~/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu"
+import { SortMenuItems } from "~/components/ui/sort-menu"
+import { TbArrowDown, TbArrowsSort, TbArrowUp } from "solid-icons/tb"
 import { MediaItemDetail } from "./MediaItemDetail"
 
 interface MediaBrowserProps {
@@ -36,7 +44,8 @@ interface MediaBrowserProps {
 
 type ViewMode = "waterfall" | "list"
 type BrowseMode = "all" | "folder" | "favorites"
-type OrderBy = "name" | "date" | "size"
+// "recent" is the backend's default order (creation time): no order_by is sent.
+type OrderBy = "name" | "date" | "recent" | "size"
 type OrderDir = "asc" | "desc"
 
 export const MediaBrowser = (props: MediaBrowserProps) => {
@@ -64,17 +73,6 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
     isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.15)",
   )
   const btnInactiveColor = createMemo(() => (isDark() ? "#64748b" : "#64748b"))
-  const sortLabelColor = createMemo(() => (isDark() ? "#475569" : "#64748b"))
-  const sortActiveBg = createMemo(() => "rgba(99,102,241,0.3)")
-  const sortActiveBorder = createMemo(() => "rgba(99,102,241,0.5)")
-  const sortActiveColor = "#a5b4fc"
-  const sortInactiveBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-  )
-  const sortInactiveBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)",
-  )
-  const sortInactiveColor = createMemo(() => (isDark() ? "#94a3b8" : "#475569"))
   const searchBg = createMemo(() =>
     isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
   )
@@ -204,6 +202,11 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
     return Array.from(tags)
   })
 
+  const apiOrder = () => {
+    const o = orderBy()
+    return o === "recent" ? undefined : o
+  }
+
   // 加载媒体列表（收藏 Tab 走收藏接口）
   const [mediaData, { refetch: refetchMedia }] = createResource(
     () => ({
@@ -211,7 +214,7 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
       media_type: props.mediaType,
       page: page(),
       page_size: pageSize,
-      order_by: orderBy(),
+      order_by: apiOrder(),
       order_dir: orderDir(),
       folder_path: browseMode() === "folder" ? selectedFolder() : undefined,
       keyword: keyword() || undefined,
@@ -309,41 +312,23 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
     }
   }
 
-  const toggleOrder = (col: OrderBy) => {
-    if (orderBy() === col) {
-      setOrderDir(orderDir() === "asc" ? "desc" : "asc")
-    } else {
+  const sortOptions = createMemo(() =>
+    (["name", "date", "recent", "size"] as OrderBy[]).map((k) => ({
+      key: k,
+      label: t(`media.browser.${k}`),
+    })),
+  )
+  const changeOrder = (key: string | undefined, reverse: boolean) => {
+    const col = (key ?? orderBy()) as OrderBy
+    if (col !== orderBy()) {
+      // a new key starts in its natural direction: newest first for "recent"
       setOrderBy(col)
-      setOrderDir("asc")
+      setOrderDir(col === "recent" ? "desc" : "asc")
+    } else {
+      setOrderDir(reverse ? "desc" : "asc")
     }
     setPage(1)
   }
-
-  const OrderBtn = (p: { col: OrderBy; label: string }) => (
-    <button
-      onClick={() => toggleOrder(p.col)}
-      style={{
-        background: orderBy() === p.col ? sortActiveBg() : sortInactiveBg(),
-        border:
-          orderBy() === p.col
-            ? `1px solid ${sortActiveBorder()}`
-            : `1px solid ${sortInactiveBorder()}`,
-        "border-radius": "6px",
-        color: orderBy() === p.col ? sortActiveColor : sortInactiveColor(),
-        padding: "5px 10px",
-        "font-size": "12px",
-        cursor: "pointer",
-        display: "flex",
-        "align-items": "center",
-        gap: "4px",
-      }}
-    >
-      {p.label}
-      <Show when={orderBy() === p.col}>
-        <span>{orderDir() === "asc" ? "↑" : "↓"}</span>
-      </Show>
-    </button>
-  )
 
   return (
     <div>
@@ -482,14 +467,36 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
         />
 
         {/* 排序 */}
-        <div style={{ display: "flex", gap: "6px", "align-items": "center" }}>
-          <span style={{ color: sortLabelColor(), "font-size": "12px" }}>
-            {t("media.browser.sort")}:
-          </span>
-          <OrderBtn col="name" label={t("media.browser.name")} />
-          <OrderBtn col="date" label={t("media.browser.date")} />
-          <OrderBtn col="size" label={t("media.browser.size")} />
-        </div>
+        <DropdownMenu placement="bottom-start">
+          <DropdownMenuTrigger
+            as={Button}
+            variant="outline"
+            size="sm"
+            data-media-sort
+            aria-label={t("media.browser.sort")}
+          >
+            <TbArrowsSort class="mr-1.5 size-4" />
+            {t(`media.browser.${orderBy()}`)}
+            {orderDir() === "asc" ? (
+              <TbArrowUp class="ml-1 size-3.5" />
+            ) : (
+              <TbArrowDown class="ml-1 size-3.5" />
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <SortMenuItems
+              options={sortOptions()}
+              value={orderBy()}
+              reverse={orderDir() === "desc"}
+              labels={{
+                by: t("media.browser.sort_by"),
+                asc: t("media.browser.asc"),
+                desc: t("media.browser.desc"),
+              }}
+              onChange={changeOrder}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div style={{ flex: "1" }} />
 

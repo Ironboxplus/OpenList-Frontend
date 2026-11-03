@@ -117,7 +117,7 @@
     "all_tags": "All tags",
     "sort": "Sort",
     "name": "Name",
-    "date": "Date",
+    "date": "Release date",
     "size": "Size",
     "search_placeholder": "Search...",
     "waterfall": "Waterfall",
@@ -132,7 +132,11 @@
     "last_page": "Last",
     "page_info": "Page {{page}} / {{totalPages}} ({{total}} items)",
     "jump_to": "Go to",
-    "jump": "Go"
+    "jump": "Go",
+    "recent": "Recently added",
+    "sort_by": "Sort by",
+    "asc": "Ascending",
+    "desc": "Descending"
   },
   "detail": {
     "release": "Released",

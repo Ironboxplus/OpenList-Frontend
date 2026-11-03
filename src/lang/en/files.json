@@ -22,5 +22,11 @@
     "running": "In progress here: {{items}}",
     "failed": "Failed here: {{items}}",
     "open": "View in Task Center"
+  },
+  "sort": {
+    "title": "Sort",
+    "by": "Sort by",
+    "asc": "Ascending",
+    "desc": "Descending"
   }
 }

@@ -17,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu"
 import { focusRing } from "~/components/ui/focus"
@@ -47,6 +48,7 @@ import {
 } from "../media/state"
 import { Breadcrumb } from "../shell/Breadcrumb"
 import { PhoneSelectionHeader } from "./PhoneActions"
+import { FolderSortItems, FolderSortMenu } from "./SortMenu"
 import { selectionMode } from "./selection-mode"
 
 const LAYOUTS: Record<LayoutType, IconTypes> = {
@@ -287,6 +289,11 @@ export const FilesTopRight = (props: { phone: boolean }) => {
                     )}
                   </For>
                   <PosterMenuItem />
+                  <DropdownMenuSeparator />
+                  <FolderSortItems />
+                </Show>
+                <Show when={UserMethods.is_admin(me())}>
+                  <DropdownMenuSeparator />
                 </Show>
                 <AdminMediaItem />
                 <LibraryMenuItem />
@@ -296,6 +303,7 @@ export const FilesTopRight = (props: { phone: boolean }) => {
         }
       >
         <Show when={layoutOn()}>
+          <FolderSortMenu class={iconButton} />
           <DropdownMenu placement="bottom-end">
             <DropdownMenuTrigger
               aria-label={t("files.view")}

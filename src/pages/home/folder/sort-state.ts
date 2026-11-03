@@ -1,3 +1,4 @@
+import { createSignal } from "solid-js"
 import { getSetting } from "~/store/settings"
 
 export interface SortState {
@@ -14,8 +15,13 @@ const sessionSort = new Map<string, SortState>()
 // Absent (an older backend) means remember: that is what the list always did.
 const remembering = () => getSetting("frontend_remember_sort") !== "false"
 
+// Bumped on every save, so anything that reads loadSortState in a reactive
+// scope (the list header, the toolbar sort menu) follows the other's changes.
+const [saves, setSaves] = createSignal(0)
+
 export function saveSortState(dir: string, state: SortState) {
   sessionSort.set(dir, state)
+  setSaves((n) => n + 1)
   if (!remembering()) return
   try {
     localStorage.setItem(`${SORT_KEY_PREFIX}${dir}`, JSON.stringify(state))
@@ -25,6 +31,7 @@ export function saveSortState(dir: string, state: SortState) {
 }
 
 export function loadSortState(dir: string): SortState | null {
+  saves()
   const session = sessionSort.get(dir)
   if (session) return session
   // Not remembering: the backend's order stands until the user sorts.
