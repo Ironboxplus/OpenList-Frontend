@@ -1,30 +1,25 @@
-import { Icon, useColorMode, useColorModeValue } from "@hope-ui/solid"
-// import { IoMoonOutline as Moon } from "solid-icons/io";
-import { FiSun as Sun } from "solid-icons/fi"
-import { FiMoon as Moon } from "solid-icons/fi"
+import { useColorMode } from "@hope-ui/solid"
+import { TbMoon, TbSun } from "solid-icons/tb"
+import { Show } from "solid-js"
+import { useT } from "~/hooks"
+import { Button } from "~/components/ui/button"
 
 const SwitchColorMode = () => {
-  const { toggleColorMode } = useColorMode()
-  const icon = useColorModeValue(
-    {
-      size: "$8",
-      component: Moon,
-      p: "$0_5",
-    },
-    {
-      size: "$8",
-      component: Sun,
-      p: "$0_5",
-    },
-  )
+  const t = useT()
+  const { colorMode, toggleColorMode } = useColorMode()
+  const label = () => t("common.switch_color_mode")
   return (
-    <Icon
-      cursor="pointer"
-      boxSize={icon().size}
-      as={icon().component}
+    <Button
+      variant="ghost"
+      size="icon"
+      title={label()}
+      aria-label={label()}
       onClick={toggleColorMode}
-      p={icon().p}
-    />
+    >
+      <Show when={colorMode() === "dark"} fallback={<TbMoon class="size-5" />}>
+        <TbSun class="size-5" />
+      </Show>
+    </Button>
   )
 }
 export { SwitchColorMode }

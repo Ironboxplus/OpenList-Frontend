@@ -21,6 +21,10 @@
 @source "../pages/home/file/File.tsx";
 @source "../pages/home/previews/video_box.tsx";
 @source "../pages/login";
+@source "../components/SwitchColorMode.tsx";
+@source "../components/SwitchLanguage.tsx";
+@source "../pages/home/file/open-with.tsx";
+@source "../pages/home/folder/Search.tsx";
 /* The built-in stats plugin renders a dashboard card with utilities. */
 @source "../plugins/builtin/stats";
 @source not "../plugins/builtin/stats/__tests__";

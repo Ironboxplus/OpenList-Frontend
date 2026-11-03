@@ -1,25 +1,17 @@
-import {
-  Center,
-  ElementType,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
-  MenuTriggerProps,
-  Spinner,
-  useColorModeValue,
-} from "@hope-ui/solid"
-import { createSignal, For, Show } from "solid-js"
+import { TbLanguage } from "solid-icons/tb"
+import { For } from "solid-js"
 import { Lang, languages, setCurrentLang } from "~/app/i18n"
-// import { TbLanguageHiragana } from "solid-icons/tb";
-import { IoLanguageOutline } from "solid-icons/io"
-import { Portal } from "solid-js/web"
+import { useT } from "~/hooks"
+import { Button } from "~/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu"
 
-const [fetchingLang, setFetchingLang] = createSignal(false)
-
-export const SwitchLanguage = <C extends ElementType = "button">(
-  props: MenuTriggerProps<C>,
-) => {
+export const SwitchLanguage = () => {
+  const t = useT()
   const switchLang = async (lang: Lang) => {
     setCurrentLang(lang)
     localStorage.setItem("lang", lang)
@@ -34,47 +26,27 @@ export const SwitchLanguage = <C extends ElementType = "button">(
   }
 
   return (
-    <>
-      <Menu>
-        <MenuTrigger cursor="pointer" {...props} />
-        <MenuContent>
-          <For each={languages}>
-            {(lang, i) => (
-              <MenuItem
-                onSelect={() => {
-                  switchLang(lang.code)
-                }}
-              >
-                {lang.lang}
-              </MenuItem>
-            )}
-          </For>
-        </MenuContent>
-      </Menu>
-      <Show when={fetchingLang()}>
-        <Portal>
-          <Center
-            h="$full"
-            w="$full"
-            pos="fixed"
-            top={0}
-            bg={useColorModeValue("$blackAlpha4", "$whiteAlpha4")()}
-            zIndex="$notification"
-          >
-            <Spinner
-              thickness="4px"
-              speed="0.65s"
-              emptyColor="$neutral4"
-              color="$info10"
-              size="xl"
-            />
-          </Center>
-        </Portal>
-      </Show>
-    </>
+    <DropdownMenu placement="top">
+      <DropdownMenuTrigger
+        as={Button}
+        variant="ghost"
+        size="icon"
+        title={t("common.switch_language")}
+        aria-label={t("common.switch_language")}
+      >
+        <TbLanguage class="size-5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <For each={languages}>
+          {(lang) => (
+            <DropdownMenuItem onSelect={() => switchLang(lang.code)}>
+              {lang.lang}
+            </DropdownMenuItem>
+          )}
+        </For>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
-export const SwitchLanguageWhite = () => (
-  <SwitchLanguage as={IoLanguageOutline} boxSize="$8" />
-)
+export const SwitchLanguageWhite = SwitchLanguage

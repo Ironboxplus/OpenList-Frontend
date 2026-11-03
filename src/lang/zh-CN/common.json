@@ -14,5 +14,7 @@
   "error": "错误",
   "show_value": "显示内容",
   "hide_value": "隐藏内容",
-  "slots": "插槽"
+  "slots": "插槽",
+  "switch_color_mode": "切换明暗模式",
+  "switch_language": "切换语言"
 }

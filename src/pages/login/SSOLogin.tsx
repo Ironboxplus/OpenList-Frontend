@@ -1,13 +1,15 @@
-import { Icon } from "@hope-ui/solid"
 import { FiGithub, FiLogIn } from "solid-icons/fi"
 import { BsMicrosoft } from "solid-icons/bs"
 import { AiOutlineGoogle, AiOutlineDingtalk } from "solid-icons/ai"
 import { base_path, changeToken, r } from "~/utils"
 import { getSetting, getSettingBool } from "~/store"
-import { useRouter } from "~/hooks"
+import { useRouter, useT } from "~/hooks"
+import { Button } from "~/components/ui/button"
 import { onCleanup } from "solid-js"
+import { Dynamic } from "solid-js/web"
 
 const SSOLogin = () => {
+  const t = useT()
   const ssoSignEnabled = getSettingBool("sso_login_enabled")
   const loginPlatform = getSetting("sso_login_platform")
   const useCompatibility = getSettingBool("sso_compatibility_mode")
@@ -55,7 +57,15 @@ const SSOLogin = () => {
         icon = FiLogIn
     }
     return (
-      <Icon cursor="pointer" boxSize="$8" as={icon} p="$0_5" onclick={login} />
+      <Button
+        variant="ghost"
+        size="icon"
+        title={t("login.sso")}
+        aria-label={t("login.sso")}
+        onClick={login}
+      >
+        <Dynamic component={icon} class="size-5" />
+      </Button>
     )
   }
 }

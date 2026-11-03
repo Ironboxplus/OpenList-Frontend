@@ -14,5 +14,7 @@
   "error": "Error",
   "show_value": "Show value",
   "hide_value": "Hide value",
-  "slots": "Slots"
+  "slots": "Slots",
+  "switch_color_mode": "Switch light/dark mode",
+  "switch_language": "Switch language"
 }

@@ -1,16 +1,15 @@
-import {
-  Button,
-  Icon,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
-} from "@hope-ui/solid"
+import { TbChevronDown } from "solid-icons/tb"
 import { For, Show } from "solid-js"
 import { useLink, useT } from "~/hooks"
 import { getExternalPreviews, objStore } from "~/store"
-import { FaSolidAngleDown } from "solid-icons/fa"
 import { convertURL } from "~/utils"
+import { Button } from "~/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu"
 
 export const OpenWith = () => {
   const t = useT()
@@ -18,18 +17,15 @@ export const OpenWith = () => {
   const { currentObjLink } = useLink()
   return (
     <Show when={previews.length}>
-      <Menu>
-        <MenuTrigger
-          as={Button}
-          colorScheme="success"
-          rightIcon={<Icon as={FaSolidAngleDown} />}
-        >
+      <DropdownMenu placement="bottom-start">
+        <DropdownMenuTrigger as={Button} variant="outline" class="gap-1.5">
           {t("home.preview.open_with")}
-        </MenuTrigger>
-        <MenuContent>
+          <TbChevronDown class="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
           <For each={previews}>
             {(preview) => (
-              <MenuItem
+              <DropdownMenuItem
                 as="a"
                 target="_blank"
                 href={convertURL(preview.value, {
@@ -39,11 +35,11 @@ export const OpenWith = () => {
                 })}
               >
                 {preview.key}
-              </MenuItem>
+              </DropdownMenuItem>
             )}
           </For>
-        </MenuContent>
-      </Menu>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </Show>
   )
 }
