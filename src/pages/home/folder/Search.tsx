@@ -1,21 +1,4 @@
-import {
-  Badge,
-  createDisclosure,
-  HStack,
-  Icon,
-  IconButton,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-  VStack,
-  hope,
-} from "@hope-ui/solid"
-import { BsSearch } from "solid-icons/bs"
+import { TbSearch } from "solid-icons/tb"
 import {
   createSignal,
   For,
@@ -25,15 +8,25 @@ import {
   Show,
   Switch,
 } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import Mark from "mark.js"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { DataState } from "~/components/ui/data-state"
 import {
-  FullLoading,
-  LinkWithBase,
-  Paginator,
-  SelectWrapper,
-} from "~/components"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
+import { focusRing } from "~/components/ui/focus"
+import { Input } from "~/components/ui/input"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import { Skeleton } from "~/components/ui/skeleton"
+import { LinkWithBase, Paginator } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
-import { getMainColor, me, password } from "~/store"
+import { me, password } from "~/store"
 import { SearchNode } from "~/types"
 import {
   bus,
@@ -41,66 +34,16 @@ import {
   fsSearch,
   getFileSize,
   handleResp,
-  hoverColor,
   pathJoin,
 } from "~/utils"
+import { cn } from "~/utils/cn"
 import { shellActive } from "~/features/shell/topbar-slot"
 import { isMac } from "~/utils/compatibility"
 import { getIconByObj } from "~/utils/icon"
 
-// class MarkKeywords {
-//   root
-//   rootHTML
-//   style
-
-//   /**
-//    * Keyword highlight
-//    * @param root Find root elements
-//    * @param style The default background is highly bright yellow
-//    */
-//   constructor(config: { root: Element | null; style?: string }) {
-//     if (!config.root) return
-//     this.root = config.root
-//     this.rootHTML = config.root.innerHTML
-//     this.style = config.style ?? "background-color: #FF0"
-//   }
-
-//   /** mark keyword */
-//   light(keyword: string) {
-//     const handler = (root: any) => {
-//       if (
-//         root.nodeName === "#text" &&
-//         root.parentNode.childNodes.length === 1
-//       ) {
-//         root.parentNode.innerHTML = root.parentNode.innerHTML.replace(
-//           new RegExp(keyword, "g"),
-//           `<span class="mark" style="${this.style}">${keyword}</span>`,
-//         )
-//       } else {
-//         for (const node of root.childNodes) {
-//           handler(node)
-//         }
-//       }
-//     }
-
-//     if (!this.root) return
-
-//     // reset HTML
-//     this.root.innerHTML = this.rootHTML!
-
-//     if (!keyword) return
-//     handler(this.root)
-//   }
-// }
-
 function NodeName(props: { keywords: string; name: string }) {
   let ref: HTMLSpanElement
   onMount(() => {
-    // const highlighter = new MarkKeywords({
-    //   root: ref!,
-    //   style: `background-color: var(--hope-colors-info5); border-radius: var(--hope-radii-md); margin: 0 1px; padding: 0 1px;`,
-    // })
-    // highlighter.light(props.keywords)
     const mark = new Mark(ref!)
     mark.mark(props.keywords, {
       separateWordSearch: true,
@@ -108,80 +51,54 @@ function NodeName(props: { keywords: string; name: string }) {
     })
   })
   return (
-    <hope.span
+    <span
       ref={ref!}
-      css={{
-        mark: {
-          bg: "$info4",
-          rounded: "$md",
-          px: "1px",
-          // mx: "1px",
-          color: "$info11",
-          fontWeight: "$bold",
-        },
-      }}
+      class="[&_mark]:rounded [&_mark]:bg-primary/15 [&_mark]:px-px [&_mark]:font-bold [&_mark]:text-primary"
     >
       {props.name}
-    </hope.span>
+    </span>
   )
 }
 
 const SearchResult = (props: { node: SearchNode; keywords: string }) => {
   const { setPathAs } = usePath()
   return (
-    <HStack
-      w="$full"
-      borderBottom={`1px solid ${hoverColor()}`}
-      _hover={{
-        bgColor: hoverColor(),
-      }}
-      rounded="$md"
-      cursor="pointer"
-      px="$2"
-      as={LinkWithBase}
+    <LinkWithBase
+      class={cn(
+        focusRing,
+        "flex w-full items-center gap-2 rounded-md border-b px-2 py-1.5 text-foreground no-underline hover:bg-accent hover:no-underline",
+      )}
       href={`${props.node.path}?from=search`}
-      // encode
       onMouseEnter={() => {
         setPathAs(props.node.path, props.node.is_dir)
       }}
     >
-      <Icon
-        class="icon"
-        boxSize="$6"
-        color={getMainColor()}
-        as={getIconByObj(props.node)}
-        mr="$1"
+      <Dynamic
+        component={getIconByObj(props.node)}
+        class="size-6 shrink-0 text-primary"
       />
-      <VStack flex={1} p="$1" spacing="$1" w="$full" alignItems="start">
-        <Text
-          css={{
-            wordBreak: "break-all",
-          }}
-        >
+      <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div class="break-all text-sm">
           <NodeName keywords={props.keywords} name={props.node.name} />
           <Show when={props.node.size > 0 || !props.node.is_dir}>
-            <Badge colorScheme="info" ml="$2">
+            <Badge variant="info" class="ml-2">
               {getFileSize(props.node.size)}
             </Badge>
           </Show>
-        </Text>
-        <Text
-          color="$neutral10"
-          size="xs"
-          css={{
-            wordBreak: "break-all",
-          }}
-        >
+        </div>
+        <div class="break-all text-xs text-muted-foreground">
           {props.node.parent}
-        </Text>
-      </VStack>
-    </HStack>
+        </div>
+      </div>
+    </LinkWithBase>
   )
 }
 
 const Search = () => {
   const pageSize = 100
-  const { isOpen, onOpen, onClose, onToggle } = createDisclosure()
+  const [isOpen, setOpen] = createSignal(false)
+  const onOpen = () => setOpen(true)
+  const onToggle = () => setOpen(!isOpen())
   const t = useT()
   const handler = (name: string) => {
     if (name === "search") {
@@ -257,83 +174,79 @@ const Search = () => {
     })
   }
   return (
-    <Modal
-      // blockScrollOnMount={false}
-      opened={isOpen()}
-      onClose={onClose}
-      closeOnEsc={false}
-      size={{
-        "@initial": "sm",
-        "@sm": "lg",
-        "@md": "2xl",
-      }}
-      initialFocus="#search-input"
-      scrollBehavior="inside"
-    >
-      <ModalOverlay bg="$blackAlpha5" />
-      <ModalContent mx="$2">
-        <ModalCloseButton />
-        <ModalHeader>{t("home.search.search")}</ModalHeader>
-        <ModalBody>
-          <VStack w="$full" spacing="$2">
-            <HStack w="$full" spacing="$2">
-              <SelectWrapper
-                w="$32"
-                value={scope()}
-                onChange={(v) => setScope(v)}
-                options={scopes.map((v, i) => ({
-                  value: i,
-                  label: t(`home.search.scopes.${v}`),
-                }))}
-              />
-              <Input
-                id="search-input"
-                value={keywords()}
-                onInput={(e) => {
-                  setKeywords(e.currentTarget.value)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && keywords().length !== 0) {
-                    search()
-                  }
-                }}
-              />
-              <IconButton
-                flexShrink={0}
-                aria-label="search"
-                icon={<BsSearch />}
-                onClick={() => search()}
-                loading={loading()}
-                disabled={keywords().length === 0}
-              />
-            </HStack>
-            <Switch>
-              <Match when={loading()}>
-                <FullLoading />
-              </Match>
-              <Match when={data().content.length === 0}>
-                <Text size="2xl" my="$8">
-                  {t("home.search.no_result")}
-                </Text>
-              </Match>
-            </Switch>
-            <VStack w="$full">
-              <For each={data().content}>
-                {(item) => <SearchResult node={item} keywords={keywords()} />}
-              </For>
-            </VStack>
-            <Paginator
-              total={data().total}
-              defaultPageSize={pageSize}
-              onChange={(page) => {
-                search(page)
-              }}
-              setResetCallback={(reset) => (resetPaginator = reset)}
-            />
-          </VStack>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+    <Dialog open={isOpen()} onOpenChange={setOpen}>
+      <DialogContent class="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>{t("home.search.search")}</DialogTitle>
+          <DialogDescription class="sr-only">
+            {t("home.search.search")}
+          </DialogDescription>
+        </DialogHeader>
+        <div class="flex items-center gap-2">
+          <SimpleSelect
+            class="w-32 shrink-0"
+            aria-label={t("home.search.search")}
+            value={String(scope())}
+            onChange={(v) => setScope(Number(v))}
+            options={scopes.map((v, i) => ({
+              value: String(i),
+              label: t(`home.search.scopes.${v}`),
+            }))}
+          />
+          <Input
+            id="search-input"
+            autofocus
+            value={keywords()}
+            onInput={(e) => {
+              setKeywords(e.currentTarget.value)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && keywords().length !== 0) {
+                search()
+              }
+            }}
+          />
+          <Button
+            size="icon"
+            class="shrink-0"
+            aria-label="search"
+            onClick={() => search()}
+            disabled={loading() || keywords().length === 0}
+          >
+            <TbSearch class="size-4" />
+          </Button>
+        </div>
+        <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+          <Switch>
+            <Match when={loading()}>
+              <div class="flex flex-col gap-2" aria-busy="true">
+                <For each={[0, 1, 2, 3]}>
+                  {() => <Skeleton class="h-12 w-full" />}
+                </For>
+              </div>
+            </Match>
+            <Match when={data().content.length === 0}>
+              <DataState empty emptyText={t("home.search.no_result")}>
+                {null}
+              </DataState>
+            </Match>
+          </Switch>
+          <div class="flex w-full flex-col">
+            <For each={data().content}>
+              {(item) => <SearchResult node={item} keywords={keywords()} />}
+            </For>
+          </div>
+          <Paginator
+            total={data().total}
+            defaultPageSize={pageSize}
+            onChange={(page) => {
+              search(page)
+            }}
+            setResetCallback={(reset) => (resetPaginator = reset)}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

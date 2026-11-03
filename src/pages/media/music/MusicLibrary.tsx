@@ -8,9 +8,11 @@ import {
   For,
   createEffect,
 } from "solid-js"
-import { useColorMode } from "@hope-ui/solid"
 import {
+  TbArrowDown,
   TbArrowLeft,
+  TbArrowsSort,
+  TbArrowUp,
   TbChevronLeft,
   TbChevronRight,
   TbFolder,
@@ -20,12 +22,12 @@ import {
   TbLoader2,
   TbMusic,
   TbPlayerPlayFilled,
+  TbSearch,
   TbStarFilled,
 } from "solid-icons/tb"
 import { Dynamic } from "solid-js/web"
 import { MediaLayout } from "../MediaLayout"
 import { MediaItemDetail } from "../MediaItemDetail"
-import { mediaPrimaryBtn } from "../ui"
 import {
   getAlbumList,
   getAlbumTracks,
@@ -57,137 +59,73 @@ export {
   togglePlay,
 } from "./player"
 import { Button } from "~/components/ui/button"
+import { ChipTabs } from "~/components/ui/chip-tabs"
+import { DataState } from "~/components/ui/data-state"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu"
+import { Input } from "~/components/ui/input"
+import { Skeleton } from "~/components/ui/skeleton"
+import { SortMenuItems } from "~/components/ui/sort-menu"
+import { cn } from "~/utils/cn"
 
 // ==================== 专辑卡片 ====================
 const AlbumCard = (props: { album: AlbumInfo }) => {
   const t = useT()
-  const { colorMode } = useColorMode()
-  const isDark = createMemo(() => colorMode() === "dark")
-  const cardBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-  )
-  const cardBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-  )
-  const coverFallbackBg = createMemo(() =>
-    isDark()
-      ? "linear-gradient(135deg, #1e293b, #0f172a)"
-      : "linear-gradient(135deg, #e2e8f0, #cbd5e1)",
-  )
-  const coverBg = createMemo(() => (isDark() ? "#1e293b" : "#e2e8f0"))
-  const titleColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
-  const subColor = createMemo(() => (isDark() ? "#64748b" : "#94a3b8"))
-
   return (
-    <div
-      style={{
-        background: cardBg(),
-        "border-radius": "12px",
-        overflow: "hidden",
-        border: `1px solid ${cardBorder()}`,
-        transition: "transform 0.2s, box-shadow 0.2s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-4px)"
-        e.currentTarget.style.boxShadow = isDark()
-          ? "0 12px 32px rgba(0,0,0,0.4)"
-          : "0 12px 32px rgba(0,0,0,0.15)"
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)"
-        e.currentTarget.style.boxShadow = "none"
-      }}
-    >
-      <div
-        style={{
-          position: "relative",
-          "padding-top": "100%",
-          background: coverBg(),
-        }}
-      >
+    <div class="overflow-hidden rounded-xl border bg-card transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <div class="relative bg-muted pt-[100%]">
         <Show
           when={props.album.cover}
           fallback={
-            <div
-              style={{
-                position: "absolute",
-                inset: "0",
-                display: "flex",
-                "align-items": "center",
-                "justify-content": "center",
-                background: coverFallbackBg(),
-              }}
-            >
-              <TbMusic size={48} style={{ opacity: 0.55 }} />
+            <div class="absolute inset-0 flex items-center justify-center text-muted-foreground">
+              <TbMusic class="size-12" />
             </div>
           }
         >
           <img
             src={resolveMediaCover(props.album)}
             alt={props.album.album_name}
-            style={{
-              position: "absolute",
-              inset: "0",
-              width: "100%",
-              height: "100%",
-              "object-fit": "cover",
-            }}
+            class="absolute inset-0 size-full object-cover"
             loading="lazy"
           />
         </Show>
       </div>
-      <div style={{ padding: "10px 12px" }}>
-        <div
-          style={{
-            color: titleColor(),
-            "font-size": "13px",
-            "font-weight": "500",
-            overflow: "hidden",
-            "text-overflow": "ellipsis",
-            "white-space": "nowrap",
-          }}
-        >
+      <div class="px-3 py-2.5">
+        <div class="truncate text-[13px] font-medium">
           {props.album.album_name || t("media.music.unknown_album")}
         </div>
-        <div
-          style={{
-            color: subColor(),
-            "font-size": "11px",
-            "margin-top": "2px",
-          }}
-        >
+        <div class="mt-0.5 truncate text-[11px] text-muted-foreground">
           {[
             props.album.album_artist || t("media.music.unknown_artist"),
             props.album.release_date?.slice(0, 4),
             t("media.music.track_count", { count: props.album.track_count }),
           ]
             .filter(Boolean)
-            .join(" · ")}
+            .join(" / ")}
         </div>
       </div>
     </div>
   )
 }
 
+const WallSkeleton = () => (
+  <div
+    data-state="loading"
+    aria-busy="true"
+    class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
+  >
+    <For each={Array.from({ length: 12 })}>
+      {() => <Skeleton class="aspect-square rounded-xl" />}
+    </For>
+  </div>
+)
+
 // ==================== 专辑详情 ====================
 const AlbumDetail = (props: { album: AlbumInfo; onBack: () => void }) => {
   const t = useT()
-  const { colorMode } = useColorMode()
-  const isDark = createMemo(() => colorMode() === "dark")
-  const labelColor = createMemo(() => (isDark() ? "#64748b" : "#94a3b8"))
-  const titleColor = createMemo(() => (isDark() ? "#f1f5f9" : "#0f172a"))
-  const artistColor = createMemo(() => (isDark() ? "#94a3b8" : "#475569"))
-  const metaColor = createMemo(() => (isDark() ? "#475569" : "#94a3b8"))
-  const trackBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.06)",
-  )
-  const trackHoverBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
-  )
-  const trackNumColor = createMemo(() => (isDark() ? "#475569" : "#94a3b8"))
-  const trackNameColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
-  const trackDurColor = createMemo(() => (isDark() ? "#475569" : "#94a3b8"))
-
   // 用 createMemo 稳定化 source，避免每次渲染都产生新对象引用导致无限重复请求
   const trackSource = createMemo(
     () => `${props.album.album_name}|||${props.album.album_artist}`,
@@ -215,172 +153,84 @@ const AlbumDetail = (props: { album: AlbumInfo; onBack: () => void }) => {
       </Button>
 
       {/* 专辑头部 */}
-      <div
-        style={{
-          display: "flex",
-          gap: "28px",
-          "margin-bottom": "32px",
-          "flex-wrap": "wrap",
-        }}
-      >
+      <div class="mb-8 flex flex-wrap gap-7">
         <Show
           when={props.album.cover}
           fallback={
             <div
-              style={{
-                width: "180px",
-                height: "180px",
-                "border-radius": "12px",
-                background: accentGradient(),
-                display: "flex",
-                "align-items": "center",
-                "justify-content": "center",
-                "flex-shrink": "0",
-              }}
+              class="flex size-[180px] shrink-0 items-center justify-center rounded-xl text-white"
+              style={{ background: accentGradient() }}
             >
-              <TbMusic size={64} style={{ opacity: 0.85 }} />
+              <TbMusic class="size-16 opacity-85" />
             </div>
           }
         >
           <img
             src={resolveMediaCover(props.album)}
-            style={{
-              width: "180px",
-              height: "180px",
-              "border-radius": "12px",
-              "object-fit": "cover",
-              "box-shadow": "0 16px 40px rgba(0,0,0,0.4)",
-              "flex-shrink": "0",
-            }}
+            alt={props.album.album_name}
+            class="size-[180px] shrink-0 rounded-xl object-cover shadow-xl"
           />
         </Show>
-        <div style={{ flex: "1" }}>
-          <div
-            style={{
-              color: labelColor(),
-              "font-size": "12px",
-              "margin-bottom": "6px",
-            }}
-          >
+        <div class="min-w-0 flex-1">
+          <div class="mb-1.5 text-xs text-muted-foreground">
             {t("media.music.album")}
           </div>
-          <h2
-            style={{
-              margin: "0 0 8px",
-              "font-size": "24px",
-              color: titleColor(),
-            }}
-          >
+          <h2 class="m-0 mb-2 text-2xl font-semibold">
             {props.album.album_name || t("media.music.unknown_album")}
           </h2>
-          <div
-            style={{
-              color: artistColor(),
-              "font-size": "14px",
-              "margin-bottom": "4px",
-            }}
-          >
+          <div class="mb-1 text-sm text-muted-foreground">
             {props.album.album_artist}
           </div>
-          <div
-            style={{
-              color: metaColor(),
-              "font-size": "13px",
-              "margin-bottom": "16px",
-            }}
-          >
+          <div class="mb-4 text-[13px] text-muted-foreground">
             {props.album.release_date?.slice(0, 4)} ·{" "}
             {t("media.music.song_count", { count: props.album.track_count })}
           </div>
-          <button
+          <Button
+            class="gap-2"
             onClick={() => {
               const list = tracks()
               if (list && list.length > 0) playPlaylist(list, 0)
             }}
-            style={mediaPrimaryBtn()}
           >
-            <TbPlayerPlayFilled size={14} />
+            <TbPlayerPlayFilled class="size-4" />
             {t("media.music.play_all")}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* 曲目列表 */}
       <div>
-        <h3
-          style={{
-            color: labelColor(),
-            "font-size": "12px",
-            "font-weight": "600",
-            "text-transform": "uppercase",
-            "letter-spacing": "0.08em",
-            "margin-bottom": "12px",
-          }}
-        >
+        <h3 class="mb-3 text-sm font-semibold">
           {t("media.music.track_list")}
         </h3>
         <Show
           when={!tracks.loading}
-          fallback={
-            <div style={{ color: metaColor() }}>{t("media.music.loading")}</div>
-          }
+          fallback={<Skeleton class="h-24 w-full" />}
         >
           <Show
             when={(tracks()?.length ?? 0) > 0}
             fallback={
-              <div
-                style={{
-                  color: metaColor(),
-                  padding: "20px 0",
-                  "text-align": "center",
-                }}
-              >
-                {t("media.music.no_tracks")}
-              </div>
+              <DataState empty emptyText={t("media.music.no_tracks")}>
+                {null}
+              </DataState>
             }
           >
             <For each={tracks() ?? []}>
               {(track, i) => (
                 <div
                   onClick={() => {
-                    const t = tracks()
-                    if (t && t.length > 0) playPlaylist(t, i())
+                    const list = tracks()
+                    if (list && list.length > 0) playPlaylist(list, i())
                   }}
-                  style={{
-                    display: "flex",
-                    "align-items": "center",
-                    gap: "12px",
-                    padding: "10px 12px",
-                    "border-radius": "8px",
-                    cursor: "pointer",
-                    transition: "background 0.15s",
-                    "border-bottom": `1px solid ${trackBorder()}`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = trackHoverBg()
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "transparent"
-                  }}
+                  class="flex cursor-pointer items-center gap-3 rounded-lg border-b px-3 py-2.5 transition-colors hover:bg-accent"
                 >
-                  <span
-                    style={{
-                      color: trackNumColor(),
-                      "font-size": "13px",
-                      width: "24px",
-                      "text-align": "right",
-                    }}
-                  >
+                  <span class="w-6 text-right text-[13px] text-muted-foreground">
                     {track.track_number || i() + 1}
                   </span>
-                  <div style={{ flex: "1" }}>
-                    <div
-                      style={{ color: trackNameColor(), "font-size": "14px" }}
-                    >
-                      {getMediaName(track)}
-                    </div>
+                  <div class="min-w-0 flex-1 truncate text-sm">
+                    {getMediaName(track)}
                   </div>
-                  <span style={{ color: trackDurColor(), "font-size": "12px" }}>
+                  <span class="text-xs text-muted-foreground">
                     {formatDuration(track.duration)}
                   </span>
                 </div>
@@ -396,62 +246,6 @@ const AlbumDetail = (props: { album: AlbumInfo; onBack: () => void }) => {
 // ==================== 音乐库主页 ====================
 const MusicLibrary = () => {
   const t = useT()
-  const { colorMode } = useColorMode()
-  const isDark = createMemo(() => colorMode() === "dark")
-  // 主题色 tokens
-  const toolbarBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
-  )
-  const toolbarBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-  )
-  const dividerColor = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-  )
-  const sortLabelColor = createMemo(() => (isDark() ? "#475569" : "#64748b"))
-  const sortActiveBg = "rgba(24,144,255,0.3)"
-  const sortActiveBorder = "rgba(24,144,255,0.5)"
-  const sortActiveColor = "#a5b4fc"
-  const sortInactiveBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-  )
-  const sortInactiveBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)",
-  )
-  const sortInactiveColor = createMemo(() => (isDark() ? "#94a3b8" : "#475569"))
-  const btnActiveBg = "rgba(24,144,255,0.3)"
-  const btnActiveBorder = "rgba(24,144,255,0.5)"
-  const btnActiveColor = "#a5b4fc"
-  const btnInactiveBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)",
-  )
-  const btnInactiveColor = createMemo(() => (isDark() ? "#64748b" : "#64748b"))
-  const searchBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-  )
-  const searchBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.15)",
-  )
-  const searchColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
-  const folderBtnBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
-  )
-  const folderBtnColor = createMemo(() => (isDark() ? "#94a3b8" : "#64748b"))
-  const emptyColor = createMemo(() => (isDark() ? "#475569" : "#94a3b8"))
-  const paginationBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-  )
-  const paginationBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)",
-  )
-  const paginationColor = createMemo(() => (isDark() ? "#94a3b8" : "#475569"))
-  const paginationDisabledColor = createMemo(() =>
-    isDark() ? "#334155" : "#cbd5e1",
-  )
-  const paginationInfoColor = createMemo(() =>
-    isDark() ? "#64748b" : "#94a3b8",
-  )
-
   const [selectedAlbum, setSelectedAlbum] = createSignal<AlbumInfo | null>(null)
   // 卡片（专辑）/ 列表（歌曲）视图，持久化到浏览器
   const MUSIC_VIEW_KEY = "media-view-mode-music"
@@ -583,41 +377,16 @@ const MusicLibrary = () => {
     }
   }
 
-  const toggleOrder = (col: OrderBy) => {
-    if (orderBy() === col) {
-      setOrderDir(orderDir() === "asc" ? "desc" : "asc")
-    } else {
+  const changeOrder = (key: string | undefined, reverse: boolean) => {
+    const col = (key ?? orderBy()) as OrderBy
+    if (col !== orderBy()) {
       setOrderBy(col)
       setOrderDir("asc")
+    } else {
+      setOrderDir(reverse ? "desc" : "asc")
     }
     setPage(1)
   }
-
-  const OrderBtn = (p: { col: OrderBy; label: string }) => (
-    <button
-      onClick={() => toggleOrder(p.col)}
-      style={{
-        background: orderBy() === p.col ? sortActiveBg : sortInactiveBg(),
-        border:
-          orderBy() === p.col
-            ? `1px solid ${sortActiveBorder}`
-            : `1px solid ${sortInactiveBorder()}`,
-        "border-radius": "6px",
-        color: orderBy() === p.col ? sortActiveColor : sortInactiveColor(),
-        padding: "5px 10px",
-        "font-size": "12px",
-        cursor: "pointer",
-        display: "flex",
-        "align-items": "center",
-        gap: "4px",
-      }}
-    >
-      {p.label}
-      <Show when={orderBy() === p.col}>
-        <span>{orderDir() === "asc" ? "↑" : "↓"}</span>
-      </Show>
-    </button>
-  )
 
   return (
     <MediaLayout title={t("media.music.title")}>
@@ -626,246 +395,145 @@ const MusicLibrary = () => {
         fallback={
           <div>
             {/* 工具栏 */}
-            <div
-              style={{
-                display: "flex",
-                "align-items": "center",
-                "flex-wrap": "wrap",
-                gap: "12px",
-                "margin-bottom": "20px",
-                padding: "12px 16px",
-                background: toolbarBg(),
-                "border-radius": "12px",
-                border: `1px solid ${toolbarBorder()}`,
-              }}
-            >
-              {/* 浏览模式 */}
-              <div style={{ display: "flex", gap: "6px" }}>
-                {(["all", "folder"] as BrowseMode[]).map((mode) => (
-                  <button
-                    onClick={() => {
-                      setBrowseMode(mode)
-                      setPage(1)
-                    }}
-                    style={{
-                      background:
-                        browseMode() === mode ? btnActiveBg : "transparent",
-                      border:
-                        browseMode() === mode
-                          ? `1px solid ${btnActiveBorder}`
-                          : `1px solid ${btnInactiveBorder()}`,
-                      "border-radius": "6px",
-                      color:
-                        browseMode() === mode
-                          ? btnActiveColor
-                          : btnInactiveColor(),
-                      padding: "5px 12px",
-                      "font-size": "12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {mode === "all"
-                      ? t("media.browser.all")
-                      : t("media.browser.folders")}
-                  </button>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  width: "1px",
-                  height: "20px",
-                  background: dividerColor(),
-                }}
-              />
-
-              {/* 排序 */}
-              <div
-                style={{ display: "flex", gap: "6px", "align-items": "center" }}
-              >
-                <span style={{ color: sortLabelColor(), "font-size": "12px" }}>
-                  {t("media.browser.sort")}:
-                </span>
-                <OrderBtn col="name" label={t("media.browser.name")} />
-                <OrderBtn col="date" label={t("media.browser.date")} />
-                <OrderBtn col="size" label={t("media.browser.size")} />
-              </div>
-
-              <div style={{ flex: "1" }} />
-
-              {/* 搜索 */}
-              <input
-                type="text"
-                placeholder={t("media.music.search_placeholder")}
-                value={keyword()}
-                onInput={(e) => {
-                  setKeyword(e.currentTarget.value)
+            <div class="mb-4 flex flex-wrap items-center gap-2">
+              <ChipTabs
+                label="browse"
+                items={[
+                  { key: "all" as BrowseMode, label: t("media.browser.all") },
+                  {
+                    key: "folder" as BrowseMode,
+                    label: t("media.browser.folders"),
+                  },
+                ]}
+                value={browseMode()}
+                onChange={(mode) => {
+                  setBrowseMode(mode)
                   setPage(1)
                 }}
-                style={{
-                  background: searchBg(),
-                  border: `1px solid ${searchBorder()}`,
-                  "border-radius": "8px",
-                  color: searchColor(),
-                  padding: "6px 12px",
-                  "font-size": "13px",
-                  outline: "none",
-                  width: "180px",
-                }}
               />
 
-              {/* 视图切换：卡片（专辑）/ 列表（歌曲） */}
-              <div style={{ display: "flex", gap: "4px" }}>
-                {(["card", "list"] as const).map((mode) => (
-                  <button
-                    onClick={() => {
-                      changeViewMode(mode)
-                      setPage(1)
+              <DropdownMenu placement="bottom-start">
+                <DropdownMenuTrigger
+                  as={Button}
+                  variant="outline"
+                  size="sm"
+                  data-media-sort
+                  aria-label={t("media.browser.sort")}
+                >
+                  <TbArrowsSort class="mr-1.5 size-4" />
+                  {t(`media.browser.${orderBy()}`)}
+                  <Dynamic
+                    component={orderDir() === "asc" ? TbArrowUp : TbArrowDown}
+                    class="ml-1 size-3.5"
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <SortMenuItems
+                    options={(["name", "date", "size"] as OrderBy[]).map(
+                      (k) => ({ key: k, label: t(`media.browser.${k}`) }),
+                    )}
+                    value={orderBy()}
+                    reverse={orderDir() === "desc"}
+                    labels={{
+                      by: t("media.browser.sort_by"),
+                      asc: t("media.browser.asc"),
+                      desc: t("media.browser.desc"),
                     }}
-                    title={
-                      mode === "card"
-                        ? t("media.music.view_card")
-                        : t("media.music.view_list")
-                    }
-                    style={{
-                      background:
-                        viewMode() === mode ? btnActiveBg : "transparent",
-                      border:
-                        viewMode() === mode
-                          ? `1px solid ${btnActiveBorder}`
-                          : `1px solid ${btnInactiveBorder()}`,
-                      "border-radius": "6px",
-                      color:
-                        viewMode() === mode
-                          ? btnActiveColor
-                          : btnInactiveColor(),
-                      padding: "5px 8px",
-                      "font-size": "14px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Dynamic
-                      component={mode === "card" ? TbLayoutGrid : TbLayoutList}
-                      class="size-4"
-                    />
-                  </button>
-                ))}
+                    onChange={changeOrder}
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div class="flex-1" />
+
+              {/* 搜索 */}
+              <div class="relative">
+                <TbSearch class="pointer-events-none absolute left-2.5 top-2 size-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  class="h-8 w-52 pl-8 text-xs"
+                  placeholder={t("media.music.search_placeholder")}
+                  aria-label={t("media.music.search_placeholder")}
+                  value={keyword()}
+                  onInput={(e) => {
+                    setKeyword(e.currentTarget.value)
+                    setPage(1)
+                  }}
+                />
+              </div>
+
+              {/* 视图切换 */}
+              <div class="flex gap-1">
+                <For
+                  each={
+                    [
+                      ["card", TbLayoutGrid, "media.music.view_card"],
+                      ["list", TbLayoutList, "media.music.view_list"],
+                    ] as const
+                  }
+                >
+                  {([mode, icon, label]) => (
+                    <Button
+                      variant={viewMode() === mode ? "secondary" : "ghost"}
+                      class="size-8 p-0"
+                      title={t(label)}
+                      aria-label={t(label)}
+                      aria-pressed={viewMode() === mode}
+                      onClick={() => {
+                        changeViewMode(mode)
+                        setPage(1)
+                      }}
+                    >
+                      <Dynamic component={icon} class="size-4" />
+                    </Button>
+                  )}
+                </For>
               </div>
             </div>
 
-            {/* 目录浏览模式 - 文件夹列表 */}
+            {/* 目录浏览模式 */}
             <Show when={browseMode() === "folder"}>
-              <div
-                style={{
-                  display: "flex",
-                  "flex-wrap": "wrap",
-                  gap: "8px",
-                  "margin-bottom": "16px",
-                }}
-              >
-                <button
-                  onClick={() => setSelectedFolder("")}
-                  style={{
-                    background:
-                      selectedFolder() === "" ? btnActiveBg : folderBtnBg(),
-                    border: `1px solid ${btnInactiveBorder()}`,
-                    "border-radius": "8px",
-                    color:
-                      selectedFolder() === ""
-                        ? btnActiveColor
-                        : folderBtnColor(),
-                    padding: "6px 14px",
-                    "font-size": "12px",
-                    cursor: "pointer",
+              <div class="mb-4">
+                <ChipTabs
+                  label="folders"
+                  items={[
+                    {
+                      key: "",
+                      label: t("media.browser.all_folders"),
+                      icon: <TbFolders class="size-4" />,
+                    },
+                    ...((foldersData() ?? []) as string[]).map((folder) => ({
+                      key: folder,
+                      label: folder.split("/").pop() || folder,
+                      title: folder,
+                      icon: <TbFolder class="size-4" />,
+                    })),
+                  ]}
+                  value={selectedFolder()}
+                  onChange={(folder) => {
+                    setSelectedFolder(folder)
+                    setPage(1)
                   }}
-                >
-                  <TbFolders class="mr-1 inline size-4 align-[-3px]" />
-                  {t("media.browser.all_folders")}
-                </button>
-                <For each={foldersData() ?? []}>
-                  {(folder) => (
-                    <button
-                      onClick={() => {
-                        setSelectedFolder(folder)
-                        setPage(1)
-                      }}
-                      style={{
-                        background:
-                          selectedFolder() === folder
-                            ? btnActiveBg
-                            : folderBtnBg(),
-                        border:
-                          selectedFolder() === folder
-                            ? `1px solid ${btnActiveBorder}`
-                            : `1px solid ${btnInactiveBorder()}`,
-                        "border-radius": "8px",
-                        color:
-                          selectedFolder() === folder
-                            ? btnActiveColor
-                            : folderBtnColor(),
-                        padding: "6px 14px",
-                        "font-size": "12px",
-                        cursor: "pointer",
-                        "max-width": "200px",
-                        overflow: "hidden",
-                        "text-overflow": "ellipsis",
-                        "white-space": "nowrap",
-                      }}
-                      title={folder}
-                    >
-                      <TbFolder class="mr-1 inline size-4 align-[-3px]" />
-                      {folder.split("/").pop() || folder}
-                    </button>
-                  )}
-                </For>
+                />
               </div>
             </Show>
 
             {/* 卡片视图：专辑 */}
             <Show when={viewMode() === "card"}>
-              <Show
-                when={!albumData.loading}
-                fallback={
-                  <div
-                    style={{
-                      "text-align": "center",
-                      padding: "60px",
-                      color: emptyColor(),
-                    }}
-                  >
-                    <div style={{ "margin-bottom": "12px" }}>
-                      <TbLoader2 class="mx-auto size-8 animate-spin" />
-                    </div>
-                    <div>{t("media.music.loading")}</div>
-                  </div>
-                }
-              >
+              <Show when={!albumData.loading} fallback={<WallSkeleton />}>
                 <Show
                   when={albums().length > 0}
                   fallback={
-                    <div
-                      style={{
-                        "text-align": "center",
-                        padding: "60px",
-                        color: emptyColor(),
-                      }}
-                    >
-                      <div style={{ "margin-bottom": "12px" }}>
-                        <TbMusic size={48} style={{ opacity: 0.5 }} />
-                      </div>
-                      <div>{t("media.music.no_albums")}</div>
-                    </div>
+                    <DataState empty emptyText={t("media.music.no_albums")}>
+                      {null}
+                    </DataState>
                   }
                 >
-                  <div style={{ columns: "5 160px", "column-gap": "16px" }}>
+                  <div style={{ columns: "5 150px", "column-gap": "16px" }}>
                     <For each={albums()}>
                       {(album) => (
                         <div
-                          style={{
-                            "break-inside": "avoid",
-                            "margin-bottom": "16px",
-                            cursor: "pointer",
-                          }}
+                          class="mb-4 cursor-pointer [break-inside:avoid]"
                           onClick={() => setSelectedAlbum(album)}
                         >
                           <AlbumCard album={album} />
@@ -879,108 +547,38 @@ const MusicLibrary = () => {
 
             {/* 列表视图：歌曲 + 右侧详情 */}
             <Show when={viewMode() === "list"}>
-              <style>{`
-                .music-list-layout {
-                  display: grid;
-                  grid-template-columns: minmax(0, 1fr) 320px;
-                  gap: 16px;
-                  align-items: start;
-                }
-                @media (max-width: 1100px) {
-                  .music-list-layout { grid-template-columns: minmax(0, 1fr); }
-                  .music-list-detail { display: none; }
-                }
-              `}</style>
-              <Show
-                when={!trackData.loading}
-                fallback={
-                  <div
-                    style={{
-                      "text-align": "center",
-                      padding: "60px",
-                      color: emptyColor(),
-                    }}
-                  >
-                    <div style={{ "margin-bottom": "12px" }}>
-                      <TbLoader2 class="mx-auto size-8 animate-spin" />
-                    </div>
-                    <div>{t("media.music.loading")}</div>
-                  </div>
-                }
-              >
+              <Show when={!trackData.loading} fallback={<WallSkeleton />}>
                 <Show
                   when={tracks().length > 0}
                   fallback={
-                    <div
-                      style={{
-                        "text-align": "center",
-                        padding: "60px",
-                        color: emptyColor(),
-                      }}
-                    >
-                      <div style={{ "margin-bottom": "12px" }}>
-                        <TbMusic size={48} style={{ opacity: 0.5 }} />
-                      </div>
-                      <div>{t("media.music.no_albums")}</div>
-                    </div>
+                    <DataState empty emptyText={t("media.music.no_albums")}>
+                      {null}
+                    </DataState>
                   }
                 >
-                  <div class="music-list-layout">
-                    <div
-                      style={{
-                        display: "flex",
-                        "flex-direction": "column",
-                        gap: "4px",
-                      }}
-                    >
+                  <div class="grid grid-cols-1 items-start gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_320px]">
+                    <div class="flex flex-col gap-1">
                       <For each={tracks()}>
                         {(track) => (
                           <div
                             onClick={() => setSelectedTrack(track)}
                             onDblClick={() => playTrack(track)}
                             title={t("media.music.track_item_tip")}
-                            style={{
-                              display: "flex",
-                              "align-items": "center",
-                              gap: "12px",
-                              padding: "8px 12px",
-                              "border-radius": "8px",
-                              cursor: "pointer",
-                              background:
-                                selectedTrack()?.id === track.id
-                                  ? isDark()
-                                    ? "rgba(24,144,255,0.16)"
-                                    : "rgba(24,144,255,0.08)"
-                                  : isDark()
-                                    ? "rgba(255,255,255,0.03)"
-                                    : "rgba(0,0,0,0.02)",
-                              border:
-                                selectedTrack()?.id === track.id
-                                  ? `1px solid ${btnActiveBorder}`
-                                  : `1px solid ${
-                                      isDark()
-                                        ? "rgba(255,255,255,0.05)"
-                                        : "rgba(0,0,0,0.06)"
-                                    }`,
-                            }}
+                            class={cn(
+                              "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors",
+                              selectedTrack()?.id === track.id
+                                ? "border-primary/50 bg-primary/10"
+                                : "bg-card hover:bg-accent",
+                            )}
                           >
                             <Show
                               when={track.cover}
                               fallback={
                                 <div
-                                  style={{
-                                    width: "40px",
-                                    height: "40px",
-                                    "border-radius": "6px",
-                                    background: accentGradient(),
-                                    display: "flex",
-                                    "align-items": "center",
-                                    "justify-content": "center",
-                                    "flex-shrink": "0",
-                                    color: "white",
-                                  }}
+                                  class="flex size-10 shrink-0 items-center justify-center rounded-md text-white"
+                                  style={{ background: accentGradient() }}
                                 >
-                                  <TbMusic size={18} />
+                                  <TbMusic class="size-[18px]" />
                                 </div>
                               }
                             >
@@ -988,50 +586,21 @@ const MusicLibrary = () => {
                                 src={resolveMediaCover(track)}
                                 alt={getMediaName(track)}
                                 loading="lazy"
-                                style={{
-                                  width: "40px",
-                                  height: "40px",
-                                  "border-radius": "6px",
-                                  "object-fit": "cover",
-                                  "flex-shrink": "0",
-                                }}
+                                class="size-10 shrink-0 rounded-md object-cover"
                               />
                             </Show>
-                            <div style={{ flex: "1", "min-width": "0" }}>
-                              <div
-                                style={{
-                                  color: isDark() ? "#e2e8f0" : "#1e293b",
-                                  "font-size": "14px",
-                                  overflow: "hidden",
-                                  "text-overflow": "ellipsis",
-                                  "white-space": "nowrap",
-                                }}
-                              >
+                            <div class="min-w-0 flex-1">
+                              <div class="truncate text-sm">
                                 {getMediaName(track)}
                               </div>
-                              <div
-                                style={{
-                                  color: isDark() ? "#64748b" : "#94a3b8",
-                                  "font-size": "12px",
-                                  overflow: "hidden",
-                                  "text-overflow": "ellipsis",
-                                  "white-space": "nowrap",
-                                }}
-                              >
+                              <div class="truncate text-xs text-muted-foreground">
                                 {[track.album_name, track.album_artist]
                                   .filter(Boolean)
                                   .join(" · ") ||
                                   t("media.music.unknown_album")}
                               </div>
                             </div>
-                            <div
-                              style={{
-                                color: isDark() ? "#64748b" : "#94a3b8",
-                                "font-size": "12px",
-                                "text-align": "right",
-                                "flex-shrink": "0",
-                              }}
-                            >
+                            <div class="shrink-0 text-right text-xs text-muted-foreground">
                               <div>
                                 {[track.genre, track.release_date?.slice(0, 4)]
                                   .filter(Boolean)
@@ -1040,15 +609,7 @@ const MusicLibrary = () => {
                               <div>{formatDuration(track.duration)}</div>
                             </div>
                             <Show when={favorites()[track.id]}>
-                              <span
-                                style={{
-                                  color: "#fbbf24",
-                                  "font-size": "13px",
-                                  "flex-shrink": "0",
-                                }}
-                              >
-                                <TbStarFilled class="size-3.5" />
-                              </span>
+                              <TbStarFilled class="size-3.5 shrink-0 text-yellow-400" />
                             </Show>
                           </div>
                         )}
@@ -1056,7 +617,7 @@ const MusicLibrary = () => {
                     </div>
                     <Show when={selectedTrack()}>
                       {(track) => (
-                        <div class="music-list-detail">
+                        <div class="hidden min-[1100px]:block">
                           <MediaItemDetail
                             item={track()}
                             favorite={!!favorites()[track().id]}
@@ -1074,62 +635,32 @@ const MusicLibrary = () => {
 
             {/* 分页 */}
             <Show when={totalPages() > 1}>
-              <div
-                style={{
-                  display: "flex",
-                  "justify-content": "center",
-                  "align-items": "center",
-                  gap: "8px",
-                  "margin-top": "32px",
-                }}
-              >
-                <button
+              <div class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Button
+                  variant="outline"
+                  size="sm"
                   disabled={page() <= 1}
                   onClick={() => setPage(page() - 1)}
-                  style={{
-                    background: paginationBg(),
-                    border: `1px solid ${paginationBorder()}`,
-                    "border-radius": "8px",
-                    color:
-                      page() <= 1
-                        ? paginationDisabledColor()
-                        : paginationColor(),
-                    padding: "6px 14px",
-                    cursor: page() <= 1 ? "not-allowed" : "pointer",
-                    "font-size": "13px",
-                  }}
                 >
-                  <TbChevronLeft class="mr-1 inline size-4 align-[-3px]" />
+                  <TbChevronLeft class="mr-1 size-4" />
                   {t("media.browser.prev_page")}
-                </button>
-                <span
-                  style={{ color: paginationInfoColor(), "font-size": "13px" }}
-                >
+                </Button>
+                <span>
                   {t("media.browser.page_info", {
                     page: page(),
                     totalPages: totalPages(),
                     total: total(),
                   })}
                 </span>
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   disabled={page() >= totalPages()}
                   onClick={() => setPage(page() + 1)}
-                  style={{
-                    background: paginationBg(),
-                    border: `1px solid ${paginationBorder()}`,
-                    "border-radius": "8px",
-                    color:
-                      page() >= totalPages()
-                        ? paginationDisabledColor()
-                        : paginationColor(),
-                    padding: "6px 14px",
-                    cursor: page() >= totalPages() ? "not-allowed" : "pointer",
-                    "font-size": "13px",
-                  }}
                 >
                   {t("media.browser.next_page")}
-                  <TbChevronRight class="ml-1 inline size-4 align-[-3px]" />
-                </button>
+                  <TbChevronRight class="ml-1 size-4" />
+                </Button>
               </div>
             </Show>
           </div>
