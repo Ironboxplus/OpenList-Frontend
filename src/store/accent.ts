@@ -210,8 +210,18 @@ export const applyAccentPalette = (color: string, dark = isDarkMode()) => {
     Object.entries(vars).forEach(([key, value]) => {
       el.style.setProperty(key, value)
     })
+    // the kit's primary buttons and chips follow the media colour too
+    Object.entries(kitVars(color)).forEach(([key, value]) => {
+      el.style.setProperty(key, value)
+    })
   })
 }
+
+const kitVars = (color: string): Record<string, string> => ({
+  "--primary": color,
+  "--ring": color,
+  "--primary-foreground": "#fff",
+})
 
 const PALETTE_KEYS = [
   ...Array.from({ length: 12 }, (_, i) => `accent${i + 1}`),
@@ -225,6 +235,7 @@ export const clearAccentPalette = () => {
     PALETTE_KEYS.forEach((key) =>
       el.style.removeProperty(`--hope-colors-${key}`),
     )
+    Object.keys(kitVars("")).forEach((key) => el.style.removeProperty(key))
   })
 }
 

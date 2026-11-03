@@ -8,7 +8,6 @@ import {
   Switch,
   Match,
 } from "solid-js"
-import { useColorMode } from "@hope-ui/solid"
 import { useSearchParams } from "@solidjs/router"
 import {
   getMediaFavorites,
@@ -23,13 +22,37 @@ import { useT } from "~/hooks"
 import type { MediaItem, MediaType, MediaScanPath } from "~/types"
 import { getMediaName } from "~/types"
 import { Button } from "~/components/ui/button"
+import { ChipTabs } from "~/components/ui/chip-tabs"
+import { DataState } from "~/components/ui/data-state"
+import { focusRing } from "~/components/ui/focus"
+import { Input } from "~/components/ui/input"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import { Skeleton } from "~/components/ui/skeleton"
+import { cn } from "~/utils/cn"
+import { Dynamic } from "solid-js/web"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu"
 import { SortMenuItems } from "~/components/ui/sort-menu"
-import { TbArrowDown, TbArrowsSort, TbArrowUp } from "solid-icons/tb"
+import {
+  TbArrowDown,
+  TbArrowsSort,
+  TbArrowUp,
+  TbChevronLeft,
+  TbChevronRight,
+  TbChevronsLeft,
+  TbChevronsRight,
+  TbFolder,
+  TbFolders,
+  TbLayoutGrid,
+  TbLayoutList,
+  TbMovie,
+  TbSearch,
+  TbStar,
+  TbStarFilled,
+} from "solid-icons/tb"
 import { MediaItemDetail } from "./MediaItemDetail"
 
 interface MediaBrowserProps {
@@ -50,61 +73,6 @@ type OrderDir = "asc" | "desc"
 
 export const MediaBrowser = (props: MediaBrowserProps) => {
   const t = useT()
-  const { colorMode } = useColorMode()
-  const isDark = createMemo(() => colorMode() === "dark")
-
-  // 主题色 tokens
-  const toolbarBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
-  )
-  const toolbarBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-  )
-  const dividerColor = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-  )
-  const btnActiveBg = "rgba(99,102,241,0.3)"
-  const btnActiveBorder = "rgba(99,102,241,0.5)"
-  const btnActiveColor = "#a5b4fc"
-  const btnInactiveBg = createMemo(() =>
-    isDark() ? "transparent" : "transparent",
-  )
-  const btnInactiveBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.15)",
-  )
-  const btnInactiveColor = createMemo(() => (isDark() ? "#64748b" : "#64748b"))
-  const searchBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-  )
-  const searchBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.15)",
-  )
-  const searchColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
-  const folderBtnBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
-  )
-  const emptyColor = createMemo(() => (isDark() ? "#475569" : "#94a3b8"))
-  const listItemBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-  )
-  const listItemBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)",
-  )
-  const listItemTextColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
-  const paginationBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-  )
-  const paginationBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)",
-  )
-  const paginationColor = createMemo(() => (isDark() ? "#94a3b8" : "#475569"))
-  const paginationDisabledColor = createMemo(() =>
-    isDark() ? "#334155" : "#cbd5e1",
-  )
-  const paginationInfoColor = createMemo(() =>
-    isDark() ? "#64748b" : "#94a3b8",
-  )
-
   // URL 查询参数（持久化页码、便于浏览器前进/后退恢复浏览状态）
   const [searchParams, setSearchParams] = useSearchParams<{ page?: string }>()
 
@@ -330,141 +298,135 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
     setPage(1)
   }
 
-  return (
-    <div>
-      {/* 工具栏 */}
-      <div
-        style={{
-          display: "flex",
-          "align-items": "center",
-          "flex-wrap": "wrap",
-          gap: "12px",
-          "margin-bottom": "20px",
-          padding: "12px 16px",
-          background: toolbarBg(),
-          "border-radius": "12px",
-          border: `1px solid ${toolbarBorder()}`,
+  const browseItems = createMemo(() => [
+    { key: "all" as BrowseMode, label: t("media.browser.all") },
+    { key: "folder" as BrowseMode, label: t("media.browser.folders") },
+    ...(props.enableFavorites
+      ? [
+          {
+            key: "favorites" as BrowseMode,
+            label: t("media.browser.favorites"),
+          },
+        ]
+      : []),
+  ])
+  const folderItems = createMemo(() => [
+    {
+      key: "",
+      label: t("media.browser.all_folders"),
+      icon: <TbFolders class="size-4" />,
+    },
+    ...((foldersData() ?? []) as string[]).map((folder) => ({
+      key: folder,
+      label: folder.split("/").pop() || folder,
+      title: folder,
+      icon: <TbFolder class="size-4" />,
+    })),
+  ])
+  const ALL = "__all"
+  const pathOptions = createMemo(() => [
+    { value: ALL, label: t("media.browser.all_paths") },
+    ...(scanPathsData() ?? []).map((sp) => ({
+      value: String(sp.id),
+      label: sp.name || sp.path,
+    })),
+  ])
+  const tagOptions = (tags: string[], all: string) => [
+    { value: ALL, label: all },
+    ...tags.map((tag) => ({ value: tag, label: tag })),
+  ]
+
+  /** The star on a card or row: a Tabler star, filled when favourited. */
+  const FavoriteButton = (p: { item: MediaItem; overlay?: boolean }) => {
+    const on = () => !!favorites()[p.item.id]
+    const label = () =>
+      on() ? t("media.detail.unfavorite") : t("media.detail.favorite")
+    return (
+      <button
+        type="button"
+        title={label()}
+        aria-label={label()}
+        data-favorite-toggle
+        onClick={(e) => {
+          e.stopPropagation()
+          toggleFavorite(p.item, !on())
         }}
+        class={cn(
+          focusRing,
+          "flex size-8 shrink-0 items-center justify-center rounded-full",
+          p.overlay
+            ? "absolute right-2 top-2 z-[2] border border-white/25 bg-black/45 text-slate-100"
+            : "bg-transparent text-muted-foreground hover:bg-accent",
+          on() && "text-yellow-400",
+        )}
       >
-        {/* 浏览模式：全部 / 目录 / 收藏 */}
-        <div style={{ display: "flex", gap: "6px" }}>
-          {(
-            [
-              { mode: "all", label: t("media.browser.all") },
-              { mode: "folder", label: t("media.browser.folders") },
-              ...(props.enableFavorites
-                ? [{ mode: "favorites", label: t("media.browser.favorites") }]
-                : []),
-            ] as { mode: BrowseMode; label: string }[]
-          ).map(({ mode, label }) => (
-            <button
-              onClick={() => {
-                setBrowseMode(mode)
-                setPage(1)
-                setSelected(null)
-              }}
-              style={{
-                background:
-                  browseMode() === mode ? btnActiveBg : btnInactiveBg(),
-                border:
-                  browseMode() === mode
-                    ? `1px solid ${btnActiveBorder}`
-                    : `1px solid ${btnInactiveBorder()}`,
-                "border-radius": "6px",
-                color:
-                  browseMode() === mode ? btnActiveColor : btnInactiveColor(),
-                padding: "5px 12px",
-                "font-size": "12px",
-                cursor: "pointer",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Show when={on()} fallback={<TbStar class="size-4" />}>
+          <TbStarFilled class="size-4" />
+        </Show>
+      </button>
+    )
+  }
 
-        <div
-          style={{ width: "1px", height: "20px", background: dividerColor() }}
+  const jump = () => {
+    const n = parseInt(pageInput(), 10)
+    if (Number.isFinite(n) && n >= 1 && n <= totalPages()) {
+      setPage(n)
+    } else {
+      setPageInput(String(page()))
+    }
+  }
+
+  return (
+    <div class="w-full min-w-0">
+      {/* 工具栏 */}
+      <div class="mb-4 flex flex-wrap items-center gap-2">
+        <ChipTabs
+          label="browse"
+          items={browseItems()}
+          value={browseMode()}
+          onChange={(mode) => {
+            setBrowseMode(mode)
+            setPage(1)
+            setSelected(null)
+          }}
         />
 
-        {/* 扫描路径筛选 */}
         <Show when={(scanPathsData() ?? []).length > 0}>
-          <select
-            value={selectedScanPathId()}
-            onChange={(e) => {
-              setSelectedScanPathId(Number(e.currentTarget.value))
+          <SimpleSelect
+            class="h-8 w-auto gap-2 text-xs"
+            aria-label={t("media.browser.all_paths")}
+            options={pathOptions()}
+            value={selectedScanPathId() ? String(selectedScanPathId()) : ALL}
+            onChange={(v) => {
+              setSelectedScanPathId(v === ALL ? 0 : Number(v))
               setPage(1)
             }}
-            style={{
-              background: searchBg(),
-              border: `1px solid ${searchBorder()}`,
-              "border-radius": "6px",
-              color: searchColor(),
-              padding: "5px 8px",
-              "font-size": "12px",
-              outline: "none",
-            }}
-          >
-            <option value="0">{t("media.browser.all_paths")}</option>
-            <For each={scanPathsData() ?? []}>
-              {(sp) => <option value={sp.id}>{sp.name || sp.path}</option>}
-            </For>
-          </select>
+          />
         </Show>
-
-        {/* 类型标签筛选 */}
         <Show when={allTypeTags().length > 0}>
-          <select
-            value={selectedTypeTag()}
-            onChange={(e) => {
-              setSelectedTypeTag(e.currentTarget.value)
+          <SimpleSelect
+            class="h-8 w-auto gap-2 text-xs"
+            aria-label={t("media.browser.all_types")}
+            options={tagOptions(allTypeTags(), t("media.browser.all_types"))}
+            value={selectedTypeTag() || ALL}
+            onChange={(v) => {
+              setSelectedTypeTag(v === ALL ? "" : v)
               setPage(1)
             }}
-            style={{
-              background: searchBg(),
-              border: `1px solid ${searchBorder()}`,
-              "border-radius": "6px",
-              color: searchColor(),
-              padding: "5px 8px",
-              "font-size": "12px",
-              outline: "none",
-            }}
-          >
-            <option value="">{t("media.browser.all_types")}</option>
-            <For each={allTypeTags()}>
-              {(tag) => <option value={tag}>{tag}</option>}
-            </For>
-          </select>
+          />
         </Show>
-
-        {/* 内容标签筛选 */}
         <Show when={allContentTags().length > 0}>
-          <select
-            value={selectedContentTag()}
-            onChange={(e) => {
-              setSelectedContentTag(e.currentTarget.value)
+          <SimpleSelect
+            class="h-8 w-auto gap-2 text-xs"
+            aria-label={t("media.browser.all_tags")}
+            options={tagOptions(allContentTags(), t("media.browser.all_tags"))}
+            value={selectedContentTag() || ALL}
+            onChange={(v) => {
+              setSelectedContentTag(v === ALL ? "" : v)
               setPage(1)
             }}
-            style={{
-              background: searchBg(),
-              border: `1px solid ${searchBorder()}`,
-              "border-radius": "6px",
-              color: searchColor(),
-              padding: "5px 8px",
-              "font-size": "12px",
-              outline: "none",
-            }}
-          >
-            <option value="">{t("media.browser.all_tags")}</option>
-            <For each={allContentTags()}>
-              {(tag) => <option value={tag}>{tag}</option>}
-            </For>
-          </select>
+          />
         </Show>
-
-        <div
-          style={{ width: "1px", height: "20px", background: dividerColor() }}
-        />
 
         {/* 排序 */}
         <DropdownMenu placement="bottom-start">
@@ -477,11 +439,10 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
           >
             <TbArrowsSort class="mr-1.5 size-4" />
             {t(`media.browser.${orderBy()}`)}
-            {orderDir() === "asc" ? (
-              <TbArrowUp class="ml-1 size-3.5" />
-            ) : (
-              <TbArrowDown class="ml-1 size-3.5" />
-            )}
+            <Dynamic
+              component={orderDir() === "asc" ? TbArrowUp : TbArrowDown}
+              class="ml-1 size-3.5"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <SortMenuItems
@@ -498,117 +459,62 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div style={{ flex: "1" }} />
+        <div class="flex-1" />
 
         {/* 搜索 */}
-        <input
-          type="text"
-          placeholder={t("media.browser.search_placeholder")}
-          value={keyword()}
-          onInput={(e) => {
-            setKeyword(e.currentTarget.value)
-            setPage(1)
-          }}
-          style={{
-            background: searchBg(),
-            border: `1px solid ${searchBorder()}`,
-            "border-radius": "8px",
-            color: searchColor(),
-            padding: "6px 12px",
-            "font-size": "13px",
-            outline: "none",
-            width: "160px",
-          }}
-        />
+        <div class="relative">
+          <TbSearch class="pointer-events-none absolute left-2.5 top-2 size-4 text-muted-foreground" />
+          <Input
+            type="search"
+            class="h-8 w-44 pl-8 text-xs"
+            placeholder={t("media.browser.search_placeholder")}
+            aria-label={t("media.browser.search_placeholder")}
+            value={keyword()}
+            onInput={(e) => {
+              setKeyword(e.currentTarget.value)
+              setPage(1)
+            }}
+          />
+        </div>
 
         {/* 视图切换 */}
-        <div style={{ display: "flex", gap: "4px" }}>
-          {(["waterfall", "list"] as ViewMode[]).map((mode) => (
-            <button
-              onClick={() => changeViewMode(mode)}
-              title={
-                mode === "waterfall"
-                  ? t("media.browser.waterfall")
-                  : t("media.browser.list")
-              }
-              style={{
-                background: viewMode() === mode ? btnActiveBg : btnInactiveBg(),
-                border:
-                  viewMode() === mode
-                    ? `1px solid ${btnActiveBorder}`
-                    : `1px solid ${btnInactiveBorder()}`,
-                "border-radius": "6px",
-                color:
-                  viewMode() === mode ? btnActiveColor : btnInactiveColor(),
-                padding: "5px 8px",
-                "font-size": "14px",
-                cursor: "pointer",
-              }}
-            >
-              {mode === "waterfall" ? "⊞" : "☰"}
-            </button>
-          ))}
+        <div class="flex gap-1">
+          <For
+            each={
+              [
+                ["waterfall", TbLayoutGrid, "media.browser.waterfall"],
+                ["list", TbLayoutList, "media.browser.list"],
+              ] as const
+            }
+          >
+            {([mode, icon, label]) => (
+              <Button
+                variant={viewMode() === mode ? "secondary" : "ghost"}
+                class="size-8 p-0"
+                title={t(label)}
+                aria-label={t(label)}
+                aria-pressed={viewMode() === mode}
+                onClick={() => changeViewMode(mode)}
+              >
+                <Dynamic component={icon} class="size-4" />
+              </Button>
+            )}
+          </For>
         </div>
       </div>
 
       {/* 目录浏览模式 - 文件夹列表 */}
       <Show when={browseMode() === "folder"}>
-        <div
-          style={{
-            display: "flex",
-            "flex-wrap": "wrap",
-            gap: "8px",
-            "margin-bottom": "16px",
-          }}
-        >
-          <button
-            onClick={() => setSelectedFolder("")}
-            style={{
-              background: selectedFolder() === "" ? btnActiveBg : folderBtnBg(),
-              border: `1px solid ${btnInactiveBorder()}`,
-              "border-radius": "8px",
-              color:
-                selectedFolder() === "" ? btnActiveColor : paginationColor(),
-              padding: "6px 14px",
-              "font-size": "12px",
-              cursor: "pointer",
+        <div class="mb-4">
+          <ChipTabs
+            label="folders"
+            items={folderItems()}
+            value={selectedFolder()}
+            onChange={(folder) => {
+              setSelectedFolder(folder)
+              setPage(1)
             }}
-          >
-            📂 {t("media.browser.all_folders")}
-          </button>
-          <For each={foldersData() ?? []}>
-            {(folder) => (
-              <button
-                onClick={() => {
-                  setSelectedFolder(folder)
-                  setPage(1)
-                }}
-                style={{
-                  background:
-                    selectedFolder() === folder ? btnActiveBg : folderBtnBg(),
-                  border:
-                    selectedFolder() === folder
-                      ? `1px solid ${btnActiveBorder}`
-                      : `1px solid ${btnInactiveBorder()}`,
-                  "border-radius": "8px",
-                  color:
-                    selectedFolder() === folder
-                      ? btnActiveColor
-                      : paginationColor(),
-                  padding: "6px 14px",
-                  "font-size": "12px",
-                  cursor: "pointer",
-                  "max-width": "200px",
-                  overflow: "hidden",
-                  "text-overflow": "ellipsis",
-                  "white-space": "nowrap",
-                }}
-                title={folder}
-              >
-                📁 {folder.split("/").pop() || folder}
-              </button>
-            )}
-          </For>
+          />
         </div>
       </Show>
 
@@ -617,93 +523,37 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
         when={!mediaData.loading}
         fallback={
           <div
-            style={{
-              "text-align": "center",
-              padding: "60px",
-              color: emptyColor(),
-            }}
+            data-state="loading"
+            aria-busy="true"
+            class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6"
           >
-            <div style={{ "font-size": "32px", "margin-bottom": "12px" }}>
-              ⏳
-            </div>
-            <div>{t("media.browser.loading")}</div>
+            <For each={Array.from({ length: 12 })}>
+              {() => <Skeleton class="aspect-[2/3] rounded-xl" />}
+            </For>
           </div>
         }
       >
         <Show
           when={items().length > 0}
           fallback={
-            <div
-              style={{
-                "text-align": "center",
-                padding: "60px",
-                color: emptyColor(),
-              }}
-            >
-              <div style={{ "font-size": "48px", "margin-bottom": "12px" }}>
-                📭
-              </div>
-              <div>{t("media.browser.empty")}</div>
-            </div>
+            <DataState empty emptyText={t("media.browser.empty")}>
+              {null}
+            </DataState>
           }
         >
           <Switch>
             {/* 瀑布流视图 */}
             <Match when={viewMode() === "waterfall"}>
-              <div
-                style={{
-                  columns: "5 180px",
-                  "column-gap": "16px",
-                }}
-              >
+              <div style={{ columns: "5 150px", "column-gap": "16px" }}>
                 <For each={items()}>
                   {(item) => (
                     <div
-                      style={{
-                        position: "relative",
-                        "break-inside": "avoid",
-                        "margin-bottom": "16px",
-                        cursor: "pointer",
-                      }}
+                      class="relative mb-4 cursor-pointer [break-inside:avoid]"
                       onClick={() => props.onItemClick(item)}
                     >
                       {props.renderCard(item)}
                       <Show when={props.enableFavorites}>
-                        <button
-                          title={
-                            favorites()[item.id]
-                              ? t("media.detail.unfavorite")
-                              : t("media.detail.favorite")
-                          }
-                          aria-label={
-                            favorites()[item.id]
-                              ? t("media.detail.unfavorite")
-                              : t("media.detail.favorite")
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleFavorite(item, !favorites()[item.id])
-                          }}
-                          style={{
-                            position: "absolute",
-                            top: "8px",
-                            right: "8px",
-                            width: "30px",
-                            height: "30px",
-                            "border-radius": "50%",
-                            border: "1px solid rgba(255,255,255,0.25)",
-                            background: "rgba(0,0,0,0.45)",
-                            color: favorites()[item.id] ? "#fbbf24" : "#e2e8f0",
-                            cursor: "pointer",
-                            display: "flex",
-                            "align-items": "center",
-                            "justify-content": "center",
-                            "font-size": "16px",
-                            "z-index": "2",
-                          }}
-                        >
-                          {favorites()[item.id] ? "★" : "☆"}
-                        </button>
+                        <FavoriteButton item={item} overlay />
                       </Show>
                     </div>
                   )}
@@ -713,99 +563,31 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
 
             {/* 列表视图：左侧列表 + 右侧详情 */}
             <Match when={viewMode() === "list"}>
-              <style>{`
-                .media-list-layout {
-                  display: grid;
-                  grid-template-columns: minmax(0, 1fr) 320px;
-                  gap: 16px;
-                  align-items: start;
-                }
-                @media (max-width: 1100px) {
-                  .media-list-layout { grid-template-columns: minmax(0, 1fr); }
-                  .media-list-detail { display: none; }
-                }
-              `}</style>
-              <div class="media-list-layout">
-                <div
-                  style={{
-                    display: "flex",
-                    "flex-direction": "column",
-                    gap: "4px",
-                  }}
-                >
+              <div class="grid grid-cols-1 items-start gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_320px]">
+                <div class="flex flex-col gap-1">
                   <For each={items()}>
                     {(item) => (
                       <div
                         onClick={() => setSelected(item)}
                         onDblClick={() => props.onItemClick(item)}
                         title={t("media.browser.list_item_tip")}
-                        style={{
-                          display: "flex",
-                          "align-items": "center",
-                          gap: "12px",
-                          padding: "10px 16px",
-                          background:
-                            selected()?.id === item.id
-                              ? isDark()
-                                ? "rgba(99,102,241,0.16)"
-                                : "rgba(99,102,241,0.08)"
-                              : listItemBg(),
-                          "border-radius": "8px",
-                          border:
-                            selected()?.id === item.id
-                              ? `1px solid ${btnActiveBorder}`
-                              : `1px solid ${listItemBorder()}`,
-                          cursor: "pointer",
-                          transition: "background 0.15s",
-                        }}
+                        class={cn(
+                          "flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-2.5 transition-colors",
+                          selected()?.id === item.id
+                            ? "border-primary/50 bg-primary/10"
+                            : "bg-card hover:bg-accent",
+                        )}
                       >
                         {props.renderListRow ? (
                           props.renderListRow(item)
                         ) : (
                           <>
-                            <span style={{ "font-size": "20px" }}>🎬</span>
-                            <span
-                              style={{
-                                color: listItemTextColor(),
-                                "font-size": "14px",
-                              }}
-                            >
-                              {getMediaName(item)}
-                            </span>
+                            <TbMovie class="size-5 shrink-0 text-muted-foreground" />
+                            <span class="text-sm">{getMediaName(item)}</span>
                           </>
                         )}
                         <Show when={props.enableFavorites}>
-                          <button
-                            title={
-                              favorites()[item.id]
-                                ? t("media.detail.unfavorite")
-                                : t("media.detail.favorite")
-                            }
-                            aria-label={
-                              favorites()[item.id]
-                                ? t("media.detail.unfavorite")
-                                : t("media.detail.favorite")
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleFavorite(item, !favorites()[item.id])
-                            }}
-                            style={{
-                              width: "30px",
-                              height: "30px",
-                              "border-radius": "50%",
-                              border: "none",
-                              background: "transparent",
-                              color: favorites()[item.id]
-                                ? "#fbbf24"
-                                : btnInactiveColor(),
-                              cursor: "pointer",
-                              "font-size": "16px",
-                              "flex-shrink": "0",
-                            }}
-                          >
-                            {favorites()[item.id] ? "★" : "☆"}
-                          </button>
+                          <FavoriteButton item={item} />
                         </Show>
                       </div>
                     )}
@@ -813,7 +595,7 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
                 </div>
                 <Show when={selected()}>
                   {(item) => (
-                    <div class="media-list-detail">
+                    <div class="hidden min-[1100px]:block">
                       <MediaItemDetail
                         item={item()}
                         favorite={!!favorites()[item().id]}
@@ -831,110 +613,61 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
 
       {/* 分页 */}
       <Show when={totalPages() > 1}>
-        <div
-          style={{
-            display: "flex",
-            "justify-content": "center",
-            "align-items": "center",
-            "flex-wrap": "wrap",
-            gap: "8px",
-            "margin-top": "32px",
-          }}
-        >
-          <button
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Button
+            variant="outline"
+            size="sm"
             disabled={page() <= 1}
             onClick={() => setPage(1)}
-            style={{
-              background: paginationBg(),
-              border: `1px solid ${paginationBorder()}`,
-              "border-radius": "8px",
-              color:
-                page() <= 1 ? paginationDisabledColor() : paginationColor(),
-              padding: "6px 10px",
-              cursor: page() <= 1 ? "not-allowed" : "pointer",
-              "font-size": "13px",
-            }}
           >
-            « {t("media.browser.first_page")}
-          </button>
-          <button
+            <TbChevronsLeft class="mr-1 size-4" />
+            {t("media.browser.first_page")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             disabled={page() <= 1}
             onClick={() => setPage(page() - 1)}
-            style={{
-              background: paginationBg(),
-              border: `1px solid ${paginationBorder()}`,
-              "border-radius": "8px",
-              color:
-                page() <= 1 ? paginationDisabledColor() : paginationColor(),
-              padding: "6px 14px",
-              cursor: page() <= 1 ? "not-allowed" : "pointer",
-              "font-size": "13px",
-            }}
           >
-            ← {t("media.browser.prev_page")}
-          </button>
-          <span style={{ color: paginationInfoColor(), "font-size": "13px" }}>
+            <TbChevronLeft class="mr-1 size-4" />
+            {t("media.browser.prev_page")}
+          </Button>
+          <span>
             {t("media.browser.page_info", {
               page: page(),
               totalPages: totalPages(),
               total: total(),
             })}
           </span>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             disabled={page() >= totalPages()}
             onClick={() => setPage(page() + 1)}
-            style={{
-              background: paginationBg(),
-              border: `1px solid ${paginationBorder()}`,
-              "border-radius": "8px",
-              color:
-                page() >= totalPages()
-                  ? paginationDisabledColor()
-                  : paginationColor(),
-              padding: "6px 14px",
-              cursor: page() >= totalPages() ? "not-allowed" : "pointer",
-              "font-size": "13px",
-            }}
           >
-            {t("media.browser.next_page")} →
-          </button>
-          <button
+            {t("media.browser.next_page")}
+            <TbChevronRight class="ml-1 size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             disabled={page() >= totalPages()}
             onClick={() => setPage(totalPages())}
-            style={{
-              background: paginationBg(),
-              border: `1px solid ${paginationBorder()}`,
-              "border-radius": "8px",
-              color:
-                page() >= totalPages()
-                  ? paginationDisabledColor()
-                  : paginationColor(),
-              padding: "6px 10px",
-              cursor: page() >= totalPages() ? "not-allowed" : "pointer",
-              "font-size": "13px",
-            }}
           >
-            {t("media.browser.last_page")} »
-          </button>
-          {/* 跳转输入框 */}
-          <span style={{ color: paginationInfoColor(), "font-size": "13px" }}>
-            {t("media.browser.jump_to")}
-          </span>
-          <input
+            {t("media.browser.last_page")}
+            <TbChevronsRight class="ml-1 size-4" />
+          </Button>
+          <span>{t("media.browser.jump_to")}</span>
+          <Input
             type="number"
             min="1"
             max={totalPages()}
+            class="h-8 w-16 px-2 text-center text-xs"
+            aria-label={t("media.browser.jump_to")}
             value={pageInput()}
             onInput={(e) => setPageInput(e.currentTarget.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const n = parseInt(pageInput(), 10)
-                if (Number.isFinite(n) && n >= 1 && n <= totalPages()) {
-                  setPage(n)
-                } else {
-                  setPageInput(String(page()))
-                }
-              }
+              if (e.key === "Enter") jump()
             }}
             onBlur={() => {
               const n = parseInt(pageInput(), 10)
@@ -942,39 +675,10 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
                 setPageInput(String(page()))
               }
             }}
-            style={{
-              background: paginationBg(),
-              border: `1px solid ${paginationBorder()}`,
-              "border-radius": "6px",
-              color: paginationColor(),
-              padding: "4px 8px",
-              "font-size": "13px",
-              width: "60px",
-              "text-align": "center",
-              outline: "none",
-            }}
           />
-          <button
-            onClick={() => {
-              const n = parseInt(pageInput(), 10)
-              if (Number.isFinite(n) && n >= 1 && n <= totalPages()) {
-                setPage(n)
-              } else {
-                setPageInput(String(page()))
-              }
-            }}
-            style={{
-              background: paginationBg(),
-              border: `1px solid ${paginationBorder()}`,
-              "border-radius": "6px",
-              color: paginationColor(),
-              padding: "5px 10px",
-              cursor: "pointer",
-              "font-size": "13px",
-            }}
-          >
+          <Button variant="outline" size="sm" onClick={jump}>
             {t("media.browser.jump")}
-          </button>
+          </Button>
         </div>
       </Show>
     </div>

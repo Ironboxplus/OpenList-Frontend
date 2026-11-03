@@ -1,4 +1,4 @@
-import { Portal } from "solid-js/web"
+import { Dynamic, Portal } from "solid-js/web"
 import { createSignal, Show, For, onCleanup, onMount } from "solid-js"
 import { accent } from "~/utils/accent"
 import { MediaLayout } from "../MediaLayout"
@@ -8,6 +8,7 @@ import { getMediaName } from "~/types"
 import { createSignedProxyUrl, mediaItemPath } from "~/utils/media_api"
 import { useT } from "~/hooks"
 import { formatMediaSize } from "../ui"
+import { TbArrowsMaximize, TbArrowsMinimize, TbX } from "solid-icons/tb"
 
 // ==================== 图片预览器 ====================
 const ImageViewer = (props: {
@@ -112,7 +113,10 @@ const ImageViewer = (props: {
               style={viewerBtnStyle}
               title={t("media.image.fullscreen")}
             >
-              {isFullscreen() ? "⊡" : "⊞"}
+              <Dynamic
+                component={isFullscreen() ? TbArrowsMinimize : TbArrowsMaximize}
+                class="size-4"
+              />
             </button>
             <button
               onClick={() => setScale((s) => Math.min(s + 0.25, 4))}
@@ -144,7 +148,7 @@ const ImageViewer = (props: {
               }}
               title={t("media.image.close")}
             >
-              ✕
+              <TbX class="size-4" />
             </button>
           </div>
         </div>

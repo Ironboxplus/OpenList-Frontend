@@ -6,7 +6,7 @@ import { useColorMode } from "@hope-ui/solid"
 import { useT } from "~/hooks"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
-import { formatMediaSize, mediaBackBtn, mediaPrimaryBtn } from "../ui"
+import { formatMediaSize, mediaPrimaryBtn } from "../ui"
 import { PdfReader } from "./PdfReader"
 import { EpubReader } from "./EpubReader"
 import { readerBtnStyle } from "./reader_style"
@@ -19,6 +19,8 @@ import type { MediaItem, EpisodeInfo } from "~/types"
 import { getMediaName, parseAuthors, parseEpisodes } from "~/types"
 import { api } from "~/utils"
 import { encodePath } from "~/utils/path"
+import { TbArrowLeft, TbBook, TbStarFilled, TbX } from "solid-icons/tb"
+import { Button } from "~/components/ui/button"
 
 // ==================== 书籍阅读器（外层容器） ====================
 const BookReader = (props: {
@@ -94,7 +96,8 @@ const BookReader = (props: {
             style={{ ...readerBtnStyle, color: "#f87171" }}
             title={t("global.close")}
           >
-            ✕ {t("global.close")}
+            <TbX class="mr-1 inline size-4 align-[-3px]" />
+            {t("global.close")}
           </button>
         </div>
 
@@ -236,7 +239,7 @@ const BookCard = (props: { item: MediaItem }) => {
                 background: coverFallbackBg(),
               }}
             >
-              <span style={{ "font-size": "40px" }}>📚</span>
+              <TbBook class="size-10" />
               <span
                 style={{
                   color: subColor(),
@@ -448,9 +451,15 @@ const BookDetail = (props: { id: string; onBack: () => void }) => {
             />
           </Show>
 
-          <button onClick={props.onBack} style={mediaBackBtn(isDark())}>
-            ← {t("media.book.back")}
-          </button>
+          <Button
+            variant="outline"
+            size="sm"
+            class="mb-6 gap-1.5"
+            onClick={props.onBack}
+          >
+            <TbArrowLeft class="size-4" />
+            {t("media.book.back")}
+          </Button>
 
           <div style={{ display: "flex", gap: "28px", "flex-wrap": "wrap" }}>
             {/* 封面 */}
@@ -467,10 +476,9 @@ const BookDetail = (props: { id: string; onBack: () => void }) => {
                       display: "flex",
                       "align-items": "center",
                       "justify-content": "center",
-                      "font-size": "64px",
                     }}
                   >
-                    📚
+                    <TbBook class="size-16" />
                   </div>
                 }
               >
@@ -552,7 +560,8 @@ const BookDetail = (props: { id: string; onBack: () => void }) => {
                     "margin-bottom": "12px",
                   }}
                 >
-                  ⭐ {data().rating.toFixed(1)}
+                  <TbStarFilled class="mr-1 inline size-3.5 align-[-2px]" />
+                  {data().rating.toFixed(1)}
                 </div>
               </Show>
 
@@ -727,7 +736,9 @@ const BookLibrary = () => {
                 <>
                   <Show
                     when={item.cover}
-                    fallback={<span style={{ "font-size": "20px" }}>📚</span>}
+                    fallback={
+                      <TbBook class="size-5 shrink-0 text-muted-foreground" />
+                    }
                   >
                     <img
                       src={resolveMediaCover(item)}

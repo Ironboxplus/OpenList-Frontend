@@ -65,7 +65,7 @@
     "open": "Edit media info"
   },
   "image": {
-    "title": "🖼️ Photo Gallery",
+    "title": "Photo Gallery",
     "fullscreen": "Fullscreen (F)",
     "zoom_in": "Zoom in",
     "zoom_out": "Zoom out",
@@ -73,7 +73,7 @@
     "close": "Close (Esc)"
   },
   "book": {
-    "title": "📚 eBooks & Journals",
+    "title": "eBooks & Journals",
     "pdf_load_failed": "Failed to load PDF",
     "load_failed": "Failed to load EPUB",
     "loading": "Loading...",
@@ -162,7 +162,7 @@
     "open": "Open details"
   },
   "music": {
-    "title": "🎵 Music Library",
+    "title": "Music Library",
     "unknown_album": "Unknown album",
     "unknown_artist": "Unknown artist",
     "track_count": "{{count}} tracks",
@@ -196,7 +196,7 @@
     "close": "Close player"
   },
   "video": {
-    "title": "🎬 Video Library",
+    "title": "Video Library",
     "decode_disabled": "Disabled",
     "decode_audio_only": "Audio only",
     "decode_all": "Full decode",
@@ -210,11 +210,20 @@
     "mode_reload_confirm": "Switching player mode requires a page reload. Reload now?",
     "audio_fallback": "Unsupported audio codec, switched to MediaBunny audio decoding",
     "strm_failed": "Failed to download STRM",
-    "favorited": "★ Favorited",
-    "favorite": "☆ Favorite",
+    "favorited": "Favorited",
+    "favorite": "Favorite",
     "movie": "Movie",
     "tv": "TV Series",
-    "collection_members": "In this collection"
+    "collection_members": "In this collection",
+    "back": "Back",
+    "cast": "Cast: ",
+    "starring": "Starring: ",
+    "episodes_n": "{{n}} episodes",
+    "episode_n_title": "Episode {{index}} {{title}}",
+    "episodes_total": "Episodes ({{n}})",
+    "download_strm": "Download STRM",
+    "synopsis": "Synopsis",
+    "minutes": "{{n}} min"
   },
   "common": {
     "loading": "Loading...",
@@ -354,5 +363,13 @@
     "reset": "Follow site default",
     "on": "Theme color: media pages only (on)",
     "off": "Theme color: off"
+  },
+  "play": {
+    "browser": "Play in browser",
+    "external": "Play in player",
+    "choose": "Choose player",
+    "link_failed": "Could not get the direct link",
+    "missing_info": "Media information is missing",
+    "emby_failed": "Could not get the Emby server ID"
   }
 }

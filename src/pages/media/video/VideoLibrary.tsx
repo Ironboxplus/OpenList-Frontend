@@ -15,15 +15,21 @@ import {
   Match,
 } from "solid-js"
 import { useColorMode } from "@hope-ui/solid"
+import {
+  TbArrowLeft,
+  TbLock,
+  TbMovie,
+  TbPencil,
+  TbPlayerPlay,
+  TbStar,
+  TbStarFilled,
+} from "solid-icons/tb"
+import { Button } from "~/components/ui/button"
+import { cn } from "~/utils/cn"
 import { Portal } from "solid-js/web"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
-import {
-  formatMediaSize,
-  mediaBackBtn,
-  mediaChip,
-  mediaSecondaryBtn,
-} from "../ui"
+import { formatMediaSize, mediaChip } from "../ui"
 import {
   downloadMediaStrm,
   getMediaItem,
@@ -134,7 +140,7 @@ const VideoCard = (props: { item: MediaItem }) => {
     versionCount(props.item) > 0
       ? t("media.video.versions", { n: versionCount(props.item) })
       : episodeCount() > 0
-        ? `${episodeCount()} 集`
+        ? t("media.video.episodes_n", { n: episodeCount() })
         : formatMediaSize(props.item.file_size)
   return (
     <div
@@ -179,11 +185,10 @@ const VideoCard = (props: { item: MediaItem }) => {
                 display: "flex",
                 "align-items": "center",
                 "justify-content": "center",
-                "font-size": "48px",
                 color: subColor(),
               }}
             >
-              🎬
+              <TbMovie class="size-12" />
             </div>
           }
         >
@@ -236,7 +241,7 @@ const VideoCard = (props: { item: MediaItem }) => {
               "font-weight": "600",
             }}
           >
-            ⭐{" "}
+            <TbStarFilled class="mr-1 inline size-3 align-[-1px]" />
             {cardRating(props.item.ratings)?.text ??
               props.item.rating.toFixed(1)}
           </div>
@@ -268,7 +273,8 @@ const VideoCard = (props: { item: MediaItem }) => {
                   "white-space": "nowrap",
                 }}
               >
-                演员：{authors().slice(0, 4).join(" / ")}
+                {t("media.video.cast")}
+                {authors().slice(0, 4).join(" / ")}
               </div>
             </Show>
             <Show when={props.item.plot || props.item.description}>
@@ -876,20 +882,15 @@ const VideoPlayer = (props: {
             "flex-shrink": "0",
           }}
         >
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            class="gap-1.5 border-white/15 bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white"
             onClick={props.onClose}
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              "border-radius": "8px",
-              color: "#94a3b8",
-              padding: "6px 14px",
-              cursor: "pointer",
-              "font-size": "13px",
-            }}
           >
-            ← 返回
-          </button>
+            <TbArrowLeft class="size-4" />
+            {t("media.video.back")}
+          </Button>
           <span
             style={{
               color: "#e2e8f0",
@@ -1202,9 +1203,15 @@ const VideoDetail = (props: {
         return (
           <div>
             {/* 返回按鈕 */}
-            <button onClick={props.onBack} style={mediaBackBtn(isDark())}>
-              ← 返回
-            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              class="mb-6 gap-1.5"
+              onClick={props.onBack}
+            >
+              <TbArrowLeft class="size-4" />
+              {t("media.video.back")}
+            </Button>
 
             <Show when={editing()}>
               <MediaEditorDialog
@@ -1256,11 +1263,10 @@ const VideoDetail = (props: {
                             display: "flex",
                             "align-items": "center",
                             "justify-content": "center",
-                            "font-size": "64px",
                             color: coverFallbackColor(),
                           }}
                         >
-                          🎬
+                          <TbMovie class="size-16" />
                         </div>
                       }
                     >
@@ -1308,50 +1314,32 @@ const VideoDetail = (props: {
                   >
                     {getMediaName(data())}
                   </h1>
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class={cn(
+                      "gap-1.5 rounded-full",
+                      favorite() &&
+                        "border-yellow-400/40 bg-yellow-400/15 text-yellow-400 hover:bg-yellow-400/25",
+                    )}
+                    aria-pressed={favorite()}
                     onClick={toggleFavorite}
                     title={
                       favorite()
                         ? t("media.detail.unfavorite")
                         : t("media.detail.favorite")
                     }
-                    aria-label={
-                      favorite()
-                        ? t("media.detail.unfavorite")
-                        : t("media.detail.favorite")
-                    }
-                    style={{
-                      display: "inline-flex",
-                      "align-items": "center",
-                      gap: "6px",
-                      padding: "6px 14px",
-                      "border-radius": "999px",
-                      cursor: "pointer",
-                      "font-size": "13px",
-                      "font-weight": "500",
-                      background: favorite()
-                        ? "rgba(251,191,36,0.16)"
-                        : isDark()
-                          ? "rgba(255,255,255,0.06)"
-                          : "rgba(0,0,0,0.05)",
-                      border: favorite()
-                        ? "1px solid rgba(251,191,36,0.4)"
-                        : `1px solid ${
-                            isDark()
-                              ? "rgba(255,255,255,0.12)"
-                              : "rgba(0,0,0,0.1)"
-                          }`,
-                      color: favorite()
-                        ? "#fbbf24"
-                        : isDark()
-                          ? "#cbd5e1"
-                          : "#334155",
-                    }}
                   >
+                    <Show
+                      when={favorite()}
+                      fallback={<TbStar class="size-4" />}
+                    >
+                      <TbStarFilled class="size-4" />
+                    </Show>
                     {favorite()
                       ? t("media.video.favorited")
                       : t("media.video.favorite")}
-                  </button>
+                  </Button>
                 </div>
 
                 {/* 管理员：纠正入口。待确认的作品（置信度低或有候选）带一个提示 */}
@@ -1365,13 +1353,16 @@ const VideoDetail = (props: {
                       "margin-bottom": "10px",
                     }}
                   >
-                    <button
+                    <Button
                       data-media-edit
+                      variant="outline"
+                      size="sm"
+                      class="gap-1.5"
                       onClick={() => setEditing(true)}
-                      style={mediaSecondaryBtn(isDark())}
                     >
+                      <TbPencil class="size-4" />
                       {t("media.editor.open")}
-                    </button>
+                    </Button>
                     <Show when={isPendingMedia(data())}>
                       <span
                         data-media-pending
@@ -1384,8 +1375,12 @@ const VideoDetail = (props: {
                       </span>
                     </Show>
                     <Show when={data().locked}>
-                      <span style={{ color: metaColor(), "font-size": "12px" }}>
-                        🔒 {t("media.editor.lock")}
+                      <span
+                        class="inline-flex items-center gap-1"
+                        style={{ color: metaColor(), "font-size": "12px" }}
+                      >
+                        <TbLock class="size-3.5" />
+                        {t("media.editor.lock")}
                       </span>
                     </Show>
                   </div>
@@ -1435,7 +1430,8 @@ const VideoDetail = (props: {
                             "font-weight": "600",
                           }}
                         >
-                          ⭐ {data().rating.toFixed(1)}
+                          <TbStarFilled class="mr-1 inline size-3.5 align-[-2px]" />
+                          {data().rating.toFixed(1)}
                         </span>
                       </Show>
                     }
@@ -1485,7 +1481,7 @@ const VideoDetail = (props: {
                     <span
                       style={{ color: authorLabelColor(), "font-size": "13px" }}
                     >
-                      主演：
+                      {t("media.video.starring")}
                     </span>
                     <span style={{ color: authorColor(), "font-size": "13px" }}>
                       {authors().slice(0, 5).join(" / ")}
@@ -1515,7 +1511,10 @@ const VideoDetail = (props: {
                         ? isVersionSet(data())
                           ? `${getMediaName(data())} · ${versionLabelOf(currentEpisode()!.file_name)}`
                           : currentEpisode()!.index > 0
-                            ? `第${currentEpisode()!.index}集 ${currentEpisode()!.title}`
+                            ? t("media.video.episode_n_title", {
+                                index: currentEpisode()!.index,
+                                title: currentEpisode()!.title,
+                              })
                             : currentEpisode()!.title
                         : undefined
                     }
@@ -1604,17 +1603,17 @@ const VideoDetail = (props: {
                         setShowPlayer(true)
                       }}
                     />
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         if (isVersionSet(data())) {
                           setCurrentEpisode(chosenVersion() ?? null)
                         }
                         downloadStrm(data())
                       }}
-                      style={mediaSecondaryBtn(isDark())}
                     >
-                      下载 STRM
-                    </button>
+                      {t("media.video.download_strm")}
+                    </Button>
                   </div>
                 </Show>
 
@@ -1636,7 +1635,9 @@ const VideoDetail = (props: {
                             "margin-bottom": "12px",
                           }}
                         >
-                          选集（共 {episodes.length} 集）
+                          {t("media.video.episodes_total", {
+                            n: episodes.length,
+                          })}
                         </h3>
                         <div
                           style={{
@@ -1693,7 +1694,8 @@ const VideoDetail = (props: {
                                       : "none",
                                   }}
                                 >
-                                  ▶ {label}
+                                  <TbPlayerPlay class="mr-1 inline size-3 align-[-1px]" />
+                                  {label}
                                 </button>
                               )
                             }}
@@ -1769,7 +1771,7 @@ const VideoDetail = (props: {
                         "margin-bottom": "8px",
                       }}
                     >
-                      剧情简介
+                      {t("media.video.synopsis")}
                     </h3>
                     <p
                       style={{
@@ -1814,7 +1816,9 @@ const VideoLibrary = () => {
                 <>
                   <Show
                     when={resolveMediaCover(item) || item.child_posters?.[0]}
-                    fallback={<span style={{ "font-size": "20px" }}>🎬</span>}
+                    fallback={
+                      <TbMovie class="size-5 shrink-0 text-muted-foreground" />
+                    }
                   >
                     <img
                       src={resolveMediaCover(item) || item.child_posters?.[0]}
@@ -1852,12 +1856,16 @@ const VideoLibrary = () => {
                         item.release_date?.slice(0, 4),
                         item.genre?.split(",").slice(0, 2).join("/"),
                         item.duration
-                          ? `${Math.floor(item.duration / 60)} 分钟`
+                          ? t("media.video.minutes", {
+                              n: Math.floor(item.duration / 60),
+                            })
                           : "",
                         versionCount(item) > 0
                           ? t("media.video.versions", { n: versionCount(item) })
                           : parseEpisodes(item.episodes).length > 0
-                            ? `${parseEpisodes(item.episodes).length} 集`
+                            ? t("media.video.episodes_n", {
+                                n: parseEpisodes(item.episodes).length,
+                              })
                             : formatMediaSize(item.file_size),
                       ]
                         .filter(Boolean)
@@ -1873,7 +1881,7 @@ const VideoLibrary = () => {
                           "white-space": "nowrap",
                         }}
                       >
-                        演员：
+                        {t("media.video.cast")}
                         {parseAuthors(item.authors).slice(0, 4).join(" / ")}
                       </div>
                     </Show>
@@ -1886,7 +1894,8 @@ const VideoLibrary = () => {
                         "flex-shrink": "0",
                       }}
                     >
-                      ⭐ {item.rating.toFixed(1)}
+                      <TbStarFilled class="mr-1 inline size-3.5 align-[-2px]" />
+                      {item.rating.toFixed(1)}
                     </span>
                   </Show>
                 </>

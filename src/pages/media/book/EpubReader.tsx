@@ -28,6 +28,7 @@ import {
   syncMediaAnnotations,
   type MediaAnnotationRow,
 } from "~/utils/media_api"
+import { TbChevronLeft, TbChevronRight, TbList } from "solid-icons/tb"
 
 interface StoredAnnotation {
   remote_id: string
@@ -352,7 +353,8 @@ export const EpubReader = (props: {
           style={readerBtnStyle}
           title={t("media.book.toc")}
         >
-          ☰ {t("media.book.toc")}
+          <TbList class="mr-1 inline size-4 align-[-3px]" />
+          {t("media.book.toc")}
         </button>
         <button
           onClick={() => setShowAnnotations(!showAnnotations())}
@@ -371,7 +373,8 @@ export const EpubReader = (props: {
             opacity: chapterIndex() <= 0 ? "0.4" : "1",
           }}
         >
-          ← {t("media.book.prev_chapter")}
+          <TbChevronLeft class="mr-1 inline size-4 align-[-3px]" />
+          {t("media.book.prev_chapter")}
         </button>
         <span style={{ color: "#475569", "font-size": "12px" }}>
           {chapters().length > 0
@@ -386,7 +389,8 @@ export const EpubReader = (props: {
             opacity: chapterIndex() >= chapters().length - 1 ? "0.4" : "1",
           }}
         >
-          {t("media.book.next_chapter")} →
+          {t("media.book.next_chapter")}
+          <TbChevronRight class="ml-1 inline size-4 align-[-3px]" />
         </button>
       </div>
 

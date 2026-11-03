@@ -21,17 +21,17 @@ import {
 export const MediaAccentPicker = () => {
   const t = useT()
   return (
-    <Popover placement="right-end">
+    <Popover placement="bottom-end">
       <PopoverTrigger
         as={Button}
         variant="ghost"
         size="sm"
-        class="shrink-0 justify-center gap-2 text-muted-foreground sm:px-0 xl:justify-start xl:px-2"
+        class="shrink-0 gap-2 text-muted-foreground"
         aria-label={t("media.accent.title")}
         title={t("media.accent.title")}
       >
         <TbPalette class="size-4 shrink-0" />
-        <span class="hidden xl:inline">{t("media.accent.title")}</span>
+        <span class="hidden sm:inline">{t("media.accent.title")}</span>
       </PopoverTrigger>
       <PopoverContent class="flex w-56 flex-col gap-3">
         <PopoverTitle class="text-sm font-medium">

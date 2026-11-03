@@ -97,14 +97,7 @@ const MediaNav = () => {
     <nav
       aria-label={t("home.media.title")}
       data-media-nav
-      class={cn(
-        "flex shrink-0 gap-1 overflow-x-auto border-b bg-card p-2 text-card-foreground",
-        "sm:sticky sm:w-14 sm:flex-col sm:overflow-y-auto sm:border-b-0 sm:border-r xl:w-[220px]",
-      )}
-      style={{
-        top: "var(--shell-top, 0px)",
-        height: "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))",
-      }}
+      class="flex items-center gap-2 overflow-x-auto px-4 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <For each={entries()}>
         {(entry) => {
@@ -113,24 +106,23 @@ const MediaNav = () => {
           return (
             <NavLink
               path={entry.path}
-              title={t(entry.label)}
-              aria-label={t(entry.label)}
               aria-current={active() ? "page" : undefined}
               data-media-nav-item={entry.id}
               class={cn(
                 focusRing,
-                "flex h-8 shrink-0 items-center gap-2 rounded-md px-2 text-sm text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-accent-foreground hover:no-underline",
-                "sm:justify-center sm:px-0 xl:justify-start xl:px-2",
-                active() && "bg-accent font-medium text-foreground",
+                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm no-underline transition-colors hover:no-underline",
+                active()
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-card text-foreground hover:bg-accent",
               )}
             >
               <Dynamic component={entry.icon} class="size-4 shrink-0" />
-              <span class="truncate sm:hidden xl:inline">{t(entry.label)}</span>
+              {t(entry.label)}
             </NavLink>
           )
         }}
       </For>
-      <div class="hidden flex-1 sm:block" />
+      <div class="flex-1" />
       <MediaAccentPicker />
     </nav>
   )
@@ -164,7 +156,7 @@ const MediaSection = () => {
         <MusicPlayer />
       </Suspense>
       <div
-        class="flex w-full flex-col sm:flex-row sm:items-start"
+        class="flex w-full flex-col"
         style={{
           "min-height":
             "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px) - 2px)",

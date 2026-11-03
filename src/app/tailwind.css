@@ -13,6 +13,10 @@
 /* The settings area is built on the same components and styled with utilities. */
 @source "../pages/manage";
 @source not "../pages/manage/__tests__";
+/* The media library pages (section nav, wall toolbar, detail buttons). */
+@source "../pages/media";
+@source not "../pages/media/__tests__";
+@source "../components/MediaPlayButton.tsx";
 /* The built-in stats plugin renders a dashboard card with utilities. */
 @source "../plugins/builtin/stats";
 @source not "../plugins/builtin/stats/__tests__";

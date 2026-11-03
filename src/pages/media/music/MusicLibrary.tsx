@@ -9,10 +9,23 @@ import {
   createEffect,
 } from "solid-js"
 import { useColorMode } from "@hope-ui/solid"
-import { TbMusic, TbPlayerPlayFilled } from "solid-icons/tb"
+import {
+  TbArrowLeft,
+  TbChevronLeft,
+  TbChevronRight,
+  TbFolder,
+  TbFolders,
+  TbLayoutGrid,
+  TbLayoutList,
+  TbLoader2,
+  TbMusic,
+  TbPlayerPlayFilled,
+  TbStarFilled,
+} from "solid-icons/tb"
+import { Dynamic } from "solid-js/web"
 import { MediaLayout } from "../MediaLayout"
 import { MediaItemDetail } from "../MediaItemDetail"
-import { mediaBackBtn, mediaPrimaryBtn } from "../ui"
+import { mediaPrimaryBtn } from "../ui"
 import {
   getAlbumList,
   getAlbumTracks,
@@ -43,6 +56,7 @@ export {
   setPlayerState,
   togglePlay,
 } from "./player"
+import { Button } from "~/components/ui/button"
 
 // ==================== 专辑卡片 ====================
 const AlbumCard = (props: { album: AlbumInfo }) => {
@@ -190,9 +204,15 @@ const AlbumDetail = (props: { album: AlbumInfo; onBack: () => void }) => {
 
   return (
     <div>
-      <button onClick={props.onBack} style={mediaBackBtn(isDark())}>
-        ← {t("media.music.back")}
-      </button>
+      <Button
+        variant="outline"
+        size="sm"
+        class="mb-6 gap-1.5"
+        onClick={props.onBack}
+      >
+        <TbArrowLeft class="size-4" />
+        {t("media.music.back")}
+      </Button>
 
       {/* 专辑头部 */}
       <div
@@ -724,7 +744,10 @@ const MusicLibrary = () => {
                       cursor: "pointer",
                     }}
                   >
-                    {mode === "card" ? "⊞" : "☰"}
+                    <Dynamic
+                      component={mode === "card" ? TbLayoutGrid : TbLayoutList}
+                      class="size-4"
+                    />
                   </button>
                 ))}
               </div>
@@ -756,7 +779,8 @@ const MusicLibrary = () => {
                     cursor: "pointer",
                   }}
                 >
-                  📂 {t("media.browser.all_folders")}
+                  <TbFolders class="mr-1 inline size-4 align-[-3px]" />
+                  {t("media.browser.all_folders")}
                 </button>
                 <For each={foldersData() ?? []}>
                   {(folder) => (
@@ -789,7 +813,8 @@ const MusicLibrary = () => {
                       }}
                       title={folder}
                     >
-                      📁 {folder.split("/").pop() || folder}
+                      <TbFolder class="mr-1 inline size-4 align-[-3px]" />
+                      {folder.split("/").pop() || folder}
                     </button>
                   )}
                 </For>
@@ -808,10 +833,8 @@ const MusicLibrary = () => {
                       color: emptyColor(),
                     }}
                   >
-                    <div
-                      style={{ "font-size": "32px", "margin-bottom": "12px" }}
-                    >
-                      ⏳
+                    <div style={{ "margin-bottom": "12px" }}>
+                      <TbLoader2 class="mx-auto size-8 animate-spin" />
                     </div>
                     <div>{t("media.music.loading")}</div>
                   </div>
@@ -878,10 +901,8 @@ const MusicLibrary = () => {
                       color: emptyColor(),
                     }}
                   >
-                    <div
-                      style={{ "font-size": "32px", "margin-bottom": "12px" }}
-                    >
-                      ⏳
+                    <div style={{ "margin-bottom": "12px" }}>
+                      <TbLoader2 class="mx-auto size-8 animate-spin" />
                     </div>
                     <div>{t("media.music.loading")}</div>
                   </div>
@@ -1026,7 +1047,7 @@ const MusicLibrary = () => {
                                   "flex-shrink": "0",
                                 }}
                               >
-                                ★
+                                <TbStarFilled class="size-3.5" />
                               </span>
                             </Show>
                           </div>
@@ -1078,7 +1099,8 @@ const MusicLibrary = () => {
                     "font-size": "13px",
                   }}
                 >
-                  ← {t("media.browser.prev_page")}
+                  <TbChevronLeft class="mr-1 inline size-4 align-[-3px]" />
+                  {t("media.browser.prev_page")}
                 </button>
                 <span
                   style={{ color: paginationInfoColor(), "font-size": "13px" }}
@@ -1105,7 +1127,8 @@ const MusicLibrary = () => {
                     "font-size": "13px",
                   }}
                 >
-                  {t("media.browser.next_page")} →
+                  {t("media.browser.next_page")}
+                  <TbChevronRight class="ml-1 inline size-4 align-[-3px]" />
                 </button>
               </div>
             </Show>
