@@ -5,6 +5,7 @@ import {
   createResource,
   createMemo,
   createEffect,
+  on,
   Show,
   For,
   onMount,
@@ -50,6 +51,12 @@ import { CoverMosaic } from "./CoverMosaic"
 import { RatingBadges } from "./RatingBadges"
 import { episodeRows, episodeText, type EpisodeRow } from "./episodes"
 import { MediaMovi } from "./MediaMovi"
+import {
+  isVersionSet,
+  versionCount,
+  versionLabels,
+  versionRows,
+} from "./versions"
 import {
   getPlayerChoice,
   pickEngine,
@@ -106,6 +113,7 @@ function ensureAc3Decoder(force = false) {
 
 // ==================== 视频卡片 ====================
 const VideoCard = (props: { item: MediaItem }) => {
+  const t = useT()
   const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
   const cardBg = createMemo(() =>
@@ -123,9 +131,11 @@ const VideoCard = (props: { item: MediaItem }) => {
   // 目录聚合条目没有有意义的单文件大小，改为显示集数
   const episodeCount = () => parseEpisodes(props.item.episodes).length
   const sizeText = () =>
-    episodeCount() > 0
-      ? `${episodeCount()} 集`
-      : formatMediaSize(props.item.file_size)
+    versionCount(props.item) > 0
+      ? t("media.video.versions", { n: versionCount(props.item) })
+      : episodeCount() > 0
+        ? `${episodeCount()} 集`
+        : formatMediaSize(props.item.file_size)
   return (
     <div
       style={{
@@ -1073,7 +1083,7 @@ const VideoDetail = (props: {
   const nextEpisode = () => {
     const cur = currentEpisode()
     const it = item()
-    if (!cur || !it) return undefined
+    if (!cur || !it || isVersionSet(it)) return undefined
     const rows = episodeRows(it)
     const i = rows.findIndex((e) => e.file_name === cur.file_name)
     const next = i >= 0 ? rows[i + 1] : undefined
@@ -1084,6 +1094,27 @@ const VideoDetail = (props: {
     null,
   )
   const [favorite, setFavorite] = createSignal(false)
+  // 多版本电影：选中的版本序号（默认第一个）；换一部时回到第一个
+  const [versionIndex, setVersionIndex] = createSignal(1)
+  createEffect(
+    on(
+      () => item()?.id,
+      () => setVersionIndex(1),
+    ),
+  )
+  const chosenVersion = () => {
+    const it = item()
+    if (!it) return undefined
+    const rows = versionRows(it)
+    return rows.find((r) => r.index === versionIndex()) ?? rows[0]
+  }
+  const versionLabelOf = (fileName: string) => {
+    const it = item()
+    const rows = it ? versionRows(it) : []
+    const labels = versionLabels(rows.map((r) => r.file_name))
+    const i = rows.findIndex((r) => r.file_name === fileName)
+    return i >= 0 ? labels[i] : fileName
+  }
 
   // 详情页收藏状态
   createEffect(() => {
@@ -1478,9 +1509,11 @@ const VideoDetail = (props: {
                     }
                     title={
                       currentEpisode()
-                        ? currentEpisode()!.index > 0
-                          ? `第${currentEpisode()!.index}集 ${currentEpisode()!.title}`
-                          : currentEpisode()!.title
+                        ? isVersionSet(data())
+                          ? `${getMediaName(data())} · ${versionLabelOf(currentEpisode()!.file_name)}`
+                          : currentEpisode()!.index > 0
+                            ? `第${currentEpisode()!.index}集 ${currentEpisode()!.title}`
+                            : currentEpisode()!.title
                         : undefined
                     }
                     episodeIndex={currentEpisode()?.index ?? 0}
@@ -1488,10 +1521,11 @@ const VideoDetail = (props: {
                   />
                 </Show>
 
-                {/* 无选集：直接显示播放按钮 */}
+                {/* 无选集（或是同一部电影的多个版本）：直接显示播放按钮 */}
                 <Show
                   when={
-                    episodeRows(data()).length === 0 &&
+                    (episodeRows(data()).length === 0 ||
+                      isVersionSet(data())) &&
                     data().video_type !== "collection"
                   }
                 >
@@ -1504,16 +1538,76 @@ const VideoDetail = (props: {
                       "margin-bottom": "24px",
                     }}
                   >
+                    <Show when={isVersionSet(data())}>
+                      <div
+                        data-version-picker
+                        style={{
+                          display: "flex",
+                          gap: "6px",
+                          "flex-wrap": "wrap",
+                          "align-items": "center",
+                        }}
+                      >
+                        <For each={versionRows(data())}>
+                          {(v) => (
+                            <button
+                              data-version={v.index}
+                              onClick={() => setVersionIndex(v.index)}
+                              title={v.file_name}
+                              style={{
+                                background:
+                                  chosenVersion()?.index === v.index
+                                    ? accentGradient()
+                                    : isDark()
+                                      ? "rgba(255,255,255,0.06)"
+                                      : "rgba(0,0,0,0.05)",
+                                border: "none",
+                                "border-radius": "999px",
+                                color:
+                                  chosenVersion()?.index === v.index
+                                    ? "white"
+                                    : isDark()
+                                      ? "#94a3b8"
+                                      : "#475569",
+                                padding: "6px 12px",
+                                "font-size": "12px",
+                                cursor: "pointer",
+                                "max-width": "260px",
+                                overflow: "hidden",
+                                "text-overflow": "ellipsis",
+                                "white-space": "nowrap",
+                              }}
+                            >
+                              {versionLabelOf(v.file_name)}
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                    </Show>
                     <MediaPlayButton
                       itemId={data().id}
                       name={data().file_name}
+                      episode={
+                        isVersionSet(data())
+                          ? chosenVersion()?.index
+                          : undefined
+                      }
                       onBrowserPlay={() => {
-                        setCurrentEpisode(null)
+                        setCurrentEpisode(
+                          isVersionSet(data())
+                            ? (chosenVersion() ?? null)
+                            : null,
+                        )
                         setShowPlayer(true)
                       }}
                     />
                     <button
-                      onClick={() => downloadStrm(data())}
+                      onClick={() => {
+                        if (isVersionSet(data())) {
+                          setCurrentEpisode(chosenVersion() ?? null)
+                        }
+                        downloadStrm(data())
+                      }}
                       style={mediaSecondaryBtn(isDark())}
                     >
                       下载 STRM
@@ -1522,7 +1616,9 @@ const VideoDetail = (props: {
                 </Show>
 
                 {/* 选集列表（路径合并模式下有选集时显示） */}
-                <Show when={episodeRows(data()).length > 0}>
+                <Show
+                  when={episodeRows(data()).length > 0 && !isVersionSet(data())}
+                >
                   {(_) => {
                     const episodes = episodeRows(data())
                     return (
@@ -1755,9 +1851,11 @@ const VideoLibrary = () => {
                         item.duration
                           ? `${Math.floor(item.duration / 60)} 分钟`
                           : "",
-                        parseEpisodes(item.episodes).length > 0
-                          ? `${parseEpisodes(item.episodes).length} 集`
-                          : formatMediaSize(item.file_size),
+                        versionCount(item) > 0
+                          ? t("media.video.versions", { n: versionCount(item) })
+                          : parseEpisodes(item.episodes).length > 0
+                            ? `${parseEpisodes(item.episodes).length} 集`
+                            : formatMediaSize(item.file_size),
                       ]
                         .filter(Boolean)
                         .join(" · ")}

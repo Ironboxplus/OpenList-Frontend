@@ -7,6 +7,8 @@ export interface EpisodeInfo {
   file_name: string // 原始文件名（含扩展名）
   index: number // 序号，默认0，文件名开头有数字则取该数字
   title: string // 选集标题（去掉序号后的文件名，不含扩展名）
+  /** 同一部电影的另一个版本（不是剧集的一集） */
+  version?: boolean
 }
 
 export interface MediaItem {
@@ -71,6 +73,8 @@ export interface MediaItem {
   backdrop_url?: string
   /** 仅合集：最多 4 张成员封面 */
   child_posters?: string[]
+  /** 同一部电影有几个版本；多于一个时才有 */
+  versions?: number
   /** 仅详情：按集列表 */
   episode_list?: MediaEpisodeView[]
 }
@@ -89,6 +93,8 @@ export interface MediaEpisodeView {
   title: string
   overview: string
   still_url?: string
+  /** 电影的一个版本，不是剧集的一集 */
+  version?: boolean
 }
 
 /** 低置信度时给人选的候选（后端 model.MediaCandidate）。 */

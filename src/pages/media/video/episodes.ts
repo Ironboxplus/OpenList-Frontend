@@ -36,6 +36,7 @@ const numbered = (list: readonly MediaEpisodeView[]): EpisodeRow[] => {
     episode: e.episode,
     overview: e.overview,
     still_url: e.still_url,
+    ...(e.version ? { version: true } : {}),
   }))
 }
 
@@ -59,6 +60,7 @@ export const episodeRows = (item: MediaItem): EpisodeRow[] => {
           episode: e.episode,
           overview: e.overview,
           still_url: e.still_url,
+          ...(e.version ? { version: true } : {}),
         }
       : b
   })
