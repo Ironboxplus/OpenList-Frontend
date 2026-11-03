@@ -27,7 +27,8 @@ export const useFolderSort = () => {
       asc: t("files.sort.asc"),
       desc: t("files.sort.desc"),
     },
-    value: () => state()?.orderBy,
+    // no remembered choice: the backend lists by name, so show that
+    value: () => state()?.orderBy ?? "name",
     reverse: () => state()?.reverse ?? false,
     change: (key: string | undefined, reverse: boolean) => {
       const orderBy = (key ?? "name") as OrderBy
@@ -52,10 +53,13 @@ export const FolderSortItems = () => {
 
 export const FolderSortMenu = (props: { class: string }) => {
   const t = useT()
+  const s = useFolderSort()
+  const active = () => t(`home.obj.${s.value()}`)
   return (
     <DropdownMenu placement="bottom-end">
       <DropdownMenuTrigger
-        aria-label={t("files.sort.title")}
+        aria-label={`${t("files.sort.title")}: ${active()}`}
+        title={`${t("files.sort.title")}: ${active()}`}
         data-files-sort
         class={props.class}
       >
