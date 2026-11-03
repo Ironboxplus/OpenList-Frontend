@@ -158,6 +158,25 @@ const AppShell = (props: ParentProps) => {
             : "0px",
         }}
       >
+        <Show when={wide()}>
+          {/* The page scrolls the window, so the panel's own rounded corners
+            leave the viewport. This fixed frame has the panel's geometry and a
+            huge page-coloured shadow that masks whatever scrolls outside it,
+            keeping all four corners round. Above the top bar and BackToTop
+            (1100), below the side panel (1200), the movi overlay (1300) and
+            popovers, dialogs and toasts (1500+). */}
+          <div
+            data-shell-mask
+            aria-hidden="true"
+            class="pointer-events-none fixed z-[1101] rounded-[var(--shell-radius)] border shadow-[0_0_0_100vmax_var(--muted)]"
+            style={{
+              top: "var(--shell-gap)",
+              bottom: "var(--shell-gap)",
+              left: "var(--shell-content-left)",
+              right: "var(--shell-content-right)",
+            }}
+          />
+        </Show>
         <div
           data-shell-content
           class="min-w-0"
