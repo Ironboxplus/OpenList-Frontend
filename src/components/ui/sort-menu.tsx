@@ -1,4 +1,4 @@
-import { For } from "solid-js"
+import { For, Show } from "solid-js"
 import {
   DropdownMenuGroup,
   DropdownMenuGroupLabel,
@@ -6,6 +6,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
 } from "./dropdown-menu"
+
+const DEFAULT_KEY = "__default"
 
 export interface SortOption {
   key: string
@@ -24,6 +26,9 @@ export const SortMenuItems = (props: {
   reverse: boolean
   labels: { by: string; asc: string; desc: string }
   onChange: (key: string | undefined, reverse: boolean) => void
+  /** A first radio item that is active while `value` is absent; picking it calls `onReset`. */
+  defaultLabel?: string
+  onReset?: () => void
 }) => (
   <>
     <DropdownMenuGroup>
@@ -31,9 +36,22 @@ export const SortMenuItems = (props: {
         {props.labels.by}
       </DropdownMenuGroupLabel>
       <DropdownMenuRadioGroup
-        value={props.value}
-        onChange={(key) => props.onChange(key, props.reverse)}
+        value={props.value ?? (props.defaultLabel ? DEFAULT_KEY : undefined)}
+        onChange={(key) =>
+          key === DEFAULT_KEY
+            ? props.onReset?.()
+            : props.onChange(key, props.reverse)
+        }
       >
+        <Show when={props.defaultLabel}>
+          <DropdownMenuRadioItem
+            value={DEFAULT_KEY}
+            data-sort-key="default"
+            closeOnSelect
+          >
+            {props.defaultLabel}
+          </DropdownMenuRadioItem>
+        </Show>
         <For each={props.options}>
           {(o) => (
             <DropdownMenuRadioItem

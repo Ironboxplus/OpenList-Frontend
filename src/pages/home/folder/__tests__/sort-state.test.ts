@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 let setting = ""
 vi.mock("~/store/settings", () => ({ getSetting: () => setting }))
 
-import { loadSortState, saveSortState } from "../sort-state"
+import { clearSortState, loadSortState, saveSortState } from "../sort-state"
 
 beforeEach(() => {
   localStorage.clear()
@@ -41,5 +41,15 @@ describe("sort state", () => {
     expect(localStorage.getItem("dir_sort_/b")).toBeNull()
     // but the session keeps what the user chose
     expect(loadSortState("/b")).toEqual({ orderBy: "modified", reverse: false })
+  })
+})
+
+describe("clearSortState", () => {
+  it("forgets the session and the stored choice, back to the storage order", () => {
+    saveSortState("/c", { orderBy: "size", reverse: true })
+    expect(loadSortState("/c")).not.toBeNull()
+    clearSortState("/c")
+    expect(loadSortState("/c")).toBeNull()
+    expect(localStorage.getItem("dir_sort_/c")).toBeNull()
   })
 })

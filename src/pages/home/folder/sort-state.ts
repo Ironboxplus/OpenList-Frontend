@@ -45,3 +45,14 @@ export function loadSortState(dir: string): SortState | null {
     return null
   }
 }
+
+/** Back to the storage's own order: forget the choice for this directory. */
+export function clearSortState(dir: string) {
+  sessionSort.delete(dir)
+  setSaves((n) => n + 1)
+  try {
+    localStorage.removeItem(`${SORT_KEY_PREFIX}${dir}`)
+  } catch (err) {
+    console.warn("failed to clear sort config:", err)
+  }
+}

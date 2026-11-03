@@ -25,6 +25,7 @@
   },
   "sort": {
     "title": "Sort",
+    "default": "Default (storage order)",
     "by": "Sort by",
     "asc": "Ascending",
     "desc": "Descending"

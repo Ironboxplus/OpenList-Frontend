@@ -6,9 +6,13 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu"
 import { SortMenuItems } from "~/components/ui/sort-menu"
-import { useRouter, useT } from "~/hooks"
+import { usePath, useRouter, useT } from "~/hooks"
 import { OrderBy, sortObjs } from "~/store"
-import { loadSortState, saveSortState } from "~/pages/home/folder/sort-state"
+import {
+  clearSortState,
+  loadSortState,
+  saveSortState,
+} from "~/pages/home/folder/sort-state"
 
 const KEYS: OrderBy[] = ["name", "modified", "size"]
 
@@ -19,6 +23,7 @@ const KEYS: OrderBy[] = ["name", "modified", "size"]
 export const useFolderSort = () => {
   const t = useT()
   const { pathname } = useRouter()
+  const { refresh } = usePath()
   const state = createMemo(() => loadSortState(pathname()))
   return {
     options: KEYS.map((k) => ({ key: k, label: t(`home.obj.${k}`) })),
@@ -27,13 +32,19 @@ export const useFolderSort = () => {
       asc: t("files.sort.asc"),
       desc: t("files.sort.desc"),
     },
-    // no remembered choice: the backend lists by name, so show that
-    value: () => state()?.orderBy ?? "name",
+    defaultLabel: t("files.sort.default"),
+    // no remembered choice: the list is in the storage's own order
+    value: (): OrderBy | undefined => state()?.orderBy as OrderBy | undefined,
     reverse: () => state()?.reverse ?? false,
     change: (key: string | undefined, reverse: boolean) => {
       const orderBy = (key ?? "name") as OrderBy
       saveSortState(pathname(), { orderBy, reverse })
       sortObjs(orderBy, reverse)
+    },
+    // the objects were sorted here; list again to get the storage's order back
+    reset: () => {
+      clearSortState(pathname())
+      void refresh(undefined, true)
     },
   }
 }
@@ -47,6 +58,8 @@ export const FolderSortItems = () => {
       reverse={s.reverse()}
       labels={s.labels}
       onChange={s.change}
+      defaultLabel={s.defaultLabel}
+      onReset={s.reset}
     />
   )
 }
@@ -54,7 +67,10 @@ export const FolderSortItems = () => {
 export const FolderSortMenu = (props: { class: string }) => {
   const t = useT()
   const s = useFolderSort()
-  const active = () => t(`home.obj.${s.value()}`)
+  const active = () => {
+    const v = s.value()
+    return v ? t(`home.obj.${v}`) : s.defaultLabel
+  }
   return (
     <DropdownMenu placement="bottom-end">
       <DropdownMenuTrigger
