@@ -8,12 +8,17 @@ import { episodeRows, type EpisodeRow } from "./episodes"
  * list; the entries play like episodes (same index, same progress key) but are
  * choices, not a series.
  */
+const allVersions = (list: readonly { version?: boolean }[]): number =>
+  list.length > 1 && list.every((e) => e.version) ? list.length : 0
+
 export const versionCount = (item: MediaItem): number => {
   if ((item.versions ?? 0) > 1) return item.versions!
-  const n = (item.episode_list ?? []).filter((e) => e.version).length
-  if (n > 1) return n
-  const own = parseEpisodes(item.episodes).filter((e) => e.version).length
-  return own > 1 ? own : 0
+  // A film lists its files and nothing else. A series whose episodes exist in
+  // several release folders also has version entries, next to the main ones.
+  return (
+    allVersions(item.episode_list ?? []) ||
+    allVersions(parseEpisodes(item.episodes))
+  )
 }
 
 export const isVersionSet = (item: MediaItem): boolean => versionCount(item) > 0

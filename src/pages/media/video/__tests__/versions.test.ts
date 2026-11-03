@@ -132,3 +132,41 @@ describe("version sets", () => {
     expect(isVersionSet(item({ versions: undefined }))).toBe(false)
   })
 })
+
+describe("a series with a second release folder", () => {
+  const show = item({
+    episodes: JSON.stringify([
+      { file_name: "A/e1.mkv", index: 1, title: "Pilot" },
+      { file_name: "B/e1.mkv", index: 1, title: "Pilot", version: true },
+      { file_name: "A/e2.mkv", index: 2, title: "Two" },
+      { file_name: "B/e2.mkv", index: 2, title: "Two", version: true },
+    ]),
+  })
+
+  it("is not a version set", () => {
+    expect(isVersionSet(show)).toBe(false)
+    expect(versionCount(show)).toBe(0)
+    expect(versionRows(show)).toEqual([])
+  })
+
+  it("has one row per episode, the other files as its versions", () => {
+    const rows = episodeRows(show)
+    expect(rows.map((r) => r.file_name)).toEqual(["A/e1.mkv", "A/e2.mkv"])
+    expect(rows[0].versions?.map((v) => v.file_name)).toEqual(["B/e1.mkv"])
+  })
+
+  it("numbers the list the way the backend does when only episode_list is known", () => {
+    const rows = episodeRows(
+      item({
+        episode_list: [
+          entry("B/e1.mkv", 1, { season: 1, version: true }),
+          entry("A/e1.mkv", 1, { season: 1 }),
+          entry("A/e1b.mkv", 1, { season: 2 }),
+        ],
+      }),
+    )
+    expect(rows.map((r) => r.index)).toEqual([1, 2])
+    expect(rows[0].file_name).toBe("A/e1.mkv")
+    expect(rows[0].versions?.[0].index).toBe(1)
+  })
+})

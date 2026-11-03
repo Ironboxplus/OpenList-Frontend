@@ -12,6 +12,28 @@ export interface EpisodeRow extends EpisodeInfo {
   episode?: number
   overview?: string
   still_url?: string
+  /** Other files of this same episode (a second release folder), main row first. */
+  versions?: EpisodeRow[]
+}
+
+/**
+ * A series whose episodes exist in several release folders has, besides the
+ * main row of an episode, further rows marked `version` with the same index.
+ * They are alternatives of that episode, not more episodes: each is moved into
+ * `versions` of the main row before it. A list of version rows only is a film
+ * kept in several files and stays as it is (see versions.ts).
+ */
+const collapseVersions = (rows: EpisodeRow[]): EpisodeRow[] => {
+  if (rows.every((r) => r.version)) return rows
+  const out: EpisodeRow[] = []
+  for (const r of rows) {
+    const main = r.version
+      ? out.filter((m) => m.index === r.index).pop()
+      : undefined
+    if (main) main.versions = [...(main.versions ?? []), r]
+    else out.push(r)
+  }
+  return out
 }
 
 /**
@@ -25,12 +47,23 @@ const numbered = (list: readonly MediaEpisodeView[]): EpisodeRow[] => {
     (a, b) =>
       a.season - b.season ||
       a.episode - b.episode ||
+      Number(!!a.version) - Number(!!b.version) ||
       a.file_name.localeCompare(b.file_name),
   )
   const multi = sorted.some((e) => e.season !== sorted[0].season)
+  // a version shares the index of the episode before it and takes no position
+  // (a film kept in several files lists versions only, each with its own number)
+  const film = sorted.every((e) => e.version)
+  let pos = 0
+  let last = 0
+  const indexes = sorted.map((e) => {
+    if (e.version && !film && last > 0) return last
+    last = multi || e.episode <= 0 ? ++pos : e.episode
+    return last
+  })
   return sorted.map((e, i) => ({
     file_name: e.file_name,
-    index: multi || e.episode <= 0 ? i + 1 : e.episode,
+    index: indexes[i],
     title: e.title,
     season: e.season,
     episode: e.episode,
@@ -46,7 +79,10 @@ const numbered = (list: readonly MediaEpisodeView[]): EpisodeRow[] => {
  * adds season, episode, overview and still to the rows it knows, and stands in
  * when the JSON is empty.
  */
-export const episodeRows = (item: MediaItem): EpisodeRow[] => {
+export const episodeRows = (item: MediaItem): EpisodeRow[] =>
+  collapseVersions(rawRows(item))
+
+const rawRows = (item: MediaItem): EpisodeRow[] => {
   const list = item.episode_list ?? []
   const base = parseEpisodes(item.episodes)
   if (base.length === 0) return numbered(list)
