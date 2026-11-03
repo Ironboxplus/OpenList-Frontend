@@ -33,5 +33,15 @@
   "s3_no_buckets": "还没有存储桶。",
   "other_download_tools": "离线下载工具",
   "other_temp_dirs": "离线下载临时目录",
-  "other_token": "API 令牌"
+  "other_token": "API 令牌",
+  "about": {
+    "tagline": "支持多种存储的文件列表程序",
+    "version": "版本",
+    "license": "许可证",
+    "repo": "GitHub 仓库",
+    "docs": "文档",
+    "issues": "反馈问题",
+    "show": "显示 README",
+    "hide": "隐藏 README"
+  }
 }

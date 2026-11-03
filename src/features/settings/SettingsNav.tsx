@@ -77,6 +77,14 @@ export const SettingsNav = (props: {
             )}
           </For>
         </div>
+        {/* a fade at the bottom edge says the list scrolls on */}
+        <div
+          aria-hidden="true"
+          class="pointer-events-none sticky bottom-0 -mb-2 -mt-6 h-6 shrink-0"
+          style={{
+            background: "linear-gradient(to top, var(--card), transparent)",
+          }}
+        />
       </nav>
     </Show>
   )

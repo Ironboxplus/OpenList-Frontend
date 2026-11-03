@@ -33,5 +33,15 @@
   "s3_no_buckets": "No buckets yet.",
   "other_download_tools": "Offline download tools",
   "other_temp_dirs": "Temporary folders for offline download",
-  "other_token": "API token"
+  "other_token": "API token",
+  "about": {
+    "tagline": "A file list program that supports multiple storages",
+    "version": "Version",
+    "license": "License",
+    "repo": "GitHub",
+    "docs": "Documentation",
+    "issues": "Report an issue",
+    "show": "Show README",
+    "hide": "Hide README"
+  }
 }

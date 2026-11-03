@@ -30,7 +30,7 @@ export const SettingsForm = (props: SettingsFormProps) => {
     <form
       // Required marks are hints; the backend stays the validator, as before.
       noValidate
-      class="flex w-full flex-col gap-4"
+      class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         if (props.dirty && !props.saving && !props.invalid) props.onSave()
@@ -39,7 +39,7 @@ export const SettingsForm = (props: SettingsFormProps) => {
       {props.children}
       <div
         data-testid="settings-action-bar"
-        class="sticky z-10 -mx-4 flex flex-wrap items-center gap-2 border-t bg-card/95 px-4 py-3 backdrop-blur"
+        class="sticky z-10 mt-auto flex flex-wrap items-center gap-2 rounded-xl border bg-card/95 px-4 py-3 shadow-sm backdrop-blur"
         style={{ bottom: "var(--shell-bottom, 0px)" }}
       >
         <span class="text-xs text-muted-foreground" aria-live="polite">

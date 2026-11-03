@@ -35,7 +35,7 @@ const Manage = () => {
   return (
     <div class="w-full bg-background">
       <div
-        class="flex w-full items-start"
+        class="flex w-full"
         style={{
           "min-height":
             "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px) - 2px)",
@@ -46,7 +46,7 @@ const Manage = () => {
           pathname={pathname()}
           hash={location.hash}
         />
-        <main class="min-w-0 flex-1 p-4">
+        <main class="flex min-w-0 flex-1 flex-col p-4">
           <StorageLoadingBar />
           <Routes>
             <For each={routes}>
