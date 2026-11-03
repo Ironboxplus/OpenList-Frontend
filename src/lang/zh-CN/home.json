@@ -49,7 +49,7 @@
       "xls": "XLS Previewer",
       "doc": "DOC Previewer",
       "asciinema": "Asciinema Player",
-      "movi_video": "Movi Player",
+      "movi_video": "Movi 播放器",
       "video360": "Video360 Player",
       "archive": "Archive Previewer",
       "torrent": "Torrent Previewer"
@@ -168,7 +168,9 @@
     "sequential_renaming_desc": "The new file name will have a numerical starting value appended to it, and it will be displayed sequentially by adding 1 to the starting value. Enter the new file name on the first line and the starting value on the second line. Supports {number} placeholders.",
     "sequential_renaming_input3_placeholder": "Padding zeros (optional)",
     "find_replace": "查找替换",
-    "find_replace_desc": "查找替换"
+    "find_replace_desc": "查找替换",
+    "mpv_command": "复制为 mpv 命令",
+    "mpv_subtitle_failed": "无法获取字幕；已复制不含字幕的命令"
   },
   "upload": {
     "add_as_task": "作为任务添加",
@@ -270,12 +272,12 @@
     "merge": "Only Copy new files and subdirectories"
   },
   "favorites": {
-    "title": "Favorites",
-    "empty": "No favorites yet",
-    "add": "Add current folder to favorites",
-    "remove": "Remove from favorites",
-    "added": "Added to favorites",
-    "removed": "Removed from favorites"
+    "title": "收藏夹",
+    "empty": "还没有收藏",
+    "add": "将当前文件夹加入收藏",
+    "remove": "取消收藏",
+    "added": "已加入收藏",
+    "removed": "已取消收藏"
   },
   "media": {
     "title": "媒体库",
