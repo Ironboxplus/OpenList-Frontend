@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "feat/**"
+  # by hand too, e.g. after GitHub re-enables Actions on this fork and a push
+  # made meanwhile never ran
+  workflow_dispatch:
 
 jobs:
   test-ours:
