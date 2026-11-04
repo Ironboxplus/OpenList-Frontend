@@ -246,6 +246,43 @@ describe("sync capability", () => {
   })
 })
 
+describe("sync history", () => {
+  const snap = (state: string) => ({
+    id: "s1",
+    spec: { mode: "copy", src: "a", dst: "/b" },
+    state,
+    started_at: "2026-10-08T09:00:00Z",
+    counters: {},
+  })
+
+  it("reloads history when a running sync job leaves the list", async () => {
+    let running = [snap("running")]
+    const h = harness({
+      isAdmin: () => true,
+      fetchSyncList: vi.fn(() => ok(running)) as any,
+      fetchSyncHistory: vi.fn(() => ok([snap("succeeded")])) as any,
+    })
+    const s = createTransfersStore(h.deps)
+    await s.refresh()
+    expect(h.deps.fetchSyncHistory).not.toHaveBeenCalled()
+    running = []
+    await s.refresh()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(h.deps.fetchSyncHistory).toHaveBeenCalledTimes(1)
+    expect(s.history().map((t) => t.id)).toEqual(["sync:s1"])
+    s.dispose()
+  })
+
+  it("does not load history for a non-admin", async () => {
+    const h = harness({})
+    const s = createTransfersStore(h.deps)
+    await s.loadHistory()
+    expect(h.deps.fetchSyncHistory).not.toHaveBeenCalled()
+    s.dispose()
+  })
+})
+
 describe("act", () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())

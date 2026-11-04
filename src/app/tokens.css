@@ -206,3 +206,21 @@ html.shell-phone {
 @utility slide-out-to-left-half {
   --ui-exit-x: -50%;
 }
+
+/*
+ * Form controls inherit the surrounding text colour. This is the colour part of
+ * tailwindcss/preflight.css (its "button, input, select, optgroup, textarea"
+ * rule and the ::placeholder colour); we skip the rest of preflight because
+ * hope-ui owns the reset. Without it the UA's fieldtext colour follows the OS
+ * scheme, not the app's mode. :where() keeps specificity at zero so hope-ui's
+ * own control colours and kit utilities still win.
+ */
+:where(button, input, select, optgroup, textarea) {
+  color: inherit;
+}
+@supports (not (-webkit-appearance: -apple-pay-button)) or
+  (contain-intrinsic-size: 1px) {
+  :where(input, textarea)::placeholder {
+    color: color-mix(in oklab, currentcolor 50%, transparent);
+  }
+}

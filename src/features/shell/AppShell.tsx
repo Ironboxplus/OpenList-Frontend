@@ -1,4 +1,3 @@
-import { useColorMode } from "@hope-ui/solid"
 import {
   createEffect,
   createMemo,
@@ -35,14 +34,6 @@ const ErrorCenter = lazy(() => import("../notifications/ErrorCenter"))
 // Loaded on first use; the hotkey and the buttons only touch ../palette/state.
 const CommandPalette = lazy(() => import("../palette/CommandPalette"))
 
-/** Keep the Tailwind `dark` class on <html> in step with hope-ui's color mode. */
-const useDarkClass = () => {
-  const { colorMode } = useColorMode()
-  createEffect(() => {
-    document.documentElement.classList.toggle("dark", colorMode() === "dark")
-  })
-}
-
 /**
  * Responsive frame around the existing pages: bottom tabs on phones, a rail on
  * tablets, a full (foldable) sidebar on desktops. The pages keep scrolling the
@@ -50,7 +41,6 @@ const useDarkClass = () => {
  * Guests get the bare page.
  */
 const AppShell = (props: ParentProps) => {
-  useDarkClass()
   const { pathname } = useRouter()
   const viewport = createViewport()
   const [folded, setFolded] = createSignal(readCollapsed(localStorage))

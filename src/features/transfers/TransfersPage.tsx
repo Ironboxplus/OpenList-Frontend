@@ -7,8 +7,8 @@ import {
   createSignal,
   For,
   type JSX,
-  on,
   onCleanup,
+  onMount,
   Show,
 } from "solid-js"
 import { Button } from "~/components/ui/button"
@@ -176,11 +176,9 @@ const TransfersPage = () => {
     const ids = new Set(transfers.tasks().map((tk) => tk.id))
     return transfers.history().filter((tk) => !ids.has(tk.id))
   })
-  createEffect(
-    on(filter, (f) => {
-      if (f === "sync") void transfers.loadHistory()
-    }),
-  )
+  // Recently finished sync jobs belong in the default view too; the store
+  // skips non-admins and backends without the sync API.
+  onMount(() => void transfers.loadHistory())
 
   const selected = createMemo<UnifiedTask | undefined>(() => {
     const id = selectedId()

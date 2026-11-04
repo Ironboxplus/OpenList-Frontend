@@ -302,6 +302,11 @@ export const createTransfersStore = (deps: StoreDeps) =>
         undoneSinceDone++
       }
       const nextSync = await fetchSync(now)
+      // A sync job that left the running list is now history; reload it so
+      // the finished job shows up without the user opening the sync filter.
+      const syncGone =
+        !!nextSync &&
+        syncTasks().some((t) => !nextSync.some((n) => n.id === t.id))
       await fetchDetail(now)
       // Every poll passes through the stall tracker once, here, so a task's
       // progress time and stale flag come from one place.
@@ -319,6 +324,7 @@ export const createTransfersStore = (deps: StoreDeps) =>
       })
       detectSucceeded()
       detectFailed()
+      if (syncGone) void loadHistory()
     }
 
     const refresh = (opts: { full?: boolean } = {}): Promise<void> => {
