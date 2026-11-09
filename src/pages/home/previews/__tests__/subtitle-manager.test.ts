@@ -85,7 +85,8 @@ describe("SubtitleManager", () => {
         { name: "zh.ass", url: "/subs/zh.ass" },
       ])
       const html = manager.getTrackHTML()
-      expect(html).toContain('data-format="srt"')
+      // movi reads SRT itself; the hint that styles it is "vtt"
+      expect(html).toContain('data-format="vtt"')
       expect(html).toContain('data-format="ass"')
       expect(html).toContain('kind="subtitles"')
       expect(html).toContain("en.srt")

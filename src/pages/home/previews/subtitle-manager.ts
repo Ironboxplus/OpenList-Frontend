@@ -6,6 +6,10 @@ export type ActiveRenderer = "ass" | "sup" | "none"
 export interface SubtitleFile {
   name: string
   url: string
+  /** The in-band track of the original file this file is the extracted twin
+   *  of (its title and its index among the container's subtitle streams). */
+  inbandTitle?: string
+  inbandOrder?: number
 }
 
 interface SubtitleInfo {
@@ -13,6 +17,8 @@ interface SubtitleInfo {
   label: string
   url: string
   format: SubtitleFormat
+  inbandTitle?: string
+  inbandOrder?: number
 }
 
 const isDev = import.meta.env?.DEV ?? false
@@ -24,12 +30,12 @@ function log(...args: unknown[]) {
 const escapeAttr = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")
 
-function srtToVtt(srt: string): string {
-  const body = srt
-    .replace(/\r\n/g, "\n")
-    .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2")
-  return "WEBVTT\n\n" + body
-}
+// `data-inband-*`: movi's way of saying "this file is the same subtitle as that
+// track of the original" (see movi-player's SourceSelection.ts).
+const trackAlias = (info: SubtitleInfo) =>
+  info.inbandTitle && typeof info.inbandOrder === "number"
+    ? ` data-inband-title="${escapeAttr(info.inbandTitle)}" data-inband-order="${info.inbandOrder}"`
+    : ""
 
 // JASSUB/libass only parse UTF-8. Detect a UTF-16 BOM and transcode to UTF-8,
 // stripping the BOM char. Returns null when the bytes are already UTF-8 (with or
@@ -109,29 +115,14 @@ export class SubtitleManager {
         lang,
         label: file.name,
         url: file.url,
-        format: detectFormat(file.name),
+        // movi reads SRT itself (its parser takes the comma timestamps), so an
+        // .srt goes through as "vtt": the format hint that gives it the same
+        // caption styling the converted file always had.
+        format: ((f) => (f === "srt" ? "vtt" : f))(detectFormat(file.name)),
+        inbandTitle: file.inbandTitle,
+        inbandOrder: file.inbandOrder,
       })
     })
-  }
-
-  async convertSrtTracks(): Promise<void> {
-    const tasks: Promise<void>[] = []
-    for (const [, info] of this.subInfoMap) {
-      if (info.format !== "srt") continue
-      tasks.push(
-        fetch(info.url)
-          .then((r) => r.text())
-          .then((srt) => {
-            const vtt = srtToVtt(srt)
-            const blob = new Blob([vtt], { type: "text/vtt" })
-            info.url = URL.createObjectURL(blob)
-            info.format = "vtt"
-            log("converted SRT→VTT for", info.label)
-          })
-          .catch((e) => log("SRT conversion failed for", info.label, e)),
-      )
-    }
-    await Promise.all(tasks)
   }
 
   // JASSUB/libass only parse UTF-8. Many fansub .ass files (e.g. popgo) are
@@ -165,7 +156,7 @@ export class SubtitleManager {
     return Array.from(this.subInfoMap.values())
       .map(
         (info) =>
-          `<track kind="subtitles" src="${escapeAttr(info.url)}" srclang="${info.lang}" label="${escapeAttr(info.label)}" data-format="${info.format}">`,
+          `<track kind="subtitles" src="${escapeAttr(info.url)}" srclang="${info.lang}" label="${escapeAttr(info.label)}" data-format="${info.format}"${trackAlias(info)}>`,
       )
       .join("")
   }
@@ -188,8 +179,7 @@ export class SubtitleManager {
     const activationSeq = ++this.activationSeq
 
     const langs = (this.moviEl as any).getSubtitleLangs?.() as
-      | Array<{ lang: string; label: string; active: boolean }>
-      | undefined
+      Array<{ lang: string; label: string; active: boolean }> | undefined
     const active = langs?.find((t) => t.active)
 
     this.destroyRenderers()
@@ -234,8 +224,7 @@ export class SubtitleManager {
     this.pollTimer = window.setInterval(() => {
       if (this.destroyed) return
       const langs = (this.moviEl as any).getSubtitleLangs?.() as
-        | Array<{ lang: string; label: string; active: boolean }>
-        | undefined
+        Array<{ lang: string; label: string; active: boolean }> | undefined
       const active = langs?.find((t) => t.active)
       const activeLang = active?.lang ?? null
       if (activeLang !== this.lastActiveLang) {

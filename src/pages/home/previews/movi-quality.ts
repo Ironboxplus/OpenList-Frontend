@@ -1,6 +1,9 @@
-// Pure, framework-free helpers for the movi-player quality selector. Kept out of
-// movi_video.tsx so they can be unit-tested without importing the player
-// component (which pulls in Artplayer / movi-player / WASM at module load).
+import type { SubtitleFile } from "./subtitle-manager"
+
+// Pure, framework-free helpers that turn a video's sources and subtitles into the
+// `<source>` / `<track>` children movi-player reads. Kept out of movi_core.tsx so
+// they can be unit-tested without importing the player component (which pulls
+// in movi-player / WASM at module load).
 
 // 115's online-play (transcoded) sources, already wrapped in OpenList's signed
 // /video_proxy by the backend so they are fetched same-origin (no CORS).
@@ -13,6 +16,8 @@ export interface VideoPlaySource {
 export interface Quality {
   label: string
   url: string
+  /** Picture height, for movi's menu order; 0 when nothing says. */
+  height: number
 }
 
 export const ORIGINAL_LABEL = "原画"
@@ -43,32 +48,79 @@ export const DEFINITION_LABELS: Record<number, string> = {
 }
 
 // movi-player only treats a source as an adaptive HLS stream when the src string
-// contains ".m3u8" (MoviElement's isAdaptive check). The signed /video_proxy URL
+// contains ".m3u8". The signed /video_proxy URL
 // has no such extension, so append it as a URL fragment: the browser strips the
 // fragment before the HTTP request (proxy + signature unaffected), but movi
 // routes the source through its HLS engine instead of the raw demuxer.
 export const withHlsHint = (url: string) =>
   url.toLowerCase().includes(".m3u8") ? url : `${url}#.m3u8`
 
-// Build the quality list shown in the overlay. The original stream is always
-// first/default; 115's transcoded tiers (proxied, HLS-hinted) follow. Returns
-// only the original when the provider isn't 115 or there are no usable tiers.
+// Picture height of a 115 tier, from its label ("1080P", "4K") or, when 115
+// leaves the label empty, its definition number.
+export const DEFINITION_HEIGHTS: Record<number, number> = {
+  1: 360,
+  2: 480,
+  3: 720,
+  4: 1080,
+  5: 2160,
+}
+
+export const tierHeight = (label: string, definition: number): number => {
+  const p = /(d{3,4})s*p/i.exec(label)
+  if (p) return parseInt(p[1], 10)
+  if (/4k/i.test(label)) return 2160
+  return DEFINITION_HEIGHTS[definition] ?? 0
+}
+
+// Build the source list handed to movi. The original stream is always first and
+// the default; 115's transcoded tiers (proxied, HLS-hinted) follow. Returns only
+// the original when the provider isn't 115 or there are no usable tiers.
+//
+// The original's height is not known here (the media info lives elsewhere), so
+// it takes the highest tier's: a transcode never exceeds its source, and equal
+// heights keep document order in movi's menu, which puts the original on top.
 export const buildQualityList = (
   originalUrl: string,
   provider: string | undefined,
   sources: VideoPlaySource[] | undefined,
 ): Quality[] => {
-  const original: Quality = { label: ORIGINAL_LABEL, url: originalUrl }
-  if (provider !== "115 Open" || !sources) return [original]
+  const single: Quality[] = [
+    { label: ORIGINAL_LABEL, url: originalUrl, height: 0 },
+  ]
+  if (provider !== "115 Open" || !sources) return single
   const tiers = sources
     .filter((s) => s.url)
-    .map((s) => ({
-      label:
-        s.resolution || DEFINITION_LABELS[s.definition] || `${s.definition}P`,
-      url: withHlsHint(s.url),
-    }))
-  return tiers.length ? [original, ...tiers] : [original]
+    .map((s) => {
+      const label =
+        s.resolution || DEFINITION_LABELS[s.definition] || `${s.definition}P`
+      return {
+        label,
+        url: withHlsHint(s.url),
+        height: tierHeight(label, s.definition),
+      }
+    })
+  if (!tiers.length) return single
+  const top = Math.max(...tiers.map((t) => t.height))
+  return [{ label: ORIGINAL_LABEL, url: originalUrl, height: top }, ...tiers]
 }
+
+const escapeHtmlAttr = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")
+
+// The `<source>` children for a list with more than one entry, original first
+// and marked `data-default`: movi shows these as its own source menu, also while
+// an HLS entry is playing, and keeps position, pause state and the chosen
+// subtitle across a switch. A single source stays a plain `src` attribute, so
+// the usual (non-115) case is the one movi has always run.
+export const buildSourceHTML = (qualities: Quality[]): string =>
+  qualities.length < 2
+    ? ""
+    : qualities
+        .map(
+          (q, i) =>
+            `<source src="${escapeHtmlAttr(q.url)}" data-label="${escapeHtmlAttr(q.label)}" data-height="${q.height}"${i === 0 ? " data-default" : ""}>`,
+        )
+        .join("")
 
 // A provider subtitle track (from /fs/video_subtitle, e.g. 115 extracts a
 // container's embedded subtitles during transcoding and serves them as files).
@@ -78,16 +130,20 @@ export interface VideoSubtitleSource {
   title: string
   url: string
   type: string
+  /** Set for a track 115 extracted from the container: its own title and its
+   *  position among the container's subtitle streams. */
+  embedded_title?: string
+  embedded_order?: number
 }
 
 // Map provider subtitle sources to SubtitleManager track entries. The track
 // `name` carries the format extension (e.g. ".srt"/".ass") because
-// SubtitleManager.detectFormat() picks the renderer from the extension. These
-// are independent of the play source, so they render on every quality tier —
-// including transcoded HLS that drops the original embedded subtitle tracks.
+// SubtitleManager.detectFormat() picks the renderer from the extension. An
+// extracted container track also carries its in-band identity, which movi uses
+// to treat the file and the original's own track as one subtitle.
 export const buildProviderSubFiles = (
   subs: VideoSubtitleSource[] | undefined,
-): { name: string; url: string }[] =>
+): SubtitleFile[] =>
   (subs ?? [])
     .filter((s) => s.url)
     .map((s, i) => ({
@@ -95,12 +151,10 @@ export const buildProviderSubFiles = (
         s.type || "srt"
       ).toLowerCase()}`,
       url: s.url,
+      ...(s.embedded_title && typeof s.embedded_order === "number"
+        ? {
+            inbandTitle: s.embedded_title,
+            inbandOrder: s.embedded_order,
+          }
+        : {}),
     }))
-
-// The fix for "switching quality drops the subtitles": when a player element is
-// already live, switch its source IN PLACE (keeps the <track> children and the
-// SubtitleManager alive, so movi re-applies the original file's external/sidecar
-// subtitles onto the transcoded HLS source). Only build a fresh element when
-// none exists yet (initial load / navigating to a different video).
-export const qualitySwitchPlan = (hasLivePlayer: boolean): "swap" | "build" =>
-  hasLivePlayer ? "swap" : "build"

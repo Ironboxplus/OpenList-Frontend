@@ -1,24 +1,15 @@
 import { Box } from "@hope-ui/solid"
-import {
-  createEffect,
-  createSignal,
-  For,
-  on,
-  onCleanup,
-  onMount,
-  Show,
-} from "solid-js"
+import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js"
 import { useFetch } from "~/hooks"
 import { password, setShouldKeepState } from "~/store"
 import { PResp } from "~/types"
 import { asPreview, r } from "~/utils"
-import { SubtitleManager } from "./subtitle-manager"
+import { SubtitleManager, type SubtitleFile } from "./subtitle-manager"
 import {
   buildMoviBufferAttribute,
   buildProviderSubFiles,
   buildQualityList,
-  ORIGINAL_LABEL,
-  qualitySwitchPlan,
+  buildSourceHTML,
   type Quality,
   type VideoPlaySource,
   type VideoSubtitleSource,
@@ -48,9 +39,10 @@ export interface MoviCoreProps {
 }
 
 /**
- * The movi-player mount: the <movi-player> element, its subtitles and the
- * quality overlay. It reads nothing from the file page's stores, so the file
- * preview and the media library overlay feed it the same way.
+ * The movi-player mount: the <movi-player> element with its `<source>` and
+ * `<track>` children. Sources and subtitles are movi's to present and switch;
+ * this only declares them. It reads nothing from the file page's stores, so the
+ * file preview and the media library overlay feed it the same way.
  */
 export const MoviCore = (props: MoviCoreProps) => {
   // Provider transcoded sources are fetched on demand; movi always defaults to
@@ -67,9 +59,7 @@ export const MoviCore = (props: MoviCoreProps) => {
   const [, fetchSubtitles] = useFetch((): PResp<VideoSubtitleSource[]> =>
     r.post("/fs/video_subtitle", { path: props.path, password: password() }),
   )
-  const [subtitles, setSubtitles] = createSignal<
-    { name: string; url: string }[]
-  >([])
+  const [subtitles, setSubtitles] = createSignal<SubtitleFile[]>([])
 
   // Best-effort: failures just leave the subtitle list empty.
   const loadSubtitles = async () => {
@@ -82,77 +72,13 @@ export const MoviCore = (props: MoviCoreProps) => {
     }
   }
 
-  const [qualities, setQualities] = createSignal<Quality[]>([])
-  const [currentUrl, setCurrentUrl] = createSignal("")
-  const [menuOpen, setMenuOpen] = createSignal(false)
-  // Mirrors movi-player's own control-bar visibility so the quality overlay
-  // fades out together with the controls (and reappears on hover / while paused)
-  // instead of being permanently pinned to the top-right corner.
-  const [barVisible, setBarVisible] = createSignal(true)
-  // True while the pointer is over the overlay. The overlay sits on top of
-  // movi's top-right controls zone; if we let it drop to pointer-events:none
-  // while the pointer is parked on it, the pointer "enters" movi underneath,
-  // movi re-shows its controls, the overlay re-enables and re-intercepts — an
-  // infinite show/hide flicker. Pinning it interactive while hovered breaks
-  // that loop so the pointer never falls through to the player.
-  const [overlayHovered, setOverlayHovered] = createSignal(false)
-  const overlayShown = () => barVisible() || menuOpen() || overlayHovered()
-  const currentLabel = () =>
-    qualities().find((q) => q.url === currentUrl())?.label ?? ORIGINAL_LABEL
-
   let containerRef: HTMLElement | undefined
   let playerHost: HTMLElement | undefined
   let playerEl: HTMLElement | undefined
   let subtitleManager: SubtitleManager | undefined
-  let controlsObserver: MutationObserver | undefined
-  let controlsRaf: number | undefined
   let startApplied = false
 
-  // Watch movi-player's shadow-DOM control bar and mirror its visibility onto
-  // the quality overlay. movi toggles `movi-controls-hidden` on the
-  // `.movi-controls-container` element when the bar auto-hides; the overlay
-  // follows that so it isn't stuck on screen. shadowRoot is mode:"open".
-  const observeControls = (host: HTMLElement) => {
-    let tries = 0
-    const attach = () => {
-      const bar = host.shadowRoot?.querySelector(
-        ".movi-controls-container",
-      ) as HTMLElement | null
-      if (!bar) {
-        // The custom element builds its shadow tree asynchronously; retry for a
-        // couple of seconds, then give up (overlay just stays at its default).
-        if (tries++ < 120) controlsRaf = requestAnimationFrame(attach)
-        return
-      }
-      // Hide movi's built-in quality/rendition menu: it's redundant with our
-      // cross-source quality overlay (movi's only switches renditions within a
-      // single HLS source, and 115 transcoded streams expose a single rendition).
-      const sr = host.shadowRoot
-      if (sr && !sr.querySelector("style[data-ol-hide-quality]")) {
-        const st = document.createElement("style")
-        st.setAttribute("data-ol-hide-quality", "")
-        st.textContent = ".movi-quality-container{display:none !important}"
-        sr.appendChild(st)
-      }
-      const sync = () =>
-        setBarVisible(!bar.classList.contains("movi-controls-hidden"))
-      sync()
-      controlsObserver = new MutationObserver(sync)
-      controlsObserver.observe(bar, {
-        attributes: true,
-        attributeFilter: ["class"],
-      })
-    }
-    attach()
-  }
-
   const destroyPlayer = () => {
-    controlsObserver?.disconnect()
-    controlsObserver = undefined
-    if (controlsRaf !== undefined) {
-      cancelAnimationFrame(controlsRaf)
-      controlsRaf = undefined
-    }
     subtitleManager?.destroy()
     subtitleManager = undefined
     if (playerEl) {
@@ -162,20 +88,19 @@ export const MoviCore = (props: MoviCoreProps) => {
     }
   }
 
-  // Build the quality list for a freshly-opened video: the original stream is
-  // always first/default; 115 transcoded tiers (already proxied) follow.
-  const loadQualities = async (originalUrl: string) => {
+  // The sources for a freshly-opened video: the original stream is always
+  // first/default; 115 transcoded tiers (already proxied) follow.
+  const loadQualities = async (originalUrl: string): Promise<Quality[]> => {
     const provider = props.provider
     if (provider !== "115 Open") {
-      setQualities(buildQualityList(originalUrl, provider, undefined))
-      return
+      return buildQualityList(originalUrl, provider, undefined)
     }
     try {
       const resp = await fetchPlaySources()
       const sources = resp.code === 200 ? resp.data : undefined
-      setQualities(buildQualityList(originalUrl, provider, sources))
+      return buildQualityList(originalUrl, provider, sources)
     } catch {
-      setQualities(buildQualityList(originalUrl, undefined, undefined))
+      return buildQualityList(originalUrl, undefined, undefined)
     }
   }
 
@@ -187,30 +112,35 @@ export const MoviCore = (props: MoviCoreProps) => {
     return ` startat="${Math.floor(props.startAt)}"`
   }
 
-  const buildPlayer = async (url: string) => {
+  const buildPlayer = async (url: string, qualities: Quality[]) => {
     if (!playerHost || !url) return
 
     destroyPlayer()
 
     const trackGen = new SubtitleManager(null as any)
-    // Subtitle tracks resolved by the backend (sidecar + provider). They render
-    // on every source, so the transcoded HLS stream keeps the original file's
-    // subtitles.
+    // Subtitle tracks resolved by the backend (sidecar + provider). They are
+    // declared once, whatever source is playing: movi lists them next to the
+    // original's own tracks and carries the choice across a source switch.
     const subs = subtitles()
     trackGen.registerTracks(subs)
-    await trackGen.convertSrtTracks()
     const trackHTML = trackGen.getTrackHTML()
     trackGen.destroy()
 
+    // More than one source: `<source>` children, which movi presents and
+    // switches itself. One source: a plain `src`, as it has always been.
+    const sourceHTML = buildSourceHTML(qualities)
+    const srcAttr = sourceHTML ? "" : ` src="${escapeAttr(url)}"`
+    // The video's identity across a source switch (and a re-render of the same
+    // video): position and paused state carry over under the same key.
+    const keyAttr = sourceHTML ? ` resumekey="${escapeAttr(props.path)}"` : ""
+
     const wrapper = document.createElement("div")
     wrapper.style.cssText = "position:relative;width:100%"
-    wrapper.innerHTML = `<movi-player src="${escapeAttr(url)}" controls theme="dark" hdr fastseek${startAttr()}${props.autoplay ? " autoplay" : ""}${buildMoviBufferAttribute(props.provider)} style="width:100%;max-height:80vh">${trackHTML}</movi-player>`
+    wrapper.innerHTML = `<movi-player${srcAttr}${keyAttr} controls theme="dark" hdr fastseek${startAttr()}${props.autoplay ? " autoplay" : ""}${buildMoviBufferAttribute(props.provider)} style="width:100%;max-height:80vh">${sourceHTML}${trackHTML}</movi-player>`
 
     const el = wrapper.firstElementChild as HTMLElement
     playerHost.appendChild(wrapper)
     playerEl = el
-    setBarVisible(true)
-    observeControls(el)
 
     subtitleManager = new SubtitleManager(el)
     subtitleManager.registerTracks(subs)
@@ -231,41 +161,6 @@ export const MoviCore = (props: MoviCoreProps) => {
     }) as EventListener)
   }
 
-  // Swap quality WITHOUT tearing down the element: movi's own `src` setter
-  // disposes its inner player and re-loads, but the <movi-player> element (and
-  // its <track> children + our SubtitleManager) survive — so movi re-applies the
-  // original file's external/sidecar subtitles onto the transcoded HLS source.
-  // This is the fix for "switching quality drops the subtitles". No movi changes.
-  // Best-effort restore of playback position and the active subtitle selection.
-  const switchSource = (url: string, restoreTime: number) => {
-    if (qualitySwitchPlan(!!playerEl) === "build") {
-      buildPlayer(url)
-      return
-    }
-    const el = playerEl!
-    const activeLang =
-      (el as any).getSubtitleLangs?.()?.find((t: any) => t.active)?.lang ?? null
-    const restore = () => {
-      try {
-        if (restoreTime > 0) (el as any).currentTime = restoreTime
-        if (activeLang) (el as any).selectSubtitleLang?.(activeLang)
-      } catch {}
-      el.removeEventListener("loadeddata", restore)
-      el.removeEventListener("canplay", restore)
-    }
-    el.addEventListener("loadeddata", restore)
-    el.addEventListener("canplay", restore)
-    ;(el as any).src = url
-  }
-
-  const selectQuality = (q: Quality) => {
-    setMenuOpen(false)
-    if (q.url === currentUrl()) return
-    const resumeAt = playerEl ? (playerEl as any).currentTime || 0 : 0
-    setCurrentUrl(q.url)
-    switchSource(q.url, resumeAt)
-  }
-
   onMount(async () => {
     await import("movi-player")
 
@@ -274,10 +169,11 @@ export const MoviCore = (props: MoviCoreProps) => {
         () => asPreview(props.rawUrl),
         async (url) => {
           if (!containerRef || !url) return
-          setMenuOpen(false)
-          await Promise.all([loadQualities(url), loadSubtitles()])
-          setCurrentUrl(url)
-          await buildPlayer(url)
+          const [qualities] = await Promise.all([
+            loadQualities(url),
+            loadSubtitles(),
+          ])
+          await buildPlayer(url, qualities)
         },
       ),
     )
@@ -297,69 +193,6 @@ export const MoviCore = (props: MoviCoreProps) => {
         css={{ "min-height": "320px" }}
       >
         <div ref={(el: HTMLElement) => (playerHost = el)} style="width:100%" />
-        <Show when={qualities().length > 1}>
-          <div
-            style={{
-              position: "absolute",
-              top: "8px",
-              right: "8px",
-              "z-index": "60",
-              "font-size": "13px",
-              "user-select": "none",
-              // Follow the control bar: fade out when movi hides its controls,
-              // but stay put while the quality menu is open or the pointer is
-              // over the overlay (the latter breaks the hover flicker loop).
-              opacity: overlayShown() ? "1" : "0",
-              "pointer-events": overlayShown() ? "auto" : "none",
-              transition: "opacity 0.2s ease",
-            }}
-            on:click={(e: MouseEvent) => e.stopPropagation()}
-            on:mouseenter={() => setOverlayHovered(true)}
-            on:mouseleave={() => setOverlayHovered(false)}
-          >
-            <div
-              on:click={() => setMenuOpen(!menuOpen())}
-              style={{
-                padding: "4px 10px",
-                "border-radius": "6px",
-                background: "rgba(0,0,0,0.55)",
-                color: "#fff",
-                cursor: "pointer",
-                "backdrop-filter": "blur(4px)",
-              }}
-            >
-              {currentLabel()} ▾
-            </div>
-            <Show when={menuOpen()}>
-              <div
-                style={{
-                  "margin-top": "4px",
-                  "border-radius": "6px",
-                  overflow: "hidden",
-                  background: "rgba(0,0,0,0.75)",
-                  "backdrop-filter": "blur(4px)",
-                  "min-width": "96px",
-                }}
-              >
-                <For each={qualities()}>
-                  {(q) => (
-                    <div
-                      on:click={() => selectQuality(q)}
-                      style={{
-                        padding: "6px 12px",
-                        cursor: "pointer",
-                        color: q.url === currentUrl() ? "#4ea1ff" : "#fff",
-                        "font-weight": q.url === currentUrl() ? "600" : "400",
-                      }}
-                    >
-                      {q.label}
-                    </div>
-                  )}
-                </For>
-              </div>
-            </Show>
-          </div>
-        </Show>
       </Box>
     </>
   )
