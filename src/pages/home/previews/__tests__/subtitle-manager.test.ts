@@ -5,6 +5,13 @@ import {
   type SubtitleFile,
 } from "../subtitle-manager"
 
+const readBlob = (b: Blob) =>
+  new Promise<string>((res) => {
+    const fr = new FileReader()
+    fr.onload = () => res(String(fr.result))
+    fr.readAsText(b)
+  })
+
 const tick = () => new Promise((r) => setTimeout(r, 0))
 
 describe("detectFormat", () => {
@@ -144,7 +151,7 @@ describe("SubtitleManager", () => {
       const [t] = tracks(manager)
       expect(t.getAttribute("src")).toBe("blob:ass-1")
       expect(t.getAttribute("data-format")).toBe("ass")
-      expect(await created[0].text()).toBe("[Script Info]\n魔法少女")
+      expect(await readBlob(created[0])).toBe("[Script Info]\n魔法少女")
       manager.destroy()
       expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:ass-1")
     })

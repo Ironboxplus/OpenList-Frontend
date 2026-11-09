@@ -87,7 +87,8 @@ describe("movi_video integration", () => {
       expect(html).toContain('srclang="sub1"')
       expect(html).toContain('srclang="sub2"')
       expect(html).toContain('srclang="sub3"')
-      expect(html).toContain('data-format="srt"')
+      // movi reads SRT itself; the hint that styles it is "vtt"
+      expect(html).toContain('data-format="vtt"')
       expect(html).toContain('data-format="ass"')
       expect(html).toContain('data-format="sup"')
       expect(html).toContain('data-format="vtt"')
