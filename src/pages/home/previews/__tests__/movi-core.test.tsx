@@ -1,4 +1,5 @@
 import { render } from "@solidjs/testing-library"
+import { createSignal } from "solid-js"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 const { registerJassubHost, post } = vi.hoisted(() => ({
@@ -117,5 +118,44 @@ describe("MoviCore", () => {
     expect(a.getAttribute("data-inband-title")).toBe("简体")
     expect(a.getAttribute("data-inband-order")).toBe("0")
     expect(b.hasAttribute("data-inband-title")).toBe(false)
+  })
+
+  it("a build whose UTF-16 check finishes late does not replace the newer one", async () => {
+    const utf16 = [0xff, 0xfe]
+    for (const ch of "[Script Info]") utf16.push(ch.charCodeAt(0), 0)
+    let releaseFirst!: () => void
+    let n = 0
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => {
+        // the first build's .ass check hangs; the second build's returns at once
+        if (n++ === 0) {
+          return new Promise((res) => {
+            releaseFirst = () =>
+              res({ arrayBuffer: async () => new Uint8Array(utf16).buffer })
+          })
+        }
+        return Promise.resolve({
+          arrayBuffer: async () => new TextEncoder().encode("x").buffer,
+        })
+      }),
+    )
+    URL.createObjectURL = vi.fn(() => "blob:first")
+    URL.revokeObjectURL = vi.fn()
+    const [raw, setRaw] = createSignal("http://x/a.mkv")
+    const r = render(() => (
+      <MoviCore path="/m/a.mkv" rawUrl={raw()} provider="Local" />
+    ))
+    await settle()
+    setRaw("http://x/b.mkv")
+    await settle()
+    expect(r.container.querySelectorAll("movi-player").length).toBe(1)
+    releaseFirst()
+    await settle()
+    const players = r.container.querySelectorAll("movi-player")
+    expect(players.length).toBe(1)
+    expect(players[0].getAttribute("src")).toBe("http://x/b.mkv")
+    // the stale build's UTF-8 copy is released, not leaked
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:first")
   })
 })

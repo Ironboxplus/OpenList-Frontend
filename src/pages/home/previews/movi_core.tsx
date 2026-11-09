@@ -85,6 +85,9 @@ export const MoviCore = (props: MoviCoreProps) => {
   let playerEl: HTMLElement | undefined
   let subtitleManager: SubtitleManager | undefined
   let startApplied = false
+  // Builds can overlap (next episode, quick switching) and the UTF-16 check
+  // below is async: only the latest build may put a player on the page.
+  let buildSeq = 0
 
   const destroyPlayer = () => {
     subtitleManager?.destroy()
@@ -122,6 +125,7 @@ export const MoviCore = (props: MoviCoreProps) => {
 
   const buildPlayer = async (url: string, qualities: Quality[]) => {
     if (!playerHost || !url) return
+    const seq = ++buildSeq
 
     // Subtitle tracks resolved by the backend (sidecar + provider). They are
     // declared once, whatever source is playing: movi lists them next to the
@@ -131,6 +135,10 @@ export const MoviCore = (props: MoviCoreProps) => {
     const manager = new SubtitleManager(null)
     manager.registerTracks(subtitles())
     await manager.convertAssTracks()
+    if (seq !== buildSeq) {
+      manager.destroy()
+      return
+    }
     const trackHTML = manager.getTrackHTML()
 
     destroyPlayer()
@@ -187,6 +195,7 @@ export const MoviCore = (props: MoviCoreProps) => {
   })
 
   onCleanup(() => {
+    buildSeq++
     setShouldKeepState(false)
     destroyPlayer()
   })
