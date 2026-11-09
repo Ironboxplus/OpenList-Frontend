@@ -66,7 +66,7 @@ export const DEFINITION_HEIGHTS: Record<number, number> = {
 }
 
 export const tierHeight = (label: string, definition: number): number => {
-  const p = /(d{3,4})s*p/i.exec(label)
+  const p = /(\d{3,4})\s*p/i.exec(label)
   if (p) return parseInt(p[1], 10)
   if (/4k/i.test(label)) return 2160
   return DEFINITION_HEIGHTS[definition] ?? 0
