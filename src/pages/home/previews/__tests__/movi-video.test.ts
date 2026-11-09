@@ -43,10 +43,10 @@ describe("movi_video integration", () => {
 
     it("creates overlay canvas as sibling of movi element", async () => {
       manager = new SubtitleManager(moviEl)
-      manager.registerTracks([{ name: "test.ass", url: "/test.ass" }])
+      manager.registerTracks([{ name: "test.sup", url: "/test.sup" }])
 
       moviEl.getSubtitleLangs = () => [
-        { lang: "sub0", label: "test.ass", active: true },
+        { lang: "sub0", label: "test.sup", active: true },
       ]
       manager.handleTrackChange()
       await tick()
@@ -59,10 +59,10 @@ describe("movi_video integration", () => {
 
     it("removes overlay canvas on destroy", async () => {
       manager = new SubtitleManager(moviEl)
-      manager.registerTracks([{ name: "test.ass", url: "/test.ass" }])
+      manager.registerTracks([{ name: "test.sup", url: "/test.sup" }])
 
       moviEl.getSubtitleLangs = () => [
-        { lang: "sub0", label: "test.ass", active: true },
+        { lang: "sub0", label: "test.sup", active: true },
       ]
       manager.handleTrackChange()
       await tick()
@@ -95,12 +95,12 @@ describe("movi_video integration", () => {
       expect(html).toContain("Chinese.ass")
     })
 
-    it("syncs time offset to active ASS renderer", async () => {
+    it("syncs time offset to active PGS renderer", async () => {
       manager = new SubtitleManager(moviEl)
-      manager.registerTracks([{ name: "test.ass", url: "/test.ass" }])
+      manager.registerTracks([{ name: "test.sup", url: "/test.sup" }])
 
       moviEl.getSubtitleLangs = () => [
-        { lang: "sub0", label: "test.ass", active: true },
+        { lang: "sub0", label: "test.sup", active: true },
       ]
       manager.handleTrackChange()
       await tick()
@@ -112,22 +112,22 @@ describe("movi_video integration", () => {
     it("handles rapid track switching without errors", async () => {
       manager = new SubtitleManager(moviEl)
       manager.registerTracks([
-        { name: "a.ass", url: "/a.ass" },
+        { name: "a.sup", url: "/a.sup" },
         { name: "b.sup", url: "/b.sup" },
         { name: "c.srt", url: "/c.srt" },
       ])
 
       moviEl.getSubtitleLangs = () => [
-        { lang: "sub0", label: "a.ass", active: true },
+        { lang: "sub0", label: "a.sup", active: true },
         { lang: "sub1", label: "b.sup", active: false },
         { lang: "sub2", label: "c.srt", active: false },
       ]
       manager.handleTrackChange()
       await tick()
-      expect(manager.getActiveRenderer()).toBe("ass")
+      expect(manager.getActiveRenderer()).toBe("sup")
 
       moviEl.getSubtitleLangs = () => [
-        { lang: "sub0", label: "a.ass", active: false },
+        { lang: "sub0", label: "a.sup", active: false },
         { lang: "sub1", label: "b.sup", active: true },
         { lang: "sub2", label: "c.srt", active: false },
       ]
@@ -136,7 +136,7 @@ describe("movi_video integration", () => {
       expect(manager.getActiveRenderer()).toBe("sup")
 
       moviEl.getSubtitleLangs = () => [
-        { lang: "sub0", label: "a.ass", active: false },
+        { lang: "sub0", label: "a.sup", active: false },
         { lang: "sub1", label: "b.sup", active: false },
         { lang: "sub2", label: "c.srt", active: true },
       ]

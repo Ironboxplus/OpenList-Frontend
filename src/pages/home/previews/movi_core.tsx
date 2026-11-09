@@ -4,6 +4,7 @@ import { useFetch } from "~/hooks"
 import { password, setShouldKeepState } from "~/store"
 import { PResp } from "~/types"
 import { asPreview, r } from "~/utils"
+import { registerJassubHost } from "./movi-jassub"
 import { SubtitleManager, type SubtitleFile } from "./subtitle-manager"
 import {
   buildMoviBufferAttribute,
@@ -17,6 +18,13 @@ import {
 
 const escapeAttr = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")
+
+// The font ASS subtitles fall back to when the file embeds none of the ones a
+// script names: movi fetches it only when a subtitle needs it.
+const fallbackFontAttr = () => {
+  const base = `${window.location.origin}${(window as any).__dynamic_base__ || ""}`
+  return ` subtitlefallbackfont="${escapeAttr(`Source Han Sans CN|${base}/static/fonts/SourceHanSansCN-Bold.woff2`)}"`
+}
 
 export interface MoviCoreProps {
   /** VFS path of the video, for /fs/video_play and /fs/video_subtitle. */
@@ -115,16 +123,17 @@ export const MoviCore = (props: MoviCoreProps) => {
   const buildPlayer = async (url: string, qualities: Quality[]) => {
     if (!playerHost || !url) return
 
-    destroyPlayer()
-
-    const trackGen = new SubtitleManager(null as any)
     // Subtitle tracks resolved by the backend (sidecar + provider). They are
     // declared once, whatever source is playing: movi lists them next to the
     // original's own tracks and carries the choice across a source switch.
-    const subs = subtitles()
-    trackGen.registerTracks(subs)
-    const trackHTML = trackGen.getTrackHTML()
-    trackGen.destroy()
+    // movi draws ASS (embedded and external) itself; the manager only readies
+    // the external files (UTF-16 .ass to UTF-8) and draws external PGS.
+    const manager = new SubtitleManager(null)
+    manager.registerTracks(subtitles())
+    await manager.convertAssTracks()
+    const trackHTML = manager.getTrackHTML()
+
+    destroyPlayer()
 
     // More than one source: `<source>` children, which movi presents and
     // switches itself. One source: a plain `src`, as it has always been.
@@ -136,18 +145,15 @@ export const MoviCore = (props: MoviCoreProps) => {
 
     const wrapper = document.createElement("div")
     wrapper.style.cssText = "position:relative;width:100%"
-    wrapper.innerHTML = `<movi-player${srcAttr}${keyAttr} controls theme="dark" hdr fastseek${startAttr()}${props.autoplay ? " autoplay" : ""}${buildMoviBufferAttribute(props.provider)} style="width:100%;max-height:80vh">${sourceHTML}${trackHTML}</movi-player>`
+    wrapper.innerHTML = `<movi-player${srcAttr}${keyAttr} controls theme="dark" hdr fastseek${startAttr()}${props.autoplay ? " autoplay" : ""}${buildMoviBufferAttribute(props.provider)}${fallbackFontAttr()} style="width:100%;max-height:80vh">${sourceHTML}${trackHTML}</movi-player>`
 
     const el = wrapper.firstElementChild as HTMLElement
     playerHost.appendChild(wrapper)
     playerEl = el
 
-    subtitleManager = new SubtitleManager(el)
-    subtitleManager.registerTracks(subs)
-    // UTF-16 .ass (common in older fansubs) can't be parsed by JASSUB — transcode
-    // to UTF-8 before polling activates the renderer, else nothing shows at all.
-    await subtitleManager.convertAssTracks()
-    subtitleManager.startPolling()
+    manager.attach(el)
+    subtitleManager = manager
+    manager.startPolling()
 
     el.addEventListener("ended", () => {
       props.onEnded?.()
@@ -163,6 +169,7 @@ export const MoviCore = (props: MoviCoreProps) => {
 
   onMount(async () => {
     await import("movi-player")
+    await registerJassubHost()
 
     createEffect(
       on(

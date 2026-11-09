@@ -68,8 +68,8 @@ const previews: Preview[] = [
   {
     // movi-player is the default (and only) video player for 115: it plays the
     // original stream plus the 115 transcoded tiers (原画/4K/1080P via
-    // /fs/video_play) through its own quality overlay, and renders external ASS
-    // via SubtitleManager/JASSUB. The old provider-specific Artplayer "115_video"
+    // /fs/video_play) through its own quality overlay, and has movi render ASS
+    // (embedded and external) with libass. The old provider-specific Artplayer "115_video"
     // tab was removed — it duplicated quality switching and had a broken,
     // separate ASS pipeline.
     key: "movi_video",

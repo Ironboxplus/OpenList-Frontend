@@ -1,7 +1,9 @@
 import type { PgsRenderer } from "libpgs"
 
 export type SubtitleFormat = "ass" | "sup" | "srt" | "vtt"
-export type ActiveRenderer = "ass" | "sup" | "none"
+// ASS/SSA is not in this list: movi draws it itself (see setJassubHost in
+// movi_core.tsx). What is left here is what movi cannot draw, external PGS.
+export type ActiveRenderer = "sup" | "none"
 
 export interface SubtitleFile {
   name: string
@@ -70,16 +72,12 @@ export function detectFormat(filename: string): SubtitleFormat {
 }
 
 export class SubtitleManager {
-  private moviEl: HTMLElement
+  private moviEl: HTMLElement | null
   private subInfoMap = new Map<string, SubtitleInfo>()
   private activeRenderer: ActiveRenderer = "none"
-  private assRenderer: any | null = null
   private pgsRenderer: PgsRenderer | null = null
   private syncTimer: number | undefined
   private overlayCanvas: HTMLCanvasElement | null = null
-  private jassubCanvas: HTMLCanvasElement | null = null
-  private displayCtx: CanvasRenderingContext2D | null = null
-  private copyFrameId: number | undefined
   private resizeObserver: ResizeObserver | null = null
   private timeOffset = 0
   private destroyed = false
@@ -88,14 +86,24 @@ export class SubtitleManager {
   private fullscreenChangeHandler: (() => void) | null = null
   private activationSeq = 0
 
-  constructor(moviEl: HTMLElement) {
+  private blobUrls: string[] = []
+
+  constructor(moviEl: HTMLElement | null) {
     this.moviEl = moviEl
     if (moviEl) this.setupFullscreenWatch()
   }
 
+  /** Hand over the <movi-player> once it exists: the tracks are declared (and
+   *  their markup built) before the element is, the PGS overlay needs it. */
+  attach(moviEl: HTMLElement): void {
+    if (this.moviEl) return
+    this.moviEl = moviEl
+    this.setupFullscreenWatch()
+  }
+
   private setupFullscreenWatch(): void {
     this.fullscreenChangeHandler = () => {
-      if (!this.overlayCanvas) return
+      if (!this.overlayCanvas || !this.moviEl) return
       const fsEl = document.fullscreenElement
       if (fsEl === this.moviEl) {
         this.moviEl.shadowRoot?.appendChild(this.overlayCanvas)
@@ -125,11 +133,11 @@ export class SubtitleManager {
     })
   }
 
-  // JASSUB/libass only parse UTF-8. Many fansub .ass files (e.g. popgo) are
-  // UTF-16 — libass then fails with "Failed to start a track" and nothing
-  // renders, on every source. Detect a UTF-16 BOM, transcode to a UTF-8 blob,
-  // and repoint the track url so JASSUB can load it. UTF-8 (with or without BOM)
-  // is left untouched.
+  // movi hands external ASS to libass as text it read with fetch().text(), which
+  // is UTF-8: a UTF-16 .ass (many fansub files, e.g. popgo) comes out as garbage
+  // and nothing renders, on every source. Detect a UTF-16 BOM, transcode to a
+  // UTF-8 blob, and repoint the track url (the <track> src) at it. UTF-8 (with or
+  // without BOM) is left untouched. Call before getTrackHTML.
   async convertAssTracks(): Promise<void> {
     const tasks: Promise<void>[] = []
     for (const [, info] of this.subInfoMap) {
@@ -142,6 +150,7 @@ export class SubtitleManager {
             if (text === null) return // already UTF-8 (or BOM-less) — leave as-is
             const blob = new Blob([text], { type: "text/plain" })
             info.url = URL.createObjectURL(blob)
+            this.blobUrls.push(info.url)
             log("converted UTF-16 ASS→UTF-8 for", info.label)
           })
           .catch((e) =>
@@ -178,7 +187,7 @@ export class SubtitleManager {
     log("handleTrackChange triggered")
     const activationSeq = ++this.activationSeq
 
-    const langs = (this.moviEl as any).getSubtitleLangs?.() as
+    const langs = (this.moviEl as any)?.getSubtitleLangs?.() as
       Array<{ lang: string; label: string; active: boolean }> | undefined
     const active = langs?.find((t) => t.active)
 
@@ -189,15 +198,7 @@ export class SubtitleManager {
     const info = this.subInfoMap.get(active.lang)
     if (!info) return
 
-    if (info.format === "ass") {
-      this.activeRenderer = "ass"
-      log("activating ASS renderer for", info.label)
-      void this.activateASS(info.url, activationSeq).catch((e) => {
-        if (!this.isActivationCurrent(activationSeq)) return
-        log("ASS renderer activation failed", e)
-        this.destroyRenderers()
-      })
-    } else if (info.format === "sup") {
+    if (info.format === "sup") {
       this.activeRenderer = "sup"
       log("activating SUP renderer for", info.label)
       void this.activateSUP(info.url, activationSeq).catch((e) => {
@@ -210,9 +211,6 @@ export class SubtitleManager {
 
   setTimeOffset(seconds: number): void {
     this.timeOffset = seconds
-    if (this.assRenderer) {
-      ;(this.assRenderer as any).timeOffset = seconds
-    }
     if (this.pgsRenderer) {
       this.pgsRenderer.timeOffset = seconds
     }
@@ -223,7 +221,7 @@ export class SubtitleManager {
     log("startPolling for subtitle track changes")
     this.pollTimer = window.setInterval(() => {
       if (this.destroyed) return
-      const langs = (this.moviEl as any).getSubtitleLangs?.() as
+      const langs = (this.moviEl as any)?.getSubtitleLangs?.() as
         Array<{ lang: string; label: string; active: boolean }> | undefined
       const active = langs?.find((t) => t.active)
       const activeLang = active?.lang ?? null
@@ -252,58 +250,12 @@ export class SubtitleManager {
     }
     this.destroyRenderers()
     this.subInfoMap.clear()
+    for (const u of this.blobUrls) URL.revokeObjectURL(u)
+    this.blobUrls = []
   }
 
   private isActivationCurrent(seq: number): boolean {
     return !this.destroyed && this.activationSeq === seq
-  }
-
-  private async activateASS(url: string, seq: number): Promise<void> {
-    if (!this.isActivationCurrent(seq)) return
-    this.ensureOverlay()
-    const jassubTarget = this.getOrCreateJassubCanvas()
-    log("activateASS: JASSUB (double-canvas) for:", url)
-
-    const { default: JASSUB } = await import("jassub")
-    const jassubWorkerUrl = (
-      await import("jassub/dist/worker/worker.js?worker&url")
-    ).default
-    const jassubWasmUrl = (
-      await import("jassub/dist/wasm/jassub-worker.wasm?url")
-    ).default
-    const jassubModernWasmUrl = (
-      await import("jassub/dist/wasm/jassub-worker-modern.wasm?url")
-    ).default
-    if (!this.isActivationCurrent(seq) || typeof window === "undefined") {
-      return
-    }
-
-    const dynamicBase = (window as any).__dynamic_base__ || ""
-    const fontBase = `${window.location.origin}${dynamicBase}/static/fonts`
-
-    const renderer = new JASSUB({
-      canvas: jassubTarget,
-      subUrl: url,
-      workerUrl: jassubWorkerUrl,
-      wasmUrl: jassubWasmUrl,
-      modernWasmUrl: jassubModernWasmUrl,
-      defaultFont: "source han sans cn",
-      availableFonts: {
-        "source han sans cn": `${fontBase}/SourceHanSansCN-Bold.woff2`,
-        "times new roman": `${fontBase}/TimesNewRoman.ttf`,
-      },
-    }) as any
-    this.assRenderer = renderer
-    await renderer.ready
-    if (!this.isActivationCurrent(seq)) {
-      if (!renderer._destroyed) renderer.destroy()
-      return
-    }
-    if (this.timeOffset !== 0) {
-      renderer.timeOffset = this.timeOffset
-    }
-    this.startSync()
-    this.startCopyLoop()
   }
 
   private async activateSUP(url: string, seq: number): Promise<void> {
@@ -328,36 +280,14 @@ export class SubtitleManager {
     this.startSync()
   }
 
-  private getOrCreateJassubCanvas(): HTMLCanvasElement {
-    if (this.jassubCanvas) return this.jassubCanvas
-
-    this.jassubCanvas = document.createElement("canvas")
-    const dpr = devicePixelRatio || 1
-    const w = (this.moviEl.clientWidth || 0) * dpr
-    const h = (this.moviEl.clientHeight || 0) * dpr
-    this.jassubCanvas.width = w
-    this.jassubCanvas.height = h
-    this.jassubCanvas.style.cssText = `
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      opacity: 0;
-    `
-    const shadow = this.moviEl.shadowRoot
-    if (shadow) {
-      shadow.appendChild(this.jassubCanvas)
-    }
-    return this.jassubCanvas
-  }
-
   private ensureOverlay(): void {
-    if (this.overlayCanvas) return
+    if (this.overlayCanvas || !this.moviEl) return
+    const moviEl = this.moviEl
 
     this.overlayCanvas = document.createElement("canvas")
     const dpr = devicePixelRatio || 1
-    const w = (this.moviEl.clientWidth || 0) * dpr
-    const h = (this.moviEl.clientHeight || 0) * dpr
+    const w = (moviEl.clientWidth || 0) * dpr
+    const h = (moviEl.clientHeight || 0) * dpr
     this.overlayCanvas.width = w
     this.overlayCanvas.height = h
     this.overlayCanvas.style.cssText = `
@@ -367,9 +297,8 @@ export class SubtitleManager {
       pointer-events: none;
       z-index: 7;
     `
-    this.displayCtx = this.overlayCanvas.getContext("2d")
 
-    const shadow = this.moviEl.shadowRoot
+    const shadow = moviEl.shadowRoot
     if (shadow) {
       const controls = shadow.querySelector(".movi-controls-container")
       if (controls) {
@@ -378,75 +307,29 @@ export class SubtitleManager {
         shadow.appendChild(this.overlayCanvas)
       }
     } else {
-      const wrapper = this.moviEl.parentElement!
+      const wrapper = moviEl.parentElement!
       wrapper.style.position = "relative"
-      wrapper.insertBefore(this.overlayCanvas, this.moviEl.nextSibling)
+      wrapper.insertBefore(this.overlayCanvas, moviEl.nextSibling)
     }
 
     this.resizeObserver = new ResizeObserver(() => {
       const dpr = devicePixelRatio || 1
-      const w = this.moviEl.clientWidth || 0
-      const h = this.moviEl.clientHeight || 0
+      const w = moviEl.clientWidth || 0
+      const h = moviEl.clientHeight || 0
       if (this.overlayCanvas) {
         this.overlayCanvas.width = w * dpr
         this.overlayCanvas.height = h * dpr
       }
-      if (this.jassubCanvas) {
-        this.jassubCanvas.width = w * dpr
-        this.jassubCanvas.height = h * dpr
-      }
       log("resize overlay to", w * dpr, "x", h * dpr, "dpr", dpr)
     })
-    this.resizeObserver.observe(this.moviEl)
-  }
-
-  private startCopyLoop(): void {
-    if (this.copyFrameId != null) return
-    const copy = () => {
-      if (!this.jassubCanvas || !this.overlayCanvas || !this.displayCtx) return
-      const srcW = this.jassubCanvas.width
-      const srcH = this.jassubCanvas.height
-      if (
-        this.overlayCanvas.width !== srcW ||
-        this.overlayCanvas.height !== srcH
-      ) {
-        this.overlayCanvas.width = srcW
-        this.overlayCanvas.height = srcH
-      }
-      this.displayCtx.clearRect(0, 0, srcW, srcH)
-      try {
-        this.displayCtx.drawImage(this.jassubCanvas, 0, 0)
-      } catch {
-        /* canvas may be lost during navigation */
-      }
-      this.copyFrameId = requestAnimationFrame(copy)
-    }
-    this.copyFrameId = requestAnimationFrame(copy)
-  }
-
-  private stopCopyLoop(): void {
-    if (this.copyFrameId != null) {
-      cancelAnimationFrame(this.copyFrameId)
-      this.copyFrameId = undefined
-    }
+    this.resizeObserver.observe(moviEl)
   }
 
   private startSync(): void {
     if (this.syncTimer) clearInterval(this.syncTimer)
     this.syncTimer = window.setInterval(() => {
-      const time = (this.moviEl as any).currentTime
+      const time = (this.moviEl as any)?.currentTime
       if (typeof time !== "number") return
-
-      if (this.assRenderer && !(this.assRenderer as any)._destroyed) {
-        const w = this.moviEl.clientWidth || 0
-        const h = this.moviEl.clientHeight || 0
-        ;(this.assRenderer as any).manualRender({
-          expectedDisplayTime: performance.now(),
-          width: w,
-          height: h,
-          mediaTime: time,
-        })
-      }
 
       if (this.pgsRenderer) {
         this.pgsRenderer.renderAtTimestamp(time)
@@ -459,13 +342,6 @@ export class SubtitleManager {
       clearInterval(this.syncTimer)
       this.syncTimer = undefined
     }
-    this.stopCopyLoop()
-    if (this.assRenderer) {
-      if (!(this.assRenderer as any)._destroyed) {
-        ;(this.assRenderer as any).destroy()
-      }
-      this.assRenderer = null
-    }
     if (this.pgsRenderer) {
       this.pgsRenderer.dispose()
       this.pgsRenderer = null
@@ -474,15 +350,10 @@ export class SubtitleManager {
       this.resizeObserver.disconnect()
       this.resizeObserver = null
     }
-    if (this.jassubCanvas) {
-      this.jassubCanvas.remove()
-      this.jassubCanvas = null
-    }
     if (this.overlayCanvas) {
       this.overlayCanvas.remove()
       this.overlayCanvas = null
     }
-    this.displayCtx = null
     this.activeRenderer = "none"
   }
 }

@@ -94,6 +94,93 @@ describe("SubtitleManager", () => {
     })
   })
 
+  describe("external ASS is declared for movi", () => {
+    const utf16le = (s: string) => {
+      const out = [0xff, 0xfe]
+      for (const ch of s) {
+        const c = ch.charCodeAt(0)
+        out.push(c & 0xff, (c >> 8) & 0xff)
+      }
+      return new Uint8Array(out).buffer
+    }
+    const tracks = (m: SubtitleManager) => {
+      const host = document.createElement("div")
+      host.innerHTML = m.getTrackHTML()
+      return Array.from(host.querySelectorAll("track"))
+    }
+
+    afterEach(() => vi.unstubAllGlobals())
+
+    it("a UTF-8 .ass keeps its url and is marked data-format=ass", async () => {
+      const f = vi.fn(async () => ({
+        arrayBuffer: async () =>
+          new TextEncoder().encode("[Script Info]").buffer,
+      }))
+      vi.stubGlobal("fetch", f)
+      manager = new SubtitleManager(null)
+      manager.registerTracks([{ name: "zh.ass", url: "/subs/zh.ass" }])
+      await manager.convertAssTracks()
+      const [t] = tracks(manager)
+      expect(t.getAttribute("src")).toBe("/subs/zh.ass")
+      expect(t.getAttribute("data-format")).toBe("ass")
+    })
+
+    it("a UTF-16 .ass becomes a UTF-8 blob url in the <track> src", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({
+          arrayBuffer: async () => utf16le("[Script Info]\n魔法少女"),
+        })),
+      )
+      const created: Blob[] = []
+      URL.createObjectURL = vi.fn((b: Blob) => {
+        created.push(b)
+        return "blob:ass-1"
+      })
+      URL.revokeObjectURL = vi.fn()
+      manager = new SubtitleManager(null)
+      manager.registerTracks([{ name: "zh.ass", url: "/subs/zh.ass" }])
+      await manager.convertAssTracks()
+      const [t] = tracks(manager)
+      expect(t.getAttribute("src")).toBe("blob:ass-1")
+      expect(t.getAttribute("data-format")).toBe("ass")
+      expect(await created[0].text()).toBe("[Script Info]\n魔法少女")
+      manager.destroy()
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:ass-1")
+    })
+
+    it("only .ass files are fetched; srt/vtt/sup go through untouched", async () => {
+      const f = vi.fn()
+      vi.stubGlobal("fetch", f)
+      manager = new SubtitleManager(null)
+      manager.registerTracks([
+        { name: "a.srt", url: "/a.srt" },
+        { name: "b.vtt", url: "/b.vtt" },
+        { name: "c.sup", url: "/c.sup" },
+      ])
+      await manager.convertAssTracks()
+      expect(f).not.toHaveBeenCalled()
+      expect(tracks(manager).map((t) => t.getAttribute("data-format"))).toEqual(
+        ["vtt", "vtt", "sup"],
+      )
+    })
+
+    it("keeps data-inband-* on an ASS track", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })),
+      )
+      manager = new SubtitleManager(null)
+      manager.registerTracks([
+        { name: "x.ass", url: "/x", inbandTitle: "简体", inbandOrder: 2 },
+      ])
+      await manager.convertAssTracks()
+      const [t] = tracks(manager)
+      expect(t.getAttribute("data-inband-title")).toBe("简体")
+      expect(t.getAttribute("data-inband-order")).toBe("2")
+    })
+  })
+
   describe("handleTrackChange", () => {
     it("does nothing when no track is active", () => {
       manager = new SubtitleManager(moviEl)
@@ -111,13 +198,14 @@ describe("SubtitleManager", () => {
       expect(manager.getActiveRenderer()).toBe("none")
     })
 
-    it("returns 'ass' renderer type for ASS tracks", async () => {
+    it("leaves ASS to movi: no renderer, no overlay canvas", async () => {
       manager = new SubtitleManager(moviEl)
       manager.registerTracks([{ name: "zh.ass", url: "/subs/zh.ass" }])
       moviEl._subtitleLangs = [{ lang: "sub0", label: "zh.ass", active: true }]
       manager.handleTrackChange()
       await tick()
-      expect(manager.getActiveRenderer()).toBe("ass")
+      expect(manager.getActiveRenderer()).toBe("none")
+      expect(wrapper.querySelector("canvas")).toBeNull()
     })
 
     it("returns 'sup' renderer type for SUP tracks", async () => {
@@ -132,19 +220,19 @@ describe("SubtitleManager", () => {
     it("destroys previous renderer when switching tracks", async () => {
       manager = new SubtitleManager(moviEl)
       manager.registerTracks([
-        { name: "zh.ass", url: "/subs/zh.ass" },
+        { name: "zh.sup", url: "/subs/zh.sup" },
         { name: "en.srt", url: "/subs/en.srt" },
       ])
       moviEl._subtitleLangs = [
-        { lang: "sub0", label: "zh.ass", active: true },
+        { lang: "sub0", label: "zh.sup", active: true },
         { lang: "sub1", label: "en.srt", active: false },
       ]
       manager.handleTrackChange()
       await tick()
-      expect(manager.getActiveRenderer()).toBe("ass")
+      expect(manager.getActiveRenderer()).toBe("sup")
 
       moviEl._subtitleLangs = [
-        { lang: "sub0", label: "zh.ass", active: false },
+        { lang: "sub0", label: "zh.sup", active: false },
         { lang: "sub1", label: "en.srt", active: true },
       ]
       manager.handleTrackChange()
