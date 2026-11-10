@@ -42,7 +42,7 @@ const browser = await chromium.launch()
 let olToken = ""
 await step("openlist login + storage", async () => {
   // A fresh server has no admin yet: the first-run setup creates it.
-  await olApi("/api/init/setup", { username: "admin", password: process.env.OL_PASS, site_title: "OpenList" })
+  await olApi("/api/public/init/setup", { username: "admin", password: process.env.OL_PASS, site_title: "OpenList" })
   olToken = (await olApi("/api/auth/login", { username: "admin", password: process.env.OL_PASS })).token
   await olApi(
     "/api/admin/storage/create",
@@ -114,16 +114,11 @@ await step("cloudreve signup + upload", async () => {
   await shot(page, "cr-0-signup")
   if (!/\/home/.test(page.url())) await crLogin(page)
   await page.waitForTimeout(2000)
-  // The folder-upload input (webkitdirectory) takes the whole sample tree.
-  const dirInput = page.locator("input[type=file][webkitdirectory]")
-  if ((await dirInput.count()) > 0) {
-    await dirInput.first().setInputFiles(process.env.SAMPLES)
-  } else {
-    const files = fs.readdirSync(process.env.SAMPLES, { recursive: true })
-      .map((f) => path.join(process.env.SAMPLES, f))
-      .filter((f) => fs.statSync(f).isFile())
-    await page.locator("input[type=file]").first().setInputFiles(files)
-  }
+  // 新建 → 上传目录 opens a directory chooser; hand it the whole sample tree.
+  await page.getByRole("button", { name: "新建" }).click()
+  const chooser = page.waitForEvent("filechooser", { timeout: 15000 })
+  await page.getByText("上传目录", { exact: true }).click()
+  await (await chooser).setFiles(process.env.SAMPLES)
   await page.waitForTimeout(15000)
   await shot(page, "cr-0-uploaded")
   await ctx.storageState({ path: path.join(out, "..", "cr-state.json") })
