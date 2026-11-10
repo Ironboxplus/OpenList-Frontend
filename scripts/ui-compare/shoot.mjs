@@ -68,9 +68,14 @@ await step("openlist login + storage", async () => {
 // README.md is hidden from listings by default and the welcome announcement
 // sits over the first screen; Cloudreve shows neither, so clear both.
 await step("openlist settings", async () => {
-  for (const key of ["hide_files", "announcement"]) {
+  // Storage usage is hidden by default; the storage card needs it shown.
+  for (const [key, value] of [
+    ["hide_files", ""],
+    ["announcement", ""],
+    ["hide_storage_details", "false"],
+  ]) {
     const item = await olGet(`/api/admin/setting/get?key=${key}`, olToken)
-    await olApi("/api/admin/setting/save", [{ ...item, value: "" }], olToken)
+    await olApi("/api/admin/setting/save", [{ ...item, value }], olToken)
   }
 })
 
