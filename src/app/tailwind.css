@@ -203,8 +203,8 @@ html.shell-phone .files-cards {
 .grid-item.grid-card.folder {
   flex-direction: row !important;
   align-items: center !important;
-  height: 3rem;
-  padding: 0 0.75rem !important;
+  min-height: 3rem;
+  padding: 0.375rem 0.75rem !important;
 }
 .grid-item.grid-card .name {
   color: var(--foreground);

@@ -205,6 +205,30 @@ async function openlist(scheme, viewport, tag) {
       })
     }
   }
+  // The storage card of the sidebar (the Me sheet on a phone): at the storages
+  // root it lists the mount points, inside a storage that storage.
+  if (tag === "light" || tag === "mobile") {
+    for (const [name, route] of [
+      ["storages", "/"],
+      ["storage-folder", "/示例"],
+    ]) {
+      await step(`openlist ${tag} ${name}`, async () => {
+        await page.goto(OL + route, { waitUntil: "networkidle" })
+        await page.waitForTimeout(1500)
+        if (!phone) {
+          // the list view step above left the list on; the grid is what is shot here
+          await page.locator("[data-files-view]").click()
+          await page.getByRole("menuitem", { name: /Grid View|网格视图/ }).click()
+          await page.waitForTimeout(800)
+        }
+        if (phone) {
+          await page.getByRole("button", { name: /^(Me|我的?)$/ }).click()
+          await page.waitForTimeout(800)
+        }
+        await shot(page, `ol-${tag}-11-${name}`)
+      })
+    }
+  }
   await ctx.close()
 }
 

@@ -1,38 +1,17 @@
-import {
-  Box,
-  HStack,
-  Icon,
-  Progress,
-  ProgressIndicator,
-  ProgressLabel,
-  Text,
-} from "@hope-ui/solid"
+import { Box, HStack, Icon, Text } from "@hope-ui/solid"
 import { createSignal, onCleanup, Show } from "solid-js"
 import { LinkWithPush } from "~/components"
 import { useUtil } from "~/hooks"
-import {
-  checkboxOpen,
-  getMainColor,
-  getSettingBool,
-  local,
-  OrderBy,
-} from "~/store"
-import { MountDetails, ObjType, StoreObj } from "~/types"
-import {
-  bus,
-  formatDate,
-  formatDateCompact,
-  getFileSize,
-  hoverColor,
-  isTouchDevice,
-  showDiskUsage,
-  usedPercentage,
-  toReadableUsage,
-  nearlyFull,
-} from "~/utils"
+import { checkboxOpen, getMainColor, local, OrderBy } from "~/store"
+import { ObjType, StoreObj } from "~/types"
+import { bus, hoverColor, isTouchDevice } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
-import { episodeFor } from "~/features/media/state"
+import {
+  EpisodeText,
+  ModifiedText,
+  SizeOrUsage,
+} from "~/features/files/ItemMeta"
 import { PhoneRowBody } from "~/features/files/PhoneRowBody"
 import { RowThumb } from "~/features/files/RowThumb"
 import { phoneShell } from "~/features/shell/topbar-slot"
@@ -206,82 +185,19 @@ export const ListItem = (props: {
             >
               {props.obj.name}
             </Text>
-            <Show when={episodeFor(props.obj.name)}>
-              {(ep) => (
-                <Text
-                  class="episode"
-                  flexShrink={0}
-                  fontSize="$xs"
-                  color="$neutral10"
-                  css={{ whiteSpace: "nowrap" }}
-                >
-                  {ep().text}
-                </Text>
-              )}
-            </Show>
+            <EpisodeText name={props.obj.name} />
             <ExtraBadges extra={props.obj.extra} />
           </HStack>
-          <Show
-            fallback={
-              <Text
-                class="size"
-                w={cols[1].w}
-                textAlign={cols[1].textAlign as any}
-              >
-                {getFileSize(props.obj.size)}
-              </Text>
-            }
-            when={showDiskUsage(props.obj.mount_details)}
-          >
-            <Show
-              fallback={
-                <Text
-                  class="size"
-                  w={cols[1].w}
-                  textAlign={cols[1].textAlign as any}
-                >
-                  {toReadableUsage(props.obj.mount_details!)}
-                </Text>
-              }
-              when={!getSettingBool("show_disk_usage_in_plain_text")}
-            >
-              <Progress
-                w={cols[1].w}
-                class="disk-usage-percentage"
-                trackColor="$info3"
-                rounded="$full"
-                size="md"
-                value={usedPercentage(props.obj.mount_details!)}
-              >
-                <ProgressIndicator
-                  color={
-                    nearlyFull(props.obj.mount_details!) ? "$danger6" : "$info6"
-                  }
-                  rounded="$md"
-                />
-                <ProgressLabel class="disk-usage-text">
-                  {toReadableUsage(props.obj.mount_details!)}
-                </ProgressLabel>
-              </Progress>
-            </Show>
-          </Show>
-          <Text
-            class="modified"
-            display={{ "@initial": "none", "@md": "inline" }}
+          <Box w={cols[1].w} textAlign={cols[1].textAlign as any}>
+            <SizeOrUsage obj={props.obj} />
+          </Box>
+          <Box
+            display={{ "@initial": "none", "@md": "block" }}
             w={cols[2].w}
             textAlign={cols[2].textAlign as any}
-            // Keep the compact timestamp on one line; the column is now sized for
-            // exactly 11 characters, so a wrap would silently break the row height.
-            css={{ whiteSpace: "nowrap" }}
-            // Precision is hidden, not lost: the compact form omits seconds (and the
-            // year, when it is the current one) while the full timestamp stays
-            // available on hover.
-            title={
-              props.obj.modified ? formatDate(props.obj.modified) : undefined
-            }
           >
-            {formatDateCompact(props.obj.modified)}
-          </Text>
+            <ModifiedText modified={props.obj.modified} />
+          </Box>
         </Show>
       </HStack>
 

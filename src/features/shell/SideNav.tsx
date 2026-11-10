@@ -3,6 +3,7 @@ import { useT } from "~/hooks"
 import { me } from "~/store"
 import { NavTree } from "./NavTree"
 import { SideNavEntry } from "./SideNavEntry"
+import { StorageCard } from "./StorageCard"
 import { activeNavId, navItemsFor } from "./nav-items"
 
 export const RAIL_WIDTH = "72px"
@@ -50,6 +51,9 @@ export const SideNav = (props: SideNavProps) => {
           </Show>
         )}
       </For>
+      <Show when={!props.rail}>
+        <StorageCard class="mt-auto" />
+      </Show>
     </nav>
   )
 }

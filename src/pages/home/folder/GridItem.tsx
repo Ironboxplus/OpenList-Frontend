@@ -272,6 +272,7 @@ export const GridItem = (props: {
               selected={!!props.obj.selected}
               selecting={selectionMode()}
               checkbox={cardCheckbox()}
+              extra={<ExtraBadges extra={props.obj.extra} maxTags={1} />}
             />
           </Show>
         </Show>

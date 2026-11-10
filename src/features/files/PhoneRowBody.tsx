@@ -4,9 +4,10 @@ import { Dynamic } from "solid-js/web"
 import { getMainColor } from "~/store"
 import type { StoreObj } from "~/types"
 import { cn } from "~/utils/cn"
-import { formatDateCompact, getFileSize, toReadableUsage } from "~/utils"
+import { formatDateCompact } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { episodeFor } from "../media/state"
+import { sizeText } from "./ItemMeta"
 import { RowThumb } from "./RowThumb"
 import { selectionMode } from "./selection-mode"
 
@@ -16,16 +17,10 @@ import { selectionMode } from "./selection-mode"
  * selection behaviour. In selection mode a round check replaces the icon slot.
  */
 export const PhoneRowBody = (props: { obj: StoreObj }) => {
-  const size = () =>
-    props.obj.mount_details
-      ? toReadableUsage(props.obj.mount_details)
-      : props.obj.is_dir
-        ? ""
-        : getFileSize(props.obj.size)
   const meta = () =>
     [
       episodeFor(props.obj.name)?.text,
-      size(),
+      sizeText(props.obj),
       props.obj.modified ? formatDateCompact(props.obj.modified) : "",
     ]
       .filter(Boolean)

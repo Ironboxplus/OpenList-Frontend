@@ -49,5 +49,10 @@
       "internal": "Server"
     }
   },
-  "search_hint": "Search"
+  "search_hint": "Search",
+  "storage": {
+    "title": "Storage",
+    "show_all": "Show all",
+    "show_less": "Show less"
+  }
 }

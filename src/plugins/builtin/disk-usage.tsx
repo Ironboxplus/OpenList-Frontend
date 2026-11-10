@@ -9,6 +9,7 @@ import {
 } from "@hope-ui/solid"
 import { Show } from "solid-js"
 import { BsHddFill } from "solid-icons/bs"
+import { shellActive } from "~/features/shell/topbar-slot"
 import { objStore, State } from "~/store"
 import {
   nearlyFull,
@@ -26,6 +27,9 @@ import type { Plugin } from "../registry"
  * of showing the previous folder's data. The backend piggybacks the usage on the
  * list response (cache-backed + singleflight), so navigation costs no extra
  * request and cannot cause provider 429s under concurrent users.
+ *
+ * Inside the app shell the sidebar's storage card says the same (and more), so
+ * the widget stays for the classic header only (guests).
  */
 const DiskUsageWidget = () => {
   const details = () => objStore.mountDetails
@@ -42,7 +46,7 @@ const DiskUsageWidget = () => {
   const accent = () => (nearlyFull(details()!) ? "$danger9" : "$info9")
 
   return (
-    <>
+    <Show when={!shellActive()}>
       {/* First load (no data yet): show a skeleton placeholder. Subsequent
           navigations keep the existing bar (dimmed) so it never flashes. */}
       <Show when={loading() && !showDiskUsage(details())}>
@@ -110,7 +114,7 @@ const DiskUsageWidget = () => {
           </HStack>
         </Tooltip>
       </Show>
-    </>
+    </Show>
   )
 }
 

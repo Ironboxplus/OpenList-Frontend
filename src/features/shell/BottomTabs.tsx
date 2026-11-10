@@ -16,6 +16,7 @@ import { errorCenter } from "../notifications/service"
 import { setErrorCenterOpen } from "../notifications/state"
 import { CountBadge, NavBadge } from "./NavBadge"
 import { NavLink } from "./NavLink"
+import { StorageCard } from "./StorageCard"
 import {
   activeNavId,
   badgeTarget,
@@ -146,6 +147,7 @@ export const BottomTabs = (props: { pathname: string }) => {
               {t("manage.logout")}
             </button>
           </div>
+          <StorageCard class="mt-4" />
         </SheetContent>
       </Sheet>
     </>

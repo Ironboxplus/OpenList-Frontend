@@ -3,6 +3,7 @@ import { createSignal, type JSX, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import type { StoreObj } from "~/types"
 import { getIconByObj } from "~/utils/icon"
+import { CardMeta } from "./ItemMeta"
 
 /**
  * The type icon of a card; while selecting (and for a selected card) a check
@@ -44,6 +45,8 @@ const CardHead = (props: {
   selecting?: boolean
   checkbox?: () => JSX.Element
   extra?: JSX.Element
+  /** A second line under the name. */
+  sub?: JSX.Element
 }) => (
   <div class="flex min-h-8 w-full min-w-0 items-center gap-2 px-1">
     <Show
@@ -58,24 +61,40 @@ const CardHead = (props: {
     >
       {props.checkbox!()}
     </Show>
-    <span
-      class="name min-w-0 flex-1 truncate text-left text-sm"
-      title={props.obj.name}
-    >
-      {props.obj.name}
-    </span>
+    <div class="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+      <span class="name truncate text-sm" title={props.obj.name}>
+        {props.obj.name}
+      </span>
+      {props.sub}
+    </div>
     {props.extra}
   </div>
 )
 
-/** A folder: a flat chip with its icon and name. */
+/**
+ * A folder: a flat chip with its icon and name, and under the name its usage
+ * bar (a mount point) or its modified time; `extra` (badges) follows.
+ */
 export const FolderChip = (props: {
   obj: StoreObj
   selected?: boolean
   selecting?: boolean
   checkbox?: () => JSX.Element
   extra?: JSX.Element
-}) => <CardHead {...props} />
+}) => (
+  <CardHead
+    obj={props.obj}
+    selected={props.selected}
+    selecting={props.selecting}
+    checkbox={props.checkbox}
+    sub={
+      <>
+        <CardMeta obj={props.obj} />
+        {props.extra}
+      </>
+    }
+  />
+)
 
 /** The picture of a file card: its thumbnail, or the type icon when it has none. */
 const CardThumb = (props: { obj: StoreObj }) => {
@@ -101,7 +120,11 @@ const CardThumb = (props: { obj: StoreObj }) => {
   )
 }
 
-/** A file: the name row over its thumbnail. `onThumbClick` lets images open the gallery. */
+/**
+ * A file: the name row (with episode, size and modified time under the name)
+ * over its thumbnail, which carries `extra` (badges). `onThumbClick` lets
+ * images open the gallery.
+ */
 export const FileCard = (props: {
   obj: StoreObj
   selected?: boolean
@@ -111,14 +134,27 @@ export const FileCard = (props: {
   onThumbClick?: (e: MouseEvent) => void
 }) => (
   <>
-    <CardHead {...props} />
+    <CardHead
+      obj={props.obj}
+      selected={props.selected}
+      selecting={props.selecting}
+      checkbox={props.checkbox}
+      sub={<CardMeta obj={props.obj} />}
+    />
     <div
       data-card-thumb
-      class="aspect-[5/4] w-full overflow-hidden rounded-lg bg-background"
+      class="relative aspect-[5/4] w-full overflow-hidden rounded-lg bg-background"
       style={{ cursor: props.onThumbClick ? "pointer" : undefined }}
       on:click={(e: MouseEvent) => props.onThumbClick?.(e)}
     >
       <CardThumb obj={props.obj} />
+      <Show when={props.extra}>
+        <div class="absolute inset-x-1 bottom-1 flex">
+          <div class="rounded-md bg-background/85 px-1 py-0.5">
+            {props.extra}
+          </div>
+        </div>
+      </Show>
     </div>
   </>
 )
