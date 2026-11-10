@@ -1,10 +1,24 @@
 import { TbDatabase } from "solid-icons/tb"
-import { createMemo, createSignal, For, Show } from "solid-js"
-import { useT } from "~/hooks"
-import { objStore } from "~/store"
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Show,
+  untrack,
+} from "solid-js"
+import { useRouter, useT } from "~/hooks"
+import { objStore, State } from "~/store"
 import { nearlyFull, toReadableUsage, usedPercentage } from "~/utils"
 import { cn } from "~/utils/cn"
-import { COLLAPSED_COUNT, storageEntries } from "./storage-entries"
+import { currentSpot } from "./files-memory"
+import {
+  COLLAPSED_COUNT,
+  mountNameFor,
+  rememberMounts,
+  storageEntries,
+  type MountNames,
+} from "./storage-entries"
 
 /**
  * Storage space, as Cloudreve's card at the foot of its sidebar: the usage of
@@ -14,9 +28,22 @@ import { COLLAPSED_COUNT, storageEntries } from "./storage-entries"
  */
 export const StorageCard = (props: { class?: string }) => {
   const t = useT()
-  const entries = createMemo(() =>
-    storageEntries(objStore.mountDetails, objStore.objs),
-  )
+  const { pathname } = useRouter()
+  // Names of the mount points listed so far; the folder being browsed is named after its mount.
+  const mounts: MountNames = new Map()
+  createEffect(() => {
+    if (objStore.state === State.Folder) {
+      rememberMounts(mounts, untrack(pathname), objStore.objs)
+    }
+  })
+  const entries = createMemo(() => {
+    const path = currentSpot()?.path ?? pathname()
+    return storageEntries(
+      objStore.mountDetails,
+      objStore.objs,
+      mountNameFor(mounts, path),
+    )
+  })
   const [all, setAll] = createSignal(false)
   const shown = () => (all() ? entries() : entries().slice(0, COLLAPSED_COUNT))
   return (

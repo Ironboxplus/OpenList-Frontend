@@ -31,3 +31,39 @@ export const storageEntries = (
     .filter((o) => showDiskUsage(o.mount_details))
     .map((o) => ({ name: o.name, details: o.mount_details! }))
 }
+
+/**
+ * Mount points seen in listings, by path. A folder that carries mount_details
+ * is a mount point and its name is the mount name; once inside, the current
+ * path says which mount it is.
+ */
+export type MountNames = Map<string, string>
+
+export const rememberMounts = (
+  names: MountNames,
+  dir: string,
+  objs: readonly Pick<Obj, "name" | "mount_details">[],
+) => {
+  for (const o of objs) {
+    if (o.mount_details) {
+      names.set((dir === "/" ? "" : dir) + "/" + o.name, o.name)
+    }
+  }
+}
+
+/** The mount name for `path`: the longest remembered mount path that contains it. */
+export const mountNameFor = (
+  names: MountNames,
+  path: string,
+): string | undefined => {
+  let best: string | undefined
+  for (const mount of names.keys()) {
+    if (
+      (path === mount || path.startsWith(mount + "/")) &&
+      (best === undefined || mount.length > best.length)
+    ) {
+      best = mount
+    }
+  }
+  return best === undefined ? undefined : names.get(best)
+}

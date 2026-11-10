@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { MountDetails } from "~/types"
-import { storageEntries } from "../storage-entries"
+import {
+  mountNameFor,
+  rememberMounts,
+  storageEntries,
+} from "../storage-entries"
 
 const GB = 1024 ** 3
 const local: MountDetails = {
@@ -34,5 +38,26 @@ describe("storageEntries", () => {
     expect(
       storageEntries({ ...local, driver_name: "unknown" }, [])[0].name,
     ).toBe("")
+  })
+})
+
+describe("mount names", () => {
+  it("names the storage after its mount, by the longest remembered prefix", () => {
+    const names = new Map<string, string>()
+    rememberMounts(names, "/", [
+      { name: "示例", mount_details: local },
+      { name: "plain" },
+    ])
+    rememberMounts(names, "/示例", [{ name: "nested", mount_details: local }])
+    expect(mountNameFor(names, "/示例")).toBe("示例")
+    expect(mountNameFor(names, "/示例/照片/2026")).toBe("示例")
+    expect(mountNameFor(names, "/示例/nested/x")).toBe("nested")
+    expect(mountNameFor(names, "/示例2")).toBeUndefined()
+    expect(mountNameFor(names, "/plain")).toBeUndefined()
+  })
+
+  it("uses the mount name over the driver, the driver without one", () => {
+    expect(storageEntries(local, [], "示例")[0].name).toBe("示例")
+    expect(storageEntries(local, [])[0].name).toBe("Local")
   })
 })
