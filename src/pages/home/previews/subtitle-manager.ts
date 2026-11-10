@@ -110,6 +110,7 @@ export class SubtitleManager {
   private pollTimer: number | undefined
   private fullscreenChangeHandler: (() => void) | null = null
   private activationSeq = 0
+  private lastPlayingHls = false
   private followWake: (() => void) | null = null
   private followTimer: number | undefined
 
@@ -231,6 +232,11 @@ export class SubtitleManager {
     if (!info) return
 
     if (info.extracted) {
+      // The original shows the track from its own container; reading it out of
+      // the file as well would be a second reader of a file the storage lets
+      // one connection at a time read. Only a source that dropped the track
+      // (a transcode) needs the extracted file.
+      if (!this.playingHls()) return
       if (info.format === "sup") this.activeRenderer = "sup"
       void this.followExtraction(info, activationSeq)
       return
@@ -245,6 +251,13 @@ export class SubtitleManager {
         this.destroyRenderers()
       })
     }
+  }
+
+  // True while the source in play is an HLS stream, which carries no subtitle
+  // tracks of the original file (movi's own test for an adaptive source).
+  private playingHls(): boolean {
+    const src = (this.moviEl as any)?.currentSrc
+    return typeof src === "string" && /\.m3u8/i.test(src)
   }
 
   // The track showing is made by OpenList and may still be being read: fetch it
@@ -321,9 +334,11 @@ export class SubtitleManager {
         Array<{ lang: string; label: string; active: boolean }> | undefined
       const active = langs?.find((t) => t.active)
       const activeLang = active?.lang ?? null
-      if (activeLang !== this.lastActiveLang) {
+      const hls = this.playingHls()
+      if (activeLang !== this.lastActiveLang || hls !== this.lastPlayingHls) {
         log("detected track change:", this.lastActiveLang, "→", activeLang)
         this.lastActiveLang = activeLang
+        this.lastPlayingHls = hls
         this.handleTrackChange()
       }
     }, 500)

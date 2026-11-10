@@ -302,6 +302,8 @@ describe("SubtitleManager", () => {
 
 describe("extracted subtitles (read out of the video by OpenList)", () => {
   const api = "https://h/api/fs/subtitle_extract?path=%2Fa.mkv&track=2&sign=s"
+  const HLS = "https://h/video_proxy/1080.m3u8#.m3u8"
+  const ORIGINAL = "https://h/d/a.mkv?sign=o"
   const file: SubtitleFile = {
     name: "kor.srt",
     url: api,
@@ -315,10 +317,14 @@ describe("extracted subtitles (read out of the video by OpenList)", () => {
 
   beforeEach(() => {
     // only the timers: the body of a Response is read with the real scheduler
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] })
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"],
+    })
     wrapper = document.createElement("div")
     document.body.appendChild(wrapper)
     moviEl = createMockMoviElement()
+    // a transcoded source: it has dropped the container's own subtitle tracks
+    moviEl.currentSrc = HLS
     wrapper.appendChild(moviEl)
     manager = new SubtitleManager(null)
     manager.registerTracks([file])
@@ -419,6 +425,41 @@ describe("extracted subtitles (read out of the video by OpenList)", () => {
     expect(pgs.created).toHaveLength(1)
     expect(pgs.created[0].subUrl).toBeUndefined()
     expect(pgs.disposed).toBe(0)
+  })
+
+  it("fetches nothing while the original plays", async () => {
+    const spy = vi.fn()
+    vi.stubGlobal("fetch", spy)
+    moviEl.currentSrc = ORIGINAL
+    moviEl._subtitleLangs = [{ lang: "sub0", label: "kor", active: true }]
+    manager.handleTrackChange()
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("starts at the playhead when the source changes to a transcode, and stops when it changes back", async () => {
+    const fetched: string[] = []
+    vi.stubGlobal("fetch", async (u: string) => {
+      fetched.push(u)
+      return response("partial; done=0.10")
+    })
+    moviEl.currentSrc = ORIGINAL
+    moviEl._subtitleLangs = [{ lang: "sub0", label: "kor", active: true }]
+    manager.startPolling()
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(fetched).toHaveLength(0)
+
+    moviEl.currentTime = 77.2
+    moviEl.currentSrc = HLS
+    await vi.advanceTimersByTimeAsync(600)
+    await vi.waitFor(() => expect(fetched).toHaveLength(1))
+    expect(fetched[0]).toBe(`${api}&at=77`)
+
+    moviEl.currentSrc = ORIGINAL
+    await vi.advanceTimersByTimeAsync(600)
+    const n = fetched.length
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(fetched).toHaveLength(n)
   })
 
   it("stops asking when another subtitle is picked", async () => {
