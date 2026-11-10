@@ -1,5 +1,4 @@
 import { Box, Center, Skeleton, Text, VStack } from "@hope-ui/solid"
-import { useContextMenu } from "solid-contextmenu"
 import {
   For,
   Match,
@@ -23,6 +22,7 @@ import { ObjType, StoreObj } from "~/types"
 import { bus } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { BsPlayCircleFill } from "solid-icons/bs"
+import { selectForMenu } from "./helper"
 import {
   clampPreview,
   masonryCardKind,
@@ -125,7 +125,6 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
   const isImage = kind === "image"
   const { previewLink } = useLink()
   const { pushHref, to } = useRouter()
-  const { show } = useContextMenu({ id: 1 })
   const typeIcon = (size: string) => (
     <Box as={getIconByObj(obj) as any} color={getMainColor()} fontSize={size} />
   )
@@ -151,10 +150,7 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
           "&:hover .masonry-overlay": { opacity: 1 },
           "&:hover img": { filter: "brightness(1.05)" },
         }}
-        onContextMenu={(e: MouseEvent) => {
-          batch(() => selectIndex(props.index, true, true))
-          show(e, { props: obj })
-        }}
+        onContextMenu={() => selectForMenu(props.index)}
         on:click={(e: MouseEvent) => {
           e.preventDefault()
           if (e.ctrlKey || e.metaKey || e.shiftKey) return

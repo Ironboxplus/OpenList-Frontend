@@ -37,7 +37,7 @@ export const SideNavEntry = (props: {
         navRowClass,
         "relative",
         props.rail && "justify-center px-0",
-        props.active && "text-foreground",
+        props.active && "bg-primary/20 text-foreground",
       )}
     >
       <NavIconView icon={props.item.icon} />

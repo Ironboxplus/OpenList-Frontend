@@ -3,10 +3,20 @@ import { hoverColor } from "~/utils"
 
 const theme: HopeThemeConfig = {
   initialColorMode: "system",
+  // Cloudreve's canvas and primary (see tokens.css), so the pages that are
+  // still on hope-ui sit on the same surfaces as the shell.
   lightTheme: {
     colors: {
-      // background: "$neutral2",
-      background: "#f7f8fa",
+      background: "#f5f5f5",
+      info9: "#1976d2",
+      info10: "#1565c0",
+    },
+  },
+  darkTheme: {
+    colors: {
+      background: "#121212",
+      info9: "#1976d2",
+      info10: "#1e88e5",
     },
   },
   components: {

@@ -216,7 +216,7 @@ const ListLayout = () => {
   // The toolbar's sort menu writes the same state, so the header follows it.
   const saved = createMemo(() => loadSortState(pathname()))
 
-  const { registerSelectContainer, captureContentMenu } = useSelectWithMouse()
+  const { registerSelectContainer } = useSelectWithMouse()
   registerSelectContainer()
 
   // Media rows are chosen from the driver *and* the directory's actual contents —
@@ -251,7 +251,6 @@ const ListLayout = () => {
   return (
     <VStack
       onDragOver={onDragOver}
-      oncapture:contextmenu={captureContentMenu}
       class="list viselect-container"
       w="$full"
       spacing="$1"

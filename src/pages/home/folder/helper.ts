@@ -1,6 +1,5 @@
 import { Checkbox, hope } from "@hope-ui/solid"
 import { batch, createEffect, onCleanup } from "solid-js"
-import { useContextMenu } from "solid-contextmenu"
 import SelectionArea from "@viselect/vanilla"
 import {
   checkboxOpen,
@@ -15,14 +14,31 @@ import {
 import { usePath, useRouter } from "~/hooks"
 import { isMobile } from "~/utils/compatibility"
 import { createLongPress } from "~/utils/touch"
+import { markMenuTarget } from "~/features/files/menu-target"
 import { selectionMode } from "~/features/files/selection-mode"
 import { phoneShell } from "~/features/shell/topbar-slot"
 import { StoreObj } from "~/types"
 
 let selectedCache: StoreObj[] | null = null
 
+/**
+ * A right click selects the row, as the menu is for what is selected, unless
+ * the row is one of several already selected: then the menu is for all of them.
+ */
+export const selectForMenu = (index: number) => {
+  batch(() => {
+    if (!(objStore.objs[index]?.selected && !oneChecked())) {
+      selectIndex(index, true, true)
+    }
+  })
+  markMenuTarget()
+}
+
 export function useSelectWithMouse() {
   const isMouseSupported = () => !isMobile && checkboxOpen()
+  // Ctrl/Shift-click and the drag rectangle select with a mouse whether or not
+  // the checkboxes are showing; phones select by long press instead.
+  const canMarqueeSelect = () => !isMobile && !phoneShell()
   const openWithDoubleClick = () =>
     isMouseSupported() && local["open_item_on_checkbox"] === "dblclick"
   const toggleWithClick = () =>
@@ -48,7 +64,7 @@ export function useSelectWithMouse() {
 
   const registerSelectContainer = () => {
     createEffect(() => {
-      if (!isMouseSupported()) {
+      if (!canMarqueeSelect()) {
         const area = document.querySelector(".viselect-container")
         area?.addEventListener("mousedown", saveSelectionCache)
         onCleanup(() =>
@@ -96,32 +112,12 @@ export function useSelectWithMouse() {
     })
   }
 
-  const { show } = useContextMenu({ id: 1 })
-
-  const captureContentMenu = (e: MouseEvent) => {
-    e.preventDefault()
-
-    if (haveSelected() && !oneChecked()) {
-      const $target = e.target as Element
-      const $selectedItem = $target.closest(".viselect-item")
-      const index = Number($selectedItem?.getAttribute("data-index"))
-
-      const isClickOnContainer = Number.isNaN(index)
-      const isClickOnSelectedItems = () => !!objStore.objs[index].selected
-      if (isClickOnContainer || !isClickOnSelectedItems()) return
-
-      e.stopPropagation()
-      show(e, { props: objStore.obj })
-    }
-  }
-
   return {
     isMouseSupported,
     openWithDoubleClick,
     toggleWithClick,
     restoreSelectionCache,
     registerSelectContainer,
-    captureContentMenu,
   }
 }
 
@@ -144,7 +140,6 @@ export function useFileRowInteraction(
 ) {
   const { setPathAs } = usePath()
   const { pushHref, to } = useRouter()
-  const { show } = useContextMenu({ id: 1 })
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
 
@@ -187,10 +182,7 @@ export function useFileRowInteraction(
   const onContextMenu = (e: MouseEvent) => {
     // On phones the long press is the selection gesture, not a menu.
     if (phoneShell()) return e.preventDefault()
-    batch(() => {
-      selectIndex(index(), true, true)
-    })
-    show(e, { props: obj() })
+    selectForMenu(index())
   }
 
   const onCheckboxChange = (e: any) => selectIndex(index(), e.target.checked)

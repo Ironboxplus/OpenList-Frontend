@@ -8,14 +8,13 @@ import {
   on,
   Show,
 } from "solid-js"
-import { ActionBar } from "~/features/files/ActionBar"
 import { posterActive } from "~/features/media/state"
+import { FileContextMenu } from "~/features/files/FileContextMenu"
 import { FilesEmpty } from "~/features/files/FilesState"
 import { PhoneFab } from "~/features/files/PhoneActions"
 import { selectionMode } from "~/features/files/selection-mode"
 import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
 import { layout } from "~/store"
-import { ContextMenu } from "./context-menu"
 import { Pager } from "./Pager"
 import { useLink, useRouter, useT } from "~/hooks"
 import { loadSortState } from "./sort-state"
@@ -93,38 +92,35 @@ const Folder = () => {
   const t = useT()
   return (
     <>
-      <Show when={shellActive()}>
-        <Show when={phoneShell()} fallback={<ActionBar />}>
-          <Show when={!selectionMode()}>
-            <PhoneFab />
-          </Show>
+      <Show when={shellActive() && phoneShell() && !selectionMode()}>
+        <PhoneFab />
+      </Show>
+      <FileContextMenu>
+        <Show
+          when={objStore.objs.length > 0 || !shellActive()}
+          fallback={<FilesEmpty />}
+        >
+          <Switch>
+            <Match when={posterActive()}>
+              <PosterWall />
+            </Match>
+            <Match when={layout() === "list"}>
+              <ListLayout />
+            </Match>
+            <Match when={layout() === "grid"}>
+              <GridLayout />
+            </Match>
+            <Match when={layout() === "image"}>
+              <ImageLayout images={images()} />
+            </Match>
+            <Match when={layout() === "masonry"}>
+              <MasonryLayout images={images()} />
+            </Match>
+          </Switch>
         </Show>
-      </Show>
-      <Show
-        when={objStore.objs.length > 0 || !shellActive()}
-        fallback={<FilesEmpty />}
-      >
-        <Switch>
-          <Match when={posterActive()}>
-            <PosterWall />
-          </Match>
-          <Match when={layout() === "list"}>
-            <ListLayout />
-          </Match>
-          <Match when={layout() === "grid"}>
-            <GridLayout />
-          </Match>
-          <Match when={layout() === "image"}>
-            <ImageLayout images={images()} />
-          </Match>
-          <Match when={layout() === "masonry"}>
-            <MasonryLayout images={images()} />
-          </Match>
-        </Switch>
-      </Show>
+      </FileContextMenu>
       <Pager />
       <Search />
-      <ContextMenu />
     </>
   )
 }

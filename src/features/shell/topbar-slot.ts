@@ -6,11 +6,22 @@ export interface SlotContext {
   phone: boolean
 }
 
+/** Height of the toolbar row under the top bar (wide shell). */
+export const TOOLBAR_ROW_HEIGHT = "3.25rem"
+
 export interface TopBarSlots {
-  /** Replaces the default page title. */
+  /** Replaces the default page title; sits left of the shell's search box. */
   left?: (ctx: SlotContext) => JSX.Element
-  /** Sits left of the shell's own search / Task Center buttons. */
+  /** Sits left of the shell's own Task Center / account buttons. */
   right?: (ctx: SlotContext) => JSX.Element
+  /**
+   * A row on the canvas between the bar and the content card (the Files
+   * breadcrumb with its view and sort buttons). On a phone it takes the place
+   * of the bar's own row.
+   */
+  toolbar?: (ctx: SlotContext) => JSX.Element
+  /** Hide the shell's search box, e.g. while the left slot shows a selection. */
+  hideSearch?: boolean
 }
 
 interface Registered extends TopBarSlots {

@@ -79,6 +79,8 @@ export const FolderSortItems = () => {
  */
 export const FolderSortMenu = (props: {
   class: string
+  /** Replaces the visible text (the full choice stays in the tooltip). */
+  label?: string
   labelClass?: string
   placement?: "bottom-start" | "bottom-end"
 }) => {
@@ -92,7 +94,7 @@ export const FolderSortMenu = (props: {
         class={props.class}
       >
         <TbArrowsSort class="size-4" />
-        <span class={props.labelClass}>{s.summary()}</span>
+        <span class={props.labelClass}>{props.label ?? s.summary()}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <FolderSortItems />

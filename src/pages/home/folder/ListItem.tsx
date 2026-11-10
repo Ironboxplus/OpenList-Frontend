@@ -34,6 +34,7 @@ import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
 import { episodeFor } from "~/features/media/state"
 import { PhoneRowBody } from "~/features/files/PhoneRowBody"
+import { RowThumb } from "~/features/files/RowThumb"
 import { phoneShell } from "~/features/shell/topbar-slot"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
 import {
@@ -78,6 +79,15 @@ export const ListItem = (props: {
     () => props.index,
   )
   const filenameStyle = () => local["list_item_filename_overflow"]
+  // Clicking an image's picture opens the gallery instead of the row's link.
+  const openGallery = (e: MouseEvent) => {
+    if (props.obj.type !== ObjType.IMAGE) return
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return
+    if (!ix.restoreSelectionCache()) return
+    bus.emit("gallery", props.obj.name)
+    e.preventDefault()
+    e.stopPropagation()
+  }
 
   // Hover preview state — desktop/non-touch only
   const [previewVisible, setPreviewVisible] = createSignal(false)
@@ -159,21 +169,22 @@ export const ListItem = (props: {
                 onChange={ix.onCheckboxChange}
               />
             </Show>
-            <Icon
-              class="icon"
-              boxSize="$6"
-              color={getMainColor()}
-              as={getIconByObj(props.obj)}
-              mr="$1"
-              cursor={props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"}
-              on:click={(e: MouseEvent) => {
-                if (props.obj.type !== ObjType.IMAGE) return
-                if (e.ctrlKey || e.metaKey || e.shiftKey) return
-                if (!ix.restoreSelectionCache()) return
-                bus.emit("gallery", props.obj.name)
-                e.preventDefault()
-                e.stopPropagation()
-              }}
+            <RowThumb
+              obj={props.obj}
+              onClick={openGallery}
+              fallback={
+                <Icon
+                  class="icon"
+                  boxSize="$6"
+                  color={getMainColor()}
+                  as={getIconByObj(props.obj)}
+                  mr="$1"
+                  cursor={
+                    props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"
+                  }
+                  on:click={openGallery}
+                />
+              }
             />
             <Text
               class="name"

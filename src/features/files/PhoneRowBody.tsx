@@ -7,6 +7,7 @@ import { cn } from "~/utils/cn"
 import { formatDateCompact, getFileSize, toReadableUsage } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { episodeFor } from "../media/state"
+import { RowThumb } from "./RowThumb"
 import { selectionMode } from "./selection-mode"
 
 /**
@@ -22,7 +23,11 @@ export const PhoneRowBody = (props: { obj: StoreObj }) => {
         ? ""
         : getFileSize(props.obj.size)
   const meta = () =>
-    [episodeFor(props.obj.name)?.text, size(), props.obj.modified ? formatDateCompact(props.obj.modified) : ""]
+    [
+      episodeFor(props.obj.name)?.text,
+      size(),
+      props.obj.modified ? formatDateCompact(props.obj.modified) : "",
+    ]
       .filter(Boolean)
       .join(" · ")
   return (
@@ -30,10 +35,15 @@ export const PhoneRowBody = (props: { obj: StoreObj }) => {
       <Show
         when={selectionMode()}
         fallback={
-          <Dynamic
-            component={getIconByObj(props.obj)}
-            class="size-7 shrink-0"
-            style={{ color: getMainColor() }}
+          <RowThumb
+            obj={props.obj}
+            fallback={
+              <Dynamic
+                component={getIconByObj(props.obj)}
+                class="size-7 shrink-0"
+                style={{ color: getMainColor() }}
+              />
+            }
           />
         }
       >

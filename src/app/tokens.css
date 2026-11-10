@@ -3,93 +3,96 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --radius: 0.75rem;
-  --background: hsl(220 20% 97.5%);
+  /* Cloudreve's palette and shapes (MUI theme in its App.tsx): primary
+     #1976d2, 12px corners, 8px menus. */
+  --radius: 12px;
+  --radius-menu: 8px;
+  /* The page canvas the side nav and the top bar sit on; the content card and
+     everything on it is --background. */
+  --canvas: #f5f5f5;
+  --background: #ffffff;
   --foreground: hsl(224 71% 4%);
-  --card: hsl(0 0% 100%);
+  --card: #ffffff;
   --card-foreground: hsl(224 71% 4%);
-  --popover: hsl(0 0% 100%);
+  --popover: #ffffff;
   --popover-foreground: hsl(224 71% 4%);
-  --primary: hsl(221 83% 53%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(220 14% 94%);
+  --primary: #1976d2;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;
   --secondary-foreground: hsl(224 30% 15%);
-  --muted: hsl(220 14% 94%);
+  --muted: #f5f5f5;
   --muted-foreground: hsl(220 9% 40%);
-  --accent: hsl(220 14% 92%);
+  --accent: #ebebeb;
   --accent-foreground: hsl(224 30% 15%);
   --destructive: hsl(0 72% 51%);
   --destructive-foreground: hsl(0 0% 100%);
   --success: hsl(142 64% 28%);
   --warning: hsl(32 95% 32%);
-  --border: hsl(220 13% 88%);
-  --input: hsl(220 13% 84%);
-  --ring: hsl(221 83% 53%);
+  --border: #e0e0e0;
+  --input: #d0d0d0;
+  --ring: #1976d2;
 }
 
 .dark {
-  /* Aligned with hope-ui's dark page background (#151718) so the shell and the
-     legacy pages share one shade. */
-  --background: hsl(200 7% 9%);
+  /* Near-black canvas, layers by lightness: #121212 canvas, #1e1e1e surfaces. */
+  --canvas: #121212;
+  --background: #1e1e1e;
   --foreground: hsl(210 20% 96%);
-  --card: hsl(200 7% 12%);
+  --card: #1e1e1e;
   --card-foreground: hsl(210 20% 96%);
-  --popover: hsl(200 7% 12%);
+  --popover: #262626;
   --popover-foreground: hsl(210 20% 96%);
-  --primary: hsl(217 91% 62%);
-  --primary-foreground: hsl(224 40% 8%);
-  --secondary: hsl(200 6% 17%);
+  --primary: #90caf9;
+  --primary-foreground: #0b2239;
+  --secondary: #2a2a2a;
   --secondary-foreground: hsl(210 20% 96%);
-  --muted: hsl(200 6% 17%);
-  --muted-foreground: hsl(200 8% 66%);
-  --accent: hsl(200 6% 19%);
+  --muted: #2a2a2a;
+  --muted-foreground: hsl(200 8% 68%);
+  --accent: #333333;
   --accent-foreground: hsl(210 20% 96%);
   --destructive: hsl(0 72% 58%);
   --destructive-foreground: hsl(0 0% 100%);
   --success: hsl(142 60% 52%);
   --warning: hsl(38 92% 56%);
-  --border: hsl(200 6% 21%);
-  --input: hsl(200 6% 25%);
-  --ring: hsl(217 91% 62%);
+  --border: #333333;
+  --input: #444444;
+  --ring: #90caf9;
 }
 
 /*
- * Floating shell (tablet and desktop): a side panel and a content panel on the
- * page background, with a gap between them and to the viewport edges, centred
- * with a maximum width. They are set only while AppShell shows the wide shell,
- * so a guest's bare page keeps its old geometry (var() fallbacks are 0). The
- * phone shell sits flush against the edges.
+ * Desktop and tablet shell, after Cloudreve's: the side nav and the top bar
+ * lie directly on the canvas, and only the content is a card. The bar is fixed
+ * across the top; the nav sits below it; the card is inset by the gap on the
+ * right and bottom. Set only while AppShell shows the wide shell, so a guest's
+ * bare page keeps its old geometry (var() fallbacks are 0).
  */
 html.shell-wide {
   /* A scrollbar appearing must not shift the panels (phones: overlay bars). */
   scrollbar-gutter: stable;
   --shell-gap: 12px;
-  --shell-max: 1680px;
-  --shell-radius: 1rem;
-  /* Left edge of the side panel. */
-  --shell-left: max(
-    var(--shell-gap),
-    calc((100vw - var(--shell-max)) / 2 + var(--shell-gap))
-  );
-  /* Distance from the content panel's right edge to the viewport's. */
-  --shell-content-right: var(--shell-left);
-}
-@media (max-width: 1023.98px) {
-  html.shell-wide {
-    --shell-gap: 8px;
-  }
+  --shell-radius: 12px;
+  --shell-header: 4rem;
+  /* Left edge of the side nav. */
+  --shell-left: 12px;
+  /* Distance from the content card's right edge to the viewport's. */
+  --shell-content-right: var(--shell-gap);
 }
 html.shell-wide body {
-  background: var(--muted);
+  background: var(--canvas);
 }
 html.shell-phone {
   --shell-gap: 0px;
   --shell-radius: 0px;
   --shell-left: 0px;
   --shell-content-right: 0px;
+  --shell-header: 3.5rem;
+}
+html.shell-phone body {
+  background: var(--canvas);
 }
 
 @theme inline {
+  --color-canvas: var(--canvas);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

@@ -20,7 +20,7 @@ export const initialLocalSettings = [
   },
   {
     key: "global_default_layout",
-    default: "list",
+    default: "grid",
     type: "select",
     options: ["list", "grid", "image"],
   },
@@ -95,6 +95,16 @@ for (const setting of initialLocalSettings) {
   if (!local[setting.key]) {
     setLocal(setting.key, setting.default)
   }
+}
+
+// The default view became "grid". A browser that stored the old default ("list",
+// written on its first visit) is moved over once; a choice made after that, in
+// the local settings or per folder in the view menu, is kept.
+if (!local["layout_default_v2"]) {
+  if (local["global_default_layout"] === "list") {
+    setLocal("global_default_layout", "grid")
+  }
+  setLocal("layout_default_v2", "1")
 }
 
 export { local, setLocal, remove, clear, toJSON }

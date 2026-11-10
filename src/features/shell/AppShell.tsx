@@ -24,9 +24,15 @@ import {
   writeCollapsed,
 } from "./nav-items"
 import { FULL_WIDTH, RAIL_WIDTH, SideNav } from "./SideNav"
-import { TOP_BAR_HEIGHT, TopBar } from "./TopBar"
+import { TopBar } from "./TopBar"
 import { bindTransfersToUser } from "./transfers-lifecycle"
-import { bottomBarOverride, setPhoneShell, setShellActive } from "./topbar-slot"
+import {
+  bottomBarOverride,
+  setPhoneShell,
+  setShellActive,
+  TOOLBAR_ROW_HEIGHT,
+  topBarSlots,
+} from "./topbar-slot"
 import { createViewport } from "./viewport"
 
 const TaskCenter = lazy(() => import("../transfers/TaskCenter"))
@@ -34,11 +40,16 @@ const ErrorCenter = lazy(() => import("../notifications/ErrorCenter"))
 // Loaded on first use; the hotkey and the buttons only touch ../palette/state.
 const CommandPalette = lazy(() => import("../palette/CommandPalette"))
 
+const isEditable = (el: EventTarget | null) =>
+  el instanceof HTMLElement &&
+  (el.isContentEditable || /^(input|textarea|select)$/i.test(el.tagName))
+
 /**
- * Responsive frame around the existing pages: bottom tabs on phones, a rail on
- * tablets, a full (foldable) sidebar on desktops. The pages keep scrolling the
- * window; the nav is `position: fixed` and the content makes room with padding.
- * Guests get the bare page.
+ * Responsive frame around the existing pages, after Cloudreve's: bottom tabs
+ * on phones, a rail on tablets, a full (foldable) sidebar on desktops. The top
+ * bar and the nav lie on the canvas; only the content is a card. The pages
+ * keep scrolling the window; bar and nav are `position: fixed` and the content
+ * makes room with padding. Guests get the bare page.
  */
 const AppShell = (props: ParentProps) => {
   const { pathname } = useRouter()
@@ -62,13 +73,27 @@ const AppShell = (props: ParentProps) => {
 
   bindTransfersToUser(userId, transfers)
 
-  // Ctrl/Cmd+K toggles the palette anywhere in the signed-in shell.
+  // Ctrl/Cmd+K toggles the palette anywhere in the signed-in shell; `/`
+  // opens it too, as the search box says (unless something is being typed in).
   createEffect(() => {
     if (!shown()) return
     const onKey = (e: KeyboardEvent) => {
-      if (!isPaletteHotkey(e)) return
-      e.preventDefault()
-      setPaletteOpen(!paletteOpen())
+      if (isPaletteHotkey(e)) {
+        e.preventDefault()
+        setPaletteOpen(!paletteOpen())
+        return
+      }
+      if (
+        e.key === "/" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !paletteOpen() &&
+        !isEditable(e.target)
+      ) {
+        e.preventDefault()
+        setPaletteOpen(true)
+      }
     }
     window.addEventListener("keydown", onKey)
     onCleanup(() => window.removeEventListener("keydown", onKey))
@@ -89,7 +114,15 @@ const AppShell = (props: ParentProps) => {
 
   const wide = () => shown() && viewport() !== "phone"
   const phone = () => shown() && viewport() === "phone"
-  const topBar = () => shown()
+  const navWidth = () => (rail() ? RAIL_WIDTH : FULL_WIDTH)
+  // Where the content card starts: below the bar, and below the page's toolbar
+  // row when it has one (on a phone that row is the bar itself).
+  const contentTop = () =>
+    !shown()
+      ? "0px"
+      : wide() && topBarSlots()?.toolbar
+        ? `calc(var(--shell-header, 0px) + ${TOOLBAR_ROW_HEIGHT})`
+        : "var(--shell-header, 0px)"
 
   createEffect(() => setPhoneShell(phone()))
   onCleanup(() => setPhoneShell(false))
@@ -117,11 +150,7 @@ const AppShell = (props: ParentProps) => {
       <div style={{ display: "contents" }}>
         <Suspense>
           <Show when={wide()}>
-            <SideNav
-              pathname={pathname()}
-              rail={rail()}
-              onToggle={viewport() === "desktop" ? fold : undefined}
-            />
+            <SideNav pathname={pathname()} rail={rail()} />
           </Show>
         </Suspense>
       </div>
@@ -132,7 +161,7 @@ const AppShell = (props: ParentProps) => {
           // The side panel is fixed; the content panel makes room for it.
           "padding-left": wide() ? "var(--shell-content-left)" : "0",
           "padding-right": wide() ? "var(--shell-content-right)" : "0",
-          "padding-top": wide() ? "var(--shell-gap)" : "0",
+          "padding-top": contentTop(),
           "padding-bottom": phone()
             ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
             : wide()
@@ -140,23 +169,39 @@ const AppShell = (props: ParentProps) => {
               : "0",
           // Fixed elements inside the page line up with the content panel.
           "--shell-content-left": wide()
-            ? `calc(var(--shell-left) + ${rail() ? RAIL_WIDTH : FULL_WIDTH} + var(--shell-gap))`
+            ? `calc(var(--shell-left) + ${navWidth()} + var(--shell-gap))`
+            : "0px",
+          // Pages that size themselves to the viewport subtract this; it is
+          // also where their sticky bars stop below the top of the window.
+          "--shell-top": contentTop(),
+          // What pinned bars must stay above (the phone tab bar).
+          "--shell-bottom": phone()
+            ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
             : "0px",
         }}
       >
+        <Show when={shown()}>
+          <TopBar
+            pathname={pathname()}
+            phone={phone()}
+            navWidth={navWidth()}
+            rail={rail()}
+            onToggle={viewport() === "desktop" ? fold : undefined}
+          />
+        </Show>
         <Show when={wide()}>
-          {/* The page scrolls the window, so the panel's own rounded corners
-            leave the viewport. This fixed frame has the panel's geometry and a
-            huge page-coloured shadow that masks whatever scrolls outside it,
-            keeping all four corners round. Above the top bar and BackToTop
-            (1100), below the side panel (1200), the movi overlay (1300) and
-            popovers, dialogs and toasts (1500+). */}
+          {/* The page scrolls the window, so the card's own rounded corners
+            leave the viewport. This fixed frame has the card's geometry and a
+            huge canvas-coloured shadow that masks whatever scrolls outside it,
+            keeping all four corners round. Above BackToTop (1100), below the
+            top bar and its toolbar row (1150), the side nav (1200), the movi
+            overlay (1300) and popovers, dialogs and toasts (1500+). */}
           <div
             data-shell-mask
             aria-hidden="true"
-            class="pointer-events-none fixed z-[1101] rounded-[var(--shell-radius)] border shadow-[0_0_0_100vmax_var(--muted)]"
+            class="pointer-events-none fixed z-[1101] rounded-[var(--shell-radius)] border shadow-[0_0_0_100vmax_var(--canvas)]"
             style={{
-              top: "var(--shell-gap)",
+              top: "var(--shell-top)",
               bottom: "var(--shell-gap)",
               left: "var(--shell-content-left)",
               right: "var(--shell-content-right)",
@@ -169,25 +214,14 @@ const AppShell = (props: ParentProps) => {
           classList={{
             "overflow-clip rounded-[var(--shell-radius)] border bg-background":
               wide(),
+            "bg-background": phone(),
           }}
           style={{
-            "min-height": wide() ? "calc(100dvh - 2 * var(--shell-gap))" : "0",
-            // Pages that size themselves to the viewport subtract this; it is
-            // also where their sticky bars stop below the top of the window.
-            "--shell-top": !shown()
-              ? "0px"
-              : topBar()
-                ? `calc(var(--shell-gap, 0px) + ${TOP_BAR_HEIGHT})`
-                : "var(--shell-gap, 0px)",
-            // What pinned bars must stay above (the phone tab bar).
-            "--shell-bottom": phone()
-              ? `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`
-              : "0px",
+            "min-height": wide()
+              ? "calc(100dvh - var(--shell-top) - var(--shell-gap))"
+              : "0",
           }}
         >
-          <Show when={topBar()}>
-            <TopBar pathname={pathname()} phone={phone()} />
-          </Show>
           {/* One enter animation per section, none inside it (the file browser
             has its own transitions). The old section stays until the new one
             is ready; there is no exit. Whatever suspends below stops at the

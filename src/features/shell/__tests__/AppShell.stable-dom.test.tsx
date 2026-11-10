@@ -72,7 +72,6 @@ vi.mock("../BottomTabs", () => ({
   BottomTabs: () => <div data-bottom-tabs />,
 }))
 vi.mock("../TopBar", () => ({
-  TOP_BAR_HEIGHT: "1rem",
   TopBar: () => <header />,
 }))
 vi.mock("../../transfers/TaskCenter", async () => {

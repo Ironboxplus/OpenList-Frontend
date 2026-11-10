@@ -1,13 +1,12 @@
 import { Center, VStack, Icon } from "@hope-ui/solid"
-import { useContextMenu } from "solid-contextmenu"
-import { batch, Show } from "solid-js"
+import { Show } from "solid-js"
 import { CenterLoading, ImageWithError } from "~/components"
 import { useLink, usePath, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, selectAll, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
 import { bus } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
-import { ItemCheckbox, useSelectWithMouse } from "./helper"
+import { ItemCheckbox, selectForMenu, useSelectWithMouse } from "./helper"
 
 export const ImageItem = (props: { obj: StoreObj; index: number }) => {
   const { isHide } = useUtil()
@@ -18,7 +17,6 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
   const objIcon = (
     <Icon color={getMainColor()} boxSize="$12" as={getIconByObj(props.obj)} />
   )
-  const { show } = useContextMenu({ id: 1 })
   const { previewLink } = useLink()
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
@@ -47,12 +45,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
         onMouseEnter={() => {
           setPathAs(props.obj.name, props.obj.is_dir, true)
         }}
-        onContextMenu={(e: MouseEvent) => {
-          batch(() => {
-            selectIndex(props.index, true, true)
-          })
-          show(e, { props: props.obj })
-        }}
+        onContextMenu={() => selectForMenu(props.index)}
       >
         <Center w="$full" pos="relative">
           <Show when={checkboxOpen()}>

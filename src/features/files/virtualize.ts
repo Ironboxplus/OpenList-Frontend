@@ -46,3 +46,49 @@ export const gridRowRange = (
   const start = row * columns
   return [start, Math.min(total, start + columns)]
 }
+
+/**
+ * Columns of the folder/file cards: phones 2, everything else as many
+ * `minWidth` cards as fit (the plain grid's `auto-fill, minmax(minWidth, 1fr)`).
+ */
+export const cardColumns = (
+  width: number,
+  viewport: "phone" | "tablet" | "desktop",
+  minWidth = 240,
+  gap = 16,
+): number =>
+  viewport === "phone"
+    ? 2
+    : Math.max(1, Math.floor((width + gap) / (minWidth + gap)))
+
+export type CardRow =
+  { kind: "title"; text: string } | { kind: "cards"; items: number[] }
+
+/**
+ * The card grid as virtual rows: a title row, then the cards `columns` to a
+ * row, for the folders and then for the files; an empty section has no title.
+ */
+export const sectionRows = (
+  sections: { title: string; items: number[] }[],
+  columns: number,
+): CardRow[] => {
+  const rows: CardRow[] = []
+  for (const { title, items } of sections) {
+    if (items.length === 0) continue
+    rows.push({ kind: "title", text: title })
+    for (let i = 0; i < items.length; i += columns)
+      rows.push({ kind: "cards", items: items.slice(i, i + columns) })
+  }
+  return rows
+}
+
+/** The row holding the card of store index `item`, if it is in any. */
+export const rowOfItem = (
+  rows: CardRow[],
+  item: number,
+): number | undefined => {
+  const row = rows.findIndex(
+    (r) => r.kind === "cards" && r.items.includes(item),
+  )
+  return row < 0 ? undefined : row
+}

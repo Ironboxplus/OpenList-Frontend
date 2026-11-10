@@ -1,13 +1,17 @@
 import { Markdown } from "~/components"
 import { useTitle } from "~/hooks"
-import { getSetting, me } from "~/store"
+import { getSetting, haveSelected, me } from "~/store"
 import { UserMethods } from "~/types"
 import { notify } from "~/utils"
 import { Body } from "./Body"
 import { Footer } from "./Footer"
 import { Header } from "./header/Header"
 import { onMount, Show } from "solid-js"
-import { FilesTopLeft, FilesTopRight } from "~/features/files/FilesTopBar"
+import {
+  FilesToolbar,
+  FilesTopLeft,
+  FilesTopRight,
+} from "~/features/files/FilesTopBar"
 import { useFilesLinkage } from "~/features/files/linkage"
 import { PhoneBatchBar } from "~/features/files/PhoneActions"
 import { selectionMode } from "~/features/files/selection-mode"
@@ -30,12 +34,15 @@ const Index = () => {
       notify.render(<Markdown children={announcement} />)
     }
   })
-  // Inside the shell the TopBar carries the breadcrumb, search and view
-  // switch (account and site name live in the sidebar). Guests have no shell
-  // and keep the classic header, which also holds their login entry.
+  // Inside the shell the top bar carries the New menu (or the selection's
+  // actions) and the toolbar row the breadcrumb with the view and sort
+  // buttons. Guests have no shell and keep the classic header, which also
+  // holds their login entry.
   useTopBarSlots(() => ({
-    left: (ctx) => <FilesTopLeft phone={ctx.phone} />,
-    right: (ctx) => <FilesTopRight phone={ctx.phone} />,
+    left: () => <FilesTopLeft />,
+    right: () => <FilesTopRight />,
+    toolbar: (ctx) => <FilesToolbar phone={ctx.phone} />,
+    hideSearch: haveSelected(),
   }))
   // Refresh on finished transfers; scroll to ?highlight= files.
   useFilesLinkage()

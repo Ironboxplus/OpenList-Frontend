@@ -16,6 +16,8 @@ export const VirtualRows = (props: {
   estimate: number
   gap?: number
   render: (index: number) => JSX.Element
+  /** Where an item's row is, when rows hold more or fewer than one item each. */
+  rowOf?: (item: number) => number | undefined
   /** Called with the container so callers can read its width. */
   ref?: (el: HTMLDivElement) => void
 }) => {
@@ -51,7 +53,10 @@ export const VirtualRows = (props: {
     // Scroll by offset rather than virtualizer.scrollToIndex: callers retry
     // every frame while the page settles and need each call to actually move.
     setVirtualScroller((index) => {
-      const target = virtualizer.getOffsetForIndex(index, "center")
+      const target = virtualizer.getOffsetForIndex(
+        props.rowOf?.(index) ?? index,
+        "center",
+      )
       if (target) window.scrollTo({ top: target[0] })
     })
     onCleanup(() => setVirtualScroller(undefined))

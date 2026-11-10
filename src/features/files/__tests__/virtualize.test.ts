@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest"
 import {
+  cardColumns,
   gridColumns,
   gridRowOf,
   gridRowRange,
   rowEstimate,
+  rowOfItem,
+  sectionRows,
   shouldVirtualize,
   VIRTUALIZE_ABOVE,
 } from "../virtualize"
@@ -46,5 +49,45 @@ describe("rowEstimate", () => {
     expect(rowEstimate(false, false)).toBe(44)
     expect(rowEstimate(true, false)).toBe(60)
     expect(rowEstimate(false, true)).toBeGreaterThan(60)
+  })
+})
+
+describe("cardColumns", () => {
+  it("is two on a phone and fills the width with 240px cards elsewhere", () => {
+    expect(cardColumns(390, "phone")).toBe(2)
+    expect(cardColumns(1150, "desktop")).toBe(4)
+    expect(cardColumns(700, "tablet")).toBe(2)
+    expect(cardColumns(100, "desktop")).toBe(1)
+  })
+})
+
+describe("sectionRows", () => {
+  const sections = [
+    { title: "Folders", items: [3, 4, 5] },
+    { title: "Files", items: [0, 1, 2, 6] },
+  ]
+  it("puts a title before each section and cards columns to a row", () => {
+    expect(sectionRows(sections, 2)).toEqual([
+      { kind: "title", text: "Folders" },
+      { kind: "cards", items: [3, 4] },
+      { kind: "cards", items: [5] },
+      { kind: "title", text: "Files" },
+      { kind: "cards", items: [0, 1] },
+      { kind: "cards", items: [2, 6] },
+    ])
+  })
+  it("leaves out an empty section", () => {
+    expect(
+      sectionRows([{ title: "Folders", items: [] }, sections[1]], 4),
+    ).toEqual([
+      { kind: "title", text: "Files" },
+      { kind: "cards", items: [0, 1, 2, 6] },
+    ])
+  })
+  it("finds the row of a store index", () => {
+    const rows = sectionRows(sections, 2)
+    expect(rowOfItem(rows, 5)).toBe(2)
+    expect(rowOfItem(rows, 6)).toBe(5)
+    expect(rowOfItem(rows, 9)).toBeUndefined()
   })
 })

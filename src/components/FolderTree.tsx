@@ -17,7 +17,13 @@ import {
   VStack,
 } from "@hope-ui/solid"
 import { BiSolidRightArrow, BiSolidFolderOpen } from "solid-icons/bi"
-import { TbX, TbCheck } from "solid-icons/tb"
+import {
+  TbX,
+  TbCheck,
+  TbChevronRight,
+  TbFolderFilled,
+  TbHome,
+} from "solid-icons/tb"
 import {
   Accessor,
   createContext,
@@ -58,6 +64,10 @@ export interface FolderTreeProps {
   handle?: (handler: FolderTreeHandler) => void
   showEmptyIcon?: boolean
   showHiddenFolder?: boolean
+  /** Side-nav look: full-width rows with a caret, the current folder tinted. */
+  variant?: "nav"
+  /** nav variant: the root row's text (the root is the Files entry itself). */
+  rootLabel?: string
 }
 interface FolderTreeContext extends Omit<FolderTreeProps, "handle"> {
   value: Accessor<string>
@@ -93,6 +103,8 @@ export const FolderTree = (props: FolderTreeProps) => {
           forceRoot: props.forceRoot ?? false,
           showEmptyIcon: props.showEmptyIcon ?? false,
           showHiddenFolder: props.showHiddenFolder ?? true,
+          variant: props.variant,
+          rootLabel: props.rootLabel,
           creatingFolderPath,
           setCreatingFolderPath,
         }}
@@ -103,7 +115,7 @@ export const FolderTree = (props: FolderTreeProps) => {
   )
 }
 
-const FolderTreeNode = (props: { path: string }) => {
+const FolderTreeNode = (props: { path: string; depth?: number }) => {
   const { isHidePath } = useUtil()
   const [children, setChildren] = createSignal<Obj[]>()
   const {
@@ -113,6 +125,8 @@ const FolderTreeNode = (props: { path: string }) => {
     autoOpen,
     showEmptyIcon,
     showHiddenFolder,
+    variant,
+    rootLabel,
     creatingFolderPath,
     setCreatingFolderPath,
   } = useContext(context)!
@@ -157,75 +171,137 @@ const FolderTreeNode = (props: { path: string }) => {
 
   const isHiddenFolder = () =>
     isHidePath(props.path) && !isMatchedFolder(value())
-  return (
-    <Show when={showHiddenFolder || !isHiddenFolder()}>
-      <Box>
-        <HStack spacing="$2">
+  const toggle = () => {
+    onToggle()
+    if (isOpen()) {
+      load()
+    }
+  }
+  const depth = () => props.depth ?? 0
+  const isRoot = () => props.path === "/"
+  // Rows of the nav look: the caret toggles, the rest of the row opens the folder.
+  const navNode = () => (
+    <div role="treeitem" aria-expanded={isOpen()} aria-selected={active()}>
+      <div
+        class="flex h-8 cursor-pointer items-center gap-1 rounded-lg pr-2 text-sm transition-colors hover:bg-accent"
+        classList={{ "bg-primary/20 font-medium": active() }}
+        style={{ "padding-left": `${depth() * 16 + 4}px` }}
+        onClick={() => onChange(props.path)}
+      >
+        <button
+          type="button"
+          aria-label="toggle"
+          class="inline-flex size-5 shrink-0 items-center justify-center rounded bg-transparent text-muted-foreground"
+          classList={{ invisible: emptyIconVisible() }}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggle()
+          }}
+        >
           <Show
             when={!loading()}
             fallback={<Spinner size="sm" color={getMainColor()} />}
           >
-            <Show
-              when={!emptyIconVisible()}
-              fallback={<Icon color={getMainColor()} as={BiSolidFolderOpen} />}
-            >
-              <Icon
-                color={getMainColor()}
-                as={BiSolidRightArrow}
-                transform={isOpen() ? "rotate(90deg)" : "none"}
-                transition="transform 0.2s"
-                cursor="pointer"
-                onClick={() => {
-                  onToggle()
-                  if (isOpen()) {
-                    load()
-                  }
-                }}
-              />
-            </Show>
+            <TbChevronRight
+              class="size-3.5 transition-transform"
+              classList={{ "rotate-90": isOpen() }}
+            />
           </Show>
-          <Text
-            css={{
-              // textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-            // overflow="hidden"
-            fontSize="$md"
-            cursor="pointer"
-            px="$1"
-            rounded="$md"
-            bgColor={active() ? "$info8" : "transparent"}
-            _hover={{
-              bgColor: active() ? "$info8" : hoverColor(),
-            }}
-            onClick={() => {
-              onChange(props.path)
-            }}
-          >
-            {props.path === "/" ? "root" : pathBase(props.path)}
-          </Text>
-        </HStack>
-        <Show when={isOpen()}>
-          <VStack mt="$1" pl="$4" alignItems="start" spacing="$1">
-            <For each={children()}>
-              {(item) => (
-                <FolderTreeNode path={pathJoin(props.path, item.name)} />
-              )}
-            </For>
-            <Show when={creatingFolderPath() === props.path}>
-              <FolderNameInput
-                parentPath={props.path}
-                onCancel={() => setCreatingFolderPath(null)}
-                onSuccess={(fullPath) => {
-                  setCreatingFolderPath(null)
-                  onChange(fullPath)
-                  load(true)
-                }}
-              />
-            </Show>
-          </VStack>
+        </button>
+        <Show
+          when={isRoot()}
+          fallback={
+            <TbFolderFilled class="size-4 shrink-0 text-muted-foreground" />
+          }
+        >
+          <TbHome class="size-4 shrink-0 text-muted-foreground" />
         </Show>
-      </Box>
+        <span class="ml-1 truncate">
+          {isRoot() ? (rootLabel ?? "root") : pathBase(props.path)}
+        </span>
+      </div>
+      <Show when={isOpen()}>
+        <div role="group">
+          <For each={children()}>
+            {(item) => (
+              <FolderTreeNode
+                path={pathJoin(props.path, item.name)}
+                depth={depth() + 1}
+              />
+            )}
+          </For>
+        </div>
+      </Show>
+    </div>
+  )
+  return (
+    <Show when={showHiddenFolder || !isHiddenFolder()}>
+      <Show when={variant !== "nav"} fallback={navNode()}>
+        <Box>
+          <HStack spacing="$2">
+            <Show
+              when={!loading()}
+              fallback={<Spinner size="sm" color={getMainColor()} />}
+            >
+              <Show
+                when={!emptyIconVisible()}
+                fallback={
+                  <Icon color={getMainColor()} as={BiSolidFolderOpen} />
+                }
+              >
+                <Icon
+                  color={getMainColor()}
+                  as={BiSolidRightArrow}
+                  transform={isOpen() ? "rotate(90deg)" : "none"}
+                  transition="transform 0.2s"
+                  cursor="pointer"
+                  onClick={toggle}
+                />
+              </Show>
+            </Show>
+            <Text
+              css={{
+                // textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              // overflow="hidden"
+              fontSize="$md"
+              cursor="pointer"
+              px="$1"
+              rounded="$md"
+              bgColor={active() ? "$info8" : "transparent"}
+              _hover={{
+                bgColor: active() ? "$info8" : hoverColor(),
+              }}
+              onClick={() => {
+                onChange(props.path)
+              }}
+            >
+              {props.path === "/" ? "root" : pathBase(props.path)}
+            </Text>
+          </HStack>
+          <Show when={isOpen()}>
+            <VStack mt="$1" pl="$4" alignItems="start" spacing="$1">
+              <For each={children()}>
+                {(item) => (
+                  <FolderTreeNode path={pathJoin(props.path, item.name)} />
+                )}
+              </For>
+              <Show when={creatingFolderPath() === props.path}>
+                <FolderNameInput
+                  parentPath={props.path}
+                  onCancel={() => setCreatingFolderPath(null)}
+                  onSuccess={(fullPath) => {
+                    setCreatingFolderPath(null)
+                    onChange(fullPath)
+                    load(true)
+                  }}
+                />
+              </Show>
+            </VStack>
+          </Show>
+        </Box>
+      </Show>
     </Show>
   )
 }

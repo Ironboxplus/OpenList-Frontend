@@ -15,7 +15,7 @@ import {
   SimpleGrid,
   Divider,
 } from "@hope-ui/solid"
-import { createSignal, For, Show } from "solid-js"
+import { createSignal, For, onMount, Show } from "solid-js"
 import { usePath, useRouter, useT } from "~/hooks"
 import { getMainColor, uploadConfig, setUploadConfig } from "~/store"
 import {
@@ -32,6 +32,7 @@ import { UploadFileProps, StatusBadge } from "./types"
 import { File2Upload, traverseFileTree } from "./util"
 import { SelectWrapper } from "~/components"
 import { getUploads } from "./uploads"
+import { takeUploadIntent } from "./upload-intent"
 import { SeedFormat, SeedHashAlgorithm, SeedHashMatrix } from "~/types"
 
 const UploadFile = (props: UploadFileProps & { onRetry?: () => void }) => {
@@ -110,6 +111,10 @@ const Upload = () => {
     localUploads.list().every(({ status }) => isFinishedUpload(status))
   let fileInput!: HTMLInputElement
   let folderInput!: HTMLInputElement
+  onMount(() => {
+    const kind = takeUploadIntent()
+    if (kind) (kind === "folder" ? folderInput : fileInput)?.click()
+  })
   const handleAddFiles = async (files: File[]) => {
     if (files.length === 0) return
     setUploading(true)

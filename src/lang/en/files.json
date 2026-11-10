@@ -31,5 +31,11 @@
     "asc": "Ascending",
     "desc": "Descending"
   },
-  "preview_player": "Player"
+  "preview_player": "Player",
+  "upload_file": "Upload files",
+  "upload_folder": "Upload folder",
+  "folders": "Folders",
+  "files": "Files",
+  "view_label": "View",
+  "more_actions": "More actions"
 }

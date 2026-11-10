@@ -9,7 +9,7 @@ import { cn } from "~/utils/cn"
 export const FilesFrame = (props: ParentProps<{ class?: string }>) => (
   <div
     data-files-frame
-    class={cn("mx-auto w-full max-w-[1600px] px-3 sm:px-6", props.class)}
+    class={cn("mx-auto w-full max-w-[1600px] px-3 sm:px-4", props.class)}
   >
     {props.children}
   </div>

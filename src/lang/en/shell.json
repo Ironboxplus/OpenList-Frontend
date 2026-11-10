@@ -48,5 +48,6 @@
       "cluster": "Cluster",
       "internal": "Server"
     }
-  }
+  },
+  "search_hint": "Search"
 }
