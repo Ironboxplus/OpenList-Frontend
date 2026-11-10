@@ -81,6 +81,9 @@ async function openlist(scheme, viewport, tag) {
   const page = await ctx.newPage()
   // runtime errors of our own page show up in the job log
   page.on("pageerror", (e) => log(`pageerror ${tag}`, String(e?.message || e).split("\n")[0]))
+  page.on("response", (r) => {
+    if (r.status() >= 400) log(`http ${r.status()} ${tag}`, r.url().replace(OL, ""))
+  })
   page.on("console", (m) => {
     if (m.type() === "error") log(`console.error ${tag}`, m.text().split("\n")[0].slice(0, 200))
   })
