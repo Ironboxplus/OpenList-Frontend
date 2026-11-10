@@ -25,7 +25,7 @@ permissions:
 jobs:
   shoot:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
 
@@ -36,13 +36,13 @@ jobs:
       - name: Sample files
         run: |
           set -e
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg imagemagick >/dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null
           S="$RUNNER_TEMP/samples"
           mkdir -p "$S/照片/2026 旅行" "$S/文档" "$S/视频" "$S/音乐"
           for i in 1 2 3 4 5 6; do
-            convert -size 1600x1000 "plasma:hsl($((i*50)),60%,50%)-hsl($((i*50+120)),60%,40%)" "$S/照片/2026 旅行/IMG_00$i.jpg"
+            ffmpeg -loglevel error -f lavfi -i "gradients=s=1600x1000:seed=$i:n=4" -frames:v 1 "$S/照片/2026 旅行/IMG_00$i.jpg"
           done
-          convert -size 1200x800 gradient:skyblue-navy "$S/照片/封面.png"
+          ffmpeg -loglevel error -f lavfi -i "gradients=s=1200x800:seed=42" -frames:v 1 "$S/照片/封面.png"
           ffmpeg -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=24 -f lavfi -i sine=frequency=440 -t 8 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$S/视频/示例视频.mp4"
           ffmpeg -loglevel error -f lavfi -i sine=frequency=330 -t 5 "$S/音乐/示例音乐.mp3"
           printf '# 说明\n\n这是一个示例目录。\n' > "$S/README.md"
@@ -66,10 +66,6 @@ jobs:
           # Throwaway credentials for these containers only; never printed.
           OL_PASS="$(openssl rand -hex 12)"; CR_PASS="$(openssl rand -hex 12)"
           echo "::add-mask::$OL_PASS"; echo "::add-mask::$CR_PASS"
-          docker exec openlist ./openlist admin set "$OL_PASS" >/dev/null 2>&1
-          # the running server caches users; restart so the login sees the new password
-          docker restart openlist >/dev/null
-          for i in $(seq 1 90); do curl -fsS -o /dev/null "http://127.0.0.1:5244/" && break; sleep 2; done
           echo "OL_PASS=$OL_PASS" >> "$GITHUB_ENV"; echo "CR_PASS=$CR_PASS" >> "$GITHUB_ENV"
 
       - name: Shoot

@@ -41,6 +41,8 @@ const browser = await chromium.launch()
 // ---------- OpenList ----------
 let olToken = ""
 await step("openlist login + storage", async () => {
+  // A fresh server has no admin yet: the first-run setup creates it.
+  await olApi("/api/init/setup", { username: "admin", password: process.env.OL_PASS, site_title: "OpenList" })
   olToken = (await olApi("/api/auth/login", { username: "admin", password: process.env.OL_PASS })).token
   await olApi(
     "/api/admin/storage/create",
@@ -93,10 +95,10 @@ const CR_EMAIL = "ui-compare@example.com"
 async function crLogin(page) {
   await page.goto(CR + "/session", { waitUntil: "networkidle" })
   await page.locator('input[type="email"], input[name="email"], input[type="text"]').first().fill(CR_EMAIL)
-  await page.keyboard.press("Enter")
+  await page.getByRole("button", { name: "下一步" }).click()
   await page.locator('input[type="password"]').first().waitFor({ timeout: 15000 })
   await page.locator('input[type="password"]').first().fill(process.env.CR_PASS)
-  await page.keyboard.press("Enter")
+  await page.getByRole("button", { name: "登录" }).click()
   await page.waitForURL(/\/home/, { timeout: 20000 })
 }
 
@@ -107,9 +109,9 @@ await step("cloudreve signup + upload", async () => {
   await page.locator('input[type="email"], input[name="email"], input[type="text"]').first().fill(CR_EMAIL)
   const pw = page.locator('input[type="password"]')
   for (let i = 0; i < (await pw.count()); i++) await pw.nth(i).fill(process.env.CR_PASS)
-  await shot(page, "cr-0-signup")
-  await page.keyboard.press("Enter")
+  await page.getByRole("button", { name: "注册" }).click()
   await page.waitForTimeout(3000)
+  await shot(page, "cr-0-signup")
   if (!/\/home/.test(page.url())) await crLogin(page)
   await page.waitForTimeout(2000)
   // The folder-upload input (webkitdirectory) takes the whole sample tree.
