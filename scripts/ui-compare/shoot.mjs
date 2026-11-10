@@ -79,6 +79,11 @@ async function openlist(scheme, viewport, tag) {
   const ctx = await browser.newContext({ viewport, locale: "zh-CN", colorScheme: scheme })
   await ctx.addInitScript((t) => localStorage.setItem("token", t), olToken)
   const page = await ctx.newPage()
+  // runtime errors of our own page show up in the job log
+  page.on("pageerror", (e) => log(`pageerror ${tag}`, String(e?.message || e).split("\n")[0]))
+  page.on("console", (m) => {
+    if (m.type() === "error") log(`console.error ${tag}`, m.text().split("\n")[0].slice(0, 200))
+  })
   const item = (name) => page.locator(".viselect-item", { hasText: name }).first()
   await step(`openlist ${tag} root`, async () => {
     await page.goto(OL + "/示例", { waitUntil: "networkidle" })
@@ -124,14 +129,6 @@ async function openlist(scheme, viewport, tag) {
   })
   // Beyond what Cloudreve is shot for: the list view, the New menu and the
   // other sections of the shell, to see that nothing else broke.
-  await step(`openlist ${tag} list view`, async () => {
-    await page.goto(OL + "/示例/照片/2026 旅行", { waitUntil: "networkidle" })
-    await page.waitForTimeout(1000)
-    await page.locator("[data-files-view]").click()
-    await page.getByRole("menuitem", { name: /List View|列表视图/ }).click()
-    await page.waitForTimeout(1500)
-    await shot(page, `ol-${tag}-5-list`)
-  })
   if (tag === "light") {
     // Shift-click selects a range, a drag draws a rectangle (real mouse input).
     await step(`openlist ${tag} shift range`, async () => {
@@ -155,6 +152,14 @@ async function openlist(scheme, viewport, tag) {
       await page.mouse.up()
     })
   }
+  await step(`openlist ${tag} list view`, async () => {
+    await page.goto(OL + "/示例/照片/2026 旅行", { waitUntil: "networkidle" })
+    await page.waitForTimeout(1000)
+    await page.locator("[data-files-view]").click()
+    await page.getByRole("menuitem", { name: /List View|列表视图/ }).click()
+    await page.waitForTimeout(1500)
+    await shot(page, `ol-${tag}-5-list`)
+  })
   if (!phone) {
     await step(`openlist ${tag} new menu`, async () => {
       await page.goto(OL + "/示例", { waitUntil: "networkidle" })
