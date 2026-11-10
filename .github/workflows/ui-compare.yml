@@ -57,7 +57,9 @@ jobs:
         run: |
           set -e
           docker run -d --name cloudreve -p 5212:5212 "${{ inputs.cloudreve_image || 'cloudreve/cloudreve:latest' }}"
-          docker run -d --name openlist -p 5244:5244 -v "$SAMPLES:/samples" "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
+          # the image runs as a non-root user: give it a data dir it can write
+          mkdir -p "$RUNNER_TEMP/oldata" && chmod 777 "$RUNNER_TEMP/oldata"
+          docker run -d --name openlist -p 5244:5244 -v "$RUNNER_TEMP/oldata:/opt/openlist/data" -v "$SAMPLES:/samples" "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
           for p in 5212 5244; do
             for i in $(seq 1 90); do curl -fsS -o /dev/null "http://127.0.0.1:$p/" && break; sleep 2; done
           done
