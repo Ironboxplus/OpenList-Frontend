@@ -132,6 +132,29 @@ async function openlist(scheme, viewport, tag) {
     await page.waitForTimeout(1500)
     await shot(page, `ol-${tag}-5-list`)
   })
+  if (tag === "light") {
+    // Shift-click selects a range, a drag draws a rectangle (real mouse input).
+    await step(`openlist ${tag} shift range`, async () => {
+      await page.goto(OL + "/示例/照片/2026 旅行", { waitUntil: "networkidle" })
+      await page.waitForTimeout(1000)
+      await item("IMG_001").click({ modifiers: ["Control"] })
+      await item("IMG_004").click({ modifiers: ["Shift"] })
+      await page.waitForTimeout(500)
+      await shot(page, `ol-${tag}-8-shift`)
+    })
+    await step(`openlist ${tag} marquee`, async () => {
+      await page.goto(OL + "/示例/照片/2026 旅行", { waitUntil: "networkidle" })
+      await page.waitForTimeout(1000)
+      const a = await item("IMG_001").boundingBox()
+      const b = await item("IMG_002").boundingBox()
+      // from the gap right of the first card to the middle of the second
+      await page.mouse.move(a.x + a.width + 8, a.y + 40)
+      await page.mouse.down()
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 10 })
+      await shot(page, `ol-${tag}-9-marquee`)
+      await page.mouse.up()
+    })
+  }
   if (!phone) {
     await step(`openlist ${tag} new menu`, async () => {
       await page.goto(OL + "/示例", { waitUntil: "networkidle" })

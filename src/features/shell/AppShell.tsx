@@ -219,7 +219,9 @@ const AppShell = (props: ParentProps) => {
           style={{
             "min-height": wide()
               ? "calc(100dvh - var(--shell-top) - var(--shell-gap))"
-              : "0",
+              : phone()
+                ? "calc(100dvh - var(--shell-top) - var(--shell-bottom))"
+                : "0",
           }}
         >
           {/* One enter animation per section, none inside it (the file browser

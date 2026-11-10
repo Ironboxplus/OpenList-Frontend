@@ -6,7 +6,7 @@ import { cn } from "~/utils/cn"
 export const ButtonGroup = (props: ParentProps<{ class?: string }>) => (
   <div
     class={cn(
-      "inline-flex h-10 shrink-0 items-stretch divide-x overflow-hidden rounded-lg border bg-card",
+      "inline-flex h-10 shrink-0 items-stretch divide-x divide-border overflow-hidden rounded-lg border bg-card",
       props.class,
     )}
   >
