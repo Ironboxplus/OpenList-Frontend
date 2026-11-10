@@ -82,10 +82,14 @@ export const UsageBar = (props: { details: MountDetails; class?: string }) => (
   </Show>
 )
 
+/** The mount point usage of an entry, when its driver reports one. */
+const usageOf = (obj: StoreObj): MountDetails | undefined =>
+  showDiskUsage(obj.mount_details) ? obj.mount_details : undefined
+
 /** The size column of a list row: usage bar for mount points, size otherwise. */
 export const SizeOrUsage = (props: { obj: StoreObj }) => (
   <Show
-    when={showDiskUsage(props.obj.mount_details) && props.obj.mount_details}
+    when={usageOf(props.obj)}
     fallback={<span class="size">{getFileSize(props.obj.size)}</span>}
   >
     {(d) => <UsageBar details={d()} />}
@@ -97,8 +101,7 @@ export const SizeOrUsage = (props: { obj: StoreObj }) => (
  * or, for a mount point, its usage bar. Badges are the caller's to place.
  */
 export const CardMeta = (props: { obj: StoreObj }) => {
-  const usage = () =>
-    showDiskUsage(props.obj.mount_details) ? props.obj.mount_details : undefined
+  const usage = () => usageOf(props.obj)
   const parts = (): JSX.Element[] => {
     const out: JSX.Element[] = []
     if (episodeFor(props.obj.name))
