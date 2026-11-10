@@ -122,6 +122,38 @@ async function openlist(scheme, viewport, tag) {
     await page.waitForTimeout(600)
     await shot(page, `ol-${tag}-4-selected`)
   })
+  // Beyond what Cloudreve is shot for: the list view, the New menu and the
+  // other sections of the shell, to see that nothing else broke.
+  await step(`openlist ${tag} list view`, async () => {
+    await page.goto(OL + "/示例/照片/2026 旅行", { waitUntil: "networkidle" })
+    await page.waitForTimeout(1000)
+    await page.locator("[data-files-view]").click()
+    await page.getByRole("menuitem", { name: /List View|列表视图/ }).click()
+    await page.waitForTimeout(1500)
+    await shot(page, `ol-${tag}-5-list`)
+  })
+  if (!phone) {
+    await step(`openlist ${tag} new menu`, async () => {
+      await page.goto(OL + "/示例", { waitUntil: "networkidle" })
+      await page.waitForTimeout(1000)
+      await page.locator("[data-files-new]").click()
+      await page.waitForTimeout(500)
+      await shot(page, `ol-${tag}-6-newmenu`)
+    })
+  }
+  if (tag === "light" || tag === "mobile") {
+    for (const [name, route] of [
+      ["dashboard", "/@dashboard"],
+      ["transfers", "/@transfers"],
+      ["manage", "/@manage"],
+    ]) {
+      await step(`openlist ${tag} ${name}`, async () => {
+        await page.goto(OL + route, { waitUntil: "networkidle" })
+        await page.waitForTimeout(1500)
+        await shot(page, `ol-${tag}-7-${name}`)
+      })
+    }
+  }
   await ctx.close()
 }
 
@@ -207,9 +239,11 @@ for (const [scheme, vp, tag] of [
   ["light", DESKTOP, "light"],
   ["dark", DESKTOP, "dark"],
   ["light", MOBILE, "mobile"],
+  // the rail layout only we have; nothing to compare it with
+  ["light", { width: 820, height: 1000 }, "tablet"],
 ]) {
   await openlist(scheme, vp, tag)
-  await cloudreve(scheme, vp, tag)
+  if (tag !== "tablet") await cloudreve(scheme, vp, tag)
 }
 
 await browser.close()
