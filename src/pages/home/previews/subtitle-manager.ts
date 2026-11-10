@@ -263,9 +263,9 @@ export class SubtitleManager {
         const res = await fetch(extractedUrl(info.url, at, rev))
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         partial = isPartialExtract(res.headers.get(EXTRACT_HEADER))
-        const blob = await res.blob()
+        const bytes = await res.arrayBuffer()
         if (!this.isActivationCurrent(seq)) return
-        await this.deliverExtracted(info, blob, seq)
+        await this.deliverExtracted(info, bytes, seq)
       } catch (e) {
         log("extracted subtitle fetch failed for", info.label, e)
         partial = rev < 3 // a few more tries, then leave the track as it is
@@ -280,20 +280,18 @@ export class SubtitleManager {
 
   private async deliverExtracted(
     info: SubtitleInfo,
-    blob: Blob,
+    bytes: ArrayBuffer,
     seq: number,
   ): Promise<void> {
     if (info.format === "sup") {
       // libpgs takes the bytes itself (loadFromBuffer replaces what the renderer
       // holds and re-renders), so the renderer stays and nothing is fetched.
-      const bytes = await blob.arrayBuffer()
-      if (!this.isActivationCurrent(seq)) return
       this.activeRenderer = "sup"
       if (this.pgsRenderer) this.pgsRenderer.loadFromBuffer(bytes)
       else await this.activateSUP(bytes, seq)
       return
     }
-    const url = URL.createObjectURL(blob)
+    const url = URL.createObjectURL(new Blob([bytes]))
     this.blobUrls.push(url)
     this.moviEl
       ?.querySelector(`track[srclang="${info.lang}"]`)
