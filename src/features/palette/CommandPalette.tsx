@@ -5,6 +5,7 @@ import { currentLang, languages, setCurrentLang, type Lang } from "~/app/i18n"
 import { useRouter, useT } from "~/hooks"
 import { me } from "~/store"
 import { fileSearchAvailable, openFileSearch } from "../files/search-entry"
+import { goingTo } from "../shell/files-memory"
 import { activeNavId } from "../shell/nav-items"
 import { setTaskCenterOpen } from "../shell/task-center"
 import { createViewport } from "../shell/viewport"
@@ -34,7 +35,7 @@ const CommandPalette = () => {
       user: me(),
       t: (key) => t(key),
       syncAvailable: transfers.syncAvailable(),
-      go: (path) => to(path),
+      go: (path) => to(goingTo(path, pathname())),
       newSync: () => to("/@transfers?new=sync"),
       openTaskCenter: () => setTaskCenterOpen(true),
       toggleTheme: toggleColorMode,

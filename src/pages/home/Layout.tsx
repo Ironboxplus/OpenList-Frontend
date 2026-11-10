@@ -14,6 +14,7 @@ import {
 } from "~/features/files/FilesTopBar"
 import { useFilesLinkage } from "~/features/files/linkage"
 import { PhoneBatchBar } from "~/features/files/PhoneActions"
+import { useRestoreSpot } from "~/features/files/restore-spot"
 import { selectionMode } from "~/features/files/selection-mode"
 import {
   shellActive,
@@ -46,6 +47,8 @@ const Index = () => {
   }))
   // Refresh on finished transfers; scroll to ?highlight= files.
   useFilesLinkage()
+  // Remember folder and scroll; coming back from another section restores them.
+  useRestoreSpot()
   // On phones, selection mode swaps the tab bar for the batch actions.
   useBottomBar({
     when: selectionMode,

@@ -154,6 +154,26 @@ async function openlist(scheme, viewport, tag) {
       await shot(page, `ol-${tag}-9-marquee`)
       await page.mouse.up()
     })
+    // Files, pressed after another section, returns to the folder and scroll
+    // it was left at; a short window makes the six cards scroll.
+    await step(`openlist ${tag} files nav restore`, async () => {
+      await page.setViewportSize({ width: viewport.width, height: 460 })
+      await page.goto(OL + "/示例/照片/2026 旅行", { waitUntil: "networkidle" })
+      await page.waitForTimeout(1000)
+      await page.mouse.move(700, 300)
+      await page.mouse.wheel(0, 220)
+      await page.waitForTimeout(800)
+      const before = await page.evaluate(() => Math.round(scrollY))
+      await page.locator('[data-nav-id="transfers"]').first().click()
+      await page.waitForTimeout(1500)
+      await page.locator('[data-nav-id="files"]').first().click()
+      await page.waitForTimeout(2500)
+      const after = await page.evaluate(() => Math.round(scrollY))
+      log(`restore ${tag}`, `url=${decodeURIComponent(new URL(page.url()).pathname)} scroll before=${before} after=${after}`)
+      await shot(page, `ol-${tag}-10-restored`)
+      if (!before || Math.abs(before - after) > 2) throw new Error(`scroll not restored: ${before} -> ${after}`)
+      await page.setViewportSize(viewport)
+    })
   }
   await step(`openlist ${tag} list view`, async () => {
     await page.goto(OL + "/示例/照片/2026 旅行", { waitUntil: "networkidle" })
