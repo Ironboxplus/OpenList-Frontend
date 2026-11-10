@@ -15,7 +15,7 @@ describe("resolveNavPath", () => {
 
   it("sends Files from another section back to the remembered folder", () => {
     expect(resolveNavPath("/", "/@transfers", spot)).toBe(
-      "/%E7%A4%BA%E4%BE%8B/%E7%85%A7%E7%89%87/2026%20%E6%97%85%E8%A1%8C",
+      "/示例/照片/2026%20旅行",
     )
     expect(resolveNavPath("/", "/@manage/storages", spot)).not.toBe("/")
   })

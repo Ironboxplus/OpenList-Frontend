@@ -2,7 +2,9 @@ import { render, screen } from "@solidjs/testing-library"
 import { createSignal, For } from "solid-js"
 import { describe, expect, it, vi } from "vitest"
 
-vi.mock("~/hooks", () => ({ useRouter: () => ({ to: vi.fn() }) }))
+vi.mock("~/hooks", () => ({
+  useRouter: () => ({ to: vi.fn(), pathname: () => "/" }),
+}))
 vi.mock("../NavBadge", () => ({ NavBadge: () => <span data-badge /> }))
 
 import { SideNavEntry } from "../SideNavEntry"

@@ -13,7 +13,7 @@ vi.mock("~/hooks", async () => {
       return params ? i18n.resolveTemplate(tpl, params) : tpl
     },
     useTitle: () => {},
-    useRouter: () => ({ to: vi.fn() }),
+    useRouter: () => ({ to: vi.fn(), pathname: () => "/@plugins" }),
   }
 })
 vi.mock("~/store", () => ({ me: () => ({ role: h.admin.v ? 2 : 0 }) }))
