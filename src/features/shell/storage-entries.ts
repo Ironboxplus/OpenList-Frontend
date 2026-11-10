@@ -17,12 +17,14 @@ export const COLLAPSED_COUNT = 3
 export const storageEntries = (
   current: MountDetails | undefined,
   objs: readonly Pick<Obj, "name" | "mount_details">[],
+  /** The mount name of the folder being browsed, when it is known. */
+  mountName?: string,
 ): StorageEntry[] => {
   if (current && showDiskUsage(current)) {
     const driver = current.driver_name
     return [
       {
-        name: driver.toLowerCase() === "unknown" ? "" : driver,
+        name: mountName ?? (driver.toLowerCase() === "unknown" ? "" : driver),
         details: current,
       },
     ]
