@@ -1,0 +1,92 @@
+name: UI compare (Cloudreve reference)
+
+# Screenshots of Cloudreve's and our file browser on the same sample files,
+# for design reference. Throwaway containers and accounts; nothing is deployed.
+
+on:
+  # A push to this branch runs it without touching main (a push to main
+  # publishes rolling, which every node pulls).
+  push:
+    branches: ["ui-compare"]
+  workflow_dispatch:
+    inputs:
+      openlist_image:
+        description: "OpenList image to shoot"
+        required: false
+        default: "ghcr.io/ironboxplus/openlist:front-rolling"
+      cloudreve_image:
+        description: "Cloudreve image to shoot"
+        required: false
+        default: "cloudreve/cloudreve:latest"
+
+permissions:
+  contents: read
+
+jobs:
+  shoot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.22.2"
+
+      - name: Sample files
+        run: |
+          set -e
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg imagemagick >/dev/null
+          S="$RUNNER_TEMP/samples"
+          mkdir -p "$S/照片/2026 旅行" "$S/文档" "$S/视频" "$S/音乐"
+          for i in 1 2 3 4 5 6; do
+            convert -size 1600x1000 "plasma:hsl($((i*50)),60%,50%)-hsl($((i*50+120)),60%,40%)" "$S/照片/2026 旅行/IMG_00$i.jpg"
+          done
+          convert -size 1200x800 gradient:skyblue-navy "$S/照片/封面.png"
+          ffmpeg -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=24 -f lavfi -i sine=frequency=440 -t 8 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$S/视频/示例视频.mp4"
+          ffmpeg -loglevel error -f lavfi -i sine=frequency=330 -t 5 "$S/音乐/示例音乐.mp3"
+          printf '# 说明\n\n这是一个示例目录。\n' > "$S/README.md"
+          printf 'hello\n' > "$S/文档/笔记.txt"
+          printf '{"a":1}\n' > "$S/文档/配置.json"
+          head -c 3000000 /dev/urandom > "$S/文档/归档.zip"
+          head -c 120000 /dev/urandom > "$S/文档/报告.pdf"
+          sudo chmod -R a+rwX "$S"
+          echo "SAMPLES=$S" >> "$GITHUB_ENV"
+
+      - name: Start containers
+        run: |
+          set -e
+          docker run -d --name cloudreve -p 5212:5212 "${{ inputs.cloudreve_image || 'cloudreve/cloudreve:latest' }}"
+          docker run -d --name openlist -p 5244:5244 -v "$SAMPLES:/samples" "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
+          for p in 5212 5244; do
+            for i in $(seq 1 90); do curl -fsS -o /dev/null "http://127.0.0.1:$p/" && break; sleep 2; done
+          done
+          # Throwaway credentials for these containers only; never printed.
+          OL_PASS="$(openssl rand -hex 12)"; CR_PASS="$(openssl rand -hex 12)"
+          echo "::add-mask::$OL_PASS"; echo "::add-mask::$CR_PASS"
+          docker exec openlist ./openlist admin set "$OL_PASS" >/dev/null 2>&1
+          # the running server caches users; restart so the login sees the new password
+          docker restart openlist >/dev/null
+          for i in $(seq 1 90); do curl -fsS -o /dev/null "http://127.0.0.1:5244/" && break; sleep 2; done
+          echo "OL_PASS=$OL_PASS" >> "$GITHUB_ENV"; echo "CR_PASS=$CR_PASS" >> "$GITHUB_ENV"
+
+      - name: Shoot
+        working-directory: scripts/ui-compare
+        run: |
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          node shoot.mjs "$RUNNER_TEMP/shots"
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker logs cloudreve 2>&1 | tail -50 | grep -viE "password|token" || true
+          docker logs openlist 2>&1 | tail -50 | grep -viE "password|token" || true
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ui-compare
+          path: ${{ runner.temp }}/shots
+          retention-days: 7
