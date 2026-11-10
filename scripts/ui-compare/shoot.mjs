@@ -218,8 +218,13 @@ async function openlist(scheme, viewport, tag) {
       ["storage-folder", "/示例"],
     ]) {
       await step(`openlist ${tag} ${name}`, async () => {
-        await page.goto(OL + route, { waitUntil: "networkidle" })
-        await page.waitForTimeout(1500)
+        // the folder is entered from the root, as a user does: that is how its mount name is known
+        await page.goto(OL + "/", { waitUntil: "networkidle" })
+        await page.waitForTimeout(1000)
+        if (route !== "/") {
+          await item("示例").click()
+          await page.waitForTimeout(1500)
+        }
         if (!phone) {
           // the list view step above left the list on; the grid is what is shot here
           await page.locator("[data-files-view]").click()
