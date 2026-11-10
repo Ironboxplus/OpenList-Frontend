@@ -36,6 +36,13 @@ async function olApi(p, body, token) {
   return j.data
 }
 
+async function olGet(p, token) {
+  const r = await fetch(OL + p, { headers: { Authorization: token } })
+  const j = await r.json()
+  if (j.code !== 200) throw new Error(`${p}: ${j.code} ${j.message}`)
+  return j.data
+}
+
 const browser = await chromium.launch()
 
 // ---------- OpenList ----------
@@ -58,10 +65,21 @@ await step("openlist login + storage", async () => {
   )
 })
 
+// README.md is hidden from listings by default and the welcome announcement
+// sits over the first screen; Cloudreve shows neither, so clear both.
+await step("openlist settings", async () => {
+  for (const key of ["hide_files", "announcement"]) {
+    const item = await olGet(`/api/admin/setting/get?key=${key}`, olToken)
+    await olApi("/api/admin/setting/save", [{ ...item, value: "" }], olToken)
+  }
+})
+
 async function openlist(scheme, viewport, tag) {
+  const phone = viewport.width < 640
   const ctx = await browser.newContext({ viewport, locale: "zh-CN", colorScheme: scheme })
   await ctx.addInitScript((t) => localStorage.setItem("token", t), olToken)
   const page = await ctx.newPage()
+  const item = (name) => page.locator(".viselect-item", { hasText: name }).first()
   await step(`openlist ${tag} root`, async () => {
     await page.goto(OL + "/示例", { waitUntil: "networkidle" })
     await page.waitForTimeout(1500)
@@ -75,15 +93,32 @@ async function openlist(scheme, viewport, tag) {
   await step(`openlist ${tag} context menu`, async () => {
     await page.goto(OL + "/示例", { waitUntil: "networkidle" })
     await page.waitForTimeout(1000)
-    await page.getByText("README.md", { exact: true }).first().click({ button: "right" })
+    await item("README.md").click({ button: "right" })
     await page.waitForTimeout(600)
     await shot(page, `ol-${tag}-3-context`)
     await page.keyboard.press("Escape")
   })
   await step(`openlist ${tag} multi-select`, async () => {
-    const boxes = page.locator('input[type="checkbox"]')
-    const n = await boxes.count()
-    for (let i = 1; i < Math.min(n, 4); i++) await boxes.nth(i).check({ force: true })
+    await page.goto(OL + "/示例", { waitUntil: "networkidle" })
+    await page.waitForTimeout(1000)
+    for (const name of ["README.md", "文档", "视频"]) {
+      if (phone) {
+        // no Ctrl on a phone: a long press enters selection mode, taps add
+        const box = await item(name).boundingBox()
+        const x = box.x + box.width / 2
+        const y = box.y + box.height / 2
+        if (name === "README.md") {
+          await page.mouse.move(x, y)
+          await page.mouse.down()
+          await page.waitForTimeout(800)
+          await page.mouse.up()
+        } else {
+          await page.mouse.click(x, y)
+        }
+      } else {
+        await item(name).click({ modifiers: ["Control"] })
+      }
+    }
     await page.waitForTimeout(600)
     await shot(page, `ol-${tag}-4-selected`)
   })

@@ -18,6 +18,11 @@ on:
         description: "Cloudreve image to shoot"
         required: false
         default: "cloudreve/cloudreve:latest"
+      build_frontend:
+        description: "Build this checkout's frontend and serve it through the OpenList image (dist_dir)"
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -32,6 +37,20 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "24.22.2"
+
+      # The image only brings the backend: the frontend under test is this
+      # checkout's build, served from a custom dist dir (see the config.json
+      # written below), so a branch can be shot without publishing anything.
+      - uses: pnpm/action-setup@v6
+        if: github.event_name != 'workflow_dispatch' || inputs.build_frontend
+        with:
+          run_install: false
+
+      - name: Build frontend
+        if: github.event_name != 'workflow_dispatch' || inputs.build_frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
 
       - name: Sample files
         run: |
@@ -59,10 +78,17 @@ jobs:
           docker run -d --name cloudreve -p 5212:5212 "${{ inputs.cloudreve_image || 'cloudreve/cloudreve:latest' }}"
           # the image runs as a non-root user: give it a data dir it can write
           mkdir -p "$RUNNER_TEMP/oldata" && chmod 777 "$RUNNER_TEMP/oldata"
-          docker run -d --name openlist -p 5244:5244 -v "$RUNNER_TEMP/oldata:/opt/openlist/data" -v "$SAMPLES:/samples" "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
+          DIST_MOUNT=""
+          if [ -d dist ]; then
+            echo '{"dist_dir":"/frontend-dist"}' > "$RUNNER_TEMP/oldata/config.json"
+            chmod 666 "$RUNNER_TEMP/oldata/config.json"
+            DIST_MOUNT="-v $PWD/dist:/frontend-dist:ro"
+          fi
+          docker run -d --name openlist -p 5244:5244 -e FRONTEND_SOURCE=embedded -v "$RUNNER_TEMP/oldata:/opt/openlist/data" -v "$SAMPLES:/samples" $DIST_MOUNT "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
           for p in 5212 5244; do
             for i in $(seq 1 90); do curl -fsS -o /dev/null "http://127.0.0.1:$p/" && break; sleep 2; done
           done
+          docker logs openlist 2>&1 | grep -iE "dist" | head -3 || true
           # Throwaway credentials for these containers only; never printed.
           OL_PASS="$(openssl rand -hex 12)"; CR_PASS="$(openssl rand -hex 12)"
           echo "::add-mask::$OL_PASS"; echo "::add-mask::$CR_PASS"
