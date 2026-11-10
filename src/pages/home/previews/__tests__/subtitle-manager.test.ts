@@ -7,6 +7,29 @@ import {
   type SubtitleFile,
 } from "../subtitle-manager"
 
+// libpgs draws on a canvas from a worker, neither of which jsdom has: what is
+// checked is what the manager asks of it.
+const pgs = vi.hoisted(() => ({
+  created: [] as any[],
+  buffers: [] as ArrayBuffer[],
+  disposed: 0,
+}))
+vi.mock("libpgs", () => ({
+  PgsRenderer: class {
+    timeOffset = 0
+    constructor(public options: any) {
+      pgs.created.push(options)
+    }
+    loadFromBuffer(b: ArrayBuffer) {
+      pgs.buffers.push(b)
+    }
+    renderAtTimestamp() {}
+    dispose() {
+      pgs.disposed++
+    }
+  },
+}))
+
 const readBlob = (b: Blob) =>
   new Promise<string>((res) => {
     const fr = new FileReader()
@@ -364,6 +387,38 @@ describe("extracted subtitles (read out of the video by OpenList)", () => {
     // whole: nothing more is asked
     await vi.advanceTimersByTimeAsync(60_000)
     expect(fetched).toHaveLength(3)
+  })
+
+  it("keeps one PGS renderer and feeds it each partial file", async () => {
+    manager.registerTracks([{ ...file, name: "kor.sup" }])
+    pgs.created.length = 0
+    pgs.buffers.length = 0
+    pgs.disposed = 0
+    const bytes = (n: number) => new Uint8Array(n)
+    const answers = [
+      new Response(bytes(10), {
+        headers: { "X-OpenList-Extract": "partial; done=0.1" },
+      }),
+      new Response(bytes(20), {
+        headers: { "X-OpenList-Extract": "partial; done=0.5" },
+      }),
+      new Response(bytes(30), {
+        headers: { "X-OpenList-Extract": "complete" },
+      }),
+    ]
+    vi.stubGlobal("fetch", async () => answers.shift()!)
+    moviEl._subtitleLangs = [{ lang: "sub0", label: "kor", active: true }]
+    manager.handleTrackChange()
+    await vi.waitFor(() => expect(pgs.buffers).toHaveLength(1))
+    await vi.advanceTimersByTimeAsync(5000)
+    await vi.waitFor(() => expect(pgs.buffers).toHaveLength(2))
+    await vi.advanceTimersByTimeAsync(5000)
+    await vi.waitFor(() => expect(pgs.buffers).toHaveLength(3))
+    expect(pgs.buffers.map((b) => b.byteLength)).toEqual([10, 20, 30])
+    // one renderer, made without a url (the worker fetches nothing), never disposed
+    expect(pgs.created).toHaveLength(1)
+    expect(pgs.created[0].subUrl).toBeUndefined()
+    expect(pgs.disposed).toBe(0)
   })
 
   it("stops asking when another subtitle is picked", async () => {

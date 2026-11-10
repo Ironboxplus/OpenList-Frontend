@@ -456,3 +456,20 @@ export interface TranscodePlayResult {
  */
 export const requestTranscodePlay = (path: string) =>
   r.post("/fs/transcode/play", { path }) as Promise<Resp<TranscodePlayResult>>
+
+/** 字幕预抽（后台按媒体库抽取内嵌字幕）的进度 */
+export interface SubtitlePrefetchProgress {
+  enabled: boolean
+  running: boolean
+  files: number
+  total: number
+  tracks: number
+  current: string
+  failed: number
+  error: string
+}
+
+export const adminSubtitlePrefetchProgress = () =>
+  r.get("/admin/media/subtitle_prefetch") as Promise<
+    Resp<SubtitlePrefetchProgress>
+  >

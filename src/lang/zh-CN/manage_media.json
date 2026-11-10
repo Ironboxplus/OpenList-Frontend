@@ -69,6 +69,13 @@
     "thumb_rerun": "更改需要重新刮削后才会生效（先在媒体管理中清空刮削数据，再重新运行刮削）。",
     "thumb_config_missing": "媒体类型配置尚未加载，请刷新后重试",
     "thumb_saved": "缩略图设置已保存，重新刮削后生效",
-    "thumb_save_failed": "保存失败"
+    "thumb_save_failed": "保存失败",
+    "prefetch_title": "字幕预抽",
+    "prefetch_idle": "未开启。打开上方的 subtitle_prefetch_library 后，后台会按媒体库逐个视频抽取缺少的内嵌字幕。",
+    "prefetch_enabled_idle": "已开启，等待下一轮。",
+    "prefetch_progress": "已抽 {{files}} / 共 {{total}} 个文件，提取字幕轨 {{tracks}} 条",
+    "prefetch_running": "进行中：{{path}}",
+    "prefetch_failed": "{{count}} 个文件失败，最近一次错误：{{error}}",
+    "prefetch_load_failed": "读取进度失败"
   }
 }

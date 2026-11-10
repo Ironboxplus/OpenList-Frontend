@@ -265,7 +265,7 @@ export class SubtitleManager {
         partial = isPartialExtract(res.headers.get(EXTRACT_HEADER))
         const blob = await res.blob()
         if (!this.isActivationCurrent(seq)) return
-        this.deliverExtracted(info, blob, seq)
+        await this.deliverExtracted(info, blob, seq)
       } catch (e) {
         log("extracted subtitle fetch failed for", info.label, e)
         partial = rev < 3 // a few more tries, then leave the track as it is
@@ -278,20 +278,23 @@ export class SubtitleManager {
     }
   }
 
-  private deliverExtracted(info: SubtitleInfo, blob: Blob, seq: number): void {
-    const url = URL.createObjectURL(blob)
-    this.blobUrls.push(url)
+  private async deliverExtracted(
+    info: SubtitleInfo,
+    blob: Blob,
+    seq: number,
+  ): Promise<void> {
     if (info.format === "sup") {
-      // libpgs reads its file once: start it again on the newer one.
-      this.destroyRenderers()
+      // libpgs takes the bytes itself (loadFromBuffer replaces what the renderer
+      // holds and re-renders), so the renderer stays and nothing is fetched.
+      const bytes = await blob.arrayBuffer()
+      if (!this.isActivationCurrent(seq)) return
       this.activeRenderer = "sup"
-      void this.activateSUP(url, seq).catch((e) => {
-        if (!this.isActivationCurrent(seq)) return
-        log("SUP renderer activation failed", e)
-        this.destroyRenderers()
-      })
+      if (this.pgsRenderer) this.pgsRenderer.loadFromBuffer(bytes)
+      else await this.activateSUP(bytes, seq)
       return
     }
+    const url = URL.createObjectURL(blob)
+    this.blobUrls.push(url)
     this.moviEl
       ?.querySelector(`track[srclang="${info.lang}"]`)
       ?.setAttribute("src", url)
@@ -354,7 +357,10 @@ export class SubtitleManager {
     return !this.destroyed && this.activationSeq === seq
   }
 
-  private async activateSUP(url: string, seq: number): Promise<void> {
+  private async activateSUP(
+    source: string | ArrayBuffer,
+    seq: number,
+  ): Promise<void> {
     if (!this.isActivationCurrent(seq)) return
     this.ensureOverlay()
     if (!this.isActivationCurrent(seq) || typeof window === "undefined") return
@@ -367,9 +373,10 @@ export class SubtitleManager {
     log("libpgs init with workerUrl:", `${base}/libpgs/libpgs.worker.js`)
     this.pgsRenderer = new PgsRenderer({
       canvas: this.overlayCanvas!,
-      subUrl: url,
+      ...(typeof source === "string" ? { subUrl: source } : {}),
       workerUrl: `${base}/libpgs/libpgs.worker.js`,
     })
+    if (typeof source !== "string") this.pgsRenderer.loadFromBuffer(source)
     if (this.timeOffset !== 0) {
       this.pgsRenderer.timeOffset = this.timeOffset
     }

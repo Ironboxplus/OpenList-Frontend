@@ -23,6 +23,7 @@ import {
   type MediaAppKey,
 } from "~/utils/media_api"
 import { mediaStatus, setMediaStatus } from "~/store/media"
+import { SubtitlePrefetchProgress } from "./SubtitlePrefetchProgress"
 
 /** 基础开关（刮削与 STRM 已拆到独立页面） */
 const BASE_KEYS = [
@@ -32,6 +33,9 @@ const BASE_KEYS = [
   "media_subsonic_allow_password_auth",
   "media_subsonic_proxy_stream",
   "media_proxy_cover",
+  "subtitle_prefetch_library",
+  "subtitle_extract_concurrency",
+  "subtitle_cache_max_mb",
 ]
 
 /**
@@ -121,6 +125,8 @@ const MediaSettingsPage = () => {
 
       {/* 服务端设置项：直接复用后台的 SettingItem 渲染器 */}
       <CommonSettings group={Group.MEDIA} keys={BASE_KEYS} />
+
+      <SubtitlePrefetchProgress />
 
       {/* 协议接入 */}
       <SettingsSection title={t("manage.media_lib.protocol")}>
