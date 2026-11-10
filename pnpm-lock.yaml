@@ -135,8 +135,8 @@ importers:
         specifier: 0.57.0
         version: 0.57.0
       movi-player:
-        specifier: https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.3/movi-player-0.4.1-openlist.3.tgz
-        version: https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.3/movi-player-0.4.1-openlist.3.tgz(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)(react@19.2.3)(svelte@5.46.1)(vue@3.5.26(typescript@5.9.3))
+        specifier: https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.4/movi-player-0.4.1-openlist.4.tgz
+        version: https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.4/movi-player-0.4.1-openlist.4.tgz(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)(react@19.2.3)(svelte@5.46.1)(vue@3.5.26(typescript@5.9.3))
       mpegts.js:
         specifier: 1.8.2
         version: 1.8.2
@@ -3766,8 +3766,8 @@ packages:
   monaco-editor@0.57.0:
     resolution: {integrity: sha512-5BkI9KGoqrNvBGUe15/QlZq3OooZ8WLg1AxTpaqHRCP3HNpzPPZKE2EDz8M7c+VRmCeUw1Brp4cx/PWm3kI/5A==}
 
-  movi-player@https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.3/movi-player-0.4.1-openlist.3.tgz:
-    resolution: {integrity: sha512-ugBBE4yf1NkjxTsYSLkGYeRaPO/FCzsJKejkfEGNaRplwSYcUszv5MOmKcMGtadk590fSF+EVOEWN7PV7c3eZA==, tarball: https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.3/movi-player-0.4.1-openlist.3.tgz}
+  movi-player@https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.4/movi-player-0.4.1-openlist.4.tgz:
+    resolution: {integrity: sha512-oQTiWqgsA8WaJUaAo/gydG6PE8NZyeJxtx3wVpS4kBMMuyn0EsaGybdur4xAolC1C0JA76SIqi8lUsKh46r3aw==, tarball: https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.4/movi-player-0.4.1-openlist.4.tgz}
     version: 0.4.1-openlist.3
     engines: {node: '>=18'}
     peerDependencies:
@@ -8434,7 +8434,7 @@ snapshots:
       dompurify: 3.4.15
       marked: 14.0.0
 
-  movi-player@https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.3/movi-player-0.4.1-openlist.3.tgz(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)(react@19.2.3)(svelte@5.46.1)(vue@3.5.26(typescript@5.9.3)):
+  movi-player@https://github.com/Ironboxplus/movi-player/releases/download/v0.4.1-openlist.4/movi-player-0.4.1-openlist.4.tgz(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)(react@19.2.3)(svelte@5.46.1)(vue@3.5.26(typescript@5.9.3)):
     dependencies:
       dashjs: 5.2.1(@svta/cml-cta@1.0.6(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0))(@svta/cml-structured-field-values@1.1.3(@svta/cml-utils@1.5.0))(@svta/cml-utils@1.5.0)
       hls.js: 1.7.3
