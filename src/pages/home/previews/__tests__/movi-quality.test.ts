@@ -244,3 +244,41 @@ describe("buildProviderSubFiles (cross-source provider subtitles)", () => {
     expect(buildProviderSubFiles(undefined)).toEqual([])
   })
 })
+
+describe("buildProviderSubFiles (tracks OpenList extracts itself)", () => {
+  const subs = [
+    // no name in the container: only order and language say which track it is
+    {
+      language: "kor",
+      title: "",
+      url: "https://h/api/fs/subtitle_extract?track=10",
+      type: "srt",
+      source: "extracted",
+      embedded_title: "",
+      embedded_order: 10,
+    },
+  ]
+
+  it("carries order and language when the title is empty", () => {
+    const [f] = buildProviderSubFiles(subs)
+    expect(f).toMatchObject({
+      name: "kor.srt",
+      inbandOrder: 10,
+      inbandLang: "kor",
+      extracted: true,
+    })
+    expect(f.inbandTitle).toBeUndefined()
+  })
+
+  it("declares it on the <track> without a title", () => {
+    const mgr = new SubtitleManager(null as any)
+    mgr.registerTracks(buildProviderSubFiles(subs))
+    const host = document.createElement("div")
+    host.innerHTML = mgr.getTrackHTML()
+    mgr.destroy()
+    const t = host.querySelector("track")!
+    expect(t.hasAttribute("data-inband-title")).toBe(false)
+    expect(t.getAttribute("data-inband-order")).toBe("10")
+    expect(t.getAttribute("data-inband-lang")).toBe("kor")
+  })
+})

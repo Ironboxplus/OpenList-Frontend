@@ -130,10 +130,13 @@ export interface VideoSubtitleSource {
   title: string
   url: string
   type: string
-  /** Set for a track 115 extracted from the container: its own title and its
-   *  position among the container's subtitle streams. */
+  /** Set for a track extracted from the container (by the provider, or by
+   *  OpenList itself): its own title, which may be empty, and its position among
+   *  the container's subtitle streams. */
   embedded_title?: string
   embedded_order?: number
+  /** "extracted" for a track OpenList reads out of the video on request. */
+  source?: string
 }
 
 // Map provider subtitle sources to SubtitleManager track entries. The track
@@ -151,10 +154,12 @@ export const buildProviderSubFiles = (
         s.type || "srt"
       ).toLowerCase()}`,
       url: s.url,
-      ...(s.embedded_title && typeof s.embedded_order === "number"
+      ...(typeof s.embedded_order === "number"
         ? {
-            inbandTitle: s.embedded_title,
+            inbandTitle: s.embedded_title || undefined,
             inbandOrder: s.embedded_order,
+            inbandLang: s.language || undefined,
           }
         : {}),
+      ...(s.source === "extracted" ? { extracted: true } : {}),
     }))

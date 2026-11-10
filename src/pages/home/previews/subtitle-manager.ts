@@ -12,6 +12,10 @@ export interface SubtitleFile {
    *  of (its title and its index among the container's subtitle streams). */
   inbandTitle?: string
   inbandOrder?: number
+  inbandLang?: string
+  /** A track OpenList reads out of the video as it is asked for: it may be
+   *  partial, and is fetched again from the playback position. */
+  extracted?: boolean
 }
 
 interface SubtitleInfo {
@@ -21,7 +25,26 @@ interface SubtitleInfo {
   format: SubtitleFormat
   inbandTitle?: string
   inbandOrder?: number
+  inbandLang?: string
+  extracted?: boolean
 }
+
+// What /api/fs/subtitle_extract says about how far a track has got: "partial;
+// done=0.42" while it is being read, "complete" once it is whole.
+export const EXTRACT_HEADER = "X-OpenList-Extract"
+const EXTRACT_REFRESH_MS = 5000
+
+export const isPartialExtract = (header: string | null): boolean =>
+  !!header && /^\s*partial\b/i.test(header)
+
+// The extraction URL for the position the viewer is at (reading starts there),
+// and for the nth fetch of it, so that every one is a new URL for the track.
+export const extractedUrl = (
+  url: string,
+  seconds: number,
+  rev: number,
+): string =>
+  `${url}${url.includes("?") ? "&" : "?"}at=${Math.max(0, Math.floor(seconds))}${rev > 0 ? `&rev=${rev}` : ""}`
 
 const isDev = import.meta.env?.DEV ?? false
 
@@ -34,9 +57,11 @@ const escapeAttr = (s: string) =>
 
 // `data-inband-*`: movi's way of saying "this file is the same subtitle as that
 // track of the original" (see movi-player's SourceSelection.ts).
+// A track the container gave no name has no title; the order and the language
+// then say which it is.
 const trackAlias = (info: SubtitleInfo) =>
-  info.inbandTitle && typeof info.inbandOrder === "number"
-    ? ` data-inband-title="${escapeAttr(info.inbandTitle)}" data-inband-order="${info.inbandOrder}"`
+  typeof info.inbandOrder === "number"
+    ? `${info.inbandTitle ? ` data-inband-title="${escapeAttr(info.inbandTitle)}"` : ""} data-inband-order="${info.inbandOrder}"${info.inbandLang ? ` data-inband-lang="${escapeAttr(info.inbandLang)}"` : ""}`
     : ""
 
 // JASSUB/libass only parse UTF-8. Detect a UTF-16 BOM and transcode to UTF-8,
@@ -85,6 +110,8 @@ export class SubtitleManager {
   private pollTimer: number | undefined
   private fullscreenChangeHandler: (() => void) | null = null
   private activationSeq = 0
+  private followWake: (() => void) | null = null
+  private followTimer: number | undefined
 
   private blobUrls: string[] = []
 
@@ -129,6 +156,8 @@ export class SubtitleManager {
         format: ((f) => (f === "srt" ? "vtt" : f))(detectFormat(file.name)),
         inbandTitle: file.inbandTitle,
         inbandOrder: file.inbandOrder,
+        inbandLang: file.inbandLang,
+        extracted: file.extracted,
       })
     })
   }
@@ -141,7 +170,9 @@ export class SubtitleManager {
   async convertAssTracks(): Promise<void> {
     const tasks: Promise<void>[] = []
     for (const [, info] of this.subInfoMap) {
-      if (info.format !== "ass") continue
+      // An extracted track is made by OpenList: UTF-8, and not one to read
+      // before anybody asked for it.
+      if (info.format !== "ass" || info.extracted) continue
       tasks.push(
         fetch(info.url)
           .then((r) => r.arrayBuffer())
@@ -186,6 +217,7 @@ export class SubtitleManager {
     if (this.destroyed) return
     log("handleTrackChange triggered")
     const activationSeq = ++this.activationSeq
+    this.stopFollowing()
 
     const langs = (this.moviEl as any)?.getSubtitleLangs?.() as
       Array<{ lang: string; label: string; active: boolean }> | undefined
@@ -198,6 +230,12 @@ export class SubtitleManager {
     const info = this.subInfoMap.get(active.lang)
     if (!info) return
 
+    if (info.extracted) {
+      if (info.format === "sup") this.activeRenderer = "sup"
+      void this.followExtraction(info, activationSeq)
+      return
+    }
+
     if (info.format === "sup") {
       this.activeRenderer = "sup"
       log("activating SUP renderer for", info.label)
@@ -207,6 +245,63 @@ export class SubtitleManager {
         this.destroyRenderers()
       })
     }
+  }
+
+  // The track showing is made by OpenList and may still be being read: fetch it
+  // from where the viewer is, hand what there is to the player, and again every
+  // few seconds until the response says it is whole. The player is given the
+  // fetched text (a blob URL set as the <track> src, which movi loads again as
+  // HTML does) so that this is the only request for it.
+  private async followExtraction(
+    info: SubtitleInfo,
+    seq: number,
+  ): Promise<void> {
+    for (let rev = 0; this.isActivationCurrent(seq); rev++) {
+      const at = Number((this.moviEl as any)?.currentTime) || 0
+      let partial = false
+      try {
+        const res = await fetch(extractedUrl(info.url, at, rev))
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        partial = isPartialExtract(res.headers.get(EXTRACT_HEADER))
+        const blob = await res.blob()
+        if (!this.isActivationCurrent(seq)) return
+        this.deliverExtracted(info, blob, seq)
+      } catch (e) {
+        log("extracted subtitle fetch failed for", info.label, e)
+        partial = rev < 3 // a few more tries, then leave the track as it is
+      }
+      if (!partial) return
+      await new Promise<void>((resolve) => {
+        this.followWake = resolve
+        this.followTimer = window.setTimeout(resolve, EXTRACT_REFRESH_MS)
+      })
+    }
+  }
+
+  private deliverExtracted(info: SubtitleInfo, blob: Blob, seq: number): void {
+    const url = URL.createObjectURL(blob)
+    this.blobUrls.push(url)
+    if (info.format === "sup") {
+      // libpgs reads its file once: start it again on the newer one.
+      this.destroyRenderers()
+      this.activeRenderer = "sup"
+      void this.activateSUP(url, seq).catch((e) => {
+        if (!this.isActivationCurrent(seq)) return
+        log("SUP renderer activation failed", e)
+        this.destroyRenderers()
+      })
+      return
+    }
+    this.moviEl
+      ?.querySelector(`track[srclang="${info.lang}"]`)
+      ?.setAttribute("src", url)
+  }
+
+  private stopFollowing(): void {
+    if (this.followTimer) clearTimeout(this.followTimer)
+    this.followTimer = undefined
+    this.followWake?.()
+    this.followWake = null
   }
 
   setTimeOffset(seconds: number): void {
@@ -237,6 +332,7 @@ export class SubtitleManager {
     if (this.destroyed) return
     this.destroyed = true
     log("destroy")
+    this.stopFollowing()
     if (this.pollTimer) {
       clearInterval(this.pollTimer)
       this.pollTimer = undefined

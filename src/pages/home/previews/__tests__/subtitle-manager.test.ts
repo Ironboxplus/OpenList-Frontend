@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import {
   detectFormat,
+  extractedUrl,
+  isPartialExtract,
   SubtitleManager,
   type SubtitleFile,
 } from "../subtitle-manager"
@@ -272,5 +274,149 @@ describe("SubtitleManager", () => {
       manager.destroy()
       expect(manager.getActiveRenderer()).toBe("none")
     })
+  })
+})
+
+describe("extracted subtitles (read out of the video by OpenList)", () => {
+  const api = "https://h/api/fs/subtitle_extract?path=%2Fa.mkv&track=2&sign=s"
+  const file: SubtitleFile = {
+    name: "kor.srt",
+    url: api,
+    inbandOrder: 2,
+    inbandLang: "kor",
+    extracted: true,
+  }
+  let wrapper: HTMLDivElement
+  let moviEl: ReturnType<typeof createMockMoviElement>
+  let manager: SubtitleManager
+
+  beforeEach(() => {
+    // only the timers: the body of a Response is read with the real scheduler
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] })
+    wrapper = document.createElement("div")
+    document.body.appendChild(wrapper)
+    moviEl = createMockMoviElement()
+    wrapper.appendChild(moviEl)
+    manager = new SubtitleManager(null)
+    manager.registerTracks([file])
+    moviEl.innerHTML = manager.getTrackHTML()
+    manager.attach(moviEl)
+    let n = 0
+    URL.createObjectURL = vi.fn(() => `blob:extract-${++n}`)
+    URL.revokeObjectURL = vi.fn()
+  })
+
+  afterEach(() => {
+    manager.destroy()
+    wrapper.remove()
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  const response = (state: string) =>
+    new Response("1\n00:00:01,000 --> 00:00:02,000\nhi\n", {
+      headers: { "X-OpenList-Extract": state },
+    })
+
+  it("declares the identity of a track that has no title", () => {
+    const t = moviEl.querySelector("track")!
+    expect(t.hasAttribute("data-inband-title")).toBe(false)
+    expect(t.getAttribute("data-inband-order")).toBe("2")
+    expect(t.getAttribute("data-inband-lang")).toBe("kor")
+  })
+
+  it("reads from the playback position and again every 5 s until it is whole", async () => {
+    const fetched: string[] = []
+    const answers = [
+      response("partial; done=0.10"),
+      response("partial; done=0.60"),
+      response("complete"),
+    ]
+    vi.stubGlobal("fetch", async (u: string) => {
+      fetched.push(u)
+      return answers.shift()!
+    })
+    moviEl.currentTime = 42.7
+    moviEl._subtitleLangs = [{ lang: "sub0", label: "kor", active: true }]
+    manager.handleTrackChange()
+
+    const track = moviEl.querySelector("track")!
+    await vi.waitFor(() =>
+      expect(track.getAttribute("src")).toBe("blob:extract-1"),
+    )
+    expect(fetched).toEqual([`${api}&at=42`])
+
+    moviEl.currentTime = 50
+    await vi.advanceTimersByTimeAsync(4900)
+    expect(fetched).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(100)
+    await vi.waitFor(() =>
+      expect(track.getAttribute("src")).toBe("blob:extract-2"),
+    )
+    expect(fetched[1]).toBe(`${api}&at=50&rev=1`)
+
+    await vi.advanceTimersByTimeAsync(5000)
+    await vi.waitFor(() =>
+      expect(track.getAttribute("src")).toBe("blob:extract-3"),
+    )
+    expect(fetched).toHaveLength(3)
+
+    // whole: nothing more is asked
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(fetched).toHaveLength(3)
+  })
+
+  it("stops asking when another subtitle is picked", async () => {
+    const fetched: string[] = []
+    vi.stubGlobal("fetch", async (u: string) => {
+      fetched.push(u)
+      return response("partial; done=0.10")
+    })
+    moviEl._subtitleLangs = [{ lang: "sub0", label: "kor", active: true }]
+    manager.handleTrackChange()
+    await vi.waitFor(() =>
+      expect(moviEl.querySelector("track")!.getAttribute("src")).toBe(
+        "blob:extract-1",
+      ),
+    )
+    expect(fetched).toHaveLength(1)
+
+    moviEl._subtitleLangs = []
+    manager.handleTrackChange()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(fetched).toHaveLength(1)
+  })
+
+  it("leaves a track that is not extracted to the player", async () => {
+    manager.registerTracks([{ name: "a.srt", url: "https://h/p/a.srt" }])
+    const spy = vi.fn()
+    vi.stubGlobal("fetch", spy)
+    moviEl._subtitleLangs = [{ lang: "sub0", label: "a", active: true }]
+    manager.handleTrackChange()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("does not read an extracted ASS track while preparing the others", async () => {
+    manager.registerTracks([{ ...file, name: "kor.ass" }])
+    const spy = vi.fn()
+    vi.stubGlobal("fetch", spy)
+    await manager.convertAssTracks()
+    expect(spy).not.toHaveBeenCalled()
+  })
+})
+
+describe("extractedUrl and isPartialExtract", () => {
+  it("adds the position, and a revision from the second fetch on", () => {
+    expect(extractedUrl("https://h/x?a=1", 12.9, 0)).toBe(
+      "https://h/x?a=1&at=12",
+    )
+    expect(extractedUrl("https://h/x", 0, 3)).toBe("https://h/x?at=0&rev=3")
+    expect(extractedUrl("https://h/x", -4, 0)).toBe("https://h/x?at=0")
+  })
+  it("reads the header", () => {
+    expect(isPartialExtract("partial; done=0.42")).toBe(true)
+    expect(isPartialExtract("complete")).toBe(false)
+    expect(isPartialExtract(null)).toBe(false)
   })
 })
