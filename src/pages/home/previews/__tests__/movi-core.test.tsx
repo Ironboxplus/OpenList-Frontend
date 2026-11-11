@@ -161,8 +161,8 @@ describe("MoviCore", () => {
     const players = r.container.querySelectorAll("movi-player")
     expect(players.length).toBe(1)
     expect(players[0].getAttribute("src")).toBe("http://x/b.mkv")
-    // the stale build's UTF-8 copy is released, not leaked
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:first")
+    // the stale build's UTF-8 copy is not made at all, so it cannot leak
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
   })
 
   describe("late subtitle list", () => {
@@ -188,13 +188,13 @@ describe("MoviCore", () => {
       expect(el).not.toBeNull()
       expect(el.querySelectorAll("track").length).toBe(0)
 
-      release(list("late.srt"))
+      release(list("late"))
       await settle()
       // the same element, not a rebuilt one
       expect(r.container.querySelector("movi-player")).toBe(el)
       const tracks = Array.from(el.querySelectorAll("track"))
       expect(tracks.map((t) => t.getAttribute("src"))).toEqual([
-        "https://h/p/late.srt",
+        "https://h/p/late",
       ])
       expect(tracks[0].getAttribute("label")).toBe("late.srt")
     })
@@ -212,7 +212,7 @@ describe("MoviCore", () => {
       await settle()
       setRaw("http://x/b.mkv")
       await settle()
-      release(list("stale.srt"))
+      release(list("stale"))
       await settle()
       const players = r.container.querySelectorAll("movi-player")
       expect(players.length).toBe(1)
@@ -221,7 +221,7 @@ describe("MoviCore", () => {
       const srcs = Array.from(players[0].querySelectorAll("track")).map((t) =>
         t.getAttribute("src"),
       )
-      expect(srcs).not.toContain("https://h/p/stale.srt")
+      expect(srcs).not.toContain("https://h/p/stale")
       expect(srcs.length).toBe(3)
     })
   })

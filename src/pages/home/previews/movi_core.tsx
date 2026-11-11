@@ -1,5 +1,5 @@
 import { Box } from "@hope-ui/solid"
-import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js"
+import { createEffect, on, onCleanup, onMount } from "solid-js"
 import { useFetch } from "~/hooks"
 import { password, setShouldKeepState } from "~/store"
 import { PResp } from "~/types"
@@ -52,6 +52,12 @@ export interface MoviCoreProps {
  * this only declares them. It reads nothing from the file page's stores, so the
  * file preview and the media library overlay feed it the same way.
  */
+interface Built {
+  seq: number
+  manager: SubtitleManager
+  el: HTMLElement
+}
+
 export const MoviCore = (props: MoviCoreProps) => {
   // Provider transcoded sources are fetched on demand; movi always defaults to
   // the original stream (raw_url) per the product requirement.
@@ -67,16 +73,17 @@ export const MoviCore = (props: MoviCoreProps) => {
   const [, fetchSubtitles] = useFetch((): PResp<VideoSubtitleSource[]> =>
     r.post("/fs/video_subtitle", { path: props.path, password: password() }),
   )
-  const [subtitles, setSubtitles] = createSignal<SubtitleFile[]>([])
 
-  // Best-effort: failures just leave the subtitle list empty.
-  const loadSubtitles = async () => {
+  // Best-effort: failures just leave the subtitle list empty. The request can
+  // take a while (the backend reads the head of the file to list the tracks the
+  // container carries), so the player does not wait for it; see addSubtitles.
+  const loadSubtitles = async (): Promise<SubtitleFile[]> => {
     try {
       const resp = await fetchSubtitles()
       const list = resp.code === 200 && resp.data ? resp.data : []
-      setSubtitles(buildProviderSubFiles(list))
+      return buildProviderSubFiles(list)
     } catch {
-      setSubtitles([])
+      return []
     }
   }
 
@@ -123,23 +130,17 @@ export const MoviCore = (props: MoviCoreProps) => {
     return ` startat="${Math.floor(props.startAt)}"`
   }
 
-  const buildPlayer = async (url: string, qualities: Quality[]) => {
+  const buildPlayer = (
+    url: string,
+    qualities: Quality[],
+  ): Built | undefined => {
     if (!playerHost || !url) return
     const seq = ++buildSeq
 
-    // Subtitle tracks resolved by the backend (sidecar + provider). They are
-    // declared once, whatever source is playing: movi lists them next to the
-    // original's own tracks and carries the choice across a source switch.
     // movi draws ASS (embedded and external) itself; the manager only readies
-    // the external files (UTF-16 .ass to UTF-8) and draws external PGS.
+    // the external files (UTF-16 .ass to UTF-8) and draws external PGS. The
+    // subtitle tracks come later, see addSubtitles.
     const manager = new SubtitleManager(null)
-    manager.registerTracks(subtitles())
-    await manager.convertAssTracks()
-    if (seq !== buildSeq) {
-      manager.destroy()
-      return
-    }
-    const trackHTML = manager.getTrackHTML()
 
     destroyPlayer()
 
@@ -153,7 +154,7 @@ export const MoviCore = (props: MoviCoreProps) => {
 
     const wrapper = document.createElement("div")
     wrapper.style.cssText = "position:relative;width:100%"
-    wrapper.innerHTML = `<movi-player${srcAttr}${keyAttr} controls theme="dark" hdr fastseek${startAttr()}${props.autoplay ? " autoplay" : ""}${buildMoviBufferAttribute(props.provider)}${fallbackFontAttr()} style="width:100%;max-height:80vh">${sourceHTML}${trackHTML}</movi-player>`
+    wrapper.innerHTML = `<movi-player${srcAttr}${keyAttr} controls theme="dark" hdr fastseek${startAttr()}${props.autoplay ? " autoplay" : ""}${buildMoviBufferAttribute(props.provider)}${fallbackFontAttr()} style="width:100%;max-height:80vh">${sourceHTML}</movi-player>`
 
     const el = wrapper.firstElementChild as HTMLElement
     playerHost.appendChild(wrapper)
@@ -173,6 +174,24 @@ export const MoviCore = (props: MoviCoreProps) => {
       const delay = e.detail?.subtitleDelay ?? 0
       subtitleManager?.setTimeOffset(delay)
     }) as EventListener)
+    return { seq, manager, el }
+  }
+
+  // Subtitle tracks resolved by the backend (sidecar + provider). They are
+  // declared once, whatever source is playing: movi lists them next to the
+  // original's own tracks and carries the choice across a source switch. They
+  // arrive after the player was built: appended as <track> children, which movi
+  // adds to its list and menu without reloading (HTML: a track element added
+  // to a media element joins its text tracks). A list that comes back after the
+  // player was replaced is for a video that is gone.
+  const addSubtitles = async (built: Built, files: SubtitleFile[]) => {
+    if (!files.length || built.seq !== buildSeq) return
+    built.manager.registerTracks(files)
+    await built.manager.convertAssTracks()
+    if (built.seq !== buildSeq) return
+    const tracks = document.createElement("template")
+    tracks.innerHTML = built.manager.getTrackHTML()
+    built.el.append(tracks.content)
   }
 
   onMount(async () => {
@@ -184,11 +203,9 @@ export const MoviCore = (props: MoviCoreProps) => {
         () => asPreview(props.rawUrl),
         async (url) => {
           if (!containerRef || !url) return
-          const [qualities] = await Promise.all([
-            loadQualities(url),
-            loadSubtitles(),
-          ])
-          await buildPlayer(url, qualities)
+          const subtitles = loadSubtitles()
+          const built = buildPlayer(url, await loadQualities(url))
+          if (built) await addSubtitles(built, await subtitles)
         },
       ),
     )

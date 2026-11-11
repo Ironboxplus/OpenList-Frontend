@@ -178,6 +178,9 @@ export class SubtitleManager {
         fetch(info.url)
           .then((r) => r.arrayBuffer())
           .then((buf) => {
+            // the manager went with its player while this was being read: a
+            // copy made now would never be revoked
+            if (this.destroyed) return
             const text = utf16ToUtf8IfNeeded(buf)
             if (text === null) return // already UTF-8 (or BOM-less) — leave as-is
             const blob = new Blob([text], { type: "text/plain" })
