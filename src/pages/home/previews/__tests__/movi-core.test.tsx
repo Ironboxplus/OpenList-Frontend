@@ -2,37 +2,42 @@ import { render } from "@solidjs/testing-library"
 import { createSignal } from "solid-js"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-const { registerJassubHost, post } = vi.hoisted(() => ({
+const { registerJassubHost, post, subtitleGate } = vi.hoisted(() => ({
   registerJassubHost: vi.fn(async () => {}),
-  post: vi.fn(async (url: string) =>
-    url === "/fs/video_subtitle"
-      ? {
-          code: 200,
-          data: [
-            {
-              language: "chi",
-              title: "[内置字幕]简体",
-              url: "https://h/p/s0",
-              type: "ass",
-              embedded_title: "简体",
-              embedded_order: 0,
-            },
-            {
-              language: "",
-              title: "m.srt",
-              url: "https://h/p/s1",
-              type: "srt",
-            },
-            {
-              language: "",
-              title: "m.sup",
-              url: "https://h/p/s2",
-              type: "sup",
-            },
-          ],
-        }
-      : { code: 200, data: [] },
-  ),
+  // a test sets this to hold the subtitle list back (see "late subtitle list")
+  subtitleGate: {
+    hold: undefined as undefined | (() => Promise<any> | undefined),
+  },
+  post: vi.fn(async (url: string) => {
+    if (url !== "/fs/video_subtitle") return { code: 200, data: [] }
+    const held = subtitleGate.hold?.()
+    if (held) return held
+    return {
+      code: 200,
+      data: [
+        {
+          language: "chi",
+          title: "[内置字幕]简体",
+          url: "https://h/p/s0",
+          type: "ass",
+          embedded_title: "简体",
+          embedded_order: 0,
+        },
+        {
+          language: "",
+          title: "m.srt",
+          url: "https://h/p/s1",
+          type: "srt",
+        },
+        {
+          language: "",
+          title: "m.sup",
+          url: "https://h/p/s2",
+          type: "sup",
+        },
+      ],
+    }
+  }),
 }))
 vi.mock("../movi-jassub", () => ({ registerJassubHost }))
 vi.mock("movi-player", () => ({}))
@@ -57,6 +62,7 @@ const settle = async () => {
 describe("MoviCore", () => {
   afterEach(() => {
     document.body.innerHTML = ""
+    subtitleGate.hold = undefined
     vi.unstubAllGlobals()
   })
 
@@ -157,5 +163,66 @@ describe("MoviCore", () => {
     expect(players[0].getAttribute("src")).toBe("http://x/b.mkv")
     // the stale build's UTF-8 copy is released, not leaked
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:first")
+  })
+
+  describe("late subtitle list", () => {
+    const list = (title: string) => ({
+      code: 200,
+      data: [{ language: "", title, url: `https://h/p/${title}`, type: "srt" }],
+    })
+    const okFetch = () =>
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })),
+      )
+
+    it("builds the player while the subtitle request is still pending, then adds the tracks to it", async () => {
+      okFetch()
+      let release!: (v: any) => void
+      subtitleGate.hold = () => new Promise((res) => (release = res))
+      const r = render(() => (
+        <MoviCore path="/m/a.mkv" rawUrl="http://x/a.mkv" provider="Local" />
+      ))
+      await settle()
+      const el = r.container.querySelector("movi-player") as HTMLElement
+      expect(el).not.toBeNull()
+      expect(el.querySelectorAll("track").length).toBe(0)
+
+      release(list("late.srt"))
+      await settle()
+      // the same element, not a rebuilt one
+      expect(r.container.querySelector("movi-player")).toBe(el)
+      const tracks = Array.from(el.querySelectorAll("track"))
+      expect(tracks.map((t) => t.getAttribute("src"))).toEqual([
+        "https://h/p/late.srt",
+      ])
+      expect(tracks[0].getAttribute("label")).toBe("late.srt")
+    })
+
+    it("drops a list that arrives after the video has changed", async () => {
+      okFetch()
+      let release!: (v: any) => void
+      let n = 0
+      subtitleGate.hold = () =>
+        n++ === 0 ? new Promise((res) => (release = res)) : undefined
+      const [raw, setRaw] = createSignal("http://x/a.mkv")
+      const r = render(() => (
+        <MoviCore path="/m/a.mkv" rawUrl={raw()} provider="Local" />
+      ))
+      await settle()
+      setRaw("http://x/b.mkv")
+      await settle()
+      release(list("stale.srt"))
+      await settle()
+      const players = r.container.querySelectorAll("movi-player")
+      expect(players.length).toBe(1)
+      expect(players[0].getAttribute("src")).toBe("http://x/b.mkv")
+      // b's own list is the default three tracks; nothing of a's is among them
+      const srcs = Array.from(players[0].querySelectorAll("track")).map((t) =>
+        t.getAttribute("src"),
+      )
+      expect(srcs).not.toContain("https://h/p/stale.srt")
+      expect(srcs.length).toBe(3)
+    })
   })
 })
