@@ -13,7 +13,8 @@ import {
   JSXElement,
   createSignal,
   createMemo,
-  createResource,
+  createEffect,
+  on,
   Show,
 } from "solid-js"
 import {
@@ -175,16 +176,26 @@ export const VideoBox = (props: {
   const { copyMpvCommand } = useCopyLink()
   // First sidecar external subtitle of the current video, handed to players that
   // support one (e.g. mpv via subfile). The backend does the matching, for
-  // storage paths and share paths alike.
-  const [subtitleUrl] = createResource(
-    () => objPath(objStore.obj),
-    async (path) => {
-      try {
-        return (await fetchSidecarSubtitles(path, password()))[0]
-      } catch {
-        return undefined
-      }
-    },
+  // storage paths and share paths alike. It is a plain signal filled by an
+  // effect: a resource read in the JSX below would suspend the page until the
+  // request returns, and the player (the children) with it. Until it returns
+  // the links carry no subtitle.
+  const [subtitleUrl, setSubtitleUrl] = createSignal<string | undefined>()
+  createEffect(
+    on(
+      () => objPath(objStore.obj),
+      async (path) => {
+        setSubtitleUrl(undefined)
+        let url: string | undefined
+        try {
+          url = (await fetchSidecarSubtitles(path, password()))[0]
+        } catch {
+          url = undefined
+        }
+        // the video changed while the request was out: it is not this one's
+        if (objPath(objStore.obj) === path) setSubtitleUrl(url)
+      },
+    ),
   )
   const [videoName, setVideoName] = createSignal("")
   const videos = createMemo(() => {
