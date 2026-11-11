@@ -110,6 +110,7 @@ export class SubtitleManager {
   private pollTimer: number | undefined
   private fullscreenChangeHandler: (() => void) | null = null
   private activationSeq = 0
+  private lastPlayingHls = false
   private followWake: (() => void) | null = null
   private followTimer: number | undefined
 
@@ -231,6 +232,11 @@ export class SubtitleManager {
     if (!info) return
 
     if (info.extracted) {
+      // The original shows the track from its own container; reading it out of
+      // the file as well would be a second reader of a file the storage lets
+      // one connection at a time read. Only a source that dropped the track
+      // (a transcode) needs the extracted file.
+      if (!this.playingHls()) return
       if (info.format === "sup") this.activeRenderer = "sup"
       void this.followExtraction(info, activationSeq)
       return
@@ -245,6 +251,13 @@ export class SubtitleManager {
         this.destroyRenderers()
       })
     }
+  }
+
+  // True while the source in play is an HLS stream, which carries no subtitle
+  // tracks of the original file (movi's own test for an adaptive source).
+  private playingHls(): boolean {
+    const src = (this.moviEl as any)?.currentSrc
+    return typeof src === "string" && /\.m3u8/i.test(src)
   }
 
   // The track showing is made by OpenList and may still be being read: fetch it
@@ -263,9 +276,9 @@ export class SubtitleManager {
         const res = await fetch(extractedUrl(info.url, at, rev))
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         partial = isPartialExtract(res.headers.get(EXTRACT_HEADER))
-        const blob = await res.blob()
+        const bytes = await res.arrayBuffer()
         if (!this.isActivationCurrent(seq)) return
-        this.deliverExtracted(info, blob, seq)
+        await this.deliverExtracted(info, bytes, seq)
       } catch (e) {
         log("extracted subtitle fetch failed for", info.label, e)
         partial = rev < 3 // a few more tries, then leave the track as it is
@@ -278,20 +291,21 @@ export class SubtitleManager {
     }
   }
 
-  private deliverExtracted(info: SubtitleInfo, blob: Blob, seq: number): void {
-    const url = URL.createObjectURL(blob)
-    this.blobUrls.push(url)
+  private async deliverExtracted(
+    info: SubtitleInfo,
+    bytes: ArrayBuffer,
+    seq: number,
+  ): Promise<void> {
     if (info.format === "sup") {
-      // libpgs reads its file once: start it again on the newer one.
-      this.destroyRenderers()
+      // libpgs takes the bytes itself (loadFromBuffer replaces what the renderer
+      // holds and re-renders), so the renderer stays and nothing is fetched.
       this.activeRenderer = "sup"
-      void this.activateSUP(url, seq).catch((e) => {
-        if (!this.isActivationCurrent(seq)) return
-        log("SUP renderer activation failed", e)
-        this.destroyRenderers()
-      })
+      if (this.pgsRenderer) this.pgsRenderer.loadFromBuffer(bytes)
+      else await this.activateSUP(bytes, seq)
       return
     }
+    const url = URL.createObjectURL(new Blob([bytes]))
+    this.blobUrls.push(url)
     this.moviEl
       ?.querySelector(`track[srclang="${info.lang}"]`)
       ?.setAttribute("src", url)
@@ -320,9 +334,11 @@ export class SubtitleManager {
         Array<{ lang: string; label: string; active: boolean }> | undefined
       const active = langs?.find((t) => t.active)
       const activeLang = active?.lang ?? null
-      if (activeLang !== this.lastActiveLang) {
+      const hls = this.playingHls()
+      if (activeLang !== this.lastActiveLang || hls !== this.lastPlayingHls) {
         log("detected track change:", this.lastActiveLang, "→", activeLang)
         this.lastActiveLang = activeLang
+        this.lastPlayingHls = hls
         this.handleTrackChange()
       }
     }, 500)
@@ -354,7 +370,10 @@ export class SubtitleManager {
     return !this.destroyed && this.activationSeq === seq
   }
 
-  private async activateSUP(url: string, seq: number): Promise<void> {
+  private async activateSUP(
+    source: string | ArrayBuffer,
+    seq: number,
+  ): Promise<void> {
     if (!this.isActivationCurrent(seq)) return
     this.ensureOverlay()
     if (!this.isActivationCurrent(seq) || typeof window === "undefined") return
@@ -367,9 +386,10 @@ export class SubtitleManager {
     log("libpgs init with workerUrl:", `${base}/libpgs/libpgs.worker.js`)
     this.pgsRenderer = new PgsRenderer({
       canvas: this.overlayCanvas!,
-      subUrl: url,
+      ...(typeof source === "string" ? { subUrl: source } : {}),
       workerUrl: `${base}/libpgs/libpgs.worker.js`,
     })
+    if (typeof source !== "string") this.pgsRenderer.loadFromBuffer(source)
     if (this.timeOffset !== 0) {
       this.pgsRenderer.timeOffset = this.timeOffset
     }

@@ -357,5 +357,11 @@
   "media_title_sources": {
     "file": "File name",
     "scraped": "Scraped title"
-  }
+  },
+  "subtitle_cache_max_mb": "Extracted subtitle cache (MiB)",
+  "subtitle_cache_max_mb-tips": "Disk limit for subtitles read out of videos (data/subtitle-cache). The least recently used are deleted first.",
+  "subtitle_extract_concurrency": "Subtitle extraction concurrency",
+  "subtitle_extract_concurrency-tips": "How many video files subtitles are read from at once. A file is always read over one connection.",
+  "subtitle_prefetch_library": "Prefetch library subtitles",
+  "subtitle_prefetch_library-tips": "Read the embedded subtitles the storage provider does not supply out of every library video in the background, one file at a time, behind playback. Progress is shown below; turning it off stops at once."
 }

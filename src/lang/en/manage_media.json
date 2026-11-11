@@ -69,6 +69,13 @@
     "thumb_rerun": "Changes take effect after re-scraping (clear scraped data in Media Manage, then run scraping again).",
     "thumb_config_missing": "Media type config not loaded, please refresh and try again",
     "thumb_saved": "Thumbnail settings saved, effective after re-scraping",
-    "thumb_save_failed": "Save failed"
+    "thumb_save_failed": "Save failed",
+    "prefetch_title": "Subtitle prefetch",
+    "prefetch_idle": "Off. Turn on subtitle_prefetch_library above to extract the missing embedded subtitles of every library video in the background.",
+    "prefetch_enabled_idle": "On, waiting for the next pass.",
+    "prefetch_progress": "{{files}} / {{total}} files looked at, {{tracks}} subtitle tracks extracted",
+    "prefetch_running": "Running: {{path}}",
+    "prefetch_failed": "{{count}} file(s) failed, last error: {{error}}",
+    "prefetch_load_failed": "Could not read the progress"
   }
 }
