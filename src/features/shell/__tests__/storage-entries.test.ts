@@ -22,6 +22,19 @@ describe("storageEntries", () => {
     ])
   })
 
+  it("titles the card with the last segment of the mount path the backend sends", () => {
+    const d = { ...local, driver_name: "115 Open", mount_path: "/网盘/115" }
+    expect(storageEntries(d, [])[0].name).toBe("115")
+    // it wins over a name remembered from a listing
+    expect(storageEntries(d, [], "other")[0].name).toBe("115")
+    // an older backend sends no mount_path: the remembered name, then the driver
+    expect(storageEntries(local, [], "remembered")[0].name).toBe("remembered")
+    // a storage mounted at the root has no segment to use
+    expect(storageEntries({ ...local, mount_path: "/" }, [])[0].name).toBe(
+      "Local",
+    )
+  })
+
   it("lists the mount points that report usage at the storages root", () => {
     const objs = [
       { name: "disk", mount_details: local },

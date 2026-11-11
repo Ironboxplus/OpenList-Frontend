@@ -82,6 +82,8 @@ export type MountDetails = {
   free_space?: number
   used_space?: number
   driver_name: string
+  /** Where the storage is mounted; its last segment is the storage's name. */
+  mount_path?: string
 }
 
 export type ArchiveList = PageResp<Obj>
