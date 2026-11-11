@@ -12,6 +12,7 @@ import {
 const pgs = vi.hoisted(() => ({
   created: [] as any[],
   buffers: [] as ArrayBuffer[],
+  rendered: [] as number[],
   disposed: 0,
 }))
 vi.mock("libpgs", () => ({
@@ -23,7 +24,9 @@ vi.mock("libpgs", () => ({
     loadFromBuffer(b: ArrayBuffer) {
       pgs.buffers.push(b)
     }
-    renderAtTimestamp() {}
+    renderAtTimestamp(t: number) {
+      pgs.rendered.push(t)
+    }
     dispose() {
       pgs.disposed++
     }
@@ -425,6 +428,31 @@ describe("extracted subtitles (read out of the video by OpenList)", () => {
     expect(pgs.created).toHaveLength(1)
     expect(pgs.created[0].subUrl).toBeUndefined()
     expect(pgs.disposed).toBe(0)
+  })
+
+  // The delay is mpv's sub-delay (positive: later). The manager drives libpgs
+  // with its own clock (renderAtTimestamp); libpgs's timeOffset only applies to
+  // a <video> it watches itself, and it watches none here.
+  it("draws a PGS track at the playhead minus the subtitle delay", async () => {
+    manager.registerTracks([{ ...file, name: "kor.sup" }])
+    vi.stubGlobal(
+      "fetch",
+      async () =>
+        new Response(new Uint8Array(10), {
+          headers: { "X-OpenList-Extract": "complete" },
+        }),
+    )
+    moviEl._subtitleLangs = [{ lang: "sub0", label: "kor", active: true }]
+    manager.handleTrackChange()
+    await vi.waitFor(() => expect(pgs.buffers.length).toBeGreaterThan(0))
+    manager.setTimeOffset(2)
+    moviEl.currentTime = 30
+    pgs.rendered.length = 0
+    await vi.advanceTimersByTimeAsync(100)
+    expect(pgs.rendered.at(-1)).toBe(28)
+    manager.setTimeOffset(-1.5)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(pgs.rendered.at(-1)).toBe(31.5)
   })
 
   it("fetches nothing while the original plays", async () => {
