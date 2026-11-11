@@ -321,11 +321,10 @@ export class SubtitleManager {
     this.followWake = null
   }
 
+  /** The player's subtitle delay (mpv's sub-delay: positive shows them later),
+   *  applied by startSync. */
   setTimeOffset(seconds: number): void {
     this.timeOffset = seconds
-    if (this.pgsRenderer) {
-      this.pgsRenderer.timeOffset = seconds
-    }
   }
 
   startPolling(): void {
@@ -393,9 +392,6 @@ export class SubtitleManager {
       workerUrl: `${base}/libpgs/libpgs.worker.js`,
     })
     if (typeof source !== "string") this.pgsRenderer.loadFromBuffer(source)
-    if (this.timeOffset !== 0) {
-      this.pgsRenderer.timeOffset = this.timeOffset
-    }
     this.startSync()
   }
 
@@ -450,8 +446,10 @@ export class SubtitleManager {
       const time = (this.moviEl as any)?.currentTime
       if (typeof time !== "number") return
 
+      // libpgs's own timeOffset only applies to a <video> it watches, and it
+      // watches none: the delay is applied to the time it is given.
       if (this.pgsRenderer) {
-        this.pgsRenderer.renderAtTimestamp(time)
+        this.pgsRenderer.renderAtTimestamp(time - this.timeOffset)
       }
     }, 50)
   }
