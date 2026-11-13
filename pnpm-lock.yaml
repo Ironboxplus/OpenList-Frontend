@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  jassub@2.5.37: 8ebb5475b83b17318e2e81fb575a3e2f9be4f7e94da98af5ab3b00bd3f686371
   vite-plugin-dynamic-base: c69f39930b54b1fa4a59b7d2489872deefef64760ef376e1d8776e1eea37b8b6
 
 importers:
@@ -109,7 +110,7 @@ importers:
         version: 7.0.0
       jassub:
         specifier: ^2.5.37
-        version: 2.5.37
+        version: 2.5.37(patch_hash=8ebb5475b83b17318e2e81fb575a3e2f9be4f7e94da98af5ab3b00bd3f686371)
       katex:
         specifier: ^0.19.1
         version: 0.19.1
@@ -7816,7 +7817,7 @@ snapshots:
 
   isexe@2.0.0: {}
 
-  jassub@2.5.37:
+  jassub@2.5.37(patch_hash=8ebb5475b83b17318e2e81fb575a3e2f9be4f7e94da98af5ab3b00bd3f686371):
     dependencies:
       abslink: 1.3.1
       lfa-ponyfill: 1.1.1

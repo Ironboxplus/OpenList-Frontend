@@ -8,5 +8,10 @@ patchedDependencies:
   # if https://github.com/chenxch/vite-plugin-dynamic-base/pull/36 is merged,
   # this patch can be removed
   vite-plugin-dynamic-base: patches/vite-plugin-dynamic-base.patch
+  # JASSUB asks for desynchronized (low-latency) contexts with no option to
+  # turn it off; on phones the subtitle canvas then went to its own display
+  # layer and the video under it showed black (sound and subtitles fine).
+  # Upstream keeps the default: https://github.com/ThaUnknown/jassub/issues/70
+  jassub@2.5.37: patches/jassub@2.5.37.patch
 onlyBuiltDependencies:
   - mpegts.js
