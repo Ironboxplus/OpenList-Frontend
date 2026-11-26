@@ -73,8 +73,7 @@ export const MediaListItem = (props: {
   return (
     <div style={{ width: "100%" }}>
       <HStack
-        classList={{ selected: !!props.obj.selected }}
-        class="media-list-item viselect-item"
+        class={`media-list-item viselect-item${props.obj.selected ? " selected" : ""}`}
         data-index={props.index}
         w="$full"
         p="$2"

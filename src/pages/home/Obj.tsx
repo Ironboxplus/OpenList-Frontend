@@ -117,8 +117,10 @@ export const Obj = () => {
   return (
     <VStack
       ref={(el: HTMLDivElement) => setObjBoxRef(el)}
-      class="obj-box"
-      classList={{ "files-card": shellActive() }}
+      // one class expression: hope rewrites the whole class attribute when
+      // its style props change (bgColor follows the theme), which drops
+      // whatever a classList had added (E1)
+      class={shellActive() ? "obj-box files-card" : "obj-box"}
       w="$full"
       rounded="$xl"
       bgColor={cardBg()}

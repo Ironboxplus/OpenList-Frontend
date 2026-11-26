@@ -74,12 +74,14 @@ export const GridItem = (props: {
       }}
     >
       <VStack
-        classList={{
-          selected: !!props.obj.selected,
-          "grid-card": !!props.card,
-          folder: !!props.card && props.obj.is_dir,
-        }}
-        class="grid-item viselect-item"
+        class={[
+          "grid-item viselect-item",
+          props.obj.selected && "selected",
+          props.card && "grid-card",
+          props.card && props.obj.is_dir && "folder",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         data-index={props.index}
         w="$full"
         p="$1"

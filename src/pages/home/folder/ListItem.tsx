@@ -110,8 +110,7 @@ export const ListItem = (props: {
       }}
     >
       <HStack
-        classList={{ selected: !!props.obj.selected }}
-        class="list-item viselect-item"
+        class={`list-item viselect-item${props.obj.selected ? " selected" : ""}`}
         data-index={props.index}
         w="$full"
         p="$2"
