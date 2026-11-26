@@ -184,7 +184,7 @@ html.shell-phone .files-cards {
   align-items: stretch !important;
   gap: 0.5rem !important;
   padding: 0.5rem !important;
-  border: 0 !important;
+  border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
   background: var(--muted) !important;
   transform: none !important;

@@ -51,7 +51,7 @@ export const StorageCard = (props: { class?: string }) => {
       <section
         data-storage-card
         class={cn(
-          "flex flex-col gap-3 rounded-xl bg-muted/60 p-3",
+          "flex flex-col gap-3 rounded-xl border bg-muted/60 p-3",
           props.class,
         )}
       >

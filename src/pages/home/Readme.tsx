@@ -58,7 +58,14 @@ export function Readme(props: {
   )
   return (
     <Show when={getSettingBool("readme_autorender") && readme()}>
-      <Box w="$full" rounded="$xl" p="$4" bgColor={cardBg()} shadow="$lg">
+      <Box
+        w="$full"
+        rounded="$xl"
+        p="$4"
+        bgColor={cardBg()}
+        shadow="$lg"
+        css={{ border: "1px solid var(--border)" }}
+      >
         <MaybeLoading loading={content.loading()}>
           <Markdown
             children={content.data()?.content}
