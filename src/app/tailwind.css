@@ -57,32 +57,35 @@ html.shell-phone .center-toolbar {
 /*
  * The Files page inside the shell. The list is a card of its own inside the
  * shell's content card (user, 11-26: the look the page had after a theme
- * toggle). Its surface is written here, with hope's values (rounded $xl,
- * padding $2, shadow $lg, background white / $neutral3), so it does not
+ * toggle). Its surface is written here with hope's values (rounded $xl,
+ * padding $2; shadow $lg and white / $neutral3 are tokens.css's
+ * --files-card-shadow and --files-card-bg), so it does not
  * depend on when hope recomputes the box's classes. The hope-ui rows keep
  * their markup and behaviour; only their surface is restyled here.
  */
 .obj-box.files-card {
   padding: 0.5rem;
   border-radius: 0.75rem;
-  background: #fff;
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 0.09),
-    0 4px 6px -4px rgb(0 0 0 / 0.1);
-}
-html.dark .obj-box.files-card {
-  background: rgb(32 36 37);
-  box-shadow:
-    rgba(0, 0, 0, 0.1) 0px 0px 0px 1px,
-    rgba(0, 0, 0, 0.2) 0px 5px 10px,
-    rgba(0, 0, 0, 0.4) 0px 15px 40px;
+  background: var(--files-card-bg);
+  box-shadow: var(--files-card-shadow);
 }
 .files-card > * {
   margin: 0 !important;
 }
+.files-card {
+  --files-bar-h: 0rem;
+}
 .files-card .list {
   padding: 0.25rem 0.5rem 0.5rem;
   gap: 0.125rem;
+}
+/* The list's header row stays at the top while the list scrolls, on the
+   card's own surface. */
+.files-card .list > .title {
+  position: sticky;
+  top: calc(var(--shell-top, 0px) + var(--files-bar-h));
+  z-index: 4;
+  background: var(--files-card-bg);
 }
 .files-card .list-item,
 .files-card .grid-item {
