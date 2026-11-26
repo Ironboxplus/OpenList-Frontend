@@ -30,6 +30,28 @@ export const DialogOverlay = <T extends ValidComponent = "div">(
   )
 }
 
+/** The X of dialogs and sheets: 32px to click around a 16px icon. */
+export const DialogCloseButton = (props: { class?: string }) => (
+  <DialogPrimitive.CloseButton
+    class={cn(
+      "absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm bg-transparent text-foreground opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none",
+      props.class,
+    )}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4">
+      <path
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M18 6L6 18M6 6l12 12"
+      />
+    </svg>
+    <span class="sr-only">Close</span>
+  </DialogPrimitive.CloseButton>
+)
+
 type DialogContentProps = ParentProps<
   DialogPrimitive.DialogContentProps & {
     class?: string
@@ -60,23 +82,7 @@ export const DialogContent = <T extends ValidComponent = "div">(
         >
           {local.children}
           <Show when={local.showClose !== false}>
-            <DialogPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm bg-transparent text-foreground opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                class="h-4 w-4"
-              >
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M18 6L6 18M6 6l12 12"
-                />
-              </svg>
-              <span class="sr-only">Close</span>
-            </DialogPrimitive.CloseButton>
+            <DialogCloseButton />
           </Show>
         </DialogPrimitive.Content>
       </div>

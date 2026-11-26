@@ -10,6 +10,9 @@
 
 @source "../features";
 @source "../components/ui";
+/* hope-ui's overlay API on the kit (modal sizes are looked up there). */
+@source "../components/overlay";
+@source not "../components/overlay/__tests__";
 /* The settings area is built on the same components and styled with utilities. */
 @source "../pages/manage";
 @source not "../pages/manage/__tests__";
