@@ -1238,6 +1238,62 @@ for (const layout of ["grid", "list"]) {
   }
 }
 
+// E1 (review 11-26): the list's header row stays at the top of the view while
+// a long list scrolls, on the card's surface, the same on the first load and
+// after two theme toggles.
+for (const theme of ["light", "dark"]) {
+  await spec("list-header-sticky", { theme }, async (env) => {
+    const { page } = env
+    const dir = `${MOUNT}/大媒体库`
+    await go(page, dir, 1500)
+    await page.locator("[data-files-view]").click()
+    await page.getByRole("menuitem", { name: tr("home.layouts.list") }).first().click()
+    await page.waitForTimeout(400)
+    await page.reload({ waitUntil: "domcontentloaded" })
+    await page.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {})
+    await page.waitForTimeout(1500)
+    const header = page.locator(".obj-box .list > .title").first()
+    await header.waitFor()
+    const measure = () =>
+      header.evaluate((el) => {
+        const r = el.getBoundingClientRect()
+        const cs = getComputedStyle(el)
+        const card = getComputedStyle(el.closest(".obj-box"))
+        // where the sticky row is meant to stop: its resolved `top`
+        const stickTop = parseFloat(cs.top)
+        const hit = document.elementFromPoint(r.left + 12, r.top + r.height / 2)
+        return { top: Math.round(r.top), stickTop: Math.round(stickTop), position: cs.position, z: cs.zIndex, bg: cs.backgroundColor, cardBg: card.backgroundColor, hit: !!hit && el.contains(hit), scrolled: Math.round(scrollY + (document.querySelector("[data-shell-content]")?.scrollTop ?? 0)) }
+      })
+    const scrollDown = async () => {
+      const box = await page.locator(".obj-box .list").first().boundingBox()
+      await page.mouse.move(box.x + box.width / 2, Math.min(box.y + box.height / 2, 700))
+      await page.mouse.wheel(0, 2400)
+      await page.waitForTimeout(800)
+      await page.mouse.move(1, 1)
+      await page.waitForTimeout(300)
+    }
+    await scrollDown()
+    const first = await measure()
+    log(`list header ${theme} first`, JSON.stringify(first))
+    const toggle = page.getByRole("button", { name: tr("shell.nav.toggle_theme") }).first()
+    await toggle.click()
+    await page.waitForTimeout(700)
+    await toggle.click()
+    await page.mouse.move(1, 1)
+    await page.waitForTimeout(1500)
+    await scrollDown()
+    const again = await measure()
+    log(`list header ${theme} again`, JSON.stringify(again))
+    if (first.scrolled < 200) throw new Error(`the list did not scroll: ${JSON.stringify(first)}`)
+    if (first.position !== "sticky") throw new Error(`the header is not sticky: ${first.position}`)
+    if (!(first.stickTop > 0) || Math.abs(first.top - first.stickTop) > 2 || !first.hit) throw new Error(`the header is not at the top of the view after scrolling: ${JSON.stringify(first)}`)
+    if (first.bg !== first.cardBg) throw new Error(`the header's background ${first.bg} is not the card's ${first.cardBg}`)
+    const keys = ["top", "position", "z", "bg", "cardBg", "hit"]
+    const changed = keys.filter((k) => first[k] !== again[k])
+    if (changed.length) throw new Error(`after two toggles the header differs in ${changed.join(", ")}: ${JSON.stringify(first)} -> ${JSON.stringify(again)}`)
+  })
+}
+
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
 await browser.close()
 const failed = results.filter((r) => !r.ok)
