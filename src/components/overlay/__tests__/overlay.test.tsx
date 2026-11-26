@@ -334,7 +334,11 @@ describe("Tooltip (no wrapper element)", () => {
     ))
     const both = document.querySelector<HTMLElement>("[data-both]")!
     fireEvent.pointerEnter(both)
-    fireEvent.pointerDown(both, { button: 0, pointerType: "mouse" })
+    // jsdom has no PointerEvent, and Kobalte opens on a primary-button press:
+    // a MouseEvent carries `button`
+    both.dispatchEvent(
+      new MouseEvent("pointerdown", { bubbles: true, button: 0 }),
+    )
     await waitFor(() =>
       expect(document.querySelector("[role=menu]")).not.toBeNull(),
     )
