@@ -110,6 +110,25 @@ info = {"name": "样本.bin", "length": len(data), "piece length": plen, "pieces
 open(sys.argv[1], "wb").write(be({"announce": "http://tracker.invalid/announce", "info": info}))
 PY
 printf '# 审计目录\n\n这里放了各种形状的文件。\n' > "$S/README.md"
+echo "make-samples: viewer prototype folder"
+# design/viewer-proto opens this folder: videos to switch between, images of
+# three shapes, a PDF, text, one type nothing previews, and enough rows that
+# the list scrolls past the docked player
+V="$S/查看器"
+mkdir -p "$V"
+i=0
+for v in "testsrc2=size=1280x720:rate=24" "smptehdbars=size=1280x720:rate=24" "mandelbrot=size=1280x720:rate=24"; do
+  i=$((i+1))
+  ffmpeg -loglevel error -f lavfi -i "$v" -f lavfi -i "sine=frequency=$((220*i))" -t 12 -c:v libx264 -pix_fmt yuv420p -g 48 -c:a aac -shortest "$V/0${i} 示例视频.mp4"
+done
+for spec in "1:1600x1000" "2:1000x1500" "3:1200x1200" "4:1920x1080" "5:900x1350" "6:1600x900"; do
+  ffmpeg -loglevel error -f lavfi -i "gradients=s=${spec#*:}:seed=$((${spec%%:*}+20)):n=5" -frames:v 1 "$V/照片_0${spec%%:*}.jpg"
+done
+cp "$S/预览/报告.pdf" "$V/报告.pdf"
+cp "$S/预览/说明.md" "$V/说明.md"
+seq 1 200 | sed 's/.*/第 & 行：查看器原型的示例文本。/' > "$V/长文本.txt"
+head -c 200000 /dev/urandom > "$V/数据.bin"
+for i in $(seq -w 1 30); do echo "记录 $i" > "$V/记录_$i.txt"; done
 echo "make-samples: media libraries"
 # a media library: works are the folders directly under it
 mk() { ffmpeg -loglevel error -f lavfi -i "testsrc2=size=640x360:rate=24:duration=3" -f lavfi -i sine=frequency=$2 -t 3 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$1"; }

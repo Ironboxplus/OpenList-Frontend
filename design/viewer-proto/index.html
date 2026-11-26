@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN" translate="no">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>OpenList 查看器原型</title>
+    <script>
+      // src/utils/config.ts reads this before any module of src/ runs.
+      window.OPENLIST_CONFIG = {
+        cdn: undefined,
+        base_path: undefined,
+        api: "/",
+        main_color: undefined,
+      }
+      window.__dynamic_base__ = ""
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/src/main.tsx" type="module"></script>
+  </body>
+</html>
