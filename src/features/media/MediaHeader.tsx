@@ -1,5 +1,5 @@
 import { TbEdit, TbLock, TbMovie } from "solid-icons/tb"
-import { createSignal, For, Show } from "solid-js"
+import { createEffect, createSignal, For, on, Show } from "solid-js"
 import { focusRing } from "~/components/ui/focus"
 import { useRouter, useT } from "~/hooks"
 import { me } from "~/store"
@@ -51,7 +51,13 @@ const Poster = (props: { item: MediaItem; class: string }) => {
 export const MediaHeaderCard = (props: { item: MediaItem }) => {
   const t = useT()
   const [open, setOpen] = createSignal(false)
-  const backdrop = () => assetSrc(props.item.backdrop_url, api)
+  const backdropSrc = () => assetSrc(props.item.backdrop_url, api)
+  // The card is dressed for a backdrop (white text over a dark veil) only once
+  // the picture is there: while it loads, or when its host cannot be reached,
+  // the text keeps the card's own colours instead of going white on white.
+  const [loaded, setLoaded] = createSignal(false)
+  createEffect(on(backdropSrc, () => setLoaded(false)))
+  const backdrop = () => (loaded() ? backdropSrc() : "")
   const isCollection = () => props.item.kind === "collection"
   const badges = () => ratingBadges(props.item.ratings)
   const overview = () => props.item.overview?.trim() ?? ""
@@ -66,15 +72,26 @@ export const MediaHeaderCard = (props: { item: MediaItem }) => {
         backdrop() && "text-white",
       )}
     >
-      <Show when={backdrop()}>
+      <Show when={backdropSrc()}>
         <img
           data-media-backdrop
-          src={backdrop()}
+          src={backdropSrc()}
           alt=""
           aria-hidden="true"
           class="absolute inset-0 size-full scale-110 object-cover blur-xl"
+          classList={{ hidden: !loaded() }}
+          ref={(el) =>
+            // a cached picture may be complete before the listener is attached
+            queueMicrotask(
+              () => el.complete && el.naturalWidth > 0 && setLoaded(true),
+            )
+          }
+          onLoad={() => setLoaded(true)}
+          onError={() => setLoaded(false)}
         />
-        <div class="absolute inset-0 bg-black/60" />
+        <Show when={loaded()}>
+          <div class="absolute inset-0 bg-black/60" />
+        </Show>
       </Show>
       <div
         class={cn(

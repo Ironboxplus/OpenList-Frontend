@@ -61,6 +61,9 @@ describe("MediaHeaderCard", () => {
   it("with a backdrop: blurred backdrop, poster, ratings in order, folded overview", () => {
     render(() => <MediaHeaderCard item={item()} />)
     const root = document.querySelector("[data-media-header]")!
+    // dressed for a backdrop only once the picture has loaded
+    expect(root.hasAttribute("data-has-backdrop")).toBe(false)
+    fireEvent.load(document.querySelector("[data-media-backdrop]")!)
     expect(root.hasAttribute("data-has-backdrop")).toBe(true)
     expect(
       document.querySelector("[data-media-backdrop]")?.getAttribute("src"),
@@ -77,6 +80,16 @@ describe("MediaHeaderCard", () => {
     expect(overview.className).toContain("line-clamp-3")
     fireEvent.click(document.querySelector("[data-media-more]")!)
     expect(overview.className).not.toContain("line-clamp-3")
+  })
+
+  it("a backdrop that fails to load leaves a plain, readable card", () => {
+    render(() => <MediaHeaderCard item={item()} />)
+    const img = document.querySelector("[data-media-backdrop]")!
+    fireEvent.load(img)
+    fireEvent.error(img)
+    const root = document.querySelector("[data-media-header]")!
+    expect(root.hasAttribute("data-has-backdrop")).toBe(false)
+    expect(root.className).not.toContain("text-white")
   })
 
   it("without a backdrop: plain card, no blur layer", () => {
