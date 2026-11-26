@@ -12,22 +12,18 @@ export const NavTree = (props: { label: string }) => {
   const { pathname, to } = useRouter()
   const [handler, setHandler] = createSignal<FolderTreeHandler>()
   createEffect(() => handler()?.setPath(pathname()))
-  // Rows keep their full names and the tree scrolls sideways: deep levels are
-  // indented further than the nav is wide, and a name cut off is a folder that
-  // cannot be told apart from its siblings.
+  // Rows keep their full names and the tree scrolls both ways in its own box
+  // (FolderTree's nav look): deep levels are indented further than the nav is
+  // wide, and an open tree is taller than the nav.
   return (
-    <div class="overflow-x-auto overflow-y-hidden [scrollbar-width:thin]">
-      <div class="w-max min-w-full">
-        <FolderTree
-          variant="nav"
-          rootLabel={props.label}
-          autoOpen
-          showEmptyIcon
-          showHiddenFolder={false}
-          onChange={(path) => to(encodePath(path))}
-          handle={setHandler}
-        />
-      </div>
-    </div>
+    <FolderTree
+      variant="nav"
+      rootLabel={props.label}
+      autoOpen
+      showEmptyIcon
+      showHiddenFolder={false}
+      onChange={(path) => to(encodePath(path))}
+      handle={setHandler}
+    />
   )
 }

@@ -90,27 +90,43 @@ export const FolderTree = (props: FolderTreeProps) => {
     startCreateFolder,
   })
 
+  // The box is the tree's one scroll container, both ways (overflow-x auto
+  // makes overflow-y auto too). In the nav look it is a flex item of the side
+  // nav and shrinks to the height left there, and its rows are as wide as the
+  // widest one, so a tinted row spans the whole width when scrolled sideways.
+  const rows = (tree: JSXElement) =>
+    props.variant === "nav" ? <div class="w-max min-w-full">{tree}</div> : tree
   return (
-    <Box class="folder-tree-box" w="$full" overflowX="auto">
-      <context.Provider
-        value={{
-          value: path,
-          onChange: (val) => {
-            setPath(val)
-            props.onChange(val)
-          },
-          autoOpen: props.autoOpen ?? false,
-          forceRoot: props.forceRoot ?? false,
-          showEmptyIcon: props.showEmptyIcon ?? false,
-          showHiddenFolder: props.showHiddenFolder ?? true,
-          variant: props.variant,
-          rootLabel: props.rootLabel,
-          creatingFolderPath,
-          setCreatingFolderPath,
-        }}
-      >
-        <FolderTreeNode path="/" />
-      </context.Provider>
+    <Box
+      class={
+        props.variant === "nav"
+          ? "folder-tree-box [scrollbar-width:thin]"
+          : "folder-tree-box"
+      }
+      w="$full"
+      overflowX="auto"
+    >
+      {rows(
+        <context.Provider
+          value={{
+            value: path,
+            onChange: (val) => {
+              setPath(val)
+              props.onChange(val)
+            },
+            autoOpen: props.autoOpen ?? false,
+            forceRoot: props.forceRoot ?? false,
+            showEmptyIcon: props.showEmptyIcon ?? false,
+            showHiddenFolder: props.showHiddenFolder ?? true,
+            variant: props.variant,
+            rootLabel: props.rootLabel,
+            creatingFolderPath,
+            setCreatingFolderPath,
+          }}
+        >
+          <FolderTreeNode path="/" />
+        </context.Provider>,
+      )}
     </Box>
   )
 }
