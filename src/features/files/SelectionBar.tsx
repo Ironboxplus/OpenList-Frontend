@@ -1,10 +1,11 @@
 import { TbArchive, TbDots, TbDownload, TbLink, TbX } from "solid-icons/tb"
-import { For, Show } from "solid-js"
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -21,10 +22,18 @@ import { CopyLinkItems, DownloadItems } from "./BatchMenus"
 import { ButtonGroup, groupButton } from "./ButtonGroup"
 import { runTool, useFileAbilities } from "./file-actions"
 
+/** Room one icon button takes in its group: min-w-10 and the divider. */
+const OP_WIDTH = 41
+/** gap-3 between the three groups. */
+const GAP = 12
+
 /**
  * The actions on the selection, which replace the search box in the top bar
  * while something is selected: close and count, then the operations the
- * context menu has too (operations.ts), then the rest under a menu.
+ * context menu has too (operations.ts), then the rest under a menu. The bar
+ * takes the room left in the top bar; operations that do not fit there move
+ * to the top of the menu (as Cloudreve's bar does on a narrow window), so the
+ * bar never runs under the top bar's own buttons.
  */
 export const SelectionBar = () => {
   const t = useT()
@@ -40,9 +49,38 @@ export const SelectionBar = () => {
     ops.share,
     ops.delete,
   ]
+  const shown = () => bar().filter((op) => op.visible())
+
+  // How many operations fit inline; the rest go to the menu.
+  const [fit, setFit] = createSignal(Infinity)
+  const [root, setRoot] = createSignal<HTMLDivElement>()
+  const [count, setCount] = createSignal<HTMLDivElement>()
+  const [more, setMore] = createSignal<HTMLDivElement>()
+  createEffect(() => {
+    const el = root()
+    const c = count()
+    const m = more()
+    if (!el || !c || !m || typeof ResizeObserver === "undefined") return
+    const measure = () => {
+      const room = el.clientWidth - c.offsetWidth - m.offsetWidth - 2 * GAP
+      // 2: the operations group's own borders
+      setFit(Math.max(0, Math.floor((room - 2) / OP_WIDTH)))
+    }
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    ro.observe(c)
+    onCleanup(() => ro.disconnect())
+  })
+  const inline = () => shown().slice(0, fit())
+  const overflow = () => shown().slice(fit())
+
   return (
-    <div data-selection-bar class="flex min-w-0 items-center gap-3">
-      <ButtonGroup>
+    <div
+      ref={setRoot}
+      data-selection-bar
+      class="flex min-w-0 flex-1 items-center gap-3 overflow-hidden"
+    >
+      <ButtonGroup ref={setCount}>
         <button
           type="button"
           data-action="cancel_select"
@@ -60,10 +98,10 @@ export const SelectionBar = () => {
           {t("files.selected_n", { n: selectedObjs().length })}
         </span>
       </ButtonGroup>
-      <ButtonGroup>
-        <For each={bar()}>
-          {(op) => (
-            <Show when={op.visible()}>
+      <Show when={inline().length > 0}>
+        <ButtonGroup>
+          <For each={inline()}>
+            {(op) => (
               <button
                 type="button"
                 data-action={op.name}
@@ -74,11 +112,11 @@ export const SelectionBar = () => {
               >
                 <Dynamic component={op.icon} class="size-4" />
               </button>
-            </Show>
-          )}
-        </For>
-      </ButtonGroup>
-      <ButtonGroup>
+            )}
+          </For>
+        </ButtonGroup>
+      </Show>
+      <ButtonGroup ref={setMore}>
         <DropdownMenu placement="bottom-start">
           <DropdownMenuTrigger
             aria-label={t("files.more_actions")}
@@ -89,6 +127,21 @@ export const SelectionBar = () => {
             <TbDots class="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <For each={overflow()}>
+              {(op) => (
+                <DropdownMenuItem
+                  data-action={op.name}
+                  onSelect={op.run}
+                  class={cn("gap-2", op.danger && "text-destructive")}
+                >
+                  <Dynamic component={op.icon} class="size-4" />
+                  {tt(op.name)}
+                </DropdownMenuItem>
+              )}
+            </For>
+            <Show when={overflow().length > 0}>
+              <DropdownMenuSeparator />
+            </Show>
             <DropdownMenuItem onSelect={() => selectAll(true)}>
               {t("files.select_all")}
             </DropdownMenuItem>

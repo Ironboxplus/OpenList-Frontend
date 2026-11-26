@@ -3,8 +3,11 @@ import { focusRing } from "~/components/ui/focus"
 import { cn } from "~/utils/cn"
 
 /** A bordered strip of buttons, like Cloudreve's action groups. */
-export const ButtonGroup = (props: ParentProps<{ class?: string }>) => (
+export const ButtonGroup = (
+  props: ParentProps<{ class?: string; ref?: (el: HTMLDivElement) => void }>,
+) => (
   <div
+    ref={props.ref}
     class={cn(
       "inline-flex h-10 shrink-0 items-stretch divide-x divide-border overflow-hidden rounded-lg border bg-card",
       props.class,
