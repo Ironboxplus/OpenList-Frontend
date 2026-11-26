@@ -6,7 +6,15 @@
 set -e
 ROOT="$1"
 mkdir -p "$ROOT"
-command -v ffmpeg >/dev/null && command -v zip >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg zip >/dev/null; }
+# Runner images differ: some lack ffmpeg. apt is bounded and shows where it is
+# (run 45802420770 sat silent in this script for 9 minutes).
+if ! command -v ffmpeg >/dev/null || ! command -v zip >/dev/null; then
+  echo "make-samples: installing ffmpeg and zip"
+  APT="sudo timeout 600 apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+  $APT update -qq
+  $APT install -y -qq --no-install-recommends ffmpeg zip >/dev/null
+fi
+echo "make-samples: $(ffmpeg -version | head -1)"
 
 S="$ROOT/samples"
 mkdir -p "$S/照片/2026 旅行" "$S/文档" "$S/视频" "$S/音乐"
@@ -23,6 +31,7 @@ head -c 3000000 /dev/urandom > "$S/文档/归档.zip"
 head -c 120000 /dev/urandom > "$S/文档/报告.pdf"
 sudo chmod -R a+rwX "$S"
 
+echo "make-samples: audit tree"
 S="$ROOT/samples-audit"
 mkdir -p "$S"/{空目录,长文件名,大目录,预览,文档,照片,媒体库}
 d="$S/深层"
@@ -74,6 +83,7 @@ cp "$S/预览/配置.json" "$S/文档/配置.json"
 cp "$S/预览/报告.pdf" "$S/文档/报告.pdf"
 cp "$S/预览/压缩包.zip" "$S/文档/压缩包.zip"
 printf '# 审计目录\n\n这里放了各种形状的文件。\n' > "$S/README.md"
+echo "make-samples: media libraries"
 # a media library: works are the folders directly under it
 mk() { ffmpeg -loglevel error -f lavfi -i "testsrc2=size=640x360:rate=24:duration=3" -f lavfi -i sine=frequency=$2 -t 3 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$1"; }
 i=0

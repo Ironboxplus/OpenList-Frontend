@@ -120,6 +120,7 @@ jobs:
       # the script marks a finished tree; a restored tree without the mark is made again
       - name: Make sample files
         id: make
+        timeout-minutes: 15
         run: |
           [ -f "$RUNNER_TEMP/ui-samples/.complete" ] && exit 0
           rm -rf "$RUNNER_TEMP/ui-samples"
