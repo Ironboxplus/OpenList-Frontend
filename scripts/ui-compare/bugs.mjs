@@ -720,7 +720,16 @@ const hitBox = (loc, what) =>
   loc.evaluate((e, what) => {
     const r = e.getBoundingClientRect()
     const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-    return { what, w: Math.round(r.width), h: Math.round(r.height), hit: !!top && (top === e || e.contains(top)) }
+    // the part left after every clipping ancestor (overflow other than visible)
+    let [x0, y0, x1, y1] = [r.left, r.top, r.right, r.bottom]
+    for (let a = e.parentElement; a; a = a.parentElement) {
+      const cs = getComputedStyle(a)
+      if (cs.overflowX === "visible" && cs.overflowY === "visible") continue
+      const b = a.getBoundingClientRect()
+      if (cs.overflowX !== "visible") [x0, x1] = [Math.max(x0, b.left), Math.min(x1, b.right)]
+      if (cs.overflowY !== "visible") [y0, y1] = [Math.max(y0, b.top), Math.min(y1, b.bottom)]
+    }
+    return { what, w: Math.round(Math.max(0, x1 - x0)), h: Math.round(Math.max(0, y1 - y0)), hit: !!top && (top === e || e.contains(top)) }
   }, what)
 const expectTargets = (list) => {
   log("click targets", JSON.stringify(list))
