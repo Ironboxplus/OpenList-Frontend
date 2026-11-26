@@ -89,8 +89,15 @@ const useCrumbs = () => {
   return { crumbs, go }
 }
 
-/** `iconOnly`: the root shows just its icon (the caller names the control). */
-const CrumbLabel = (props: { crumb: FileCrumb; iconOnly?: boolean }) => {
+/**
+ * `iconOnly`: the root shows just its icon (the caller names the control).
+ * `wrap`: a long folder name breaks onto more lines instead of running on.
+ */
+const CrumbLabel = (props: {
+  crumb: FileCrumb
+  iconOnly?: boolean
+  wrap?: boolean
+}) => {
   const t = useT()
   return (
     <>
@@ -105,7 +112,15 @@ const CrumbLabel = (props: { crumb: FileCrumb; iconOnly?: boolean }) => {
         <span>{t("manage.sidemenu.shares")}</span>
       </Show>
       <Show when={props.crumb.kind === "dir"}>
-        <span class="whitespace-nowrap">{props.crumb.label}</span>
+        <span
+          class={
+            props.wrap
+              ? "min-w-0 [overflow-wrap:anywhere]"
+              : "whitespace-nowrap"
+          }
+        >
+          {props.crumb.label}
+        </span>
       </Show>
     </>
   )
@@ -229,11 +244,13 @@ const PhoneCrumbs = () => {
                     style={{ "padding-left": `${0.75 + i() * 0.75}rem` }}
                     class={cn(
                       focusRing,
-                      "flex h-11 w-full items-center gap-2 rounded-lg bg-transparent pr-3 text-left text-sm text-foreground hover:bg-accent",
+                      "flex min-h-11 w-full items-center gap-2 rounded-lg bg-transparent py-2.5 pr-3 text-left text-sm text-foreground hover:bg-accent",
                       i() === crumbs().length - 1 && "font-medium",
                     )}
                   >
-                    <CrumbLabel crumb={crumb} />
+                    {/* The full name, wrapped: this list is where a phone
+                      reads the names the bar has no room for. */}
+                    <CrumbLabel crumb={crumb} wrap />
                   </button>
                 </li>
               )}
