@@ -26,7 +26,10 @@ async function spec(name, opts, fn) {
   page.setDefaultTimeout(8000)
   const errors = []
   page.on("pageerror", (e) => errors.push(String(e?.message || e).split("\n")[0]))
-  const env = { page, ctx, errors, id }
+  // armed before anything runs: a hung page cannot be attached to afterwards
+  const cdp = await ctx.newCDPSession(page)
+  await cdp.send("Debugger.enable")
+  const env = { page, ctx, cdp, errors, id }
   let message = ""
   try {
     await fn(env)
@@ -51,11 +54,9 @@ const go = async (page, p, wait = 900) => {
 }
 
 // ---- where a hung page is: pause it through CDP and read the frames
-async function whereIs(page, ctx) {
-  const cdp = await ctx.newCDPSession(page)
+async function whereIs(cdp) {
   let frames
   cdp.on("Debugger.paused", (e) => (frames = e.callFrames))
-  await cdp.send("Debugger.enable")
   cdp.send("Debugger.pause").catch(() => {})
   for (let i = 0; i < 50 && !frames; i++) await sleep(100)
   if (!frames) return "the debugger could not pause the page"
@@ -79,44 +80,46 @@ async function whereIs(page, ctx) {
 
 /** The dialog the action opened: visible within 2 s while the page keeps answering. */
 async function expectDialog(env, label) {
-  const { page, ctx, errors } = env
+  const { page, errors } = env
   const up = await page
     .locator('[role="dialog"], [role="alertdialog"]')
     .first()
     .waitFor({ state: "visible", timeout: 2000 })
     .then(() => true, () => false)
   if (!(await alive(page))) {
-    throw new Error(`${label}: the page stopped answering. Stopped in:\n${await whereIs(page, ctx)}`)
+    throw new Error(`${label}: the page stopped answering. Stopped in:\n${await whereIs(env.cdp)}`)
   }
   if (!up) throw new Error(`${label}: no dialog appeared within 2 s`)
   const overflow = errors.filter((e) => /call stack/i.test(e))
   if (overflow.length) throw new Error(`${label}: ${overflow.length}x "${overflow[0]}"`)
 }
+/** A click whose outcome is read from the page, not from the click: it may never return. */
+const fire = (locator) => void locator.click().catch(() => {})
 const item = (page, name) => page.locator(".viselect-item", { hasText: name }).first()
 
 // ---- 1. a dialog opened from a menu must not freeze the page
 await spec("share-from-context-menu", {}, async (env) => {
   await go(env.page, MOUNT)
   await item(env.page, "文档").click({ button: "right" })
-  await env.page.locator('[role="menu"] [data-action="share"]').click()
+  fire(env.page.locator('[role="menu"] [data-action="share"]'))
   await expectDialog(env, "share a folder from the context menu")
 })
 await spec("rename-from-context-menu", {}, async (env) => {
   await go(env.page, `${MOUNT}/文档`)
   await item(env.page, "笔记").click({ button: "right" })
-  await env.page.locator('[role="menu"] [data-action="rename"]').click()
+  fire(env.page.locator('[role="menu"] [data-action="rename"]'))
   await expectDialog(env, "rename a file from the context menu")
 })
 await spec("copy-from-context-menu", {}, async (env) => {
   await go(env.page, `${MOUNT}/文档`)
   await item(env.page, "笔记").click({ button: "right" })
-  await env.page.locator('[role="menu"] [data-action="copy"]').click()
+  fire(env.page.locator('[role="menu"] [data-action="copy"]'))
   await expectDialog(env, "copy a file from the context menu")
 })
 await spec("mkdir-from-new-menu", {}, async (env) => {
   await go(env.page, `${MOUNT}/文档`)
   await env.page.locator("[data-files-new]").click()
-  await env.page.locator('[role="menuitem"][data-action="mkdir"]').click()
+  fire(env.page.locator('[role="menuitem"][data-action="mkdir"]'))
   await expectDialog(env, "new folder from the New menu")
 })
 
