@@ -6,13 +6,25 @@
 set -e
 ROOT="$1"
 mkdir -p "$ROOT"
-# Runner images differ: some lack ffmpeg. apt is bounded and shows where it is
-# (run 45802420770 sat silent in this script for 9 minutes).
+# Runner images differ: some lack ffmpeg (run 45802420770 sat silent here for
+# 9 minutes). apt reads Ubuntu's own archive only, as in the OP repo's
+# test-ours.yml, and none of the runner's other sources (Microsoft, PPAs on
+# launchpad): on 2026-11-11 the runners could not resolve *.ubuntu.com or
+# launchpad and apt waited on each of them. The archive is read through a
+# mirror list (apt-transport-mirror(1)), tried by priority and the next one
+# when one fails: on 2026-11-12 kernel.org's mirror stopped answering half way.
 if ! command -v ffmpeg >/dev/null || ! command -v zip >/dev/null; then
   echo "make-samples: installing ffmpeg and zip"
-  APT="sudo timeout 600 apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
-  $APT update -qq
-  $APT install -y -qq --no-install-recommends ffmpeg zip >/dev/null
+  printf '%s\tpriority:%s\n' http://mirrors.edge.kernel.org/ubuntu/ 1 \
+    http://azure.archive.ubuntu.com/ubuntu/ 2 http://archive.ubuntu.com/ubuntu/ 3 > /tmp/apt-mirrors.txt
+  c=$(. /etc/os-release && echo "$VERSION_CODENAME")
+  for p in "$c" "$c-updates" "$c-security"; do
+    echo "deb mirror+file:/tmp/apt-mirrors.txt $p main universe"
+  done > /tmp/apt-sources.list
+  apt_opts="-o Dir::Etc::sourcelist=/tmp/apt-sources.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0 -o Acquire::Retries=3"
+  sudo apt-get $apt_opts update
+  echo "make-samples: apt lists read"
+  sudo apt-get $apt_opts install -y -qq --no-install-recommends ffmpeg zip >/dev/null
 fi
 echo "make-samples: $(ffmpeg -version | head -1)"
 
