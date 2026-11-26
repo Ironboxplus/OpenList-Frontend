@@ -1128,6 +1128,37 @@ const edgeRules = async (cdp, selector) => {
     return props.length ? [`${selector} <= ${rule.origin} sheet ${rule.styleSheetId} "${rule.selectorList.text.slice(0, 70)}" {${props.map((x) => `${x.name}: ${x.value}`).join("; ")}}`] : []
   })
 }
+/** Pixels of two PNGs (decoded in the page) that differ by more than 24 in a channel, and where. */
+const pixelDiff = (page, a, b) =>
+  page.evaluate(
+    async ([a, b]) => {
+      const load = async (src) => {
+        const img = new Image()
+        img.src = "data:image/png;base64," + src
+        await img.decode()
+        const c = document.createElement("canvas")
+        c.width = img.width
+        c.height = img.height
+        const g = c.getContext("2d")
+        g.drawImage(img, 0, 0)
+        return g.getImageData(0, 0, c.width, c.height)
+      }
+      const [x, y] = [await load(a), await load(b)]
+      if (x.width !== y.width || x.height !== y.height) return { count: -1, size: [x.width, x.height, y.width, y.height] }
+      let count = 0
+      const box = [Infinity, Infinity, -1, -1]
+      for (let i = 0; i < x.data.length; i += 4) {
+        const d = Math.max(Math.abs(x.data[i] - y.data[i]), Math.abs(x.data[i + 1] - y.data[i + 1]), Math.abs(x.data[i + 2] - y.data[i + 2]))
+        if (d <= 24) continue
+        count++
+        const px = (i / 4) % x.width
+        const py = Math.floor(i / 4 / x.width)
+        box[0] = Math.min(box[0], px); box[1] = Math.min(box[1], py); box[2] = Math.max(box[2], px); box[3] = Math.max(box[3], py)
+      }
+      return { count, box: count ? box : null }
+    },
+    [a.toString("base64"), b.toString("base64")],
+  )
 const E1_MODES = [
   { name: "light", theme: "light" },
   { name: "dark-system", theme: "dark" },
@@ -1184,8 +1215,9 @@ for (const layout of ["grid", "list"]) {
       for (const k of new Set([...a.keys(), ...b.keys()]))
         if (a.get(k) !== b.get(k)) diffs.push(`${k}: ${a.get(k) ?? "absent"} -> ${b.get(k) ?? "absent"}`)
       if (first.objBox !== again.objBox) diffs.unshift(`.obj-box classes: "${first.objBox}" -> "${again.objBox}"`)
-      const samePixels = firstShot.equals(againShot)
-      log(`edges ${layout} ${mode.name}: ${first.edges.length} edged elements, ${diffs.length} differ after two toggles; pixels ${samePixels ? "identical" : "differ"}`)
+      const pix = await pixelDiff(page, firstShot, againShot)
+      const samePixels = pix.count === 0
+      log(`edges ${layout} ${mode.name}: ${first.edges.length} edged elements, ${diffs.length} differ after two toggles; pixels: ${JSON.stringify(pix)}`)
       for (const d of diffs.slice(0, 25)) log("  differs", d)
       log("  card first", JSON.stringify(first.card))
       log("  card again", JSON.stringify(again.card))
@@ -1196,7 +1228,7 @@ for (const layout of ["grid", "list"]) {
       if (!frame || frame.sides.includes("- |") || frame.sides.startsWith("-")) throw new Error(`the content card has no full border on the first load: ${JSON.stringify(frame)}`)
       if (first.html !== again.html || first.body !== again.body) throw new Error(`two toggles did not return to the first mode: html "${first.html}" -> "${again.html}", body "${first.body}" -> "${again.body}"`)
       if (diffs.length) throw new Error(`${diffs.length} edges differ between the first load and after two toggles; first: ${diffs[0]}`)
-      if (!samePixels) throw new Error("the content card looks different after two toggles (see the .first/.again shots)")
+      if (!samePixels) throw new Error(`the content card looks different after two toggles: ${JSON.stringify(pix)} (see the .first/.again shots)`)
     })
   }
 }
