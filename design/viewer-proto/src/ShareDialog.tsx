@@ -164,6 +164,11 @@ const EXPIRY = [
   { v: "30d", label: "30 天" },
 ]
 
+// Kobalte's Select reads "" as nothing chosen and shows an empty box; the
+// backend's "" (its default) is shown as this option instead.
+const DEFAULT_OPTION = "default"
+const fromOption = (v: string) => (v === DEFAULT_OPTION ? "" : v)
+
 const randomCode = () => Math.random().toString(36).slice(2, 6)
 
 export const ShareDialog = () => {
@@ -345,10 +350,10 @@ export const ShareDialog = () => {
         return (
           <SimpleSelect
             aria-label={f.label}
-            value={form.order_by}
-            onChange={(v) => setForm("order_by", v)}
+            value={form.order_by || DEFAULT_OPTION}
+            onChange={(v) => setForm("order_by", fromOption(v))}
             options={[
-              { value: "", label: "默认" },
+              { value: DEFAULT_OPTION, label: "默认" },
               { value: "name", label: "名称" },
               { value: "size", label: "大小" },
               { value: "modified", label: "修改时间" },
@@ -359,10 +364,10 @@ export const ShareDialog = () => {
         return (
           <SimpleSelect
             aria-label={f.label}
-            value={form.order_direction}
-            onChange={(v) => setForm("order_direction", v)}
+            value={form.order_direction || DEFAULT_OPTION}
+            onChange={(v) => setForm("order_direction", fromOption(v))}
             options={[
-              { value: "", label: "默认" },
+              { value: DEFAULT_OPTION, label: "默认" },
               { value: "asc", label: "升序" },
               { value: "desc", label: "降序" },
             ]}
@@ -372,10 +377,10 @@ export const ShareDialog = () => {
         return (
           <SimpleSelect
             aria-label={f.label}
-            value={form.extract_folder}
-            onChange={(v) => setForm("extract_folder", v)}
+            value={form.extract_folder || DEFAULT_OPTION}
+            onChange={(v) => setForm("extract_folder", fromOption(v))}
             options={[
-              { value: "", label: "默认" },
+              { value: DEFAULT_OPTION, label: "默认" },
               { value: "front", label: "文件夹在前" },
               { value: "back", label: "文件夹在后" },
             ]}
