@@ -104,6 +104,7 @@ jobs:
           restore-keys: ui-pnpm-store-
 
       - name: Build frontend
+        id: build
         if: steps.dist.outputs.cache-hit != 'true' && (github.event_name != 'workflow_dispatch' || inputs.build_frontend)
         run: |
           pnpm install --frozen-lockfile
@@ -116,9 +117,13 @@ jobs:
           path: ${{ runner.temp }}/ui-samples
           key: ui-samples-${{ hashFiles('scripts/ui-compare/make-samples.sh') }}
 
+      # the script marks a finished tree; a restored tree without the mark is made again
       - name: Make sample files
-        if: steps.samples.outputs.cache-hit != 'true'
-        run: bash scripts/ui-compare/make-samples.sh "$RUNNER_TEMP/ui-samples"
+        id: make
+        run: |
+          [ -f "$RUNNER_TEMP/ui-samples/.complete" ] && exit 0
+          rm -rf "$RUNNER_TEMP/ui-samples"
+          bash scripts/ui-compare/make-samples.sh "$RUNNER_TEMP/ui-samples"
 
       - name: Sample paths
         run: |
@@ -161,6 +166,7 @@ jobs:
           key: ui-playwright-${{ runner.os }}-${{ hashFiles('scripts/ui-compare/package.json') }}
 
       - name: Playwright install
+        id: pwinstall
         working-directory: scripts/ui-compare
         run: |
           if [ "${{ steps.pw.outputs.cache-hit }}" = true ]; then
@@ -195,27 +201,31 @@ jobs:
           docker logs cloudreve 2>&1 | tail -50 | grep -viE "password|token" || true
           docker logs openlist 2>&1 | tail -50 | grep -viE "password|token" || true
 
+      # Saves: never from a cancelled run, and only what the producing step
+      # finished. always() saved a half-made sample tree from a cancelled run
+      # under a key that can never be replaced; run 45801026801 restored that
+      # 202-byte cache and every spec found no files.
       - name: Save Frontend build cache
-        if: always() && steps.dist.outputs.cache-hit != 'true' && hashFiles('dist/index.html') != ''
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/cache/save@v6
         with:
           path: dist
           key: ui-dist-v1-${{ hashFiles('src/**', 'public/**', 'patches/**', 'index.html', 'vite.config.*', 'tsconfig*.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
       - name: Save pnpm store cache
-        if: always() && steps.store.outcome == 'success' && steps.c1.outputs.cache-hit != 'true'
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.c1.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v6
         with:
           path: ${{ steps.store.outputs.path }}
           key: ui-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: ui-pnpm-store-
       - name: Save Sample files (cached by the script's hash)
-        if: always() && steps.samples.outputs.cache-hit != 'true'
+        if: ${{ !cancelled() && steps.samples.outputs.cache-hit != 'true' && steps.make.outcome == 'success' }}
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/ui-samples
           key: ui-samples-${{ hashFiles('scripts/ui-compare/make-samples.sh') }}
       - name: Save Playwright cache
-        if: always() && steps.pw.outputs.cache-hit != 'true'
+        if: ${{ !cancelled() && steps.pw.outputs.cache-hit != 'true' && steps.pwinstall.outcome == 'success' }}
         uses: actions/cache/save@v6
         with:
           path: |

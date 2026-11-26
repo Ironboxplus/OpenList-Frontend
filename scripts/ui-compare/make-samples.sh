@@ -90,3 +90,5 @@ for i in $(seq 1 69); do
 done
 for i in $(seq 1 9); do mkdir -p "$S/大媒体库/资料$i"; echo x > "$S/大媒体库/资料$i/说明.txt"; done
 sudo chmod -R a+rwX "$S"
+# the workflow makes a restored tree again unless it carries this mark
+touch "$ROOT/.complete"
