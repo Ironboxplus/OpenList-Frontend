@@ -1,5 +1,11 @@
 import type { TooltipRootProps } from "@kobalte/core/tooltip"
-import { children, createRenderEffect, type JSX, Show } from "solid-js"
+import {
+  children,
+  createRenderEffect,
+  type JSX,
+  onCleanup,
+  Show,
+} from "solid-js"
 import { spread } from "solid-js/web"
 import {
   Tooltip as UiTooltip,
@@ -27,10 +33,11 @@ const OnChild = (
   // Only what Kobalte adds for the trigger; never class, style or type,
   // which belong to the child.
   const picked: Record<string, unknown> = {}
+  const events: string[] = []
   for (const key of Object.keys(props)) {
-    if (
+    if (/^on[A-Z]/.test(key)) events.push(key)
+    else if (
       key === "ref" ||
-      /^on[A-Z]/.test(key) ||
       key.startsWith("aria-") ||
       key.startsWith("data-")
     )
@@ -41,7 +48,24 @@ const OnChild = (
   }
   createRenderEffect(() => {
     const el = node()
-    if (el) spread(el, picked, el instanceof SVGElement, true)
+    if (!el) return
+    spread(el, picked, el instanceof SVGElement, true)
+    // Listeners of its own, added beside the child's: Solid's delegated
+    // handlers are one per event and node, so a menu trigger under the
+    // tooltip (Download's `MenuTrigger as={CenterIcon}`) would lose its own.
+    for (const key of events) {
+      const type = key.slice(2).toLowerCase()
+      const listener = (e: Event) => {
+        const h = props[key] as
+          | ((e: Event) => void)
+          | [(data: unknown, e: Event) => void, unknown]
+          | undefined
+        if (typeof h === "function") h(e)
+        else if (Array.isArray(h)) h[0](h[1], e)
+      }
+      el.addEventListener(type, listener)
+      onCleanup(() => el.removeEventListener(type, listener))
+    }
   })
   return resolved as unknown as JSX.Element
 }

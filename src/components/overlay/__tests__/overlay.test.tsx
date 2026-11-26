@@ -315,6 +315,31 @@ describe("Tooltip (no wrapper element)", () => {
     )
   })
 
+  it("keeps the child's own handlers: a menu trigger under it still opens its menu", async () => {
+    // Download.tsx: MenuTrigger as={CenterIcon}, and CenterIcon is a Tooltip
+    const TipButton = (p: Record<string, unknown>) => (
+      <Tooltip label="the tip">
+        <button id="both" {...p}>
+          dl
+        </button>
+      </Tooltip>
+    )
+    hope(() => (
+      <Menu>
+        <MenuTrigger as={TipButton} />
+        <MenuContent>
+          <MenuItem>go</MenuItem>
+        </MenuContent>
+      </Menu>
+    ))
+    const both = document.getElementById("both")!
+    fireEvent.pointerEnter(both)
+    fireEvent.pointerDown(both, { button: 0, pointerType: "mouse" })
+    await waitFor(() =>
+      expect(document.querySelector("[role=menu]")).not.toBeNull(),
+    )
+  })
+
   it("never opens when disabled", async () => {
     mount(true)
     fireEvent.pointerEnter(document.getElementById("child")!)
