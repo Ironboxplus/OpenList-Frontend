@@ -1,15 +1,4 @@
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Textarea,
-  FormHelperText,
-} from "@hope-ui/solid"
+import { Button, Input, Textarea, FormHelperText } from "@hope-ui/solid"
 import {
   createSignal,
   JSXElement,
@@ -19,6 +8,14 @@ import {
 } from "solid-js"
 import { useT } from "~/hooks"
 import { notify, validateFilename } from "~/utils"
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "~/components/overlay"
 export type ModalInputProps = {
   opened: boolean
   onClose: () => void

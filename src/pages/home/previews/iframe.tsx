@@ -1,10 +1,11 @@
 import { BoxWithFullScreen } from "~/components"
 import { objStore } from "~/store"
-import { hope, Tooltip, IconButton } from "@hope-ui/solid"
+import { hope, IconButton } from "@hope-ui/solid"
 import { convertURL, asPreview } from "~/utils"
 import { Component, createMemo } from "solid-js"
 import { useLink } from "~/hooks"
 import { TbExternalLink } from "solid-icons/tb"
+import { Tooltip } from "~/components/overlay"
 
 const IframePreview = (props: { scheme: string }) => {
   const { currentPreviewLink } = useLink()

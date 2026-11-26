@@ -1,5 +1,5 @@
 import { BoxWithFullScreen, FullLoading, Error as Erro } from "~/components"
-import { Box, Button, IconButton, Tooltip } from "@hope-ui/solid"
+import { Box, Button, IconButton } from "@hope-ui/solid"
 import { loadScriptIIFE } from "~/utils"
 import { createSignal, onMount, onCleanup, Show } from "solid-js"
 import { useLink, useT, useCDN } from "~/hooks"
@@ -8,6 +8,7 @@ import {
   HiOutlineMagnifyingGlassPlus,
   HiOutlineMagnifyingGlassMinus,
 } from "solid-icons/hi"
+import { Tooltip } from "~/components/overlay"
 
 // 声明全局docx类型
 declare global {

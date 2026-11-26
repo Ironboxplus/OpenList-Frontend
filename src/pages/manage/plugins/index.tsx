@@ -3,13 +3,6 @@ import {
   Button,
   Grid,
   HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Select,
   SelectContent,
   SelectIcon,
@@ -35,6 +28,15 @@ import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
 import { EmptyResp, PageResp, PluginItem, Resp } from "~/types"
 import { handleResp, notify, pluginEngine, r } from "~/utils"
 import { PluginGridItem, PluginListItem } from "./Plugin"
+import {
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+} from "~/components/overlay"
 
 const Plugins = () => {
   const t = useT()

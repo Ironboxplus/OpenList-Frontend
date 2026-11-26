@@ -1,3 +1,7 @@
+import { Button, Input, Textarea, FormHelperText, VStack } from "@hope-ui/solid"
+import { createSignal, JSXElement, Show } from "solid-js"
+import { useT } from "~/hooks"
+import { notify, validateFilename } from "~/utils"
 import {
   Modal,
   ModalOverlay,
@@ -5,15 +9,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Button,
-  Input,
-  Textarea,
-  FormHelperText,
-  VStack,
-} from "@hope-ui/solid"
-import { createSignal, JSXElement, Show } from "solid-js"
-import { useT } from "~/hooks"
-import { notify, validateFilename } from "~/utils"
+} from "~/components/overlay"
 export type ModalTwoInputProps = {
   opened: boolean
   onClose: () => void

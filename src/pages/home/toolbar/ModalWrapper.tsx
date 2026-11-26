@@ -1,3 +1,7 @@
+import { JSXElement, onCleanup, Show, Suspense } from "solid-js"
+import { FullLoading } from "~/components"
+import { useT } from "~/hooks"
+import { bus } from "~/utils"
 import {
   Modal,
   ModalContent,
@@ -6,11 +10,7 @@ import {
   ModalOverlay,
   createDisclosure,
   ModalCloseButton,
-} from "@hope-ui/solid"
-import { JSXElement, onCleanup, Show, Suspense } from "solid-js"
-import { FullLoading } from "~/components"
-import { useT } from "~/hooks"
-import { bus } from "~/utils"
+} from "~/components/overlay"
 
 export const ModalWrapper = (props: {
   children: JSXElement

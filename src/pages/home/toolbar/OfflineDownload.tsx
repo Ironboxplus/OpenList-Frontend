@@ -1,4 +1,4 @@
-import { Box, createDisclosure } from "@hope-ui/solid"
+import { Box } from "@hope-ui/solid"
 import { ModalInput, SelectWrapper } from "~/components"
 import { useFetch, useRouter, useT } from "~/hooks"
 import {
@@ -12,6 +12,7 @@ import { createSignal, onCleanup, onMount } from "solid-js"
 import { PResp } from "~/types"
 import bencode from "bencode"
 import crypto from "crypto-js"
+import { createDisclosure } from "~/components/overlay"
 
 const deletePolicies = [
   "upload_download_stream",

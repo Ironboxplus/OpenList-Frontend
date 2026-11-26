@@ -6,7 +6,6 @@ import {
   IconButton,
   Spacer,
   Text,
-  Tooltip,
   VStack,
 } from "@hope-ui/solid"
 import {
@@ -47,6 +46,7 @@ import {
   loadScriptIIFE,
   asPreview,
 } from "~/utils"
+import { Tooltip } from "~/components/overlay"
 
 const HEIF_EXTS = new Set(["heic", "heif", "avif", "vvc", "avc"])
 const isHeif = (name: string) => HEIF_EXTS.has(ext(name).toLowerCase())

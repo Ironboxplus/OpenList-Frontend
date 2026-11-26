@@ -12,16 +12,9 @@ import { batch, createSignal, Match, onCleanup, Switch } from "solid-js"
 import {
   Button,
   Checkbox,
-  createDisclosure,
   HStack,
   IconButton,
   Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Select,
   Text,
   Textarea,
@@ -39,6 +32,15 @@ import { createStore } from "solid-js/store"
 import { getSetting, me, selectedObjs } from "~/store"
 import { TbRefresh } from "solid-icons/tb"
 import { SelectOptions, MultiPathInput } from "~/components"
+import {
+  createDisclosure,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+} from "~/components/overlay"
 
 export const Share = () => {
   const t = useT()

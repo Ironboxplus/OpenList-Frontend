@@ -1,8 +1,9 @@
-import { Badge, Box, HStack, Text, Tooltip } from "@hope-ui/solid"
+import { Badge, Box, HStack, Text } from "@hope-ui/solid"
 import { createMemo, For, Show } from "solid-js"
 import { AiFillStar } from "solid-icons/ai"
 import { ObjExtra } from "~/types"
 import { hasExtra, readExtra } from "./extra-meta"
+import { Tooltip } from "~/components/overlay"
 
 /**
  * Renders the optional driver-specific metadata bag (`obj.extra`) as compact

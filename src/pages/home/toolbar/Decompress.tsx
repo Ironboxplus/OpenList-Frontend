@@ -1,17 +1,11 @@
-import {
-  Checkbox,
-  createDisclosure,
-  HStack,
-  Input,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
+import { Checkbox, HStack, Input, Text, VStack } from "@hope-ui/solid"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { bus, fsArchiveDecompress, handleRespWithNotifySuccess } from "~/utils"
 import { batch, createSignal, onCleanup } from "solid-js"
 import { ModalFolderChoose } from "~/components"
 import { selectedObjs } from "~/store"
 import { CreateFolderButton } from "./CopyMove"
+import { createDisclosure } from "~/components/overlay"
 
 export const Decompress = () => {
   const t = useT()

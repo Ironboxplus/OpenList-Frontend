@@ -1,17 +1,9 @@
 import {
   Box,
   Button,
-  createDisclosure,
   HStack,
   Icon,
   Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Spinner,
   Text,
   VStack,
@@ -52,6 +44,16 @@ import {
   validateFilename,
   notify,
 } from "~/utils"
+import {
+  createDisclosure,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+} from "~/components/overlay"
 
 export type FolderTreeHandler = {
   setPath: Setter<string>

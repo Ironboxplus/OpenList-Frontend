@@ -1,9 +1,10 @@
-import { Checkbox, createDisclosure, VStack } from "@hope-ui/solid"
+import { Checkbox, VStack } from "@hope-ui/solid"
 import { createSignal, onCleanup, Show } from "solid-js"
 import { ModalInput } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { oneChecked, selectedObjs } from "~/store"
 import { bus, fsRename, handleRespWithNotifySuccess, pathJoin } from "~/utils"
+import { createDisclosure } from "~/components/overlay"
 
 export const Rename = () => {
   const t = useT()

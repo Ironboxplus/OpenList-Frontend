@@ -1,12 +1,5 @@
 import {
   Center,
-  createDisclosure,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerHeader,
-  DrawerOverlay,
   FormControl,
   FormLabel,
   HStack,
@@ -32,6 +25,15 @@ import { SwitchLanguageWhite, SwitchColorMode } from "~/components"
 import { useT } from "~/hooks"
 import { initialLocalSettings, local, LocalSetting, setLocal } from "~/store"
 import { bus } from "~/utils"
+import {
+  createDisclosure,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerHeader,
+  DrawerOverlay,
+} from "~/components/overlay"
 
 function LocalSettingEdit(props: LocalSetting) {
   const t = useT()

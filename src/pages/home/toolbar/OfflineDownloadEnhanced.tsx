@@ -1,10 +1,4 @@
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Textarea,
   Box,
@@ -13,7 +7,6 @@ import {
   Text,
   Badge,
   Heading,
-  createDisclosure,
   notificationService,
   Checkbox,
   Input,
@@ -57,6 +50,15 @@ import {
 import bencode from "bencode"
 import crypto from "crypto-js"
 import { TorrentFileList } from "./TorrentFileList"
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  createDisclosure,
+} from "~/components/overlay"
 
 const deletePolicies = [
   "upload_download_stream",

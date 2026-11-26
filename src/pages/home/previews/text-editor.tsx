@@ -5,11 +5,6 @@ import {
   HStack,
   IconButton,
   Input,
-  Popover,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
-  Tooltip,
   useColorMode,
   VStack,
 } from "@hope-ui/solid"
@@ -44,6 +39,13 @@ import { useFetchText, useParseText, useRouter, useT, useUtil } from "~/hooks"
 import { StreamUpload } from "~/pages/home/uploads/stream"
 import { local, objStore, setLocal, userCan } from "~/store"
 import { notify } from "~/utils"
+import {
+  Popover,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+} from "~/components/overlay"
 
 interface LanguageOption {
   id: string

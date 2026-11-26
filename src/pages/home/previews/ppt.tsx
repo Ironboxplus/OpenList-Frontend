@@ -1,5 +1,5 @@
 import { BoxWithFullScreen, Error as Erro, FullLoading } from "~/components"
-import { Box, Button, IconButton, Tooltip } from "@hope-ui/solid"
+import { Box, Button, IconButton } from "@hope-ui/solid"
 import { loadScriptIIFE, loadCSS } from "~/utils"
 import { createSignal, onMount, onCleanup, Show } from "solid-js"
 import { useLink, useT, useCDN } from "~/hooks"
@@ -7,6 +7,7 @@ import {
   HiOutlineMagnifyingGlassPlus,
   HiOutlineMagnifyingGlassMinus,
 } from "solid-icons/hi"
+import { Tooltip } from "~/components/overlay"
 
 // 声明全局jQuery和pptxToHtml方法
 declare global {

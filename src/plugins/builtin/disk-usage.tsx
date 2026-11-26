@@ -5,7 +5,6 @@ import {
   ProgressIndicator,
   Skeleton,
   Text,
-  Tooltip,
 } from "@hope-ui/solid"
 import { Show } from "solid-js"
 import { BsHddFill } from "solid-icons/bs"
@@ -18,6 +17,7 @@ import {
   usedPercentage,
 } from "~/utils"
 import type { Plugin } from "../registry"
+import { Tooltip } from "~/components/overlay"
 
 /**
  * Compact storage-usage indicator for the current directory's mount. Reads the

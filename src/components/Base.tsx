@@ -4,7 +4,6 @@ import {
   Flex,
   Heading,
   useColorModeValue,
-  createDisclosure,
   Select,
   SelectContent,
   SelectIcon,
@@ -15,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
   IconButton,
-  Tooltip,
   VStack,
 } from "@hope-ui/solid"
 import { SwitchColorMode } from "./SwitchColorMode"
@@ -32,6 +30,7 @@ import {
 import { AiOutlineFullscreen, AiOutlineFullscreenExit } from "solid-icons/ai"
 import { BsFullscreen, BsFullscreenExit } from "solid-icons/bs"
 import { useT } from "~/hooks"
+import { createDisclosure, Tooltip } from "~/components/overlay"
 
 export const Error = (props: {
   msg: string

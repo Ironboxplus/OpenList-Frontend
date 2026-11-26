@@ -1,16 +1,10 @@
-import {
-  Button,
-  Icon,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
-} from "@hope-ui/solid"
+import { Button, Icon } from "@hope-ui/solid"
 import { For, createSignal } from "solid-js"
 import { FaSolidAngleDown } from "solid-icons/fa"
 import { getPlatform, notify } from "~/utils"
 import { getMediaStreamUrl } from "~/utils/media_api"
 import { playersForPlatform, renderPlayerScheme } from "~/utils/players"
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/overlay"
 
 interface OpenWithPlayerProps {
   /** 媒体条目 id（与 path 二选一） */

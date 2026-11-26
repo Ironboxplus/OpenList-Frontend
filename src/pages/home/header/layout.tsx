@@ -1,10 +1,4 @@
-import {
-  IconButton,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
-} from "@hope-ui/solid"
+import { IconButton } from "@hope-ui/solid"
 import { changeColor } from "seemly"
 import { BsGridFill, BsCardImage, BsColumnsGap } from "solid-icons/bs"
 import { FaSolidListUl } from "solid-icons/fa"
@@ -12,6 +6,7 @@ import { Switch, Match, For } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { useT } from "~/hooks"
 import { getMainColor, LayoutType, layout, setLayout } from "~/store"
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/overlay"
 
 const layouts = {
   list: FaSolidListUl,

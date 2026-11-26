@@ -1,9 +1,10 @@
+import { VStack, HStack, Button, Textarea, IconButton } from "@hope-ui/solid"
+import { createSignal } from "solid-js"
+import { TbPlus, TbFolder } from "solid-icons/tb"
+import { useT } from "~/hooks"
+import { pathJoin } from "~/utils"
+import { EnhancedFolderTree } from "~/components/EnhancedFolderTree"
 import {
-  VStack,
-  HStack,
-  Button,
-  Textarea,
-  IconButton,
   createDisclosure,
   Modal,
   ModalOverlay,
@@ -12,12 +13,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
-} from "@hope-ui/solid"
-import { createSignal } from "solid-js"
-import { TbPlus, TbFolder } from "solid-icons/tb"
-import { useT } from "~/hooks"
-import { pathJoin } from "~/utils"
-import { EnhancedFolderTree } from "~/components/EnhancedFolderTree"
+} from "~/components/overlay"
 
 export interface MultiPathInputProps {
   value: string

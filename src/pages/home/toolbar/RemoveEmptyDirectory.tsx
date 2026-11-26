@@ -1,13 +1,4 @@
-import {
-  Button,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  createDisclosure,
-} from "@hope-ui/solid"
+import { Button } from "@hope-ui/solid"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import {
   bus,
@@ -15,6 +6,15 @@ import {
   handleRespWithNotifySuccess,
 } from "~/utils"
 import { onCleanup } from "solid-js"
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  createDisclosure,
+} from "~/components/overlay"
 
 export const RemoveEmptyDirectory = () => {
   const { isOpen, onOpen, onClose } = createDisclosure()

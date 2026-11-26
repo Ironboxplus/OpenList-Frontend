@@ -11,15 +11,7 @@ import {
   Alert,
   AlertIcon,
   Textarea,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Tooltip,
   IconButton,
-  createDisclosure,
   SimpleGrid,
 } from "@hope-ui/solid"
 import { createEffect, createSignal, For, onMount, Show } from "solid-js"
@@ -58,6 +50,16 @@ import crypto from "crypto-js"
 import { TbCopy, TbRefresh, TbTrash } from "solid-icons/tb"
 import { BsInfoCircle } from "solid-icons/bs"
 import { FiExternalLink } from "solid-icons/fi"
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Tooltip,
+  createDisclosure,
+} from "~/components/overlay"
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B"

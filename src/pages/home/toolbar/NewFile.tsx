@@ -1,9 +1,10 @@
-import { Checkbox, createDisclosure } from "@hope-ui/solid"
+import { Checkbox } from "@hope-ui/solid"
 import { createSignal, onCleanup } from "solid-js"
 import { ModalInput } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { password } from "~/store"
 import { bus, fsNewFile, handleRespWithNotifySuccess, pathJoin } from "~/utils"
+import { createDisclosure } from "~/components/overlay"
 
 export const NewFile = () => {
   const t = useT()

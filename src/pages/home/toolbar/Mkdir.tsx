@@ -1,8 +1,8 @@
-import { createDisclosure } from "@hope-ui/solid"
 import { ModalInput } from "~/components"
 import { useFetch, usePath, useRouter } from "~/hooks"
 import { bus, fsMkdir, handleRespWithNotifySuccess, pathJoin } from "~/utils"
 import { onCleanup } from "solid-js"
+import { createDisclosure } from "~/components/overlay"
 
 export const Mkdir = () => {
   const { isOpen, onOpen, onClose } = createDisclosure()

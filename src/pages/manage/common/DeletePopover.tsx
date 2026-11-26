@@ -1,14 +1,13 @@
+import { Button, HStack } from "@hope-ui/solid"
+import { useT } from "~/hooks"
 import {
   Popover,
   PopoverTrigger,
-  Button,
   PopoverContent,
   PopoverArrow,
   PopoverHeader,
   PopoverBody,
-  HStack,
-} from "@hope-ui/solid"
-import { useT } from "~/hooks"
+} from "~/components/overlay"
 
 export interface DeletePopoverProps {
   name: string

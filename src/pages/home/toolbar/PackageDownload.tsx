@@ -4,15 +4,9 @@ import { getLinkByDirAndObj, useRouter, useT } from "~/hooks"
 import { fsList, joinBase, pathBase, pathJoin } from "~/utils"
 import { password, selectedObjs as _selectedObjs } from "~/store"
 import { createSignal, For, Show } from "solid-js"
-import {
-  Button,
-  Heading,
-  ModalBody,
-  ModalFooter,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
+import { Button, Heading, Text, VStack } from "@hope-ui/solid"
 import { Obj } from "~/types"
+import { ModalBody, ModalFooter } from "~/components/overlay"
 
 streamSaver.mitm = joinBase("streamer", "mitm.html")
 const trimSlash = (str: string) => {

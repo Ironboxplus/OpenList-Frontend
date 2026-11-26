@@ -3,12 +3,6 @@ import {
   HStack,
   Icon,
   IconButton,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
   Spinner,
   Text,
   VStack,
@@ -22,6 +16,14 @@ import type { PResp } from "~/types"
 import type { Plugin } from "../../registry"
 import { fetchFavorites } from "./api"
 import { isFavorited, sortFavorites, type Favorite } from "./data"
+import {
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+} from "~/components/overlay"
 
 export const FavoritesWidget = () => {
   const t = useT()

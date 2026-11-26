@@ -1,10 +1,4 @@
-import {
-  IconButton,
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuTrigger,
-} from "@hope-ui/solid"
+import { IconButton } from "@hope-ui/solid"
 import { changeColor } from "seemly"
 import { Link } from "@solidjs/router"
 import { For, Show } from "solid-js"
@@ -18,6 +12,7 @@ import { getMainColor, me } from "~/store"
 import { PResp } from "~/types"
 import { changeToken, handleResp, loginUrlFor, notify, r } from "~/utils"
 import { userMenuEntries, type UserMenuEntryId } from "./user-menu"
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/overlay"
 
 const entryIcons: Record<UserMenuEntryId, typeof CgProfile> = {
   login: CgProfile,
@@ -28,8 +23,8 @@ const entryIcons: Record<UserMenuEntryId, typeof CgProfile> = {
 export const UserMenu = () => {
   const t = useT()
   const { to } = useRouter()
-  const [logOutLoading, logOutReq] = useFetch(
-    (): PResp<any> => r.get("/auth/logout"),
+  const [logOutLoading, logOutReq] = useFetch((): PResp<any> =>
+    r.get("/auth/logout"),
   )
   const logOut = async () => {
     handleResp(await logOutReq(), () => {

@@ -1,11 +1,4 @@
-import {
-  ElementType,
-  HStack,
-  Icon,
-  IconProps,
-  Text,
-  Tooltip,
-} from "@hope-ui/solid"
+import { ElementType, HStack, Icon, IconProps, Text } from "@hope-ui/solid"
 import { Show } from "solid-js"
 import { IconTypes } from "solid-icons"
 import { useT } from "~/hooks"
@@ -13,6 +6,7 @@ import { getMainColor, me } from "~/store"
 import { UserMethods, UserPermissions } from "~/types"
 import { hoverColor, isTouchDevice } from "~/utils"
 import { operations } from "./operations"
+import { Tooltip } from "~/components/overlay"
 
 export const CenterIcon = <C extends ElementType = "svg">(
   props: IconProps<C> & {

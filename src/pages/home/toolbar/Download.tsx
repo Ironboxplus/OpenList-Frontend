@@ -1,17 +1,4 @@
-import {
-  Menu,
-  MenuTrigger,
-  MenuContent,
-  MenuItem,
-  Button,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  createDisclosure,
-} from "@hope-ui/solid"
+import { Button } from "@hope-ui/solid"
 import { createSignal, lazy, onCleanup, Show, Suspense } from "solid-js"
 import { FullLoading } from "~/components"
 import { useT, useDownload } from "~/hooks"
@@ -19,6 +6,19 @@ import { getSettingBool, me } from "~/store"
 import { UserMethods } from "~/types"
 import { bus } from "~/utils"
 import { CenterIcon } from "./Icon"
+import {
+  Menu,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  createDisclosure,
+} from "~/components/overlay"
 
 export const Download = () => {
   const t = useT()

@@ -1,4 +1,4 @@
-import { Box, createDisclosure, VStack } from "@hope-ui/solid"
+import { Box, VStack } from "@hope-ui/solid"
 import { createMemo, Show } from "solid-js"
 import { RightIcon } from "./Icon"
 import { CgMoreO } from "solid-icons/cg"
@@ -13,6 +13,7 @@ import { usePath, useRouter } from "~/hooks"
 import { Motion } from "solid-motionone"
 import { isTocVisible, setTocDisabled } from "~/components"
 import { BiSolidBookContent } from "solid-icons/bi"
+import { createDisclosure } from "~/components/overlay"
 
 export const Right = () => {
   const { isOpen, onToggle } = createDisclosure({

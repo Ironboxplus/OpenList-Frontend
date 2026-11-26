@@ -1,21 +1,18 @@
+import { Button, HStack, SimpleOption, SimpleSelect } from "@hope-ui/solid"
+import { ModalFolderChoose } from "~/components"
+import { useFetch, usePath, useRouter, useT } from "~/hooks"
+import { bus, fsRecursiveMove, handleRespWithNotifySuccess } from "~/utils"
+import { createSignal, onCleanup } from "solid-js"
+import { CreateFolderButton } from "./CopyMove"
 import {
-  Button,
   createDisclosure,
-  HStack,
   Modal,
   ModalBody,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  SimpleOption,
-  SimpleSelect,
-} from "@hope-ui/solid"
-import { ModalFolderChoose } from "~/components"
-import { useFetch, usePath, useRouter, useT } from "~/hooks"
-import { bus, fsRecursiveMove, handleRespWithNotifySuccess } from "~/utils"
-import { createSignal, onCleanup } from "solid-js"
-import { CreateFolderButton } from "./CopyMove"
+} from "~/components/overlay"
 
 export const RecursiveMove = () => {
   const {

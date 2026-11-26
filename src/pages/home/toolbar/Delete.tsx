@@ -1,3 +1,8 @@
+import { Button, Checkbox } from "@hope-ui/solid"
+import { createSignal, onCleanup } from "solid-js"
+import { useFetch, usePath, useRouter, useT } from "~/hooks"
+import { selectedObjs } from "~/store"
+import { bus, fsRemove, handleRespWithNotifySuccess } from "~/utils"
 import {
   Modal,
   ModalOverlay,
@@ -5,14 +10,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Button,
-  Checkbox,
   createDisclosure,
-} from "@hope-ui/solid"
-import { createSignal, onCleanup } from "solid-js"
-import { useFetch, usePath, useRouter, useT } from "~/hooks"
-import { selectedObjs } from "~/store"
-import { bus, fsRemove, handleRespWithNotifySuccess } from "~/utils"
+} from "~/components/overlay"
 
 export const Delete = () => {
   const t = useT()

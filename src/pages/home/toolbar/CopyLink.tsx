@@ -1,7 +1,7 @@
 import { Show } from "solid-js"
-import { Menu, MenuTrigger, MenuContent, MenuItem } from "@hope-ui/solid"
 import { useT, useCopyLink } from "~/hooks"
 import { CenterIcon } from "./Icon"
+import { Menu, MenuTrigger, MenuContent, MenuItem } from "~/components/overlay"
 
 export const CopyLink = () => {
   const t = useT()

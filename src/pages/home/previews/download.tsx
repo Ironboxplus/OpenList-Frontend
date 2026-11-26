@@ -4,11 +4,6 @@ import {
   HStack,
   IconButton,
   Image,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
   Text,
 } from "@hope-ui/solid"
 import { useCopyLink, useLink, useT } from "~/hooks"
@@ -18,6 +13,13 @@ import { OpenWith } from "../file/open-with"
 import { createSignal, Show } from "solid-js"
 import { BsQrCode } from "solid-icons/bs"
 import QRCode from "qrcode"
+import {
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/overlay"
 
 export const Download = (props: { openWith?: boolean }) => {
   const t = useT()
