@@ -948,34 +948,39 @@ await spec("add-share-required-not-red-on-arrival", { width: 390, height: 844 },
   if (after !== "true") throw new Error("the empty share paths are not marked after the user left them")
 })
 
-// E1: borders on the first load, in the mode the user had, equal what they
+// E1: the edges on the first load, in the mode the user had, equal what they
 // are after toggling the theme twice (user: "列表边缘还是切换亮暗色之后才会恢复正常").
-// Evidence for the cause: every bordered element's computed border, the rules
-// matched on the content card and its mask (CDP), and the head's stylesheets.
-const borderState = (page) =>
+// Evidence for the cause: every edged element's computed borders (four sides),
+// shadow and outline, the rules CDP matches on the content card and its mask,
+// the head's stylesheets, and a pixel comparison of the content card.
+const edgeState = (page) =>
   page.evaluate(() => {
     const desc = (e) =>
       e.tagName.toLowerCase() +
       [...e.attributes].filter((a) => a.name.startsWith("data-")).map((a) => `[${a.name}]`).join("") +
-      String(e.className && e.className.baseVal === undefined ? e.className : "").split(/\s+/).filter((c) => /border|rounded|card|grid-item|list/.test(c)).slice(0, 4).map((c) => "." + c).join("")
+      (typeof e.className === "string" ? e.className : "").split(/s+/).filter((c) => /border|rounded|card|grid-item|list|row/.test(c)).slice(0, 4).map((c) => "." + c).join("")
+    const side = (cs, s) => (parseFloat(cs[`border${s}Width`]) > 0 && cs[`border${s}Style`] !== "none" ? `${cs[`border${s}Width`]} ${cs[`border${s}Style`]} ${cs[`border${s}Color`]}` : "-")
     const out = []
-    const roots = ["[data-shell-content]", "[data-shell-mask]", "[data-storage-card]"].map((s) => document.querySelector(s)).filter(Boolean)
+    const roots = ["[data-shell-content]", "[data-shell-mask]", "[data-storage-card]"].map((q) => document.querySelector(q)).filter(Boolean)
     for (const r of roots)
       for (const e of [r, ...r.querySelectorAll("*")]) {
-        if (out.length >= 60) break
+        if (out.length >= 150) break
         const cs = getComputedStyle(e)
-        const classed = /(^|\s)border(\s|$|-)/.test(typeof e.className === "string" ? e.className : "")
-        if (!classed && !(parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none")) continue
-        out.push({ el: desc(e), style: cs.borderTopStyle, width: cs.borderTopWidth, color: cs.borderTopColor })
+        const sides = ["Top", "Right", "Bottom", "Left"].map((s) => side(cs, s))
+        const classed = /(^|s)(border|divide)(s|$|-)/.test(typeof e.className === "string" ? e.className : "")
+        const shadow = cs.boxShadow !== "none" ? cs.boxShadow : ""
+        if (!classed && !shadow && sides.every((x) => x === "-")) continue
+        out.push({ el: desc(e), sides: sides.join(" | "), shadow, bg: cs.backgroundColor })
       }
+    const cls = (el) => [...el.classList].sort().join(" ")
     return {
-      html: document.documentElement.className,
-      body: document.body.className,
+      html: cls(document.documentElement),
+      body: cls(document.body),
       sheets: [...document.styleSheets].map((s, i) => `${i}:${s.href ? s.href.split("/").pop() : s.ownerNode?.tagName.toLowerCase() + (s.ownerNode?.id ? "#" + s.ownerNode.id : "")}:${s.cssRules.length}`),
-      borders: out,
+      edges: out,
     }
   })
-const borderRules = async (cdp, selector) => {
+const edgeRules = async (cdp, selector) => {
   await cdp.send("DOM.enable")
   await cdp.send("CSS.enable")
   const { root } = await cdp.send("DOM.getDocument", { depth: 0 })
@@ -983,40 +988,57 @@ const borderRules = async (cdp, selector) => {
   if (!nodeId) return [`${selector}: not found`]
   const m = await cdp.send("CSS.getMatchedStylesForNode", { nodeId })
   return (m.matchedCSSRules || []).flatMap(({ rule }) => {
-    const props = rule.style.cssProperties.filter((p) => /^border(-top)?(-style|-color|-width)?$/.test(p.name) && p.value)
-    return props.length ? [`${selector} <= ${rule.origin} sheet ${rule.styleSheetId} "${rule.selectorList.text.slice(0, 70)}" {${props.map((p) => `${p.name}: ${p.value}`).join("; ")}}`] : []
+    const props = rule.style.cssProperties.filter((x) => /^(border|box-shadow)/.test(x.name) && x.value)
+    return props.length ? [`${selector} <= ${rule.origin} sheet ${rule.styleSheetId} "${rule.selectorList.text.slice(0, 70)}" {${props.map((x) => `${x.name}: ${x.value}`).join("; ")}}`] : []
   })
 }
-for (const mode of ["light", "dark"]) {
-  await spec("borders-first-load", { theme: mode, init: mode === "dark" ? () => localStorage.setItem("hope-ui-color-mode", "dark") : undefined }, async (env) => {
-    const { page, cdp } = env
-    await go(page, `${MOUNT}/文档`, 1500)
-    const first = await borderState(page)
-    const rules = [...(await borderRules(cdp, "[data-shell-content]")), ...(await borderRules(cdp, "[data-shell-mask]"))]
-    const toggle = page.getByRole("button", { name: tr("shell.nav.toggle_theme") }).first()
-    await toggle.click()
-    await page.waitForTimeout(700)
-    await toggle.click()
-    await page.waitForTimeout(900)
-    const again = await borderState(page)
-    const rulesAgain = [...(await borderRules(cdp, "[data-shell-content]")), ...(await borderRules(cdp, "[data-shell-mask]"))]
-    log(`borders first load ${mode}`, JSON.stringify({ html: first.html, body: first.body, sheets: first.sheets }))
-    for (const r of rules) log(`  first ${mode}`, r)
-    for (const r of rulesAgain) log(`  again ${mode}`, r)
-    const diffs = []
-    const n = Math.max(first.borders.length, again.borders.length)
-    for (let i = 0; i < n; i++) {
-      const a = JSON.stringify(first.borders[i])
-      const b = JSON.stringify(again.borders[i])
-      if (a !== b) diffs.push(`${a} -> ${b}`)
-    }
-    log(`borders ${mode}: ${first.borders.length} bordered elements, ${diffs.length} differ after two toggles`)
-    for (const d of diffs.slice(0, 20)) log("  differs", d)
-    const card = first.borders.find((b) => b.el.startsWith("div[data-shell-content]"))
-    if (!card || card.style === "none" || parseFloat(card.width) === 0) throw new Error(`the content card has no border on the first load: ${JSON.stringify(card)}`)
-    if (first.html !== again.html || first.body !== again.body) throw new Error(`two toggles did not return to the first mode: html "${first.html}" -> "${again.html}", body "${first.body}" -> "${again.body}"`)
-    if (diffs.length) throw new Error(`${diffs.length} borders differ between the first load and after two toggles; first: ${diffs[0]}`)
-  })
+const E1_MODES = [
+  { name: "light", theme: "light" },
+  { name: "dark-system", theme: "dark" },
+  { name: "dark-stored", theme: "light", init: () => localStorage.setItem("hope-ui-color-mode", "dark") },
+]
+for (const layout of ["grid", "list"]) {
+  for (const mode of E1_MODES) {
+    await spec(`edges-first-load-${layout}-${mode.name}`, { theme: mode.theme, init: mode.init }, async (env) => {
+      const { page, cdp, id } = env
+      await go(page, `${MOUNT}/文档`, 1200)
+      // the layout is remembered per folder: choose it, then load afresh
+      await page.locator("[data-files-view]").click()
+      await page.getByRole("menuitem", { name: tr(`home.layouts.${layout}`) }).first().click()
+      await page.waitForTimeout(400)
+      await page.reload({ waitUntil: "domcontentloaded" })
+      await page.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {})
+      await page.waitForTimeout(1500)
+      const card = page.locator("[data-shell-content]")
+      const first = await edgeState(page)
+      const firstShot = await card.screenshot({ path: path.join(out, `${id}.first.png`) })
+      const rules = [...(await edgeRules(cdp, "[data-shell-content]")), ...(await edgeRules(cdp, "[data-shell-mask]"))]
+      const toggle = page.getByRole("button", { name: tr("shell.nav.toggle_theme") }).first()
+      await toggle.click()
+      await page.waitForTimeout(700)
+      await toggle.click()
+      await page.waitForTimeout(1000)
+      const again = await edgeState(page)
+      const againShot = await card.screenshot({ path: path.join(out, `${id}.again.png`) })
+      log(`edges ${layout} ${mode.name}`, JSON.stringify({ html: first.html, body: first.body, sheets: first.sheets }))
+      for (const r of rules) log("  rule", r)
+      const diffs = []
+      const n = Math.max(first.edges.length, again.edges.length)
+      for (let i = 0; i < n; i++) {
+        const x = JSON.stringify(first.edges[i])
+        const y = JSON.stringify(again.edges[i])
+        if (x !== y) diffs.push(`${x} -> ${y}`)
+      }
+      const samePixels = firstShot.equals(againShot)
+      log(`edges ${layout} ${mode.name}: ${first.edges.length} edged elements, ${diffs.length} differ after two toggles; pixels ${samePixels ? "identical" : "differ"}`)
+      for (const d of diffs.slice(0, 25)) log("  differs", d)
+      const frame = first.edges.find((e) => e.el.startsWith("div[data-shell-content]"))
+      if (!frame || frame.sides.includes("- |") || frame.sides.startsWith("-")) throw new Error(`the content card has no full border on the first load: ${JSON.stringify(frame)}`)
+      if (first.html !== again.html || first.body !== again.body) throw new Error(`two toggles did not return to the first mode: html "${first.html}" -> "${again.html}", body "${first.body}" -> "${again.body}"`)
+      if (diffs.length) throw new Error(`${diffs.length} edges differ between the first load and after two toggles; first: ${diffs[0]}`)
+      if (!samePixels) throw new Error("the content card looks different after two toggles (see the .first/.again shots)")
+    })
+  }
 }
 
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
