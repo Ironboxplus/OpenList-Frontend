@@ -77,7 +77,12 @@ export const FieldRenderer = (props: FieldRendererProps) => {
       ? options().filter((o) => v.includes(o.value))
       : options().find((o) => o.value === display(v))
   })
-  const invalid = () => (f().invalid ? true : undefined)
+  // A field is marked invalid once the user has left it, not while the form
+  // is still blank: a new form would open with its required fields in red.
+  // (Save stays off meanwhile; SettingsForm's `invalid`.)
+  const [touched, setTouched] = createSignal(false)
+  const shownInvalid = () => !!f().invalid && touched()
+  const invalid = () => (shownInvalid() ? true : undefined)
 
   const [revealed, setRevealed] = createSignal(false)
   const [revealing, setRevealing] = createSignal(false)
@@ -158,7 +163,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
       }}
       disabled={f().readonly}
       required={f().required}
-      validationState={f().invalid ? "invalid" : "valid"}
+      validationState={shownInvalid() ? "invalid" : "valid"}
       placeholder={t(f().emptyLabelKey ?? "global.choose")}
       itemComponent={(p) => (
         <SelectItem item={p.item}>{optionText(p.item.rawValue)}</SelectItem>
@@ -259,6 +264,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
           "flex min-w-0 flex-col gap-2",
           props.hideLabel && !props.stacked && "md:col-span-2",
         )}
+        onFocusOut={() => setTouched(true)}
       >
         <SwitchBlock
           fallback={
@@ -297,7 +303,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
             <MultiPathInput
               id={f().id}
               value={display(props.value)}
-              valid={!f().invalid}
+              valid={!shownInvalid()}
               readOnly={f().readonly}
               placeholder={f().placeholder}
               basePath={f().basePath}

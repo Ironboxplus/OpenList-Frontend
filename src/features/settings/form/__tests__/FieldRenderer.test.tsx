@@ -96,6 +96,18 @@ describe("FieldRenderer", () => {
     expect(document.getElementById("f")).toBeTruthy()
   })
 
+  it("an invalid field turns red only after the user has left it", () => {
+    // the audit's phone "add share" form opened with its required paths in red
+    mount(base({ required: true, invalid: true }), "")
+    const input = document.getElementById("f")!
+    expect(input.getAttribute("aria-invalid")).toBeNull()
+    fireEvent.focusIn(input)
+    type(input, "")
+    expect(input.getAttribute("aria-invalid")).toBeNull()
+    fireEvent.focusOut(input)
+    expect(input.getAttribute("aria-invalid")).toBe("true")
+  })
+
   it("string: emits what is typed; read-only fields cannot be edited", () => {
     const out = mount(base({}), "a")
     type(document.getElementById("f")!, "abc")
