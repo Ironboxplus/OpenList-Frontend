@@ -204,28 +204,76 @@ for (const theme of ["light", "dark"]) {
     const row = page.locator('[role="treeitem"][aria-selected="true"] > div').first()
     await row.waitFor()
     const label = row.locator("span").last()
-    // bring the row into view the way a user would: scroll every scrollable ancestor to its end
+    // The name is wider than the nav: it is read by scrolling sideways. Its end
+    // must show with the tree scrolled fully right, its start fully left.
+    // (Until 2026-11-26 this spec asked for the whole name inside the nearest
+    // non-visible ancestor at once; that ancestor was the full-width Box inside
+    // a max-content wrapper, which clipped nothing, so it passed vacuously.)
     const report = await label.evaluate((el) => {
-      for (let a = el.parentElement; a; a = a.parentElement) {
-        const o = getComputedStyle(a).overflowX
-        if ((o === "auto" || o === "scroll") && a.scrollWidth > a.clientWidth) a.scrollLeft = a.scrollWidth
+      let box = el.parentElement
+      while (box && !["auto", "scroll"].includes(getComputedStyle(box).overflowX)) box = box.parentElement
+      const view = () => {
+        const b = box.getBoundingClientRect()
+        const left = b.left + box.clientLeft
+        return [left, left + box.clientWidth]
       }
-      let clip = el.parentElement
-      while (clip && getComputedStyle(clip).overflowX === "visible") clip = clip.parentElement
-      const r = el.getBoundingClientRect()
-      const c = clip.getBoundingClientRect()
+      const at = (x) => {
+        box.scrollLeft = x
+        const r = el.getBoundingClientRect()
+        const [l, rr] = view()
+        return { r, l, rr, s: `${Math.round(r.left)}..${Math.round(r.right)} in ${Math.round(l)}..${Math.round(rr)}` }
+      }
+      const end = at(box.scrollWidth)
+      const start = at(0)
       return {
         truncated: el.scrollWidth > el.clientWidth + 1,
-        inside: r.left >= c.left - 1 && r.right <= c.right + 1,
         text: el.textContent,
-        label: `${Math.round(r.left)}..${Math.round(r.right)} in ${Math.round(c.left)}..${Math.round(c.right)}`,
+        endShown: end.r.right <= end.rr + 1 && end.r.right >= end.l,
+        startShown: start.r.left >= start.l - 1 && start.r.left <= start.rr,
+        end: end.s,
+        start: start.s,
       }
     })
-    await page.waitForTimeout(300)
+    log(`nav tree deepest ${theme}`, JSON.stringify(report))
     if (report.truncated) throw new Error(`the deepest level is cut with an ellipsis: "${report.text}"`)
-    if (!report.inside) throw new Error(`the deepest level cannot be scrolled into view (${report.label})`)
+    if (!report.endShown) throw new Error(`the end of the deepest name cannot be scrolled into view (${report.end})`)
+    if (!report.startShown) throw new Error(`the start of the deepest name cannot be scrolled into view (${report.start})`)
   })
 }
+// m4 of the audit: after going to a deep folder its row is brought into view by
+// itself, both ways: the name starts at the scroll area's left edge (4px inset)
+// and fills the visible width, the row is within the visible height
+await spec("nav-tree-current-row-in-view", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/深层/${DEEP.join("/")}`, 2000)
+  const row = page.locator('[role="treeitem"][aria-selected="true"] > div').first()
+  await row.waitFor()
+  const m = await row.evaluate((rowEl) => {
+    const el = rowEl.querySelector("span:last-of-type")
+    let box = el.parentElement
+    while (box && !["auto", "scroll"].includes(getComputedStyle(box).overflowX)) box = box.parentElement
+    const b = box.getBoundingClientRect()
+    const l = b.left + box.clientLeft
+    const rr = l + box.clientWidth
+    const t = b.top + box.clientTop
+    const bb = t + box.clientHeight
+    const r = el.getBoundingClientRect()
+    const rowR = rowEl.getBoundingClientRect()
+    const shown = Math.min(r.right, rr) - Math.max(r.left, l)
+    return {
+      leftShown: r.left >= l - 1 && r.left < rr,
+      shown: Math.round(shown),
+      need: Math.round(Math.min(r.width, box.clientWidth - 8)),
+      rowShown: rowR.top >= t - 1 && rowR.bottom <= bb + 1 && rowR.bottom <= innerHeight + 1,
+      name: `${Math.round(r.left)}..${Math.round(r.right)} in ${Math.round(l)}..${Math.round(rr)}`,
+      row: `${Math.round(rowR.top)}..${Math.round(rowR.bottom)} in ${Math.round(t)}..${Math.round(bb)}`,
+    }
+  })
+  log("nav tree current row", JSON.stringify(m))
+  if (!m.leftShown) throw new Error(`the current folder's name does not start in view (${m.name})`)
+  if (m.shown < m.need - 1) throw new Error(`only ${m.shown}px of the current folder's name show, ${m.need}px fit (${m.name})`)
+  if (!m.rowShown) throw new Error(`the current folder's row is out of view vertically (${m.row})`)
+})
 // with the deep path open the tree is taller than the side nav: its last row
 // must be reachable by scrolling down (a clipping wrapper cut it off, run 45808288515)
 await spec("nav-tree-last-row-reachable", {}, async (env) => {
