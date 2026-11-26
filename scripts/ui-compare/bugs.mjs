@@ -1005,9 +1005,13 @@ await dialogSelect("dialog-select-offline-download", {}, async (page) => {
 
 // E1: the edges on the first load, in the mode the user had, equal what they
 // are after toggling the theme twice (user: "列表边缘还是切换亮暗色之后才会恢复正常").
-// Evidence for the cause: every edged element's computed borders (four sides),
-// shadow and outline, the rules CDP matches on the content card and its mask,
-// the head's stylesheets, and a pixel comparison of the content card.
+// The cause (7f3bd3c): hope rewrote the files card's class attribute when its
+// theme-dependent bgColor changed, dropping the files-card class a classList
+// had added. The user chose the look after the toggle (11-26): the list is a
+// card of its own, rounded, with a shadow and padding, from the first load on.
+// Recorded: every edged element's computed borders (four sides), shadow, the
+// files card's classes and surface, the rules CDP matches on the content card
+// and its mask, the head's stylesheets, and a pixel comparison.
 const edgeState = (page) =>
   page.evaluate(() => {
     const desc = (e) =>
@@ -1034,6 +1038,9 @@ const edgeState = (page) =>
       body: cls(document.body),
       // the files page's own card and its rows: which classes they carry
       objBox: box ? cls(box) : "none",
+      card: box
+        ? (({ boxShadow, borderTopLeftRadius, paddingTop, backgroundColor }) => ({ shadow: boxShadow, radius: borderTopLeftRadius, padding: paddingTop, bg: backgroundColor }))(getComputedStyle(box))
+        : null,
       rows: [...document.querySelectorAll(".obj-box .list-item, .obj-box .grid-item, .obj-box .list > .title")]
         .slice(0, 3)
         .map(cls),
@@ -1112,6 +1119,11 @@ for (const layout of ["grid", "list"]) {
       const samePixels = firstShot.equals(againShot)
       log(`edges ${layout} ${mode.name}: ${first.edges.length} edged elements, ${diffs.length} differ after two toggles; pixels ${samePixels ? "identical" : "differ"}`)
       for (const d of diffs.slice(0, 25)) log("  differs", d)
+      log("  card first", JSON.stringify(first.card))
+      log("  card again", JSON.stringify(again.card))
+      if (!first.card || first.card.shadow === "none" || !(parseFloat(first.card.radius) > 0) || !(parseFloat(first.card.padding) > 0))
+        throw new Error(`the files list is not a card on the first load: ${JSON.stringify(first.card)}`)
+      if (JSON.stringify(first.card) !== JSON.stringify(again.card)) diffs.unshift(`files card: ${JSON.stringify(first.card)} -> ${JSON.stringify(again.card)}`)
       const frame = first.edges.find((e) => e.el.startsWith("div[data-shell-content]"))
       if (!frame || frame.sides.includes("- |") || frame.sides.startsWith("-")) throw new Error(`the content card has no full border on the first load: ${JSON.stringify(frame)}`)
       if (first.html !== again.html || first.body !== again.body) throw new Error(`two toggles did not return to the first mode: html "${first.html}" -> "${again.html}", body "${first.body}" -> "${again.body}"`)
