@@ -5,7 +5,7 @@ import { cn } from "~/utils/cn"
 import * as DialogPrimitive from "@kobalte/core/dialog"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { ComponentProps, ParentProps, ValidComponent } from "solid-js"
-import { splitProps } from "solid-js"
+import { Show, splitProps } from "solid-js"
 
 export const Dialog = DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
@@ -31,8 +31,10 @@ export const DialogOverlay = <T extends ValidComponent = "div">(
 }
 
 type DialogContentProps = ParentProps<
-  DialogPrimitive.DialogOverlayProps & {
+  DialogPrimitive.DialogContentProps & {
     class?: string
+    /** The X in the corner; on by default. */
+    showClose?: boolean
   }
 >
 
@@ -42,6 +44,7 @@ export const DialogContent = <T extends ValidComponent = "div">(
   const [local, rest] = splitProps(props as DialogContentProps, [
     "class",
     "children",
+    "showClose",
   ])
 
   return (
@@ -50,29 +53,31 @@ export const DialogContent = <T extends ValidComponent = "div">(
       <div class="fixed inset-0 z-[1500] flex items-center justify-center">
         <DialogPrimitive.Content
           class={cn(
-            "fixed left-[50%] top-[50%] z-[1500] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-half data-[closed]:slide-out-to-top-48 data-[expanded]:slide-in-from-left-half data-[expanded]:slide-in-from-top-48 sm:rounded-lg md:w-full",
+            "fixed left-[50%] top-[50%] z-[1500] grid max-h-[calc(100dvh-2rem)] w-full max-w-lg translate-x-[-50%] overflow-y-auto translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-half data-[closed]:slide-out-to-top-48 data-[expanded]:slide-in-from-left-half data-[expanded]:slide-in-from-top-48 sm:rounded-lg md:w-full",
             local.class,
           )}
           {...rest}
         >
           {local.children}
-          <DialogPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm bg-transparent text-foreground opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              class="h-4 w-4"
-            >
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M18 6L6 18M6 6l12 12"
-              />
-            </svg>
-            <span class="sr-only">Close</span>
-          </DialogPrimitive.CloseButton>
+          <Show when={local.showClose !== false}>
+            <DialogPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm bg-transparent text-foreground opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="h-4 w-4"
+              >
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M18 6L6 18M6 6l12 12"
+                />
+              </svg>
+              <span class="sr-only">Close</span>
+            </DialogPrimitive.CloseButton>
+          </Show>
         </DialogPrimitive.Content>
       </div>
     </DialogPrimitive.Portal>

@@ -7,6 +7,8 @@ import * as TooltipPrimitive from "@kobalte/core/tooltip"
 import { type ValidComponent, mergeProps, splitProps } from "solid-js"
 
 export const TooltipTrigger = TooltipPrimitive.Trigger
+/** Kobalte's arrow, pointing at the trigger; put it inside TooltipContent. */
+export const TooltipArrow = TooltipPrimitive.Arrow
 
 export const Tooltip = (props: TooltipPrimitive.TooltipRootProps) => {
   const merge = mergeProps<TooltipPrimitive.TooltipRootProps[]>(

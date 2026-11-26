@@ -8,12 +8,15 @@ import {
   type ParentProps,
   type ValidComponent,
   mergeProps,
+  Show,
   splitProps,
 } from "solid-js"
 
 export const PopoverTrigger = PopoverPrimitive.Trigger
 export const PopoverTitle = PopoverPrimitive.Title
 export const PopoverDescription = PopoverPrimitive.Description
+/** Kobalte's arrow, pointing at the trigger; put it inside PopoverContent. */
+export const PopoverArrow = PopoverPrimitive.Arrow
 
 export const Popover = (props: PopoverPrimitive.PopoverRootProps) => {
   const merge = mergeProps({ gutter: 4 }, props)
@@ -24,6 +27,8 @@ export const Popover = (props: PopoverPrimitive.PopoverRootProps) => {
 type PopoverContentProps = ParentProps<
   PopoverPrimitive.PopoverContentProps & {
     class?: string
+    /** The X in the corner; on by default. */
+    showClose?: boolean
   }
 >
 
@@ -33,6 +38,7 @@ export const PopoverContent = <T extends ValidComponent = "div">(
   const [local, rest] = splitProps(props as PopoverContentProps, [
     "class",
     "children",
+    "showClose",
   ])
 
   return (
@@ -45,23 +51,25 @@ export const PopoverContent = <T extends ValidComponent = "div">(
         {...rest}
       >
         {local.children}
-        <PopoverPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            class="h-4 w-4"
-          >
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M18 6L6 18M6 6l12 12"
-            />
-          </svg>
-          <span class="sr-only">Close</span>
-        </PopoverPrimitive.CloseButton>
+        <Show when={local.showClose !== false}>
+          <PopoverPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              class="h-4 w-4"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M18 6L6 18M6 6l12 12"
+              />
+            </svg>
+            <span class="sr-only">Close</span>
+          </PopoverPrimitive.CloseButton>
+        </Show>
       </PopoverPrimitive.Content>
     </PopoverPrimitive.Portal>
   )

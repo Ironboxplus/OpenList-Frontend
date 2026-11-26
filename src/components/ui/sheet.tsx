@@ -7,7 +7,7 @@ import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { VariantProps } from "class-variance-authority"
 import { cva } from "class-variance-authority"
 import type { ComponentProps, ParentProps, ValidComponent } from "solid-js"
-import { mergeProps, splitProps } from "solid-js"
+import { mergeProps, Show, splitProps } from "solid-js"
 
 export const Sheet = DialogPrimitive.Root
 export const SheetTrigger = DialogPrimitive.Trigger
@@ -55,6 +55,8 @@ type SheetContentProps = ParentProps<
   DialogPrimitive.DialogContentProps &
     VariantProps<typeof sheetVariants> & {
       class?: string
+      /** The X in the corner; on by default. */
+      showClose?: boolean
     }
 >
 
@@ -62,7 +64,12 @@ export const SheetContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, SheetContentProps>,
 ) => {
   const merge = mergeProps({ side: "right" }, props)
-  const [local, rest] = splitProps(merge, ["class", "children", "side"])
+  const [local, rest] = splitProps(merge, [
+    "class",
+    "children",
+    "side",
+    "showClose",
+  ])
 
   return (
     <DialogPrimitive.Portal>
@@ -72,23 +79,25 @@ export const SheetContent = <T extends ValidComponent = "div">(
         {...rest}
       >
         {local.children}
-        <DialogPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm bg-transparent text-foreground opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            class="h-4 w-4"
-          >
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M18 6L6 18M6 6l12 12"
-            />
-          </svg>
-          <span class="sr-only">Close</span>
-        </DialogPrimitive.CloseButton>
+        <Show when={local.showClose !== false}>
+          <DialogPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm bg-transparent text-foreground opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              class="h-4 w-4"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M18 6L6 18M6 6l12 12"
+              />
+            </svg>
+            <span class="sr-only">Close</span>
+          </DialogPrimitive.CloseButton>
+        </Show>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   )
