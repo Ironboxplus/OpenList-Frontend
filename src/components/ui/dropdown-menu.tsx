@@ -6,7 +6,11 @@ import * as DropdownMenuPrimitive from "@kobalte/core/dropdown-menu"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { ComponentProps, ParentProps, ValidComponent } from "solid-js"
 import { mergeProps, splitProps } from "solid-js"
-import { afterMenuClose, runAfterMenuClose } from "./menu-after-close"
+import {
+  createMenuCloseQueue,
+  MenuCloseContext,
+  useMenuCloseQueue,
+} from "./menu-after-close"
 
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
 export const DropdownMenuGroup = DropdownMenuPrimitive.Group
@@ -31,23 +35,25 @@ export const DropdownMenuContent = <T extends ValidComponent = "div">(
 ) => {
   const [local, rest] = splitProps(props as DropdownMenuContentProps, [
     "class",
+    "onOpenAutoFocus",
     "onCloseAutoFocus",
   ])
+  const close = createMenuCloseQueue(local)
 
   return (
-    <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.Content
-        onCloseAutoFocus={(e: Event) => {
-          local.onCloseAutoFocus?.(e)
-          runAfterMenuClose()
-        }}
-        class={cn(
-          "min-w-[8rem] z-[1500] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md transition-shadow outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-          local.class,
-        )}
-        {...rest}
-      />
-    </DropdownMenuPrimitive.Portal>
+    <MenuCloseContext.Provider value={close.queue}>
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.Content
+          onOpenAutoFocus={close.onOpenAutoFocus}
+          onCloseAutoFocus={close.onCloseAutoFocus}
+          class={cn(
+            "min-w-[8rem] z-[1500] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md transition-shadow outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
+            local.class,
+          )}
+          {...rest}
+        />
+      </DropdownMenuPrimitive.Portal>
+    </MenuCloseContext.Provider>
   )
 }
 
@@ -64,10 +70,19 @@ export const DropdownMenuItem = <T extends ValidComponent = "div">(
     "inset",
     "onSelect",
   ])
+  const close = useMenuCloseQueue()
 
   return (
     <DropdownMenuPrimitive.Item
-      onSelect={(e: Event) => afterMenuClose(() => local.onSelect?.(e))}
+      onSelect={() => {
+        // an item that closes the menu acts once it has closed (menu-after-close.ts);
+        // one that keeps it open (closeOnSelect={false}) acts at once
+        if (close && (props as DropdownMenuItemProps).closeOnSelect !== false) {
+          close.defer(() => local.onSelect?.())
+        } else {
+          local.onSelect?.()
+        }
+      }}
       class={cn(
         "relative flex cursor-default select-none items-center rounded-[6px] px-2 py-1.5 text-sm outline-none! transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         local.inset && "pl-8",

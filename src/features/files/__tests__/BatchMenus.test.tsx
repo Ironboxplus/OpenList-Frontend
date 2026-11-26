@@ -34,7 +34,9 @@ const items = () =>
 describe("CopyLinkItems (action bar and phone sheet)", () => {
   const mount = () =>
     render(() => (
-      <DropdownMenu open>
+      // uncontrolled: an item acts once its menu has closed (menu-after-close.ts),
+      // and a menu held open by `open` never closes
+      <DropdownMenu defaultOpen>
         <DropdownMenuContent>
           <CopyLinkItems />
         </DropdownMenuContent>
