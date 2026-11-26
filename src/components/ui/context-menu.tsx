@@ -6,6 +6,7 @@ import * as ContextMenuPrimitive from "@kobalte/core/context-menu"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { ValidComponent } from "solid-js"
 import { splitProps } from "solid-js"
+import { runAfterMenuClose } from "./menu-after-close"
 
 export {
   DropdownMenuGroup as ContextMenuGroup,
@@ -26,11 +27,18 @@ type ContextMenuContentProps = ContextMenuPrimitive.ContextMenuContentProps & {
 export const ContextMenuContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, ContextMenuContentProps>,
 ) => {
-  const [local, rest] = splitProps(props as ContextMenuContentProps, ["class"])
+  const [local, rest] = splitProps(props as ContextMenuContentProps, [
+    "class",
+    "onCloseAutoFocus",
+  ])
 
   return (
     <ContextMenuPrimitive.Portal>
       <ContextMenuPrimitive.Content
+        onCloseAutoFocus={(e: Event) => {
+          local.onCloseAutoFocus?.(e)
+          runAfterMenuClose()
+        }}
         class={cn(
           "z-[1500] min-w-[200px] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md outline-none! data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
           local.class,

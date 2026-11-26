@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render } from "@solidjs/testing-library"
+import { cleanup, fireEvent, render, waitFor } from "@solidjs/testing-library"
 import { createSignal } from "solid-js"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
@@ -50,7 +50,7 @@ describe("CopyLinkItems (action bar and phone sheet)", () => {
     ])
   })
 
-  it("shows the mpv entry for media and copies on select", () => {
+  it("shows the mpv entry for media and copies on select", async () => {
     setCanCopy(true)
     mount()
     expect(items()).toContain("home.toolbar.mpv_command")
@@ -59,6 +59,7 @@ describe("CopyLinkItems (action bar and phone sheet)", () => {
     ) as HTMLElement
     el.focus()
     fireEvent.keyDown(el, { key: "Enter" })
-    expect(copySelectedMpvCommand).toHaveBeenCalledTimes(1)
+    // the action runs once the menu has closed (menu-after-close.ts)
+    await waitFor(() => expect(copySelectedMpvCommand).toHaveBeenCalledTimes(1))
   })
 })
