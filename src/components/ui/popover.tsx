@@ -45,7 +45,7 @@ export const PopoverContent = <T extends ValidComponent = "div">(
         {...rest}
       >
         {local.children}
-        <PopoverPrimitive.CloseButton class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
+        <PopoverPrimitive.CloseButton class="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-sm opacity-70 ring-offset-background transition-[opacity,box-shadow] hover:opacity-100 outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"

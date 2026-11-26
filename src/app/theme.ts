@@ -166,6 +166,13 @@ const theme: HopeThemeConfig = {
         },
       },
     },
+    // Toasts, alerts and modals pass size "sm" (24px): at least 32px to hit.
+    CloseButton: {
+      baseStyle: {
+        minW: "$8",
+        minH: "$8",
+      },
+    },
   },
 }
 

@@ -225,7 +225,8 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
         <button
           type="button"
           aria-label="toggle"
-          class="inline-flex size-5 shrink-0 items-center justify-center rounded bg-transparent text-muted-foreground"
+          // 32px to click, laid out as the 20px caret it shows
+          class="-mx-1.5 inline-flex size-8 shrink-0 items-center justify-center rounded bg-transparent text-muted-foreground"
           classList={{ invisible: emptyIconVisible() }}
           onClick={(e) => {
             e.stopPropagation()

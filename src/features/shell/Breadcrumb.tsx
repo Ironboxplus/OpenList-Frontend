@@ -95,7 +95,7 @@ export const Breadcrumb = (props: {
                       <span
                         aria-current={item.current ? "page" : undefined}
                         class={cn(
-                          "flex items-center gap-1.5 px-1.5 py-1",
+                          "flex min-h-8 min-w-8 items-center justify-center gap-1.5 px-1.5 py-1",
                           item.current
                             ? "font-medium text-foreground"
                             : "text-muted-foreground",
@@ -123,7 +123,7 @@ export const Breadcrumb = (props: {
                         class={cn(
                           focusRing,
                           plain,
-                          "flex items-center gap-1.5 rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                          "flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
                         )}
                       >
                         {item.label}

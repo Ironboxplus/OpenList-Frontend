@@ -139,7 +139,8 @@ const CurrentCrumb = (props: { crumb: FileCrumb }) => {
           data-files-crumb-menu
           class={cn(
             focusRing,
-            "flex items-center gap-1 rounded-md bg-transparent text-sm font-medium text-foreground",
+            // 32px tall to click, the crumb's line height to lay out
+            "-my-1.5 flex items-center gap-1 rounded-md bg-transparent py-1.5 text-sm font-medium text-foreground",
           )}
         >
           <CrumbLabel crumb={props.crumb} />
@@ -212,7 +213,7 @@ const PhoneCrumbs = () => {
         onClick={() => setOpen(true)}
         class={cn(
           focusRing,
-          "flex min-w-0 items-center gap-1.5 rounded-md bg-transparent px-1.5 py-1 text-sm font-medium text-foreground",
+          "flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-md bg-transparent px-1.5 py-1 text-sm font-medium text-foreground",
         )}
       >
         <span class="flex min-w-0 items-center gap-1.5 truncate">

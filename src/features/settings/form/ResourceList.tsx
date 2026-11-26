@@ -311,7 +311,8 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
                           <Show when={col.sort} fallback={col.header}>
                             <button
                               type="button"
-                              class="inline-flex items-center gap-1 bg-transparent font-medium text-inherit hover:text-foreground"
+                              // 32px to click, within the 40px header row
+                              class="inline-flex min-h-8 min-w-8 items-center gap-1 bg-transparent font-medium text-inherit hover:text-foreground"
                               onClick={() => toggleSort(col.id)}
                             >
                               {col.header}

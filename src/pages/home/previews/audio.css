@@ -29,6 +29,15 @@
 .aplayer .aplayer-lrc:before {
   background: none;
 }
+/* APlayer's 15px icons get 32px boxes to hit; the padding keeps the drawn
+   icon at 15px and the negative margins keep the row's height. */
+.aplayer .aplayer-info .aplayer-controller .aplayer-time .aplayer-icon {
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  padding: 8.5px;
+  margin: -8.5px 0 -8.5px 0;
+}
 .aplayer .aplayer-info .aplayer-controller .aplayer-time .aplayer-icon path {
   fill: var(--hope-colors-neutral12);
 }
