@@ -30,6 +30,11 @@ on:
         required: false
         type: boolean
         default: true
+      bugs:
+        description: "Run the specs of the four reported shell bugs (fails when one is not fixed)"
+        required: false
+        type: boolean
+        default: true
       audit:
         description: "Run the full-site audit (every route, dialog and preview, 3 widths x 2 themes)"
         required: false
@@ -42,6 +47,7 @@ permissions:
 env:
   COMPARE: ${{ github.event_name != 'workflow_dispatch' || inputs.compare }}
   AUDIT: ${{ github.event_name != 'workflow_dispatch' || inputs.audit }}
+  BUGS: ${{ github.event_name != 'workflow_dispatch' || inputs.bugs }}
 
 jobs:
   shoot:
@@ -66,7 +72,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || inputs.build_frontend
         run: |
           pnpm install --frozen-lockfile
-          pnpm build
+          pnpm build --sourcemap
 
       - name: Sample files
         run: |
@@ -92,7 +98,7 @@ jobs:
       # folders, a folder of 400 files, a media library, one file of every
       # preview type. It is not seen by the Cloudreve comparison.
       - name: Audit sample files
-        if: env.AUDIT == 'true'
+        if: env.AUDIT == 'true' || env.BUGS == 'true'
         run: |
           set -e
           S="$RUNNER_TEMP/samples-audit"
@@ -186,13 +192,18 @@ jobs:
         working-directory: scripts/ui-compare
         run: |
           npm init -y >/dev/null
-          npm install --no-audit --no-fund playwright@1 >/dev/null
+          npm install --no-audit --no-fund playwright@1 source-map@0.7 >/dev/null
           npx playwright install --with-deps chromium >/dev/null
 
       - name: Shoot
         if: env.COMPARE == 'true'
         working-directory: scripts/ui-compare
         run: node shoot.mjs "$RUNNER_TEMP/shots"
+
+      - name: Bug specs
+        if: env.BUGS == 'true'
+        working-directory: scripts/ui-compare
+        run: node bugs.mjs "$RUNNER_TEMP/bugs"
 
       - name: Audit
         if: always() && env.AUDIT == 'true'
@@ -215,6 +226,13 @@ jobs:
           name: ui-compare
           path: ${{ runner.temp }}/shots
           retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        if: always() && env.BUGS == 'true'
+        with:
+          name: ui-bugs
+          path: ${{ runner.temp }}/bugs
+          retention-days: 3
 
       - uses: actions/upload-artifact@v7
         if: always() && env.AUDIT == 'true'

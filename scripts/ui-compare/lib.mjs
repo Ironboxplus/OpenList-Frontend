@@ -128,6 +128,30 @@ export async function seed(dir) {
     )
     await olPost("/api/admin/media/scan/start", { media_type: "video" }, token)
   })
+  // A work whose poster and backdrop live on a host that cannot be reached, as
+  // when a provider's image host is blocked: the header card must stay readable.
+  await step("work with unreachable images", async () => {
+    const p = `${MOUNT}/媒体库/电影甲 (2020)`
+    let found = false
+    for (let i = 0; i < 60 && !found; i++) {
+      found = await olGet(`/api/fs/media/by_path?path=${encodeURIComponent(p)}`, token).then(() => true, () => false)
+      if (!found) await new Promise((r) => setTimeout(r, 1000))
+    }
+    if (!found) throw new Error("the scan did not produce the work")
+    await olPost(
+      "/api/admin/media/curate/set",
+      {
+        path: p,
+        kind: "movie",
+        title: "电影甲",
+        year: 2020,
+        overview: "一部用来检查封面和背景图都加载失败时页头是否仍然可读的示例影片。",
+        cover: "http://127.0.0.1:9/poster.jpg",
+        backdrop: "http://127.0.0.1:9/backdrop.jpg",
+      },
+      token,
+    )
+  })
   await step("shares", async () => {
     // a custom id needs a permission the admin lacks: the server picks the ids
     const open = await createShare(token, [`${MOUNT}/文档`], "")
