@@ -7,8 +7,10 @@ import { ColorSchemeSync } from "~/app/ColorSchemeSync"
 import { globalStyles, theme } from "~/app/theme"
 import { App } from "./App"
 import { installMotionLog } from "./motion"
+import { installReadOnly } from "./readonly"
 
 installMotionLog()
+installReadOnly()
 
 // The app's provider, theme and colour-mode sync (src/app/index.tsx), so the
 // base styles and the light/dark switch are the real ones.

@@ -77,7 +77,7 @@ async function newContext(browser, w, opts = {}) {
   })
   // The token stays in the browser; nothing written out carries it.
   await ctx.addInitScript((token) => {
-    localStorage.setItem("token", token)
+    if (token) localStorage.setItem("token", token)
     window.__moviRemoved = 0
     new MutationObserver((ms) => {
       for (const m of ms)
@@ -85,7 +85,7 @@ async function newContext(browser, w, opts = {}) {
           if (n.nodeType === 1 && (n.matches?.("movi-player") || n.querySelector?.("movi-player")))
             window.__moviRemoved++
     }).observe(document, { childList: true, subtree: true })
-  }, TOKEN)
+  }, opts.noToken ? "" : TOKEN)
   return ctx
 }
 
@@ -377,6 +377,40 @@ async function behaviour(browser) {
   await page.waitForSelector("[data-testid=dock][data-open=true]")
   await downloads(page, "the player toolbar", () => page.locator("[data-testid=dock-download]").click())
   await ctx.close()
+
+  // sign-in for reviewing against one's own server, and the read-only rule
+  const ctx4 = await newContext(browser, w, { noToken: true })
+  const p4 = await ctx4.newPage()
+  const writes = []
+  p4.on("request", (q) => {
+    const u = new URL(q.url()).pathname
+    const read = /^\/api\/(fs\/(list|get|video_play|video_subtitle)$|fs\/media\/|auth\/login\/hash$|auth\/logout$|me$|public\/)/
+    if (u.startsWith("/api/") && !read.test(u)) writes.push(u)
+  })
+  await p4.goto(url(DIR))
+  check("no token: the sign-in form shows", await waitAttr(p4, "[data-testid=login]"))
+  await p4.screenshot({ path: path.join(OUT, "shots", "1440-light-00-login.png") })
+  // typed into the page only; this context records nothing after this point
+  await p4.locator("input[name=username]").fill("admin")
+  await p4.locator("input[name=password]").fill(process.env.OL_PASS ?? "")
+  await p4.locator("[data-testid=login] button[type=submit]").click()
+  check("signing in (POST /auth/login/hash, hashed) lists the folder in the address bar", await waitAttr(p4, "[data-testid=row]"))
+  await p4.goto(url("/"))
+  await p4.waitForSelector("[data-testid=row]")
+  check("the root is listed at /", (await p4.locator("[data-testid=row][data-path='/审计']").count()) === 1)
+  await openList(p4)
+  await row(p4, TEXT).click({ button: "right" })
+  await p4.getByRole("menuitem", { name: "分享" }).click()
+  await p4.waitForSelector("[data-testid=share-dialog]")
+  await p4.locator("[data-testid=share-create]").click()
+  check("read-only: creating a share only says so", await waitAttr(p4, "[data-testid=share-note]"))
+  await p4.keyboard.press("Escape")
+  await settle(p4)
+  await p4.locator("[data-testid=logout]").click()
+  const out = await waitAttr(p4, "[data-testid=login]")
+  check("signing out drops the token and shows the form", out && !(await p4.evaluate(() => localStorage.getItem("token"))))
+  check("read-only: no API call outside the read list was sent", writes.length === 0, writes.slice(0, 5))
+  await ctx4.close()
 
   // refresh and deep links: the folder first, then the file
   const ctx2 = await newContext(browser, w)

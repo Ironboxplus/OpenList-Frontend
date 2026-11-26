@@ -219,3 +219,38 @@ jobs:
           name: viewer-proto
           path: ${{ runner.temp }}/proto
           retention-days: 7
+
+      # The built prototype and its server, to look at against one's own
+      # OpenList: node proto-serve.mjs dist 4173 http://127.0.0.1:5244
+      - name: Reviewable site
+        id: site
+        if: ${{ !cancelled() && hashFiles('design/viewer-proto/dist/index.html') != '' }}
+        run: |
+          S="$RUNNER_TEMP/site"
+          mkdir -p "$S"
+          cp -r design/viewer-proto/dist "$S/dist"
+          find "$S/dist" -name '*.map' -delete
+          cp scripts/ui-compare/proto-serve.mjs "$S/"
+          cat > "$S/README.txt" <<'EOF'
+          查看器原型（只读）
+
+          需要 Node 18 或更新的版本。在这个目录里运行：
+
+            node proto-serve.mjs dist 4173 http://127.0.0.1:5244
+
+          最后一个参数是 OpenList 的地址。然后在浏览器打开
+          http://127.0.0.1:4173/ 或 http://127.0.0.1:4173/<目录路径>，
+          用自己的 OpenList 账号登录。
+
+          原型只读：除列目录、读文件信息、播放、媒体库读取、登录和退出外，
+          其它接口请求都在页面里拦下，不会发出去。
+          如果 OpenList 设置了“站点地址”(site_url)，文件链接会指向那个地址。
+          EOF
+          du -sh "$S"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() && steps.site.outcome == 'success' }}
+        with:
+          name: viewer-proto-site
+          path: ${{ runner.temp }}/site
+          retention-days: 7

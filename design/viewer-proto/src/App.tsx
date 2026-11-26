@@ -3,15 +3,16 @@
 // down to what the viewers touch (no side nav, no toolbars).
 import { For, Show, createEffect, createSignal, onMount } from "solid-js"
 import { useColorMode } from "@hope-ui/solid"
-import { TbChevronRight, TbMoon, TbSun } from "solid-icons/tb"
+import { TbChevronRight, TbLogout, TbMoon, TbSun } from "solid-icons/tb"
 import { DocViewer } from "./DocViewer"
 import { Dock } from "./Dock"
 import { FileList } from "./FileList"
 import { ImageViewer } from "./ImageViewer"
+import { Login } from "./Login"
 import { ShareDialog } from "./ShareDialog"
 import { UnknownDialog } from "./UnknownDialog"
 import { reducedMotion } from "./motion"
-import { boot, dir, goDir, loadError } from "./state"
+import { boot, dir, goDir, loadError, needLogin, signOut } from "./state"
 import { IconButton, isPhone } from "./ui"
 
 const TopBar = () => {
@@ -68,6 +69,15 @@ const TopBar = () => {
       >
         {colorMode() === "dark" ? <TbSun /> : <TbMoon />}
       </IconButton>
+      <Show when={!needLogin()}>
+        <IconButton
+          label="退出登录"
+          testid="logout"
+          onClick={() => void signOut()}
+        >
+          <TbLogout />
+        </IconButton>
+      </Show>
     </header>
   )
 }
@@ -85,7 +95,12 @@ export const App = () => {
       <TopBar />
       {/* #root is a centred flex column (src/app/theme.ts globalStyles) */}
       <main class="w-full px-0 pb-24 pt-(--proto-bar) sm:px-3">
+        <Show when={needLogin()}>
+          <Login />
+        </Show>
+        {/* kept mounted while signed out: the one player of the page stays */}
         <div
+          classList={{ hidden: needLogin() }}
           class="mx-auto max-w-[1400px] overflow-clip sm:mt-3 sm:rounded-xl"
           style={{
             background: "var(--files-card-bg)",

@@ -9,6 +9,7 @@
 // The page state always follows the URL: every change goes through apply(),
 // whether it came from a click, Back/Forward or the first load.
 import { batch, createSignal } from "solid-js"
+import { changeToken, r } from "~/utils"
 import {
   loadDir,
   normalize,
@@ -19,9 +20,9 @@ import {
   type Entry,
 } from "./files"
 
-export const HOME = "/审计/查看器"
-
 const [dir, setDir] = createSignal<Dir>()
+/** No token, or the server turned it down (401): the sign-in form shows. */
+const [needLogin, setNeedLogin] = createSignal(!localStorage.getItem("token"))
 const [loadError, setLoadError] = createSignal("")
 /** The video in the docked player; it stays while images open over it. */
 const [dockPath, setDockPath] = createSignal<string | null>(null)
@@ -33,6 +34,7 @@ const [selected, setSelected] = createSignal<ReadonlySet<string>>(new Set())
 const [shareFor, setShareFor] = createSignal<Entry[] | null>(null)
 
 export {
+  needLogin,
   dir,
   loadError,
   dockPath,
@@ -79,7 +81,8 @@ const showDir = async (path: string) => {
       setLoadError("")
     })
   } catch (e) {
-    setLoadError(String((e as Error)?.message ?? e))
+    if ((e as { code?: number }).code === 401) setNeedLogin(true)
+    else setLoadError(String((e as Error)?.message ?? e))
   }
 }
 
@@ -136,12 +139,27 @@ export const boot = async () => {
       if (y !== undefined) window.scrollTo(0, y)
     })
   })
-  let path = currentPath()
-  if (path === "/") {
-    path = HOME
-    history.replaceState({ proto: true } satisfies PageState, "", href(path))
-  }
-  await apply(path)
+  if (!needLogin()) await apply(currentPath())
+}
+
+/** After the sign-in form: the page the address bar names. */
+export const signedIn = () => {
+  setNeedLogin(false)
+  void apply(currentPath())
+}
+
+/** Signs out as the app does (GET /auth/logout, then the token is dropped). */
+export const signOut = async () => {
+  await r.get("/auth/logout")
+  changeToken()
+  batch(() => {
+    setDockPath(null)
+    setOverlayPath(null)
+    setDialogPath(null)
+    setShareFor(null)
+    setDir(undefined)
+    setNeedLogin(true)
+  })
 }
 
 /** A folder: pushed like any navigation. */

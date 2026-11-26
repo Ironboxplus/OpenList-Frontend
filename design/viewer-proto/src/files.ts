@@ -62,7 +62,9 @@ export const normalize = (path: string) => {
 export const loadDir = async (path: string): Promise<Dir> => {
   const resp = await fsList(path)
   if (resp.code !== 200)
-    throw new Error(`${path}: ${resp.code} ${resp.message}`)
+    throw Object.assign(new Error(`${path}: ${resp.code} ${resp.message}`), {
+      code: resp.code,
+    })
   const entries = (resp.data.content ?? [])
     .map((o) => ({ ...o, path: pathJoin(path, o.name), kind: kindOf(o) }))
     .sort((a, b) =>

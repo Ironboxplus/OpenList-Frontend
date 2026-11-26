@@ -29,6 +29,10 @@ const isolation = {
   "Cross-Origin-Embedder-Policy": "credentialless",
 }
 
+// The prototype reaches the backend only through these: the API, and the file
+// links it builds or gets back (raw_url and thumbnails are /d or /p links).
+// Every other path is the page, so any folder can be typed into the address
+// bar, except one under a top-level folder named "api", "d" or "p".
 const proxied = (url) => /^\/(api|d|p)\//.test(url)
 
 http
