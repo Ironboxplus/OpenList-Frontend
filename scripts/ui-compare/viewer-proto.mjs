@@ -398,6 +398,29 @@ async function behaviour(browser) {
   await p4.goto(url("/"))
   await p4.waitForSelector("[data-testid=row]")
   check("the root is listed at /", (await p4.locator("[data-testid=row][data-path='/审计']").count()) === 1)
+  // into a folder from the list, and one deeper, then Back: each time the list
+  // is the folder's and the address bar says so (a deep link never did this)
+  const pathIs = async (p) => decodeURI(new URL(p4.url()).pathname) === p
+  await p4.locator("[data-testid=row][data-path='/审计']").click({ timeout: 5000 }).catch(() => {})
+  check(
+    "a folder clicked in the list opens it (/ → /审计)",
+    (await waitAttr(p4, "[data-testid=row][data-path='/审计/媒体库']")) &&
+      (await p4.locator("[data-testid=row][data-path='/审计']").count()) === 0 &&
+      (await pathIs("/审计")),
+  )
+  await p4.locator("[data-testid=row][data-path='/审计/媒体库']").click({ timeout: 5000 }).catch(() => {})
+  check(
+    "and one deeper (/审计 → /审计/媒体库)",
+    (await waitAttr(p4, "[data-testid=row][data-path='/审计/媒体库/剧集乙 (2021)']")) &&
+      (await pathIs("/审计/媒体库")),
+  )
+  await p4.goBack()
+  check(
+    "Back returns to the parent folder's list",
+    (await waitAttr(p4, "[data-testid=row][data-path='/审计/查看器']")) &&
+      (await p4.locator("[data-testid=row][data-path='/审计/媒体库/剧集乙 (2021)']").count()) === 0 &&
+      (await pathIs("/审计")),
+  )
   await openList(p4)
   await row(p4, TEXT).click({ button: "right" })
   await p4.getByRole("menuitem", { name: "分享" }).click()
