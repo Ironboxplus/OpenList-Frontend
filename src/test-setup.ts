@@ -20,6 +20,20 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   }
 }
 
+// jsdom runs no CSS animations but reports `animationName` as "" instead of
+// "none", so solid-presence (Kobalte's menus and popovers) waits for an
+// animationend that never comes and keeps closed content mounted. Report what
+// a browser reports for an element without an animation.
+Object.defineProperty(CSSStyleDeclaration.prototype, "animationName", {
+  configurable: true,
+  get(this: CSSStyleDeclaration) {
+    return this.getPropertyValue("animation-name") || "none"
+  },
+  set(this: CSSStyleDeclaration, v: string) {
+    this.setProperty("animation-name", v)
+  },
+})
+
 // jsdom: not implemented, and scroll-lock helpers call it on cleanup.
 window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
 
