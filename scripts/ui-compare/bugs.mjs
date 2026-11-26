@@ -1003,6 +1003,74 @@ await dialogSelect("dialog-select-offline-download", {}, async (page) => {
   return page.locator('[role="menuitem"][data-action="offline_download"]')
 })
 
+// §3 (PLAN_FE_UNIFY_OVERLAYS_1126): the tallest dialogs keep their footer
+// within reach on a phone and a tablet: scrolled into view inside the dialog,
+// the last button is on screen and is what a click there hits.
+const tallDialog = (name, opts, open) =>
+  spec(name, opts, async (env) => {
+    const { page } = env
+    fire(await open(page))
+    await expectDialog(env, name)
+    const dialog = page.locator('[role="dialog"]').last()
+    await page.waitForTimeout(500)
+    const last = dialog.locator("button:visible").last()
+    await last.scrollIntoViewIfNeeded()
+    const m = await last.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      const d = el.closest('[role="dialog"]').getBoundingClientRect()
+      return { text: el.textContent.trim(), top: Math.round(r.top), bottom: Math.round(r.bottom), vh: innerHeight, dialog: [Math.round(d.top), Math.round(d.bottom)], hits: !!hit && (hit === el || el.contains(hit)) }
+    })
+    log(`${name}`, JSON.stringify(m))
+    if (m.top < 0 || m.bottom > m.vh) throw new Error(`${name}: the footer's "${m.text}" is off screen (${m.top}..${m.bottom} of ${m.vh})`)
+    if (!m.hits) throw new Error(`${name}: a click on the footer's "${m.text}" lands on something else`)
+  })
+for (const size of [PHONE, { width: 820, height: 1180 }]) {
+  await tallDialog("tall-dialog-offline-download", size, async (page) => {
+    await go(page, `${MOUNT}/文档`)
+    await page.locator("[data-files-new]").click()
+    return page.locator('[role="menuitem"][data-action="offline_download"]')
+  })
+  await tallDialog("tall-dialog-batch-rename", size, async (page) => {
+    await go(page, `${MOUNT}/文档`)
+    await page.locator("[data-files-more]").click()
+    return page.getByRole("menuitem", { name: tr("home.toolbar.batch_rename") }).first()
+  })
+  await tallDialog("tall-dialog-torrent-pieces", size, async (page) => {
+    await go(page, `${MOUNT}/预览/种子.torrent`, 2500)
+    return page.getByRole("button", { name: tr("home.transfer_seed.piece_hashes") }).first()
+  })
+}
+
+// §3: a hope-API Tooltip shows beside its child after a hover, and adds no
+// element around the child (the image preview's toolbar buttons).
+await spec("tooltip-beside-child", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/预览/图片.jpg`, 2500)
+  const button = page.getByRole("button", { name: "Zoom in", exact: true }).first()
+  await button.waitFor()
+  const parentBefore = await button.evaluate((el) => {
+    el.parentElement.setAttribute("data-tip-parent", "")
+    return el.parentElement.children.length
+  })
+  await button.hover()
+  const tip = page.locator('[role="tooltip"]').first()
+  await tip.waitFor({ state: "visible", timeout: 3000 }).catch(() => {
+    throw new Error("no tooltip within 3 s of hovering the zoom-in button")
+  })
+  const m = await button.evaluate((el) => {
+    const t = document.querySelector('[role="tooltip"]')
+    const a = el.getBoundingClientRect()
+    const b = t.getBoundingClientRect()
+    const gap = Math.max(b.top - a.bottom, a.top - b.bottom, b.left - a.right, a.left - b.right)
+    return { text: t.textContent.trim(), gap: Math.round(gap), sameParent: el.parentElement.hasAttribute("data-tip-parent"), siblings: el.parentElement.children.length, describedBy: el.getAttribute("aria-describedby") === t.id || !!t.closest(`#${CSS.escape(el.getAttribute("aria-describedby") || "x")}`) }
+  })
+  log("tooltip", JSON.stringify({ ...m, parentBefore }))
+  if (!m.text.includes("Zoom in")) throw new Error(`the tooltip reads "${m.text}"`)
+  if (m.gap > 24) throw new Error(`the tooltip is ${m.gap}px away from its button`)
+  if (!m.sameParent || m.siblings !== parentBefore) throw new Error(`the button's parent changed on hover (${parentBefore} -> ${m.siblings} children)`)
+})
+
 // E1: the edges on the first load, in the mode the user had, equal what they
 // are after toggling the theme twice (user: "列表边缘还是切换亮暗色之后才会恢复正常").
 // The cause (7f3bd3c): hope rewrote the files card's class attribute when its

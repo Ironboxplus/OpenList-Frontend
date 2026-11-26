@@ -94,6 +94,21 @@ cp "$S/预览/说明.md" "$S/文档/说明.md"
 cp "$S/预览/配置.json" "$S/文档/配置.json"
 cp "$S/预览/报告.pdf" "$S/文档/报告.pdf"
 cp "$S/预览/压缩包.zip" "$S/文档/压缩包.zip"
+# a torrent of one 1 MiB file in 64 pieces: its piece-hash dialog is a tall one
+python3 - "$S/预览/种子.torrent" <<'PY'
+import hashlib, sys
+data = bytes(1024 * 1024)
+plen = 16384
+pieces = b"".join(hashlib.sha1(data[i:i + plen]).digest() for i in range(0, len(data), plen))
+def be(x):
+  if isinstance(x, int): return b"i%de" % x
+  if isinstance(x, str): x = x.encode()
+  if isinstance(x, bytes): return b"%d:" % len(x) + x
+  if isinstance(x, list): return b"l" + b"".join(be(v) for v in x) + b"e"
+  return b"d" + b"".join(be(k) + be(x[k]) for k in sorted(x)) + b"e"
+info = {"name": "样本.bin", "length": len(data), "piece length": plen, "pieces": pieces}
+open(sys.argv[1], "wb").write(be({"announce": "http://tracker.invalid/announce", "info": info}))
+PY
 printf '# 审计目录\n\n这里放了各种形状的文件。\n' > "$S/README.md"
 echo "make-samples: media libraries"
 # a media library: works are the folders directly under it
