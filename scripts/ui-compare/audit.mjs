@@ -139,7 +139,14 @@ function helpers(env, page) {
         await h.act("context menu", () => h.item(target).click({ button: "right" }))
         await h.act(`context ${name}`, () => page.locator(`[role="menu"] [data-action="${name}"]`).click())
       } else {
-        await h.act(name, () => page.locator(`[data-selection-bar] [data-action="${name}"]`).click())
+        // a bar too narrow for every action moves the rest to the top of its
+        // More menu (M1, 820px): pick it there
+        const inline = page.locator(`[data-selection-bar] [data-action="${name}"]`)
+        if (await inline.isVisible()) await h.act(name, () => inline.click())
+        else {
+          await h.act("batch more", () => page.locator('[data-selection-bar] [data-action="batch-more"]').click())
+          await h.act(name, () => page.locator(`[role="menu"] [data-action="${name}"]`).first().click())
+        }
       }
     },
     async moreAction(key) {
