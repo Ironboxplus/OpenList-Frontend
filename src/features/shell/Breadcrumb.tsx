@@ -1,5 +1,14 @@
 import { TbChevronRight } from "solid-icons/tb"
-import { createEffect, For, type JSX, on, Show } from "solid-js"
+import {
+  createEffect,
+  createSignal,
+  For,
+  type JSX,
+  on,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js"
 import { focusRing } from "~/components/ui/focus"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
@@ -27,22 +36,48 @@ export const Breadcrumb = (props: {
   attrs?: Record<string, string>
 }) => {
   let box: HTMLElement | undefined
+  // Which ends have crumbs scrolled out of sight. Those ends fade out, so the
+  // part of a crumb cut by the edge (the "s" of "Settings") is not read as a
+  // word.
+  const [cut, setCut] = createSignal({ start: false, end: false })
+  const measure = () => {
+    if (!box) return
+    setCut({
+      start: box.scrollLeft > 1,
+      end: box.scrollLeft + box.clientWidth < box.scrollWidth - 1,
+    })
+  }
   createEffect(
     on(
       () => props.items.map((i) => i.href).join("\n"),
       () => {
         queueMicrotask(() => {
           if (box) box.scrollLeft = box.scrollWidth
+          measure()
         })
       },
     ),
   )
+  onMount(() => {
+    if (!box || typeof ResizeObserver === "undefined") return
+    const ro = new ResizeObserver(measure)
+    ro.observe(box)
+    onCleanup(() => ro.disconnect())
+  })
+  const FADE = "1.5rem"
+  const mask = () => {
+    const { start, end } = cut()
+    if (!start && !end) return undefined
+    return `linear-gradient(to right, ${start ? "transparent" : "#000"}, #000 ${FADE}, #000 calc(100% - ${FADE}), ${end ? "transparent" : "#000"})`
+  }
   return (
     <nav
       ref={box}
       aria-label="breadcrumb"
       {...props.attrs}
       class="min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      style={{ "mask-image": mask(), "-webkit-mask-image": mask() }}
+      onScroll={measure}
     >
       <ol class="m-0 flex list-none items-center gap-0.5 p-0 text-sm">
         <For each={props.items}>

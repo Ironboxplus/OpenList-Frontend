@@ -1,10 +1,12 @@
 import { TbArrowDown, TbArrowUp, TbDots, TbRefresh } from "solid-icons/tb"
 import {
+  createEffect,
   createMemo,
   createSignal,
   For,
   type JSX,
   Match,
+  onCleanup,
   Show,
   Switch,
 } from "solid-js"
@@ -88,6 +90,11 @@ export interface ResourceListProps<T> {
 
 /** Headers stay under the top bar while the page scrolls. */
 const STICKY = "sticky top-[var(--shell-top,0px)] z-[1] bg-card"
+/**
+ * No column narrower than this: squeezed into a tablet's card, an id column
+ * broke into one character per line.
+ */
+const MIN_COL = "min-w-24"
 
 const RowMenu = <T,>(props: { row: T; actions: RowAction<T>[] }) => {
   const t = useT()
@@ -163,6 +170,24 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
     )
 
   const actionsOf = (row: T) => props.actions?.(row) ?? []
+
+  // The table scrolls sideways inside its card once its columns (each at
+  // least MIN_COL wide) no longer fit, as on a tablet. Only then: a scroll
+  // container would pin the sticky headers to itself instead of the page.
+  const [tableCard, setTableCard] = createSignal<HTMLDivElement>()
+  const [table, setTable] = createSignal<HTMLTableElement>()
+  const [tableScrolls, setTableScrolls] = createSignal(false)
+  createEffect(() => {
+    const card = tableCard()
+    const tbl = table()
+    if (!card || !tbl || typeof ResizeObserver === "undefined") return
+    const ro = new ResizeObserver(() =>
+      setTableScrolls(tbl.offsetWidth > card.clientWidth + 1),
+    )
+    ro.observe(card)
+    ro.observe(tbl)
+    onCleanup(() => ro.disconnect())
+  })
 
   return (
     <div class={cn("flex w-full flex-col gap-3", props.class)}>
@@ -262,14 +287,19 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
             </div>
           </Match>
           <Match when>
-            <Card data-layout="table" class="overflow-clip">
-              <Table container={false}>
+            <Card
+              ref={setTableCard}
+              data-layout="table"
+              data-scrolls={tableScrolls() ? "" : undefined}
+              class={tableScrolls() ? "overflow-x-auto" : "overflow-clip"}
+            >
+              <Table ref={setTable} container={false}>
                 <TableHeader>
                   <TableRow class="hover:bg-transparent">
                     <For each={props.columns}>
                       {(col) => (
                         <TableHead
-                          class={cn(STICKY, col.class)}
+                          class={cn(STICKY, MIN_COL, col.class)}
                           aria-sort={
                             sort()?.id === col.id
                               ? sort()!.dir === 1
