@@ -3,6 +3,7 @@ name: test-ours
 on:
   push:
     branches:
+      - main
       - "feat/**"
   # by hand too, e.g. after GitHub re-enables Actions on this fork and a push
   # made meanwhile never ran
