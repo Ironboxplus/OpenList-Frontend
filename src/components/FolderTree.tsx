@@ -227,8 +227,10 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
         <button
           type="button"
           aria-label="toggle"
-          // 32px to click, laid out as the 20px caret it shows
-          class="-mx-1.5 inline-flex size-8 shrink-0 items-center justify-center rounded bg-transparent text-muted-foreground"
+          // 32px to click, laid out as the 20px caret it shows. The box starts
+          // at the row's left edge (its 4px padding less 4px), not 2px past it
+          // where the tree's scroller clips it; pr-1 keeps the chevron in place.
+          class="-ml-1 -mr-2 inline-flex size-8 shrink-0 items-center justify-center rounded bg-transparent pr-1 text-muted-foreground"
           classList={{ invisible: emptyIconVisible() }}
           onClick={(e) => {
             e.stopPropagation()
