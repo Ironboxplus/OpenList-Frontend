@@ -89,7 +89,10 @@ const showDir = async (path: string) => {
 /** Puts the page in the state the URL names. The directory is always first. */
 const apply = async (path: string) => {
   const d = dir()
-  const inDir = d && (path === d.path || parentOf(path) === d.path)
+  const child = d && parentOf(path) === d.path ? entryAt(path) : undefined
+  // a file of this folder opens in place; anything else, a subfolder included, is listed
+  const inDir =
+    d && (path === d.path || (child !== undefined && child.kind !== "folder"))
   if (!inDir) {
     // a folder, or a file of another folder (a deep link, Back across folders)
     const obj = path === "/" ? null : await statPath(path).catch(() => null)
