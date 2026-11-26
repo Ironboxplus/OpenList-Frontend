@@ -195,10 +195,32 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
   }
   const depth = () => props.depth ?? 0
   const isRoot = () => props.path === "/"
+  let rowEl: HTMLDivElement | undefined
+  let nameEl: HTMLSpanElement | undefined
+  // Nav look: the current folder's row comes into view by itself, both ways.
+  // Its name is wider than the nav, so the name's start is put 4px inside the
+  // tree box's left edge (not just the row, which would show only the caret
+  // and the icon), and the row within the box's visible height.
+  createEffect(() => {
+    if (variant !== "nav" || !active()) return
+    requestAnimationFrame(() => {
+      const box = rowEl?.closest<HTMLElement>(".folder-tree-box")
+      if (!box || !rowEl || !nameEl) return
+      const b = box.getBoundingClientRect()
+      const name = nameEl.getBoundingClientRect()
+      const row = rowEl.getBoundingClientRect()
+      box.scrollLeft += name.left - (b.left + box.clientLeft) - 4
+      const top = b.top + box.clientTop
+      const bottom = top + box.clientHeight
+      if (row.top < top) box.scrollTop += row.top - top
+      else if (row.bottom > bottom) box.scrollTop += row.bottom - bottom
+    })
+  })
   // Rows of the nav look: the caret toggles, the rest of the row opens the folder.
   const navNode = () => (
     <div role="treeitem" aria-expanded={isOpen()} aria-selected={active()}>
       <div
+        ref={rowEl}
         class="flex h-8 cursor-pointer items-center gap-1 rounded-lg pr-2 text-sm transition-colors hover:bg-accent"
         classList={{ "bg-primary/20 font-medium": active() }}
         style={{ "padding-left": `${depth() * 16 + 4}px` }}
@@ -232,7 +254,7 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
         >
           <TbHome class="size-4 shrink-0 text-muted-foreground" />
         </Show>
-        <span class="ml-1 whitespace-nowrap">
+        <span ref={nameEl} class="ml-1 whitespace-nowrap">
           {isRoot() ? (rootLabel ?? "root") : pathBase(props.path)}
         </span>
       </div>
