@@ -28,13 +28,16 @@ describe("GridCover", () => {
     expect(getByTestId("icon")).toBeTruthy()
   })
 
-  it("falls back to the icon when the image fails to load", () => {
+  it("draws the icon in the same 2:3 frame when the image fails to load", () => {
+    // a failed poster made its card shorter than the rest of the row (audit m3)
     const { container, getByTestId } = render(() => (
       <GridCover src="/broken.jpg" fallback={icon} />
     ))
     fireEvent.error(container.querySelector("img")!)
     expect(container.querySelector("img")).toBeNull()
-    expect(getByTestId("icon")).toBeTruthy()
+    const frame = container.querySelector("[data-grid-cover]")!
+    expect(frame.className).toContain("aspect-[2/3]")
+    expect(frame.contains(getByTestId("icon"))).toBe(true)
   })
 
   it("an empty src counts as no cover", () => {
