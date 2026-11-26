@@ -1,6 +1,19 @@
 import { globalCss, HopeThemeConfig } from "@hope-ui/solid"
 import { hoverColor } from "~/utils"
 
+/**
+ * The overlays still on hope (Select lists outside dialogs, toasts) sit above
+ * the kit's layer, z-[1500] for every dialog, sheet, menu and popover in
+ * components/ui, so one opened from a dialog is not drawn under it
+ * (PLAN_FE_UNIFY_OVERLAYS_1126 §2.2 F). hope's defaults are 1400 / 1500.
+ */
+export const zIndices = {
+  dropdown: 1550,
+  popover: 1550,
+  tooltip: 1600,
+  notification: 1800,
+}
+
 const theme: HopeThemeConfig = {
   initialColorMode: "system",
   // Cloudreve's canvas and primary (see tokens.css), so the pages that are
@@ -11,6 +24,7 @@ const theme: HopeThemeConfig = {
       info9: "#1976d2",
       info10: "#1565c0",
     },
+    zIndices,
   },
   darkTheme: {
     colors: {
@@ -18,6 +32,7 @@ const theme: HopeThemeConfig = {
       info9: "#1976d2",
       info10: "#1e88e5",
     },
+    zIndices,
   },
   components: {
     Button: {

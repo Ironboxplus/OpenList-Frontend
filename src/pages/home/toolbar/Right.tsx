@@ -32,7 +32,8 @@ export const Right = () => {
       pos="fixed"
       right={`calc(var(--shell-content-right, 0px) + ${margin()})`}
       bottom={`calc(var(--shell-gap, 0px) + ${margin()})`}
-      zIndex="calc($modal - 1)"
+      // under every dialog (the kit's z-[1500]), above the sticky bars
+      zIndex="1299"
     >
       <Show
         when={isOpen()}
