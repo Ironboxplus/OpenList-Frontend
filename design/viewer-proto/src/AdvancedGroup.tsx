@@ -23,7 +23,7 @@ export const AdvancedGroup = (props: {
     <Collapsible.Trigger
       data-testid={props.testid}
       class={cn(
-        "flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left outline-none hover:bg-accent/60 focus-visible:ring-[1.5px] focus-visible:ring-ring",
+        "flex w-full items-center gap-2 rounded-md border-0 bg-transparent px-1 py-1.5 text-left outline-none hover:bg-accent/60 focus-visible:ring-[1.5px] focus-visible:ring-ring",
         props.heading
           ? "text-sm font-semibold"
           : "text-sm text-muted-foreground",

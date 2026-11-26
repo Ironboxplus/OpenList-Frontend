@@ -231,6 +231,12 @@ export const DocViewer = () => {
           <DialogPrimitive.Content
             ref={panel}
             data-testid="doc-viewer"
+            // the window takes the focus, not its first icon button (whose
+            // tooltip would open and take the first Escape)
+            onOpenAutoFocus={(e: Event) => {
+              e.preventDefault()
+              panel?.focus()
+            }}
             class={
               isPhone()
                 ? "flex h-full w-full flex-col bg-background text-foreground outline-none"

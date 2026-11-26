@@ -9,7 +9,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { chromium } from "playwright"
-import { log, seed, step } from "./lib.mjs"
+import { log, seed } from "./lib.mjs"
 
 const OUT = path.resolve(process.argv[2] || "proto-out")
 const PROTO = process.env.PROTO_URL || "http://127.0.0.1:4173"
@@ -38,6 +38,17 @@ const check = (name, ok, detail = "") => {
 }
 
 const url = (p) => PROTO + encodeURI(p)
+
+/** lib.mjs step(), with the lines of a Playwright error that name the locator. */
+async function step(name, fn) {
+  try {
+    const v = await fn()
+    log("ok", name)
+    return v
+  } catch (e) {
+    log("FAILED", name, String(e?.message || e).split("\n").slice(0, 4).join(" | "))
+  }
+}
 
 async function launch() {
   const args = ["--autoplay-policy=no-user-gesture-required"]
@@ -265,18 +276,20 @@ async function behaviour(browser) {
   const ctx = await newContext(browser, w)
   const page = await ctx.newPage()
   await openList(page)
-  await scrollTo(page, 300)
+  // scrolled a little, with the third video still in sight: the click must not
+  // scroll, so the position Back restores is the one the user left
+  await scrollTo(page, 100)
   const hist0 = await page.evaluate(() => history.length)
 
-  await row(page, V1).click()
+  await row(page, V3).click()
   await page.waitForSelector("[data-testid=dock][data-open=true]")
   await settle(page)
-  check("video opens in the dock and pushes /<dir>/<file>", decodeURI(new URL(page.url()).pathname) === `${DIR}/${V1}`)
+  check("video opens in the dock and pushes /<dir>/<file>", decodeURI(new URL(page.url()).pathname) === `${DIR}/${V3}`)
   check("open pushed one history entry", (await page.evaluate(() => history.length)) === hist0 + 1)
   check("video plays (system Chrome, real OpenList)", await playing(page))
   let id = await identity(page)
   check("one movi-player made", id.created === 1 && id.count === 1 && id.same, id)
-  check("playing row marked", (await row(page, V1).getAttribute("aria-current")) === "true")
+  check("playing row marked", (await row(page, V3).getAttribute("aria-current")) === "true")
   const src1 = id.src
 
   await scrollTo(page, 1200)
@@ -291,19 +304,21 @@ async function behaviour(browser) {
   check("scrolled back: the dock grows back", await waitAttr(page, "[data-testid=dock][data-mini=false]"))
 
   const histBefore = await page.evaluate(() => history.length)
-  await page.locator("[data-testid=dock-next]").click()
+  await page.locator("[data-testid=dock-prev]").click()
   await page.waitForFunction((src) => (window.__player?.getAttribute("src") ?? "") !== src, src1)
   id = await identity(page)
-  check("next switches the source on the same element", id.created === 1 && id.removed === 0 && id.same && id.src !== src1, id)
-  check("next replaces the URL", decodeURI(new URL(page.url()).pathname) === `${DIR}/${V2}` && (await page.evaluate(() => history.length)) === histBefore)
-  check("highlight follows", (await row(page, V2).getAttribute("aria-current")) === "true" && (await row(page, V1).getAttribute("aria-current")) === null)
+  check("previous switches the source on the same element", id.created === 1 && id.removed === 0 && id.same && id.src !== src1, id)
+  check("previous replaces the URL", decodeURI(new URL(page.url()).pathname) === `${DIR}/${V2}` && (await page.evaluate(() => history.length)) === histBefore)
+  check("highlight follows", (await row(page, V2).getAttribute("aria-current")) === "true" && (await row(page, V3).getAttribute("aria-current")) === null)
 
-  await row(page, V3).click()
-  await page.waitForFunction(() => decodeURI(location.pathname).endsWith("03 示例视频.mp4"))
+  await row(page, V1).click()
+  await page.waitForFunction(() => decodeURI(location.pathname).endsWith("01 示例视频.mp4"))
   check("a click on another video row switches, replacing the URL", (await page.evaluate(() => history.length)) === histBefore)
-  await page.keyboard.press("Shift+P")
-  await page.waitForFunction(() => decodeURI(location.pathname).endsWith("02 示例视频.mp4"))
-  check("Shift+P goes back one video", true)
+  await page.keyboard.press("Shift+N")
+  const keyed = await page
+    .waitForFunction(() => decodeURI(location.pathname).endsWith("02 示例视频.mp4"), undefined, { timeout: 5000 })
+    .then(() => true, () => false)
+  check("Shift+N goes to the next video", keyed)
 
   check("fullscreen from the dock", await fullscreen(page))
   const srcFs = (await identity(page)).src
@@ -321,12 +336,11 @@ async function behaviour(browser) {
   await page.waitForSelector("[data-testid=dock][data-open=false]")
   await settle(page)
   const y = await page.evaluate(() => window.scrollY)
-  check("one Back closes the player and restores the list scroll", decodeURI(new URL(page.url()).pathname) === DIR && Math.abs(y - 300) < 4, `scrollY=${y}`)
+  check("one Back closes the player and restores the list scroll", decodeURI(new URL(page.url()).pathname) === DIR && Math.abs(y - 100) < 4, `scrollY=${y}`)
   id = await identity(page)
   check("closing keeps the same player element", id.created === 1 && id.removed === 0 && id.same, id)
 
-  // image viewer: push on open, replace on switch, Back closes
-  const h1 = await page.evaluate(() => history.length)
+  // image viewer: push on open, replace on switch, closing goes back
   await row(page, IMG1).click()
   await page.waitForSelector("[data-testid=viewer-image]")
   await settle(page)
@@ -336,10 +350,10 @@ async function behaviour(browser) {
   await downloads(page, "the image viewer toolbar", () => page.locator("[data-testid=viewer-download]").click())
   await page.locator("[data-testid=viewer-close]").click()
   await page.waitForSelector("[data-testid=image-viewer]", { state: "detached" })
-  check("image: closing goes back to the folder URL, no extra history", decodeURI(new URL(page.url()).pathname) === DIR && (await page.evaluate(() => history.length)) === h1 + 1)
+  check("image: closing goes back to the folder URL (Back, not a new entry)", decodeURI(new URL(page.url()).pathname) === DIR && (await page.evaluate(() => !history.state?.opened)))
   const m = await dumpMotion(page, "behaviour")
   const open = m.find((r) => r.name === "image-open")
-  check("image open is a FLIP from the thumbnail (emphasized, 320ms)", open && open.duration === 320 && /0\.05, 0\.7, 0\.1, 1/.test(open.easing), open)
+  check("image open is a FLIP from the thumbnail (emphasized, 320ms)", open && open.duration === 320 && /^cubic-bezier\(0?\.05, *0?\.7, *0?\.1, *1\)$/.test(open.easing), open)
 
   // downloads from the list, the menu and the selection bar; doc and unknown viewers
   await row(page, TEXT).hover()

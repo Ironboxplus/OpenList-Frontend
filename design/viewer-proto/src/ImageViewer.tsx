@@ -45,6 +45,7 @@ export const ImageViewer = () => {
   let stage: HTMLDivElement | undefined
   let scrim: HTMLDivElement | undefined
   let chrome: HTMLDivElement | undefined
+  let content: HTMLDivElement | undefined
   let current: { img: HTMLImageElement; box: Box } | undefined
   /** A swipe's distance, so the switch it caused starts where the finger left it. */
   let swipeFrom = 0
@@ -318,13 +319,21 @@ export const ImageViewer = () => {
       <DialogPrimitive.Portal>
         <div
           ref={scrim}
-          class="fixed inset-0 z-[1500] bg-black/90"
+          class="fixed inset-0 z-[1500] bg-black/95"
           style={{ opacity: 0 }}
         />
         <DialogPrimitive.Content
+          ref={content}
           class="fixed inset-0 z-[1500] outline-none"
           data-testid="image-viewer"
           onKeyDown={onKey}
+          // the viewer itself takes the focus, not its first button: a
+          // focused icon button shows its tooltip, and Escape would close
+          // that instead of the viewer
+          onOpenAutoFocus={(e: Event) => {
+            e.preventDefault()
+            content?.focus()
+          }}
         >
           <DialogPrimitive.Title class="sr-only">
             {shown()?.name}

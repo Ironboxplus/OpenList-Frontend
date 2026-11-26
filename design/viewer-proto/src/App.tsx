@@ -44,7 +44,7 @@ const TopBar = () => {
               </Show>
               <button
                 type="button"
-                class="shrink-0 truncate rounded px-1.5 py-1 hover:bg-accent"
+                class="shrink-0 truncate rounded border-0 bg-transparent px-1.5 py-1 hover:bg-accent"
                 aria-current={i() === crumbs().length - 1 ? "page" : undefined}
                 onClick={() => goDir(c.path)}
               >
@@ -83,7 +83,8 @@ export const App = () => {
   return (
     <>
       <TopBar />
-      <main class="px-0 pb-24 pt-(--proto-bar) sm:px-3">
+      {/* #root is a centred flex column (src/app/theme.ts globalStyles) */}
+      <main class="w-full px-0 pb-24 pt-(--proto-bar) sm:px-3">
         <div
           class="mx-auto max-w-[1400px] overflow-clip sm:mt-3 sm:rounded-xl"
           style={{

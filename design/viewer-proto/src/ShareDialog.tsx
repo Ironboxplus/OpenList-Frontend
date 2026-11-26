@@ -304,7 +304,7 @@ export const ShareDialog = () => {
                     "h-8 rounded-full border px-3 text-sm transition-colors",
                     form.expires === o.v
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "hover:bg-accent",
+                      : "bg-transparent hover:bg-accent",
                   )}
                   onClick={() => setForm("expires", o.v)}
                 >

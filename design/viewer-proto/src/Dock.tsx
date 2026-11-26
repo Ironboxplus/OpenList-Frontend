@@ -514,8 +514,10 @@ export const Dock = () => {
                   type="button"
                   aria-current={current() ? "true" : undefined}
                   class={cn(
-                    "flex shrink-0 flex-col items-start rounded-md border px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent",
-                    current() && "border-primary bg-primary/10 text-primary",
+                    "flex shrink-0 flex-col items-start rounded-md border px-3 py-1.5 text-left text-sm transition-colors",
+                    current()
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "bg-transparent hover:bg-accent",
                   )}
                   onClick={() => target() && openEntry(target()!, "replace")}
                 >

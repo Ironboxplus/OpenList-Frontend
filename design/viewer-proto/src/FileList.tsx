@@ -123,7 +123,7 @@ export const FileList = () => {
                       isSel() ? `取消选择 ${entry.name}` : `选择 ${entry.name}`
                     }
                     aria-pressed={isSel()}
-                    class="relative flex size-10 items-center justify-center rounded-md outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring"
+                    class="relative flex size-10 items-center justify-center rounded-md border-0 bg-transparent p-0 outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring"
                     onClick={(e) => {
                       e.stopPropagation()
                       toggleSelected(entry.path)
