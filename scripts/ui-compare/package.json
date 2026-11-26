@@ -1,0 +1,9 @@
+{
+  "name": "ui-compare",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.65.1",
+    "source-map": "0.7.6"
+  }
+}

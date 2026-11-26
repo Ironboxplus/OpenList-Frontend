@@ -26,6 +26,17 @@ jobs:
         with:
           run_install: false
 
+      - name: pnpm store path
+        id: store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: pnpm store cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.store.outputs.path }}
+          key: ui-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ui-pnpm-store-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
