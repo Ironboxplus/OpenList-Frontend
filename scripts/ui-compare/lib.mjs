@@ -121,11 +121,13 @@ export async function seed(dir) {
       )
     }
     // path_merge makes the folders under the library its works, as markLibrary does
-    await olPost(
-      "/api/admin/media/scan_paths/create",
-      { media_type: "video", name: "媒体库", path: `${MOUNT}/媒体库`, path_merge: true, enable_scrape: false },
-      token,
-    )
+    for (const name of ["媒体库", "大媒体库"]) {
+      await olPost(
+        "/api/admin/media/scan_paths/create",
+        { media_type: "video", name, path: `${MOUNT}/${name}`, path_merge: true, enable_scrape: false },
+        token,
+      )
+    }
     await olPost("/api/admin/media/scan/start", { media_type: "video" }, token)
   })
   // A work whose poster and backdrop live on a host that cannot be reached, as
@@ -151,6 +153,15 @@ export async function seed(dir) {
       },
       token,
     )
+  })
+  await step("large library scanned", async () => {
+    const p = encodeURIComponent(`${MOUNT}/大媒体库`)
+    let total = 0
+    for (let i = 0; i < 90 && total < 69; i++) {
+      total = await olGet(`/api/fs/media/list?media_type=video&path=${p}&page=1&page_size=200`, token).then((d) => d.total ?? 0, () => 0)
+      if (total < 69) await new Promise((r) => setTimeout(r, 1000))
+    }
+    if (total < 69) throw new Error(`the scan listed ${total} works, not 69`)
   })
   await step("shares", async () => {
     // a custom id needs a permission the admin lacks: the server picks the ids
@@ -185,6 +196,49 @@ export async function seed(dir) {
     fs.writeFileSync(path.join(dir, "seed.json"), JSON.stringify({ ...out, token: undefined }, null, 1))
   }
   return out
+}
+
+// ---------- texts: the UI language follows the browser, so match English and Chinese ----------
+const SRC = path.resolve("../../src")
+const lang = (code, file) => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(SRC, "lang", code, `${file}.json`), "utf8"))
+  } catch {
+    return {}
+  }
+}
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+/** "home.toolbar.share" -> /Share|分享/ */
+export const tr = (key) => {
+  const [file, ...rest] = key.split(".")
+  const words = ["en", "zh-CN"]
+    .map((c) => rest.reduce((o, k) => o?.[k], lang(c, file)))
+    .filter((v) => typeof v === "string" && v)
+  return new RegExp(words.length ? words.map(esc).join("|") : "^$")
+}
+
+/** A row of the file list by its name. */
+export const row = (page, name) => page.locator(".viselect-item", { hasText: name }).first()
+
+/** Selects by the real input: Ctrl+click on desktop (a plain click opens the row), a long press then taps on a phone. */
+export async function selectRows(page, names, phone) {
+  let first = true
+  for (const name of [].concat(names)) {
+    if (phone) {
+      const box = await row(page, name).boundingBox()
+      if (!box) throw new Error(`no row ${name}`)
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      if (first) {
+        await page.mouse.move(x, y)
+        await page.mouse.down()
+        await page.waitForTimeout(800)
+        await page.mouse.up()
+      } else await page.mouse.click(x, y)
+    } else await row(page, name).click({ modifiers: ["Control"] })
+    first = false
+  }
+  await page.waitForTimeout(500)
 }
 
 /** Round trip of the page: a hung renderer does not answer within `ms`. */

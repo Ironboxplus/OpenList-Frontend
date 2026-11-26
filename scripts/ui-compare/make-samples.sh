@@ -82,4 +82,11 @@ for w in "电影甲 (2020)" "电影丙 (2019)" "电影丁 (2018)" "电影戊 (20
 done
 mkdir -p "$S/媒体库/剧集乙 (2021)/Season 1"
 for e in 1 2 3; do mk "$S/媒体库/剧集乙 (2021)/Season 1/剧集乙 S01E0$e.mp4" $((500+e*30)); done
+# a library the size of txcloud's 云下载: 78 folders, 69 of them works (one
+# video each, the same small file), 9 without a video
+for i in $(seq 1 69); do
+  w="影片$i ($((1950 + i)))"
+  mkdir -p "$S/大媒体库/$w"; cp "$S/媒体库/电影甲 (2020)/电影甲 (2020).mp4" "$S/大媒体库/$w/$w.mp4"
+done
+for i in $(seq 1 9); do mkdir -p "$S/大媒体库/资料$i"; echo x > "$S/大媒体库/资料$i/说明.txt"; done
 sudo chmod -R a+rwX "$S"

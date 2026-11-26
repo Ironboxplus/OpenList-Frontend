@@ -9,7 +9,7 @@
 import { chromium } from "playwright"
 import fs from "node:fs"
 import path from "node:path"
-import { alive, log, MOUNT, OL, seed } from "./lib.mjs"
+import { alive, log, MOUNT, OL, row, seed, selectRows, tr } from "./lib.mjs"
 import { layoutChecks } from "./checks.mjs"
 
 const out = process.argv[2]
@@ -23,24 +23,6 @@ const WIDTHS = [
   [1440, 900],
 ]
 const THEMES = ["light", "dark"]
-
-// ---------- texts: the UI language follows the browser, so match English and Chinese ----------
-const lang = (code, file) => {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(SRC, "lang", code, `${file}.json`), "utf8"))
-  } catch {
-    return {}
-  }
-}
-const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-/** "home.toolbar.share" -> /Share|分享/ */
-const tr = (key) => {
-  const [file, ...rest] = key.split(".")
-  const words = ["en", "zh-CN"]
-    .map((c) => rest.reduce((o, k) => o?.[k], lang(c, file)))
-    .filter((v) => typeof v === "string" && v)
-  return new RegExp(words.length ? words.map(esc).join("|") : "^$")
-}
 
 // ---------- the routes, from the source ----------
 const read = (f) => fs.readFileSync(path.join(SRC, f), "utf8")
@@ -122,7 +104,7 @@ function helpers(env, page) {
       await page.goto(OL + encodeURI(p), { waitUntil: "domcontentloaded" })
       await h.settle(extra)
     },
-    item: (name) => page.locator(".viselect-item", { hasText: name }).first(),
+    item: (name) => row(page, name),
     dialog: () => page.locator('[role="dialog"], [role="alertdialog"]').first(),
     async dialogOpen(label) {
       await h.dialog().waitFor({ state: "visible", timeout: 4000 }).catch(() => {
@@ -135,26 +117,7 @@ function helpers(env, page) {
       await h.act("pick layout", () => page.getByRole("menuitem", { name: tr(`home.layouts.${kind}`) }).first().click())
       await h.settle(900)
     },
-    /** Selects by the real input: Ctrl+click on desktop (a plain click opens the row), a long press then taps on a phone. */
-    async select(names) {
-      let first = true
-      for (const name of [].concat(names)) {
-        if (phone) {
-          const box = await h.item(name).boundingBox()
-          if (!box) throw new Error(`no row ${name}`)
-          const x = box.x + box.width / 2
-          const y = box.y + box.height / 2
-          if (first) {
-            await page.mouse.move(x, y)
-            await page.mouse.down()
-            await page.waitForTimeout(800)
-            await page.mouse.up()
-          } else await page.mouse.click(x, y)
-        } else await h.item(name).click({ modifiers: ["Control"] })
-        first = false
-      }
-      await page.waitForTimeout(500)
-    },
+    select: (names) => selectRows(page, names, phone),
     async newAction(name) {
       if (phone) {
         await h.act("fab", () => page.locator("[data-files-fab]").click())

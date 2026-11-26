@@ -8,7 +8,7 @@ import { chromium } from "playwright"
 import { SourceMapConsumer } from "source-map"
 import fs from "node:fs"
 import path from "node:path"
-import { alive, log, MOUNT, OL, seed } from "./lib.mjs"
+import { alive, log, MOUNT, OL, row, seed, selectRows, tr } from "./lib.mjs"
 
 const out = process.argv[2]
 fs.mkdirSync(out, { recursive: true })
@@ -120,32 +120,79 @@ async function expectDialog(env, label) {
 }
 /** A click whose outcome is read from the page, not from the click: it may never return. */
 const fire = (locator) => void locator.click().catch(() => {})
-const item = (page, name) => page.locator(".viselect-item", { hasText: name }).first()
+const item = row
+const PHONE = { width: 390, height: 844 }
 
-// ---- 1. a dialog opened from a menu must not freeze the page
-await spec("share-from-context-menu", {}, async (env) => {
-  await go(env.page, MOUNT)
-  await item(env.page, "文档").click({ button: "right" })
-  fire(env.page.locator('[role="menu"] [data-action="share"]'))
-  await expectDialog(env, "share a folder from the context menu")
+// ---- 1. a dialog opened from a menu must not freeze the page: every menu
+// that opens dialogs (right-click menu and its submenu, New, the top bar's
+// More, the selection bar's More, the phone's More), entries picked by mouse
+/** Opens a menu with `open`, picks the entry `open` returns, expects the dialog. */
+const menuDialog = (name, opts, open) =>
+  spec(name, opts, async (env) => {
+    fire(await open(env.page))
+    await expectDialog(env, name)
+  })
+const ctxEntry = async (page, dir, target, action) => {
+  await go(page, dir)
+  await item(page, target).click({ button: "right" })
+  return page.locator(`[role="menu"] [data-action="${action}"]`)
+}
+await menuDialog("share-from-context-menu", {}, (p) => ctxEntry(p, MOUNT, "文档", "share"))
+for (const action of ["rename", "copy", "move", "delete"]) {
+  await menuDialog(`${action}-from-context-menu`, {}, (p) => ctxEntry(p, `${MOUNT}/文档`, "笔记", action))
+}
+// an entry of a submenu: More actions > Decompress
+await menuDialog("decompress-from-context-submenu", {}, async (page) => {
+  await go(page, `${MOUNT}/文档`)
+  await item(page, "压缩包.zip").click({ button: "right" })
+  await page.locator('[role="menu"]').getByRole("menuitem", { name: tr("files.more_actions") }).first().hover()
+  const sub = page.locator('[role="menu"]').nth(1)
+  await sub.waitFor()
+  return sub.getByRole("menuitem", { name: tr("home.toolbar.decompress") }).first()
 })
-await spec("rename-from-context-menu", {}, async (env) => {
-  await go(env.page, `${MOUNT}/文档`)
-  await item(env.page, "笔记").click({ button: "right" })
-  fire(env.page.locator('[role="menu"] [data-action="rename"]'))
-  await expectDialog(env, "rename a file from the context menu")
+for (const action of ["mkdir", "new_file", "offline_download"]) {
+  await menuDialog(`${action}-from-new-menu`, {}, async (page) => {
+    await go(page, `${MOUNT}/文档`)
+    await page.locator("[data-files-new]").click()
+    return page.locator(`[role="menuitem"][data-action="${action}"]`)
+  })
+}
+// the upload panel opens its file picker as it mounts: the deferred action
+// must still carry the click's user activation, or the browser drops the picker
+await spec("upload-from-new-menu", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  const chooser = page.waitForEvent("filechooser", { timeout: 3000 }).then(() => true, () => false)
+  await page.locator("[data-files-new]").click()
+  fire(page.locator('[role="menuitem"][data-action="upload"]'))
+  await expectDialog(env, "upload from the New menu")
+  if (!(await chooser)) throw new Error("upload from the New menu: the file picker did not open")
 })
-await spec("copy-from-context-menu", {}, async (env) => {
-  await go(env.page, `${MOUNT}/文档`)
-  await item(env.page, "笔记").click({ button: "right" })
-  fire(env.page.locator('[role="menu"] [data-action="copy"]'))
-  await expectDialog(env, "copy a file from the context menu")
+for (const key of ["local_settings", "recursive_move", "remove_empty_directory"]) {
+  await menuDialog(`${key}-from-more-menu`, {}, async (page) => {
+    await go(page, `${MOUNT}/文档`)
+    await page.locator("[data-files-more]").click()
+    return page.getByRole("menuitem", { name: tr(`home.toolbar.${key}`) }).first()
+  })
+}
+await menuDialog("decompress-from-selection-more", {}, async (page) => {
+  await go(page, `${MOUNT}/文档`)
+  await selectRows(page, "压缩包.zip", false)
+  await page.locator('[data-action="batch-more"]').click()
+  return page.getByRole("menuitem", { name: tr("home.toolbar.decompress") }).first()
 })
-await spec("mkdir-from-new-menu", {}, async (env) => {
-  await go(env.page, `${MOUNT}/文档`)
-  await env.page.locator("[data-files-new]").click()
-  fire(env.page.locator('[role="menuitem"][data-action="mkdir"]'))
-  await expectDialog(env, "new folder from the New menu")
+for (const key of ["rename", "share"]) {
+  await menuDialog(`${key}-from-phone-more`, PHONE, async (page) => {
+    await go(page, `${MOUNT}/文档`)
+    await selectRows(page, "笔记", true)
+    await page.locator('[data-batch="more"]').click()
+    return page.getByRole("menuitem", { name: tr(`home.toolbar.${key}`) }).first()
+  })
+}
+await menuDialog("local_settings-from-phone-top-more", PHONE, async (page) => {
+  await go(page, `${MOUNT}/文档`)
+  await page.locator("[data-files-more]").click()
+  return page.getByRole("menuitem", { name: tr("home.toolbar.local_settings") }).first()
 })
 
 // ---- 2. the side tree scrolls sideways: every level is reachable and readable
@@ -177,6 +224,39 @@ for (const theme of ["light", "dark"]) {
     await page.waitForTimeout(300)
     if (report.truncated) throw new Error(`the deepest level is cut with an ellipsis: "${report.text}"`)
     if (!report.inside) throw new Error(`the deepest level cannot be scrolled into view (${report.label})`)
+  })
+}
+// the same tree in the copy / move dialog (FolderTree without the nav look):
+// opened down to the deepest level, it scrolls inside the dialog, never widens it
+for (const action of ["copy", "move"]) {
+  await spec(`${action}-dialog-deep-tree`, {}, async (env) => {
+    const { page } = env
+    await go(page, `${MOUNT}/文档`)
+    await selectRows(page, "笔记", false)
+    await page.locator(`[data-selection-bar] [data-action="${action}"]`).click()
+    const dialog = page.locator('[role="dialog"]').first()
+    await dialog.waitFor({ state: "visible", timeout: 4000 })
+    for (const name of [MOUNT.slice(1), "深层", ...DEEP]) {
+      const label = dialog.locator(".folder-tree-box").getByText(name, { exact: true })
+      await label.waitFor({ timeout: 6000 })
+      await label.click()
+      await page.waitForTimeout(250)
+    }
+    const m = await dialog.evaluate((d) => {
+      const box = d.querySelector(".folder-tree-box")
+      const r = d.getBoundingClientRect()
+      const b = box.getBoundingClientRect()
+      return {
+        dialog: `${Math.round(r.left)}..${Math.round(r.right)}`,
+        box: `${Math.round(b.left)}..${Math.round(b.right)}`,
+        widened: r.left < -1 || r.right > innerWidth + 1 || d.scrollWidth > d.clientWidth + 1,
+        outside: b.left < r.left - 1 || b.right > r.right + 1,
+        scrolls: box.scrollWidth > box.clientWidth,
+      }
+    })
+    log(`${action} dialog`, JSON.stringify(m))
+    if (m.widened) throw new Error(`the ${action} dialog is wider than the window (${m.dialog} in 0..1440)`)
+    if (m.outside) throw new Error(`the ${action} dialog's tree sticks out of it (${m.box} in ${m.dialog})`)
   })
 }
 
@@ -245,6 +325,32 @@ for (const view of ["library", "work"]) {
     })
     if (m.gap > 90) throw new Error(`${m.gap}px between the breadcrumb bar and the first row`)
     if (m.inset > 60) throw new Error(`${m.inset}px between the content card and the first row`)
+  })
+}
+// txcloud's /storage/115/云下载 (plan §0, 3b): a library root that is no work
+// itself (by_path 404), 78 folders of which 69 are identified works, none with
+// a poster. The conditions are checked first, then the page.
+for (const width of [1440, 390]) {
+  await spec("library-root-without-posters", { width, height: width === 390 ? 844 : 900 }, async (env) => {
+    const { page } = env
+    const lib = `${MOUNT}/大媒体库`
+    const api = (p) => fetch(OL + p, { headers: { Authorization: token } }).then((r) => r.json())
+    const self = await api(`/api/fs/media/by_path?path=${encodeURIComponent(lib)}`)
+    const list = await api(`/api/fs/media/list?media_type=video&path=${encodeURIComponent(lib)}&page=1&page_size=200`)
+    const works = list.data?.content ?? []
+    const cond = { byPath: self.code, works: works.length, withPoster: works.filter((w) => w.poster_url).length }
+    log("library root conditions", JSON.stringify(cond))
+    if (cond.byPath !== 404 || cond.works < 69 || cond.withPoster) throw new Error(`the seeded library does not match txcloud's: ${JSON.stringify(cond)}`)
+    await go(page, lib, 2500)
+    const m = await page.evaluate(() => {
+      const bar = document.querySelector("[data-files-toolbar]").getBoundingClientRect()
+      const cards = [...document.querySelectorAll(".viselect-item")]
+      const first = cards[0]?.getBoundingClientRect()
+      return { cards: cards.length, gap: first ? Math.round(first.top - bar.bottom) : null }
+    })
+    log("library root", JSON.stringify(m))
+    if (!m.cards) throw new Error("the library root shows no entries")
+    if (m.gap > 90) throw new Error(`${m.gap}px between the breadcrumb bar and the first entry (${m.cards} entries)`)
   })
 }
 
