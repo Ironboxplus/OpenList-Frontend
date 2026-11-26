@@ -40,14 +40,31 @@ const press = (el: HTMLElement, key: string) => {
 const witness = (seen: { menuOpen: boolean; active: Element | null }[]) => () =>
   seen.push({ menuOpen: menus().length > 0, active: document.activeElement })
 
+/** An action that opens a dialog and puts focus in it, as the app's dialogs do. */
+const openDialog =
+  (seen: { menuOpen: boolean; active: Element | null }[]) => () => {
+    witness(seen)()
+    const dialog = document.createElement("div")
+    dialog.setAttribute("role", "dialog")
+    const input = document.createElement("input")
+    dialog.append(input)
+    document.body.append(dialog)
+    input.focus()
+  }
+/** Where focus is once the menu has finished closing. */
+const settledFocus = async () => {
+  await new Promise((r) => setTimeout(r, 50))
+  return document.activeElement
+}
+
 describe("an item that closes its menu", () => {
-  it("acts after the menu has closed, with focus left for what it opens", async () => {
+  it("acts after the menu has closed, and focus stays in the dialog it opens", async () => {
     const seen: { menuOpen: boolean; active: Element | null }[] = []
     render(() => (
       <DropdownMenu>
         <DropdownMenuTrigger>open</DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuItem onSelect={witness(seen)}>go</DropdownMenuItem>
+          <DropdownMenuItem onSelect={openDialog(seen)}>go</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ))
@@ -57,8 +74,13 @@ describe("an item that closes its menu", () => {
     expect(seen).toEqual([])
     await waitFor(() => expect(seen).toHaveLength(1))
     expect(seen[0].menuOpen).toBe(false)
-    // the menu did not hand focus back to its trigger: the dialog takes it
-    expect(seen[0].active).not.toBe(trigger)
+    // Kobalte's dropdown gives its trigger focus first (VPR4IPXB.js 38-45, see
+    // menu-after-close.ts); what counts is where focus ends: in the dialog
+    const active = await settledFocus()
+    expect(active?.closest("[role=dialog]")).not.toBeNull()
+    expect(active).not.toBe(trigger)
+    expect(active).not.toBe(document.body)
+    document.querySelector("[role=dialog]")?.remove()
   })
 
   it("in a submenu of a context menu acts once, after the whole menu has closed", async () => {
@@ -71,7 +93,9 @@ describe("an item that closes its menu", () => {
           <ContextMenuSub>
             <ContextMenuSubTrigger>more</ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuItem onSelect={witness(seen)}>deep</ContextMenuItem>
+              <ContextMenuItem onSelect={openDialog(seen)}>
+                deep
+              </ContextMenuItem>
             </ContextMenuSubContent>
           </ContextMenuSub>
         </ContextMenuContent>
@@ -90,8 +114,10 @@ describe("an item that closes its menu", () => {
     expect(seen).toEqual([])
     await waitFor(() => expect(seen).toHaveLength(1))
     expect(seen[0].menuOpen).toBe(false)
-    await new Promise((r) => setTimeout(r, 50))
+    const active = await settledFocus()
     expect(seen).toHaveLength(1)
+    expect(active?.closest("[role=dialog]")).not.toBeNull()
+    document.querySelector("[role=dialog]")?.remove()
   })
 
   it("belongs to its own menu: another menu closing does not run it", async () => {

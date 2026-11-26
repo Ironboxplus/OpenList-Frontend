@@ -7,8 +7,15 @@
 // each other's focusin handlers until the stack overflows and the page freezes.
 // Radix and Kobalte recommend the same order for "open a dialog from a menu":
 // remember the choice on select, act in the content's `onCloseAutoFocus` and
-// prevent its default there, so focus goes to the dialog and not back to the
-// trigger.
+// prevent its default there. The menu's trap is gone by then, so the dialog's
+// own trap takes focus without a fight.
+//
+// Deviation from Radix (2026-11-26): Kobalte's DropdownMenu.Content focuses
+// its trigger in onCloseAutoFocus whether or not the default was prevented
+// (@kobalte/core 0.13.14, dist/chunk/VPR4IPXB.js 38-45; Radix skips it). So
+// after a dropdown item the trigger has focus for a moment before the dialog
+// takes it; the context menu (RVJUZJKY.js 42-48) and the focus scope honour
+// the prevented default and leave focus to the dialog.
 //
 // The choice belongs to one root content (items in its submenus included,
 // since choosing one closes the whole menu): each content holds at most one
