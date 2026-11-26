@@ -13,7 +13,15 @@ import {
   type FieldSpec,
 } from "~/features/settings/form"
 import { useFetch, useRouter, useT } from "~/hooks"
-import { Meta, PEmptyResp, PPageResp, PResp, Type, User } from "~/types"
+import {
+  Meta,
+  metaFromApi,
+  PEmptyResp,
+  PPageResp,
+  PResp,
+  Type,
+  User,
+} from "~/types"
 import { handleResp, notify, r } from "~/utils"
 
 type SubFlag =
@@ -76,7 +84,7 @@ const AddOrEdit = () => {
       await loadMeta(),
       (data) => {
         setError(undefined)
-        setMeta(data)
+        setMeta(metaFromApi(data))
         setBaseline(JSON.stringify(meta))
       },
       setError,

@@ -79,6 +79,39 @@ describe("meta editor payloads", () => {
   })
 })
 
+describe("meta editor input", () => {
+  it("edit: a meta nobody was picked for (the API sends null user lists) opens and saves arrays", async () => {
+    // Go encodes an empty []uint as null: the audit's seeded meta crashed the
+    // page with "Cannot read properties of null (reading 'map')"
+    mockApi({
+      "GET /admin/meta/get": () => ({
+        ...structuredClone(META),
+        read_users: null,
+        write_users: null,
+      }),
+      "GET /admin/user/list": () => ({
+        content: [structuredClone(USER)],
+        total: 1,
+      }),
+      "POST /admin/meta/update": () => null,
+    })
+    router.params = { id: "3" }
+    renderPage(() => <AddOrEdit />)
+    await settle()
+    expect((document.getElementById("path") as HTMLInputElement).value).toBe(
+      "/secret",
+    )
+    setValue(document.getElementById("password")!, "newpw")
+    await clickButton("Save")
+    const body = lastCall("POST", "/admin/meta/update")!.body as Record<
+      string,
+      unknown
+    >
+    expect(body.read_users).toEqual([])
+    expect(body.write_users).toEqual([])
+  })
+})
+
 describe("meta list", () => {
   it("edit navigates; delete asks first and then posts the id", async () => {
     renderPage(() => <Metas />)
