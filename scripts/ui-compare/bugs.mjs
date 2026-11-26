@@ -22,6 +22,19 @@ async function spec(name, opts, fn) {
   const id = `${name}.${width}.${theme}`
   const ctx = await browser.newContext({ viewport: { width, height }, locale: "zh-CN", colorScheme: theme })
   await ctx.addInitScript((t) => localStorage.setItem("token", t), token)
+  // every focus() call is counted with its target: two focus handlers pulling
+  // against each other show up as thousands of calls on two elements
+  await ctx.addInitScript(() => {
+    const calls = (window.__focusCalls = { n: 0, by: {} })
+    const orig = HTMLElement.prototype.focus
+    HTMLElement.prototype.focus = function (...a) {
+      if (calls.n++ < 100000) {
+        const k = `${this.tagName.toLowerCase()}[${this.getAttribute("role") || ""}]${this.id ? "#" + this.id.replace(/d+/g, "N") : ""}`
+        calls.by[k] = (calls.by[k] || 0) + 1
+      }
+      return orig.apply(this, a)
+    }
+  })
   const page = await ctx.newPage()
   page.setDefaultTimeout(8000)
   const errors = []
@@ -62,6 +75,10 @@ async function whereIs(cdp, scripts) {
   cdp.send("Debugger.pause").catch(() => {})
   for (let i = 0; i < 50 && !frames; i++) await sleep(100)
   if (!frames) return "the debugger could not pause the page"
+  const calls = await cdp
+    .send("Debugger.evaluateOnCallFrame", { callFrameId: frames[0].callFrameId, expression: "JSON.stringify(window.__focusCalls)" })
+    .then((r) => r.result.value, () => "unavailable")
+  log("focus calls at the freeze", calls)
   const maps = new Map()
   const lines = []
   for (const f of frames.slice(0, 40)) {
@@ -84,6 +101,10 @@ async function whereIs(cdp, scripts) {
 /** The dialog the action opened: visible within 2 s while the page keeps answering. */
 async function expectDialog(env, label) {
   const { page, errors } = env
+  const focus = async () =>
+    JSON.stringify(
+      await Promise.race([page.evaluate(() => window.__focusCalls), new Promise((r) => setTimeout(() => r("unavailable: page is frozen"), 1500))]),
+    )
   const up = await page
     .locator('[role="dialog"], [role="alertdialog"]')
     .first()
@@ -92,6 +113,7 @@ async function expectDialog(env, label) {
   if (!(await alive(page))) {
     throw new Error(`${label}: the page stopped answering. Stopped in:\n${await whereIs(env.cdp, env.scripts)}`)
   }
+  log("focus calls", label, await focus())
   if (!up) throw new Error(`${label}: no dialog appeared within 2 s`)
   const overflow = errors.filter((e) => /call stack/i.test(e))
   if (overflow.length) throw new Error(`${label}: ${overflow.length}x "${overflow[0]}"`)
