@@ -28,8 +28,10 @@ async function spec(name, opts, fn) {
   page.on("pageerror", (e) => errors.push(String(e?.message || e).split("\n")[0]))
   // armed before anything runs: a hung page cannot be attached to afterwards
   const cdp = await ctx.newCDPSession(page)
+  const scripts = new Map()
+  cdp.on("Debugger.scriptParsed", (e) => scripts.set(e.scriptId, e.url))
   await cdp.send("Debugger.enable")
-  const env = { page, ctx, cdp, errors, id }
+  const env = { page, ctx, cdp, scripts, errors, id }
   let message = ""
   try {
     await fn(env)
@@ -54,7 +56,7 @@ const go = async (page, p, wait = 900) => {
 }
 
 // ---- where a hung page is: pause it through CDP and read the frames
-async function whereIs(cdp) {
+async function whereIs(cdp, scripts) {
   let frames
   cdp.on("Debugger.paused", (e) => (frames = e.callFrames))
   cdp.send("Debugger.pause").catch(() => {})
@@ -63,7 +65,8 @@ async function whereIs(cdp) {
   const maps = new Map()
   const lines = []
   for (const f of frames.slice(0, 40)) {
-    const { url, lineNumber, columnNumber } = f.location ? { url: f.url, ...f.location } : f
+    const { lineNumber, columnNumber } = f.location
+    const url = scripts.get(f.location.scriptId) ?? ""
     let where = `${url.split("/").pop()}:${lineNumber + 1}:${columnNumber}`
     if (url.startsWith(OL)) {
       if (!maps.has(url)) {
@@ -87,7 +90,7 @@ async function expectDialog(env, label) {
     .waitFor({ state: "visible", timeout: 2000 })
     .then(() => true, () => false)
   if (!(await alive(page))) {
-    throw new Error(`${label}: the page stopped answering. Stopped in:\n${await whereIs(env.cdp)}`)
+    throw new Error(`${label}: the page stopped answering. Stopped in:\n${await whereIs(env.cdp, env.scripts)}`)
   }
   if (!up) throw new Error(`${label}: no dialog appeared within 2 s`)
   const overflow = errors.filter((e) => /call stack/i.test(e))
