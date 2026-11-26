@@ -332,6 +332,183 @@ await spec("nav-tree-last-row-reachable", {}, async (env) => {
   log("nav tree last row", JSON.stringify(r))
   if (!r.ok) throw new Error(`the last of ${r.rows} tree rows ("${r.text}") cannot be scrolled into view: ${r.why}`)
 })
+// ---- §2.6 of the plan: the desktop side nav is dragged wider by a handle on
+// its right edge (a WAI-ARIA window splitter), 220 up to half the window
+const HANDLE = '[role="separator"][aria-controls="shell-side-nav"]'
+const SHELL_LEFT = 12
+const navHandle = async (page) => {
+  const h = page.locator(HANDLE)
+  if (!(await h.count())) throw new Error("the side nav has no resize handle")
+  return h
+}
+const navGeom = (page) =>
+  page.evaluate((sel) => {
+    // by id: the phone's bottom tabs are a nav "main" too
+    const nav = document.getElementById("shell-side-nav")
+    const card = document.querySelector("[data-shell-content]").getBoundingClientRect()
+    const h = document.querySelector(sel)
+    return {
+      nav: nav && Math.round(nav.getBoundingClientRect().width),
+      card: Math.round(card.left),
+      cardWidth: Math.round(card.width),
+      handle: !!h,
+      now: h && Number(h.getAttribute("aria-valuenow")),
+      max: h && Number(h.getAttribute("aria-valuemax")),
+      stored: localStorage.getItem("shell-nav-width"),
+    }
+  }, HANDLE)
+// press on the handle's middle and move the pointer to x
+const dragTo = async (page, handle, x) => {
+  const b = await handle.boundingBox()
+  const y = b.y + b.height / 2
+  await page.mouse.move(b.x + b.width / 2, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y, { steps: 8 })
+  await page.mouse.up()
+  await page.waitForTimeout(400)
+}
+const expectWidth = (g, w, what) => {
+  if (Math.abs(g.nav - w) > 1 || g.now !== w || Math.abs(g.card - (SHELL_LEFT + w + 12)) > 1)
+    throw new Error(`${what}: nav ${g.nav}px, handle says ${g.now}, content card at ${g.card}; expected ${w}, ${w}, ${SHELL_LEFT + w + 12}`)
+}
+// the deepest name against the tree box, at the default sideways scroll
+const deepestName = (page) =>
+  page.locator('nav[aria-label="main"] [role="treeitem"][aria-selected="true"] > div:first-child').first().evaluate((row) => {
+    const box = row.closest(".folder-tree-box")
+    const b = box.getBoundingClientRect()
+    const l = b.left + box.clientLeft
+    const rr = l + box.clientWidth
+    const r = row.querySelector(":scope > span:last-of-type").getBoundingClientRect()
+    return {
+      scrollLeft: box.scrollLeft,
+      shown: Math.round(Math.min(r.right, rr) - Math.max(r.left, l)),
+      whole: r.left >= l - 1 && r.right <= rr + 1,
+      at: `${Math.round(r.left)}..${Math.round(r.right)} in ${Math.round(l)}..${Math.round(rr)}`,
+    }
+  })
+// 1. dragged to 480 the nav, the content card and the visible part of the
+// deepest name follow by 260px; at the widest (720 = half of 1440) the whole
+// name shows; dragged far left it stops at 220
+await spec("nav-resize-drag", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/深层/${DEEP.join("/")}`, 1500)
+  const h = await navHandle(page)
+  const before = await deepestName(page)
+  await dragTo(page, h, SHELL_LEFT + 480)
+  const g = await navGeom(page)
+  const at480 = await deepestName(page)
+  log("nav resize drag to 480", JSON.stringify({ g, before, at480 }))
+  expectWidth(g, 480, "dragged to 480")
+  if (g.stored !== "480") throw new Error(`the width is not remembered: stored ${g.stored}`)
+  if (at480.shown < before.shown + 258) throw new Error(`the deepest name shows ${at480.shown}px at 480, ${before.shown}px at 220 (${at480.at})`)
+  await dragTo(page, h, 1400)
+  const gMax = await navGeom(page)
+  const atMax = await deepestName(page)
+  log("nav resize drag far right", JSON.stringify({ gMax, atMax }))
+  expectWidth(gMax, 720, "dragged past the widest")
+  if (atMax.scrollLeft !== 0 || !atMax.whole) throw new Error(`at the widest the deepest name is not whole (${atMax.at}, scrollLeft ${atMax.scrollLeft})`)
+  await dragTo(page, h, 0)
+  const gMin = await navGeom(page)
+  log("nav resize drag far left", JSON.stringify(gMin))
+  expectWidth(gMin, 220, "dragged past the narrowest")
+})
+// 2. the width survives a reload
+await spec("nav-resize-persists", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  await dragTo(page, await navHandle(page), SHELL_LEFT + 400)
+  expectWidth(await navGeom(page), 400, "dragged to 400")
+  await page.reload({ waitUntil: "domcontentloaded" })
+  await page.locator(HANDLE).waitFor()
+  await page.waitForTimeout(600)
+  const g = await navGeom(page)
+  log("nav resize after reload", JSON.stringify(g))
+  expectWidth(g, 400, "after a reload")
+})
+// 3. a double click on the handle returns to 220, also after a reload
+await spec("nav-resize-dblclick-resets", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  const h = await navHandle(page)
+  await dragTo(page, h, SHELL_LEFT + 400)
+  expectWidth(await navGeom(page), 400, "dragged to 400")
+  await h.dblclick()
+  await page.waitForTimeout(400)
+  const g = await navGeom(page)
+  log("nav resize double click", JSON.stringify(g))
+  expectWidth(g, 220, "after a double click")
+  await page.reload({ waitUntil: "domcontentloaded" })
+  await page.locator(HANDLE).waitFor()
+  await page.waitForTimeout(600)
+  expectWidth(await navGeom(page), 220, "after a double click and a reload")
+})
+// 4. the handle is reached with Tab and moved with the arrow keys, Home, End
+await spec("nav-resize-keyboard", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  const h = await navHandle(page)
+  const a = await h.evaluate((el) => ({
+    orientation: el.getAttribute("aria-orientation"),
+    label: el.getAttribute("aria-label"),
+    tabindex: el.getAttribute("tabindex"),
+    min: el.getAttribute("aria-valuemin"),
+  }))
+  log("nav resize handle", JSON.stringify(a))
+  if (a.orientation !== "vertical" || !a.label || a.tabindex !== "0" || a.min !== "220")
+    throw new Error(`the handle is not a focusable vertical splitter: ${JSON.stringify(a)}`)
+  await h.focus()
+  const steps = [
+    ["ArrowRight", 236],
+    ["ArrowRight", 252],
+    ["ArrowRight", 268],
+    ["ArrowLeft", 252],
+    ["End", 720],
+    ["ArrowRight", 720],
+    ["Home", 220],
+    ["ArrowLeft", 220],
+  ]
+  for (const [key, w] of steps) {
+    await page.keyboard.press(key)
+    await page.waitForTimeout(250)
+    expectWidth(await navGeom(page), w, `after ${key}`)
+  }
+  if (!(await h.evaluate((el) => el === document.activeElement))) throw new Error("the handle lost focus")
+})
+// 5. the widest follows the window (the content keeps its room) without
+// forgetting the chosen width; the folded rail and the phone have no handle
+await spec("nav-resize-limits", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  const h = await navHandle(page)
+  await h.focus()
+  await page.keyboard.press("End")
+  await page.waitForTimeout(300)
+  expectWidth(await navGeom(page), 720, "End at 1440")
+  await page.setViewportSize({ width: 1100, height: 900 })
+  await page.waitForTimeout(500)
+  const narrow = await navGeom(page)
+  log("nav resize at 1100", JSON.stringify(narrow))
+  expectWidth(narrow, 550, "the window narrowed to 1100")
+  if (narrow.max !== 550) throw new Error(`the handle's maximum is ${narrow.max} at 1100, expected 550`)
+  if (narrow.cardWidth < 480) throw new Error(`the content card is ${narrow.cardWidth}px wide beside the widest nav`)
+  if (narrow.stored !== "720") throw new Error(`a narrower window changed the chosen width: stored ${narrow.stored}`)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.waitForTimeout(500)
+  expectWidth(await navGeom(page), 720, "the window back at 1440")
+  await page.getByRole("button", { name: tr("shell.nav.collapse") }).first().click()
+  await page.waitForTimeout(500)
+  const folded = await navGeom(page)
+  log("nav resize folded", JSON.stringify(folded))
+  if (folded.handle || folded.nav !== 72) throw new Error(`folded: nav ${folded.nav}px, handle ${folded.handle ? "shown" : "hidden"}; expected 72px and no handle`)
+  await page.getByRole("button", { name: tr("shell.nav.expand") }).first().click()
+  await page.waitForTimeout(500)
+  expectWidth(await navGeom(page), 720, "unfolded again")
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForTimeout(500)
+  const phone = await navGeom(page)
+  log("nav resize phone", JSON.stringify(phone))
+  if (phone.handle || phone.nav) throw new Error(`the phone layout has ${phone.nav ? "a side nav" : ""} ${phone.handle ? "a resize handle" : ""}`)
+})
 // the same tree in the copy / move dialog (FolderTree without the nav look):
 // opened down to the deepest level, it scrolls inside the dialog, never widens it
 for (const action of ["copy", "move"]) {

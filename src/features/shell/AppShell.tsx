@@ -23,7 +23,8 @@ import {
   readCollapsed,
   writeCollapsed,
 } from "./nav-items"
-import { FULL_WIDTH, RAIL_WIDTH, SideNav } from "./SideNav"
+import { clampNavWidth, navMax, readNavWidth, writeNavWidth } from "./nav-width"
+import { RAIL_WIDTH, SideNav } from "./SideNav"
 import { TopBar } from "./TopBar"
 import { bindTransfersToUser } from "./transfers-lifecycle"
 import {
@@ -59,6 +60,20 @@ const AppShell = (props: ParentProps) => {
     const next = !folded()
     setFolded(next)
     writeCollapsed(localStorage, next)
+  }
+  // The full nav's width as the user left it, kept within what this window
+  // allows (the stored value is not changed by a narrower window).
+  const [chosenWidth, setChosenWidth] = createSignal(readNavWidth(localStorage))
+  const [windowWidth, setWindowWidth] = createSignal(window.innerWidth)
+  const onWindowResize = () => setWindowWidth(window.innerWidth)
+  window.addEventListener("resize", onWindowResize)
+  onCleanup(() => window.removeEventListener("resize", onWindowResize))
+  const maxNavWidth = () => navMax(windowWidth())
+  const fullWidth = () => clampNavWidth(chosenWidth(), maxNavWidth())
+  const [resizing, setResizing] = createSignal(false)
+  const resize = (w: number, done: boolean) => {
+    setChosenWidth(w)
+    if (done) writeNavWidth(localStorage, w)
   }
 
   // me() is empty until SessionGate has loaded it. It revalidates /me on every
@@ -114,7 +129,7 @@ const AppShell = (props: ParentProps) => {
 
   const wide = () => shown() && viewport() !== "phone"
   const phone = () => shown() && viewport() === "phone"
-  const navWidth = () => (rail() ? RAIL_WIDTH : FULL_WIDTH)
+  const navWidth = () => (rail() ? RAIL_WIDTH : `${fullWidth()}px`)
   // Where the content card starts: below the bar, and below the page's toolbar
   // row when it has one (on a phone that row is the bar itself).
   const contentTop = () =>
@@ -150,13 +165,21 @@ const AppShell = (props: ParentProps) => {
       <div style={{ display: "contents" }}>
         <Suspense>
           <Show when={wide()}>
-            <SideNav pathname={pathname()} rail={rail()} />
+            <SideNav
+              pathname={pathname()}
+              rail={rail()}
+              width={fullWidth()}
+              maxWidth={maxNavWidth()}
+              onResize={resize}
+              onResizing={setResizing}
+            />
           </Show>
         </Suspense>
       </div>
       <div
         data-shell-frame
-        class="w-full min-w-0 transition-[padding] duration-150"
+        class="w-full min-w-0"
+        classList={{ "transition-[padding] duration-150": !resizing() }}
         style={{
           // The side panel is fixed; the content panel makes room for it.
           "padding-left": wide() ? "var(--shell-content-left)" : "0",

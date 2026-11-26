@@ -11,7 +11,8 @@
     "profile": "Profile",
     "toggle_theme": "Switch light/dark",
     "collapse": "Collapse",
-    "expand": "Expand sidebar"
+    "expand": "Expand sidebar",
+    "resize": "Resize sidebar"
   },
   "task_center": {
     "title": "Task Center",
