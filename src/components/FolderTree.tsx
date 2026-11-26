@@ -216,7 +216,7 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
         >
           <TbHome class="size-4 shrink-0 text-muted-foreground" />
         </Show>
-        <span class="ml-1 truncate">
+        <span class="ml-1 whitespace-nowrap">
           {isRoot() ? (rootLabel ?? "root") : pathBase(props.path)}
         </span>
       </div>
