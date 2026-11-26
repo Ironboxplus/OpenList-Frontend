@@ -948,6 +948,61 @@ await spec("add-share-required-not-red-on-arrival", { width: 390, height: 844 },
   if (after !== "true") throw new Error("the empty share paths are not marked after the user left them")
 })
 
+// E (PLAN_FE_UNIFY_OVERLAYS_1126 §2.2): a dropdown inside a dialog or sheet
+// opens, and its option is picked by mouse. A list portalled out of a
+// Kobalte modal is inert and unclickable; the dialog must stay open.
+const dialogSelect = (name, opts, open) =>
+  spec(name, opts, async (env) => {
+    const { page } = env
+    fire(await open(page))
+    await expectDialog(env, name)
+    const dialog = page.locator('[role="dialog"]').first()
+    const triggers = dialog.locator('button[aria-haspopup="listbox"]')
+    const n = await triggers.count()
+    if (!n) throw new Error(`${name}: no dropdown in the dialog`)
+    for (let i = 0; i < n; i++) {
+      const trigger = triggers.nth(i)
+      await trigger.scrollIntoViewIfNeeded()
+      const before = (await trigger.innerText()).trim()
+      await trigger.click()
+      const list = page.locator('[role="listbox"]').last()
+      await list.waitFor({ state: "visible", timeout: 2000 }).catch(() => {
+        throw new Error(`${name}: dropdown ${i + 1} of ${n} ("${before}") did not open on a click`)
+      })
+      const options = list.locator('[role="option"]')
+      const count = await options.count()
+      // the first option not chosen now
+      let pick = -1
+      for (let k = 0; k < count && pick < 0; k++)
+        if ((await options.nth(k).getAttribute("aria-selected")) !== "true") pick = k
+      if (pick < 0) {
+        await page.keyboard.press("Escape")
+        log(`${name}: dropdown ${i + 1} has only its chosen option`)
+        continue
+      }
+      const want = (await options.nth(pick).innerText()).trim()
+      await options.nth(pick).click({ timeout: 2000 }).catch((e) => {
+        throw new Error(`${name}: option "${want}" of dropdown ${i + 1} could not be clicked: ${String(e.message).split("\n")[0]}`)
+      })
+      await page.waitForTimeout(300)
+      const after = (await trigger.innerText()).trim()
+      log(`${name}: dropdown ${i + 1}: "${before}" -> "${after}" (picked "${want}")`)
+      if (!(await dialog.isVisible())) throw new Error(`${name}: picking in dropdown ${i + 1} closed the dialog`)
+      if (!after.includes(want)) throw new Error(`${name}: dropdown ${i + 1} shows "${after}" after picking "${want}"`)
+    }
+  })
+await dialogSelect("dialog-select-share", {}, (p) => ctxEntry(p, MOUNT, "文档", "share"))
+await dialogSelect("dialog-select-local-settings", {}, async (page) => {
+  await go(page, `${MOUNT}/文档`)
+  await page.locator("[data-files-more]").click()
+  return page.getByRole("menuitem", { name: tr("home.toolbar.local_settings") }).first()
+})
+await dialogSelect("dialog-select-offline-download", {}, async (page) => {
+  await go(page, `${MOUNT}/文档`)
+  await page.locator("[data-files-new]").click()
+  return page.locator('[role="menuitem"][data-action="offline_download"]')
+})
+
 // E1: the edges on the first load, in the mode the user had, equal what they
 // are after toggling the theme twice (user: "列表边缘还是切换亮暗色之后才会恢复正常").
 // Evidence for the cause: every edged element's computed borders (four sides),

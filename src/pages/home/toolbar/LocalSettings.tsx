@@ -4,16 +4,6 @@ import {
   FormLabel,
   HStack,
   Input,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectPlaceholder,
-  SelectTrigger,
-  SelectValue,
   VStack,
   Switch as HopeSwitch,
   IconButton,
@@ -21,7 +11,11 @@ import {
 } from "@hope-ui/solid"
 import { For, Match, onCleanup, Switch } from "solid-js"
 import { FaSolidMinus, FaSolidPlus } from "solid-icons/fa"
-import { SwitchLanguageWhite, SwitchColorMode } from "~/components"
+import {
+  SelectWrapper,
+  SwitchLanguageWhite,
+  SwitchColorMode,
+} from "~/components"
 import { useT } from "~/hooks"
 import { initialLocalSettings, local, LocalSetting, setLocal } from "~/store"
 import { bus } from "~/utils"
@@ -51,31 +45,16 @@ function LocalSettingEdit(props: LocalSetting) {
         }
       >
         <Match when={props.type === "select"}>
-          <Select
+          <SelectWrapper
             id={props.key}
-            defaultValue={local[props.key]}
+            value={local[props.key]}
             onChange={(v) => setLocal(props.key, v)}
-          >
-            <SelectTrigger>
-              <SelectPlaceholder>{t("global.choose")}</SelectPlaceholder>
-              <SelectValue />
-              <SelectIcon />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectListbox>
-                <For each={props.options}>
-                  {(item) => (
-                    <SelectOption value={item}>
-                      <SelectOptionText>
-                        {t(`home.local_settings.${props.key}_options.${item}`)}
-                      </SelectOptionText>
-                      <SelectOptionIndicator />
-                    </SelectOption>
-                  )}
-                </For>
-              </SelectListbox>
-            </SelectContent>
-          </Select>
+            placeholder={t("global.choose")}
+            options={(props.options ?? []).map((item) => ({
+              value: item,
+              label: t(`home.local_settings.${props.key}_options.${item}`),
+            }))}
+          />
         </Match>
         <Match when={props.type === "boolean"}>
           <HopeSwitch

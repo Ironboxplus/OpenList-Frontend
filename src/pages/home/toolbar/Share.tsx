@@ -15,7 +15,6 @@ import {
   HStack,
   IconButton,
   Input,
-  Select,
   Text,
   Textarea,
   VStack,
@@ -31,7 +30,7 @@ import {
 import { createStore } from "solid-js/store"
 import { getSetting, me, selectedObjs } from "~/store"
 import { TbRefresh } from "solid-icons/tb"
-import { SelectOptions, MultiPathInput } from "~/components"
+import { SelectWrapper, MultiPathInput } from "~/components"
 import {
   createDisclosure,
   Modal,
@@ -146,66 +145,51 @@ export const Share = () => {
                   }}
                 />
                 <Text size="sm">{t("shares.extract_folder")}</Text>
-                <Select
-                  size="sm"
+                <SelectWrapper
                   value={share.extract_folder}
-                  onChange={(e) => {
-                    setShare("extract_folder", e)
-                  }}
-                >
-                  <SelectOptions
-                    options={[
-                      {
-                        key: ExtractFolder.Front,
-                        label: t("shares.extract_folders.front"),
-                      },
-                      {
-                        key: ExtractFolder.Back,
-                        label: t("shares.extract_folders.back"),
-                      },
-                    ]}
-                  />
-                </Select>
+                  onChange={(v) => setShare("extract_folder", v)}
+                  placeholder={t("global.choose")}
+                  options={[
+                    {
+                      value: ExtractFolder.Front,
+                      label: t("shares.extract_folders.front"),
+                    },
+                    {
+                      value: ExtractFolder.Back,
+                      label: t("shares.extract_folders.back"),
+                    },
+                  ]}
+                />
                 <Text size="sm">{t("shares.order_by")}</Text>
-                <Select
-                  size="sm"
+                <SelectWrapper
                   value={share.order_by}
-                  onChange={(e) => {
-                    setShare("order_by", e)
-                  }}
-                >
-                  <SelectOptions
-                    options={[
-                      { key: OrderBy.Name, label: t("shares.order_bys.name") },
-                      { key: OrderBy.Size, label: t("shares.order_bys.size") },
-                      {
-                        key: OrderBy.Modified,
-                        label: t("shares.order_bys.modified"),
-                      },
-                    ]}
-                  />
-                </Select>
+                  onChange={(v) => setShare("order_by", v)}
+                  placeholder={t("global.choose")}
+                  options={[
+                    { value: OrderBy.Name, label: t("shares.order_bys.name") },
+                    { value: OrderBy.Size, label: t("shares.order_bys.size") },
+                    {
+                      value: OrderBy.Modified,
+                      label: t("shares.order_bys.modified"),
+                    },
+                  ]}
+                />
                 <Text size="sm">{t("shares.order_direction")}</Text>
-                <Select
-                  size="sm"
+                <SelectWrapper
                   value={share.order_direction}
-                  onChange={(e) => {
-                    setShare("order_direction", e)
-                  }}
-                >
-                  <SelectOptions
-                    options={[
-                      {
-                        key: OrderDirection.Asc,
-                        label: t("shares.order_directions.asc"),
-                      },
-                      {
-                        key: OrderDirection.Desc,
-                        label: t("shares.order_directions.desc"),
-                      },
-                    ]}
-                  />
-                </Select>
+                  onChange={(v) => setShare("order_direction", v)}
+                  placeholder={t("global.choose")}
+                  options={[
+                    {
+                      value: OrderDirection.Asc,
+                      label: t("shares.order_directions.asc"),
+                    },
+                    {
+                      value: OrderDirection.Desc,
+                      label: t("shares.order_directions.desc"),
+                    },
+                  ]}
+                />
                 <Text size="sm">{t("shares.pwd")}</Text>
                 <HStack spacing="$1" w="$full">
                   <Input

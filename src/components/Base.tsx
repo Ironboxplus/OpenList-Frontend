@@ -4,22 +4,18 @@ import {
   Flex,
   Heading,
   useColorModeValue,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectTrigger,
-  SelectValue,
   IconButton,
   VStack,
 } from "@hope-ui/solid"
 import { SwitchColorMode } from "./SwitchColorMode"
 import {
-  ComponentProps,
-  For,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select"
+import {
   mergeProps,
   Show,
   JSXElement,
@@ -187,38 +183,44 @@ export const BoxWithFullScreen = (
   )
 }
 
+/**
+ * A select of plain options, on the kit's Select (Kobalte), so it works
+ * inside the kit's dialogs and sheets: a hope Select portals its list out
+ * of the dialog, where Kobalte's modal layer makes it unclickable
+ * (PLAN_FE_UNIFY_OVERLAYS_1126 §2.2 E).
+ */
 export function SelectWrapper<T extends string | number>(props: {
-  value: T
+  value: T | undefined
   onChange: (v: T) => void
   options: {
     value: T
     label?: string
   }[]
-  alwaysShowBorder?: boolean
-  size?: "xs" | "sm" | "md" | "lg"
-  w?: ComponentProps<typeof SelectTrigger>["w"]
+  placeholder?: string
+  id?: string
 }) {
+  type Option = { value: T; label?: string }
+  const text = (o: Option | undefined) =>
+    o ? (o.label ?? String(o.value)) : ""
   return (
-    <Select size={props.size} value={props.value} onChange={props.onChange}>
-      <SelectTrigger
-        borderColor={props.alwaysShowBorder ? "$info5" : undefined}
-        w={props.w}
-      >
-        <SelectValue />
-        <SelectIcon />
+    <Select<Option>
+      options={props.options}
+      optionValue={(o) => String(o.value)}
+      optionTextValue={text}
+      value={props.options.find((o) => o.value === props.value)}
+      onChange={(o) => {
+        if (o) props.onChange(o.value)
+      }}
+      disallowEmptySelection
+      placeholder={props.placeholder}
+      itemComponent={(p) => (
+        <SelectItem item={p.item}>{text(p.item.rawValue)}</SelectItem>
+      )}
+    >
+      <SelectTrigger id={props.id}>
+        <SelectValue<Option>>{(s) => text(s.selectedOption())}</SelectValue>
       </SelectTrigger>
-      <SelectContent>
-        <SelectListbox>
-          <For each={props.options}>
-            {(item) => (
-              <SelectOption value={item.value}>
-                <SelectOptionText>{item.label ?? item.value}</SelectOptionText>
-                <SelectOptionIndicator />
-              </SelectOption>
-            )}
-          </For>
-        </SelectListbox>
-      </SelectContent>
+      <SelectContent />
     </Select>
   )
 }
