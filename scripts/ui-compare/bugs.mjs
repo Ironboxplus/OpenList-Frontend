@@ -410,6 +410,7 @@ for (const theme of ["light", "dark"]) {
         return { name, edge: Math.max(border, ratio(own, parent)), border: +border.toFixed(2), fill: +ratio(own, parent).toFixed(2), bw }
       })
     })
+    log(`card edges ${theme}`, JSON.stringify(rows))
     const weak = rows.filter((r) => r.missing || r.edge < 1.4)
     if (weak.length) throw new Error("no visible edge: " + weak.map((r) => (r.missing ? `${r.name} (not found)` : `${r.name} (border ${r.bw}px ${r.border}:1, fill ${r.fill}:1)`)).join("; "))
   })
