@@ -1,7 +1,9 @@
 name: UI compare (Cloudreve reference)
 
 # Screenshots of Cloudreve's and our file browser on the same sample files,
-# for design reference. Throwaway containers and accounts; nothing is deployed.
+# for design reference, and the full-site audit of our frontend in a real
+# browser (scripts/ui-compare/audit.mjs). Throwaway containers and accounts;
+# nothing is deployed.
 
 on:
   # A push to this branch runs it without touching main (a push to main
@@ -23,14 +25,28 @@ on:
         required: false
         type: boolean
         default: true
+      compare:
+        description: "Shoot the Cloudreve comparison"
+        required: false
+        type: boolean
+        default: true
+      audit:
+        description: "Run the full-site audit (every route, dialog and preview, 3 widths x 2 themes)"
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
+env:
+  COMPARE: ${{ github.event_name != 'workflow_dispatch' || inputs.compare }}
+  AUDIT: ${{ github.event_name != 'workflow_dispatch' || inputs.audit }}
+
 jobs:
   shoot:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
 
@@ -55,7 +71,7 @@ jobs:
       - name: Sample files
         run: |
           set -e
-          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg zip >/dev/null
           S="$RUNNER_TEMP/samples"
           mkdir -p "$S/照片/2026 旅行" "$S/文档" "$S/视频" "$S/音乐"
           for i in 1 2 3 4 5 6; do
@@ -72,10 +88,79 @@ jobs:
           sudo chmod -R a+rwX "$S"
           echo "SAMPLES=$S" >> "$GITHUB_ENV"
 
+      # A second tree for the audit, mounted as /审计: deep and long-named
+      # folders, a folder of 400 files, a media library, one file of every
+      # preview type. It is not seen by the Cloudreve comparison.
+      - name: Audit sample files
+        if: env.AUDIT == 'true'
+        run: |
+          set -e
+          S="$RUNNER_TEMP/samples-audit"
+          mkdir -p "$S"/{空目录,长文件名,大目录,预览,文档,照片,媒体库}
+          d="$S/深层"
+          for i in 1 2 3 4 5 6 7 8; do
+            d="$d/第${i}层-这是一个很长很长的目录名称用来测试左侧目录树的横向滚动-level${i}"
+            mkdir -p "$d"; echo "level $i" > "$d/文件${i}.txt"
+          done
+          cn=$(printf '很长的文件名用来测试截断%.0s' 1 2 3 4 5 6)
+          echo x > "$S/长文件名/${cn}.txt"
+          echo x > "$S/长文件名/$(printf 'a%.0s' $(seq 1 200)).txt"
+          echo x > "$S/长文件名/with some spaces and (brackets) [and] {braces} 2026-11-26 final FINAL v2.txt"
+          for i in $(seq -w 1 400); do echo "$i" > "$S/大目录/文件_$i.txt"; done
+          for i in 1 2 3 4 5 6; do
+            ffmpeg -loglevel error -f lavfi -i "gradients=s=800x500:seed=$i:n=4" -frames:v 1 "$S/照片/IMG_00$i.jpg"
+          done
+          cp "$S/照片/IMG_001.jpg" "$S/预览/图片.jpg"
+          ffmpeg -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=24 -f lavfi -i sine=frequency=440 -t 8 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$S/预览/示例视频.mp4"
+          ffmpeg -loglevel error -f lavfi -i sine=frequency=330 -t 5 "$S/预览/示例音乐.mp3"
+          printf '第一行\n第二行 with English words\n%.0s' 1 2 3 4 5 6 7 8 > "$S/预览/文本.txt"
+          printf '# 标题\n\n正文 **加粗** 与 `代码`。\n\n- 条目一\n- 条目二\n\n| 列 | 值 |\n|---|---|\n| a | 1 |\n' > "$S/预览/说明.md"
+          printf '{"a":1,"b":[1,2,3]}\n' > "$S/预览/配置.json"
+          python3 - "$S/预览/报告.pdf" <<'PY'
+          import sys
+          objs = [
+            b"<</Type/Catalog/Pages 2 0 R>>",
+            b"<</Type/Pages/Kids[3 0 R]/Count 1>>",
+            b"<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>",
+            None,
+            b"<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>",
+          ]
+          stream = b"BT /F1 24 Tf 72 700 Td (UI audit sample PDF) Tj ET"
+          objs[3] = b"<</Length %d>>\nstream\n" % len(stream) + stream + b"\nendstream"
+          out = b"%PDF-1.4\n"
+          offs = []
+          for i, o in enumerate(objs, 1):
+            offs.append(len(out))
+            out += b"%d 0 obj\n" % i + o + b"\nendobj\n"
+          x = len(out)
+          out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1)
+          for o in offs:
+            out += b"%010d 00000 n \n" % o
+          out += b"trailer\n<</Root 1 0 R/Size %d>>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, x)
+          open(sys.argv[1], "wb").write(out)
+          PY
+          (cd "$S/预览" && zip -q "压缩包.zip" 图片.jpg 文本.txt 说明.md 配置.json)
+          cp "$S/预览/文本.txt" "$S/文档/笔记.txt"
+          cp "$S/预览/说明.md" "$S/文档/说明.md"
+          cp "$S/预览/配置.json" "$S/文档/配置.json"
+          cp "$S/预览/报告.pdf" "$S/文档/报告.pdf"
+          cp "$S/预览/压缩包.zip" "$S/文档/压缩包.zip"
+          printf '# 审计目录\n\n这里放了各种形状的文件。\n' > "$S/README.md"
+          # a media library: works are the folders directly under it
+          mk() { ffmpeg -loglevel error -f lavfi -i "testsrc2=size=640x360:rate=24:duration=3" -f lavfi -i sine=frequency=$2 -t 3 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$1"; }
+          i=0
+          for w in "电影甲 (2020)" "电影丙 (2019)" "电影丁 (2018)" "电影戊 (2017)"; do
+            i=$((i+1)); mkdir -p "$S/媒体库/$w"; mk "$S/媒体库/$w/$w.mp4" $((300+i*40))
+          done
+          mkdir -p "$S/媒体库/剧集乙 (2021)/Season 1"
+          for e in 1 2 3; do mk "$S/媒体库/剧集乙 (2021)/Season 1/剧集乙 S01E0$e.mp4" $((500+e*30)); done
+          sudo chmod -R a+rwX "$S"
+          echo "SAMPLES_AUDIT=$S" >> "$GITHUB_ENV"
+
       - name: Start containers
         run: |
           set -e
-          docker run -d --name cloudreve -p 5212:5212 "${{ inputs.cloudreve_image || 'cloudreve/cloudreve:latest' }}"
+          [ "$COMPARE" = true ] && docker run -d --name cloudreve -p 5212:5212 "${{ inputs.cloudreve_image || 'cloudreve/cloudreve:latest' }}"
           # the image runs as a non-root user: give it a data dir it can write
           mkdir -p "$RUNNER_TEMP/oldata" && chmod 777 "$RUNNER_TEMP/oldata"
           DIST_MOUNT=""
@@ -84,8 +169,11 @@ jobs:
             chmod 666 "$RUNNER_TEMP/oldata/config.json"
             DIST_MOUNT="-v $PWD/dist:/frontend-dist:ro"
           fi
-          docker run -d --name openlist -p 5244:5244 -e FRONTEND_SOURCE=embedded -v "$RUNNER_TEMP/oldata:/opt/openlist/data" -v "$SAMPLES:/samples" $DIST_MOUNT "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
-          for p in 5212 5244; do
+          AUDIT_MOUNT=""
+          [ -n "$SAMPLES_AUDIT" ] && AUDIT_MOUNT="-v $SAMPLES_AUDIT:/samples-audit"
+          docker run -d --name openlist -p 5244:5244 -e FRONTEND_SOURCE=embedded -v "$RUNNER_TEMP/oldata:/opt/openlist/data" -v "$SAMPLES:/samples" $AUDIT_MOUNT $DIST_MOUNT "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
+          PORTS=5244; [ "$COMPARE" = true ] && PORTS="5212 5244"
+          for p in $PORTS; do
             for i in $(seq 1 90); do curl -fsS -o /dev/null "http://127.0.0.1:$p/" && break; sleep 2; done
           done
           docker logs openlist 2>&1 | grep -iE "dist" | head -3 || true
@@ -94,13 +182,26 @@ jobs:
           echo "::add-mask::$OL_PASS"; echo "::add-mask::$CR_PASS"
           echo "OL_PASS=$OL_PASS" >> "$GITHUB_ENV"; echo "CR_PASS=$CR_PASS" >> "$GITHUB_ENV"
 
-      - name: Shoot
+      - name: Playwright
         working-directory: scripts/ui-compare
         run: |
           npm init -y >/dev/null
           npm install --no-audit --no-fund playwright@1 >/dev/null
           npx playwright install --with-deps chromium >/dev/null
-          node shoot.mjs "$RUNNER_TEMP/shots"
+
+      - name: Shoot
+        if: env.COMPARE == 'true'
+        working-directory: scripts/ui-compare
+        run: node shoot.mjs "$RUNNER_TEMP/shots"
+
+      - name: Audit
+        if: always() && env.AUDIT == 'true'
+        working-directory: scripts/ui-compare
+        run: node audit.mjs "$RUNNER_TEMP/audit"
+
+      - name: Audit summary
+        if: always() && env.AUDIT == 'true'
+        run: head -c 60000 "$RUNNER_TEMP/audit/audit.md" >> "$GITHUB_STEP_SUMMARY" || true
 
       - name: Logs on failure
         if: failure()
@@ -109,8 +210,15 @@ jobs:
           docker logs openlist 2>&1 | tail -50 | grep -viE "password|token" || true
 
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && env.COMPARE == 'true'
         with:
           name: ui-compare
           path: ${{ runner.temp }}/shots
           retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        if: always() && env.AUDIT == 'true'
+        with:
+          name: ui-audit
+          path: ${{ runner.temp }}/audit
+          retention-days: 3
