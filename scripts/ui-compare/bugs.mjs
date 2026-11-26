@@ -1028,6 +1028,11 @@ const tallDialog = (name, opts, open) =>
 for (const size of [PHONE, { width: 820, height: 1180 }]) {
   await tallDialog("tall-dialog-offline-download", size, async (page) => {
     await go(page, `${MOUNT}/文档`)
+    // the phone has the + button and its sheet in place of the New menu
+    if (size === PHONE) {
+      await page.locator("[data-files-fab]").click()
+      return page.locator('[data-fab-action="offline_download"]')
+    }
     await page.locator("[data-files-new]").click()
     return page.locator('[role="menuitem"][data-action="offline_download"]')
   })
