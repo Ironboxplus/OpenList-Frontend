@@ -14,7 +14,7 @@ const out = process.argv[2]
 fs.mkdirSync(out, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const browser = await chromium.launch()
-const { token } = await seed(out)
+const { token, ids, shares } = await seed(out)
 
 const results = []
 async function spec(name, opts, fn) {
@@ -22,6 +22,7 @@ async function spec(name, opts, fn) {
   const id = `${name}.${width}.${theme}`
   const ctx = await browser.newContext({ viewport: { width, height }, locale: "zh-CN", colorScheme: theme })
   await ctx.addInitScript((t) => localStorage.setItem("token", t), token)
+  if (opts.init) await ctx.addInitScript(opts.init)
   // every focus() call is counted with its target: two focus handlers pulling
   // against each other show up as thousands of calls on two elements
   await ctx.addInitScript(() => {
@@ -710,6 +711,311 @@ for (const theme of ["light", "dark"]) {
     log(`card edges ${theme}`, JSON.stringify(rows))
     const weak = rows.filter((r) => r.missing || r.edge < 1.4)
     if (weak.length) throw new Error("no visible edge: " + weak.map((r) => (r.missing ? `${r.name} (not found)` : `${r.name} (border ${r.bw}px ${r.border}:1, fill ${r.fill}:1)`)).join("; "))
+  })
+}
+
+// ---- the rest of the 046ebfc audit (run 45808288515; plan PLAN_FE_UNIFY_OVERLAYS_1126 §2.2 H)
+// A control's own box and whether a click at its centre reaches it.
+const hitBox = (loc, what) =>
+  loc.evaluate((e, what) => {
+    const r = e.getBoundingClientRect()
+    const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+    return { what, w: Math.round(r.width), h: Math.round(r.height), hit: !!top && (top === e || e.contains(top)) }
+  }, what)
+const expectTargets = (list) => {
+  log("click targets", JSON.stringify(list))
+  const small = list.filter((t) => t.w < 32 || t.h < 32 || !t.hit)
+  if (small.length) throw new Error("under 32px or covered: " + small.map((t) => `${t.what} ${t.w}x${t.h}${t.hit ? "" : " (covered)"}`).join("; "))
+}
+
+// B1: the editor of a meta nobody was picked for (the API sends null user lists)
+await spec("manage-metas-edit-null-users", {}, async (env) => {
+  const { page, errors } = env
+  const id = ids.meta?.[0]
+  if (!id) throw new Error("the seed made no meta")
+  await go(page, `/@manage/metas/edit/${id}`, 1500)
+  const value = await page.locator("#path").first().inputValue({ timeout: 4000 }).catch(() => null)
+  log("metas edit", JSON.stringify({ id, value, errors }))
+  if (errors.length) throw new Error(`page errors: ${errors.join(" | ")}`)
+  if (value !== `${MOUNT}/文档`) throw new Error(`the editor does not show the meta (path box: ${value})`)
+})
+
+// M1: on a tablet the selection's actions stay left of the top bar's own
+// buttons; the ones that do not fit are in the "more" menu
+for (const width of [820, 1100]) {
+  await spec("selection-bar-fits-top-bar", { width }, async (env) => {
+    const { page } = env
+    await go(page, `${MOUNT}/文档`)
+    await selectRows(page, "笔记", false)
+    await page.locator("[data-selection-bar]").waitFor({ timeout: 4000 })
+    const m = await page.evaluate(() => {
+      const bar = document.querySelector("[data-selection-bar]")
+      const right = document.querySelector("[data-error-center-trigger]").parentElement.getBoundingClientRect()
+      const shown = [...bar.querySelectorAll("button")].filter((b) => b.getBoundingClientRect().width > 0)
+      const barRight = Math.max(...shown.map((b) => b.getBoundingClientRect().right))
+      const covered = [...document.querySelectorAll("[data-topbar] button, [data-topbar] a")]
+        .filter((b) => !bar.contains(b) && b.getBoundingClientRect().left >= right.left - 1)
+        .filter((b) => {
+          const r = b.getBoundingClientRect()
+          const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+          return !top || !(top === b || b.contains(top))
+        })
+        .map((b) => b.getAttribute("aria-label") || b.textContent.trim())
+      const inline = shown.map((b) => b.dataset.action).filter((a) => a && a !== "cancel_select" && a !== "batch-more")
+      return { barRight: Math.round(barRight), rightLeft: Math.round(right.left), covered, inline }
+    })
+    await page.locator('[data-action="batch-more"]').click()
+    await page.waitForTimeout(400)
+    const inMenu = await page.locator('[role="menuitem"][data-action]').evaluateAll((els) => els.map((e) => e.dataset.action))
+    await page.keyboard.press("Escape")
+    log(`selection bar ${width}`, JSON.stringify({ ...m, inMenu }))
+    if (m.barRight > m.rightLeft + 1) throw new Error(`the selection bar runs to ${m.barRight}, under the top bar's buttons from ${m.rightLeft}`)
+    if (m.covered.length) throw new Error(`top bar buttons covered: ${m.covered.join(", ")}`)
+    const missing = ["copy", "move", "rename", "share", "delete"].filter((a) => !m.inline.includes(a) && !inMenu.includes(a))
+    if (missing.length) throw new Error(`actions neither in the bar nor in its menu: ${missing.join(", ")}`)
+  })
+}
+
+// M3: the shares table on a tablet keeps readable columns and every column
+// can be scrolled to inside its card; the settings breadcrumb does not show
+// a cut crumb ("s >") as if it were a word
+await spec("manage-table-fits-tablet", { width: 820 }, async (env) => {
+  const { page } = env
+  await go(page, "/@manage/shares", 1500)
+  const card = page.locator('[data-layout="table"]')
+  await card.waitFor({ timeout: 6000 })
+  const m = await card.evaluate((c) => {
+    const table = c.querySelector("table")
+    const fits = table.offsetWidth <= c.clientWidth + 1
+    const ox = getComputedStyle(c).overflowX
+    c.scrollLeft = c.scrollWidth
+    const r = c.getBoundingClientRect()
+    const inside = (e) => {
+      const b = e.getBoundingClientRect()
+      return b.left >= r.left - 1 && b.right <= r.right + 1
+    }
+    const heads = [...c.querySelectorAll("th")].filter((th) => th.textContent.trim())
+    const lastHead = heads[heads.length - 1]
+    const edit = c.querySelector("tbody tr td:last-child button")
+    const id = c.querySelector("tbody tr td:nth-child(2) span")
+    return {
+      fits,
+      ox,
+      lastHead: lastHead?.textContent.trim(),
+      lastHeadShown: !!lastHead && inside(lastHead),
+      editShown: !!edit && inside(edit),
+      idHeight: id ? Math.round(id.getBoundingClientRect().height) : null,
+      id: id?.textContent,
+    }
+  })
+  const crumbs = await page.evaluate(() => {
+    const n = document.querySelector("[data-settings-crumbs]")
+    const cs = getComputedStyle(n)
+    const nr = n.getBoundingClientRect()
+    const cut = [...n.querySelectorAll("li")].some((li) => {
+      const b = li.getBoundingClientRect()
+      return b.left < nr.left - 1 && b.right > nr.left + 1
+    })
+    return { cut, mask: cs.maskImage || cs.webkitMaskImage || "none", scrollLeft: n.scrollLeft }
+  })
+  log("manage table 820", JSON.stringify({ m, crumbs }))
+  if (!m.fits && !["auto", "scroll"].includes(m.ox)) throw new Error(`the table is wider than its card, which does not scroll (overflow-x ${m.ox})`)
+  if (!m.lastHeadShown || !m.editShown) throw new Error(`scrolled to the end, the last column (${m.lastHead}) or the Edit button is still cut off`)
+  if (m.idHeight > 44) throw new Error(`the id column is squeezed: "${m.id}" stands ${m.idHeight}px tall`)
+  if (crumbs.cut && crumbs.mask === "none") throw new Error("the breadcrumb cuts a crumb at its left edge with nothing to show it is cut")
+})
+
+// M4: the phone's path sheet shows the full name of every level
+await spec("phone-path-sheet-full-names", { width: 390, height: 844 }, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/深层/${DEEP.slice(0, 3).join("/")}`, 1200)
+  await page.locator("[data-files-current]").click()
+  await page.waitForTimeout(700)
+  const levels = await page.evaluate(() => {
+    const sheet = [...document.querySelectorAll('[role="dialog"]')].pop()
+    const s = sheet.getBoundingClientRect()
+    return [...sheet.querySelectorAll("[data-files-path-level]")].map((b) => {
+      const label = b.querySelector(":scope > span:last-child") || b
+      const r = label.getBoundingClientRect()
+      return {
+        text: b.textContent.trim().slice(0, 12),
+        clipped: label.scrollWidth > label.clientWidth + 1 || r.right > Math.min(s.right, innerWidth) + 1,
+        at: `${Math.round(r.left)}..${Math.round(r.right)} of ${Math.round(Math.min(s.right, innerWidth))}`,
+      }
+    })
+  })
+  log("path sheet", JSON.stringify(levels))
+  if (levels.length < 5) throw new Error(`the sheet lists ${levels.length} levels`)
+  const cut = levels.filter((l) => l.clipped)
+  if (cut.length) throw new Error("names cut off: " + cut.map((l) => `${l.text}… ${l.at}`).join("; "))
+})
+
+// m1: the small controls the audit found are at least 32px to click
+await spec("click-targets-32", {}, async (env) => {
+  const { page } = env
+  const list = []
+  await go(page, `${MOUNT}/文档`, 1200)
+  list.push(await hitBox(page.locator('nav[aria-label="main"] button[aria-label="toggle"]:not(.invisible)').first(), "tree caret"))
+  list.push(await hitBox(page.locator("[data-files-crumb-menu]").first(), "current crumb menu"))
+  await go(page, "/@manage/shares", 1500)
+  list.push(await hitBox(page.locator("[data-settings-crumbs] a").first(), "settings crumb"))
+  list.push(await hitBox(page.locator('[data-layout="table"] th button').first(), "table sort header"))
+  await page.getByRole("button", { name: tr("shell.task_center.title") }).first().click()
+  await page.waitForTimeout(700)
+  list.push(await hitBox(page.locator('[role="dialog"] button:has(.sr-only)').last(), "sheet close"))
+  await page.keyboard.press("Escape")
+  await go(page, "/@manage/messenger", 1500)
+  const toastClose = page.locator(".hope-close-button").first()
+  await toastClose.waitFor({ timeout: 4000 })
+  list.push(await hitBox(toastClose, "notification close"))
+  expectTargets(list)
+})
+await spec("click-targets-32-phone", { width: 390, height: 844 }, async (env) => {
+  const { page } = env
+  const list = []
+  await go(page, `${MOUNT}/文档`, 1200)
+  list.push(await hitBox(page.locator("[data-files-current]").first(), "current folder button"))
+  await go(page, `${MOUNT}/预览/示例音乐.mp3`, 2500)
+  for (const icon of ["volume-down", "volume-up", "loop", "order", "menu"]) {
+    const loc = page.locator(`.aplayer-time .aplayer-icon-${icon}`)
+    if ((await loc.count()) && (await loc.first().isVisible())) list.push(await hitBox(loc.first(), `aplayer ${icon}`))
+  }
+  expectTargets(list)
+})
+
+// m3: a poster that fails to load leaves its card the shape of a poster
+await spec("poster-card-failed-image-keeps-shape", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/媒体库`, 3000)
+  const m = await page.evaluate(() => {
+    const card = [...document.querySelectorAll(".grid-item")].find((c) => c.textContent.includes("电影甲"))
+    if (!card) return { missing: true }
+    const f = card.querySelector("[data-grid-cover]")
+    if (!f) return { frame: false, card: Math.round(card.getBoundingClientRect().height) }
+    const r = f.getBoundingClientRect()
+    return { frame: true, ratio: +(r.height / r.width).toFixed(3), img: !!f.querySelector("img") }
+  })
+  log("failed poster", JSON.stringify(m))
+  if (m.missing) throw new Error("no card for 电影甲")
+  if (!m.frame) throw new Error(`the failed poster left no 2:3 frame (card ${m.card}px tall)`)
+  if (Math.abs(m.ratio - 1.5) > 0.02) throw new Error(`the frame is ${m.ratio}:1, not 3:2`)
+})
+
+// m5: a refused autoplay shows "click to play", not a page error
+for (const width of [390, 1440]) {
+  await spec("audio-autoplay-refused", { width, height: width === 390 ? 844 : 900 }, async (env) => {
+    const { page, errors } = env
+    await go(page, `${MOUNT}/预览/示例音乐.mp3`, 3000)
+    const m = await page.evaluate(() => {
+      const n = document.querySelector(".aplayer-notice")
+      return {
+        player: !!document.querySelector(".aplayer"),
+        paused: !!document.querySelector(".aplayer .aplayer-button.aplayer-play"),
+        notice: n?.textContent ?? null,
+        opacity: n ? getComputedStyle(n).opacity : null,
+      }
+    })
+    log(`audio ${width}`, JSON.stringify({ m, errors }))
+    if (errors.length) throw new Error(`page errors: ${errors.join(" | ")}`)
+    if (!m.player) throw new Error("no audio player")
+    if (!m.paused) throw new Error("the player does not offer its play button")
+    if (!tr("home.preview.click_to_play").test(m.notice ?? "") || m.opacity === "0") throw new Error(`no "click to play" notice (notice "${m.notice}", opacity ${m.opacity})`)
+  })
+}
+
+// m6: the upload test page fits a phone
+await spec("test-page-fits-phone", { width: 390, height: 844 }, async (env) => {
+  const { page } = env
+  await go(page, "/@test", 1500)
+  const w = await page.evaluate(() => document.documentElement.scrollWidth)
+  log("test page width", w)
+  if (w > 391) throw new Error(`the page is ${w}px wide on a 390px phone`)
+})
+
+// m7: a required field turns red after the user leaves it, not on arrival
+await spec("add-share-required-not-red-on-arrival", { width: 390, height: 844 }, async (env) => {
+  const { page } = env
+  await go(page, "/@manage/shares/add", 1500)
+  const files = page.locator("#files")
+  await files.waitFor({ timeout: 6000 })
+  const before = await files.getAttribute("aria-invalid")
+  await files.focus()
+  await page.locator("#remark").focus()
+  await page.waitForTimeout(200)
+  const after = await files.getAttribute("aria-invalid")
+  log("add share required", JSON.stringify({ before, after }))
+  if (before === "true") throw new Error("the empty share paths are red before the user touched them")
+  if (after !== "true") throw new Error("the empty share paths are not marked after the user left them")
+})
+
+// E1: borders on the first load, in the mode the user had, equal what they
+// are after toggling the theme twice (user: "列表边缘还是切换亮暗色之后才会恢复正常").
+// Evidence for the cause: every bordered element's computed border, the rules
+// matched on the content card and its mask (CDP), and the head's stylesheets.
+const borderState = (page) =>
+  page.evaluate(() => {
+    const desc = (e) =>
+      e.tagName.toLowerCase() +
+      [...e.attributes].filter((a) => a.name.startsWith("data-")).map((a) => `[${a.name}]`).join("") +
+      String(e.className && e.className.baseVal === undefined ? e.className : "").split(/\s+/).filter((c) => /border|rounded|card|grid-item|list/.test(c)).slice(0, 4).map((c) => "." + c).join("")
+    const out = []
+    const roots = ["[data-shell-content]", "[data-shell-mask]", "[data-storage-card]"].map((s) => document.querySelector(s)).filter(Boolean)
+    for (const r of roots)
+      for (const e of [r, ...r.querySelectorAll("*")]) {
+        if (out.length >= 60) break
+        const cs = getComputedStyle(e)
+        const classed = /(^|\s)border(\s|$|-)/.test(typeof e.className === "string" ? e.className : "")
+        if (!classed && !(parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none")) continue
+        out.push({ el: desc(e), style: cs.borderTopStyle, width: cs.borderTopWidth, color: cs.borderTopColor })
+      }
+    return {
+      html: document.documentElement.className,
+      body: document.body.className,
+      sheets: [...document.styleSheets].map((s, i) => `${i}:${s.href ? s.href.split("/").pop() : s.ownerNode?.tagName.toLowerCase() + (s.ownerNode?.id ? "#" + s.ownerNode.id : "")}:${s.cssRules.length}`),
+      borders: out,
+    }
+  })
+const borderRules = async (cdp, selector) => {
+  await cdp.send("DOM.enable")
+  await cdp.send("CSS.enable")
+  const { root } = await cdp.send("DOM.getDocument", { depth: 0 })
+  const { nodeId } = await cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector })
+  if (!nodeId) return [`${selector}: not found`]
+  const m = await cdp.send("CSS.getMatchedStylesForNode", { nodeId })
+  return (m.matchedCSSRules || []).flatMap(({ rule }) => {
+    const props = rule.style.cssProperties.filter((p) => /^border(-top)?(-style|-color|-width)?$/.test(p.name) && p.value)
+    return props.length ? [`${selector} <= ${rule.origin} sheet ${rule.styleSheetId} "${rule.selectorList.text.slice(0, 70)}" {${props.map((p) => `${p.name}: ${p.value}`).join("; ")}}`] : []
+  })
+}
+for (const mode of ["light", "dark"]) {
+  await spec("borders-first-load", { theme: mode, init: mode === "dark" ? () => localStorage.setItem("hope-ui-color-mode", "dark") : undefined }, async (env) => {
+    const { page, cdp } = env
+    await go(page, `${MOUNT}/文档`, 1500)
+    const first = await borderState(page)
+    const rules = [...(await borderRules(cdp, "[data-shell-content]")), ...(await borderRules(cdp, "[data-shell-mask]"))]
+    const toggle = page.getByRole("button", { name: tr("shell.nav.toggle_theme") }).first()
+    await toggle.click()
+    await page.waitForTimeout(700)
+    await toggle.click()
+    await page.waitForTimeout(900)
+    const again = await borderState(page)
+    const rulesAgain = [...(await borderRules(cdp, "[data-shell-content]")), ...(await borderRules(cdp, "[data-shell-mask]"))]
+    log(`borders first load ${mode}`, JSON.stringify({ html: first.html, body: first.body, sheets: first.sheets }))
+    for (const r of rules) log(`  first ${mode}`, r)
+    for (const r of rulesAgain) log(`  again ${mode}`, r)
+    const diffs = []
+    const n = Math.max(first.borders.length, again.borders.length)
+    for (let i = 0; i < n; i++) {
+      const a = JSON.stringify(first.borders[i])
+      const b = JSON.stringify(again.borders[i])
+      if (a !== b) diffs.push(`${a} -> ${b}`)
+    }
+    log(`borders ${mode}: ${first.borders.length} bordered elements, ${diffs.length} differ after two toggles`)
+    for (const d of diffs.slice(0, 20)) log("  differs", d)
+    const card = first.borders.find((b) => b.el.startsWith("div[data-shell-content]"))
+    if (!card || card.style === "none" || parseFloat(card.width) === 0) throw new Error(`the content card has no border on the first load: ${JSON.stringify(card)}`)
+    if (first.html !== again.html || first.body !== again.body) throw new Error(`two toggles did not return to the first mode: html "${first.html}" -> "${again.html}", body "${first.body}" -> "${again.body}"`)
+    if (diffs.length) throw new Error(`${diffs.length} borders differ between the first load and after two toggles; first: ${diffs[0]}`)
   })
 }
 
