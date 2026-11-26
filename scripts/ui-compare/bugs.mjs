@@ -330,8 +330,8 @@ for (const view of ["library", "work"]) {
 // txcloud's /storage/115/云下载 (plan §0, 3b): a library root that is no work
 // itself (by_path 404), 78 folders of which 69 are identified works, none with
 // a poster. The conditions are checked first, then the page.
-for (const width of [1440, 390]) {
-  await spec("library-root-without-posters", { width, height: width === 390 ? 844 : 900 }, async (env) => {
+for (const [view, width] of [["poster", 1440], ["poster", 390], ["list", 1440]]) {
+  await spec(`library-root-without-posters-${view}`, { width, height: width === 390 ? 844 : 900 }, async (env) => {
     const { page } = env
     const lib = `${MOUNT}/大媒体库`
     const api = (p) => fetch(OL + p, { headers: { Authorization: token } }).then((r) => r.json())
@@ -342,17 +342,31 @@ for (const width of [1440, 390]) {
     log("library root conditions", JSON.stringify(cond))
     if (cond.byPath !== 404 || cond.works < 69 || cond.withPoster) throw new Error(`the seeded library does not match txcloud's: ${JSON.stringify(cond)}`)
     await go(page, lib, 2500)
+    if (view === "list") {
+      // the user's screenshot: the list view with one folder selected
+      await page.locator("[data-files-view]").click()
+      await page.getByRole("menuitem", { name: tr("home.layouts.list") }).first().click()
+      await page.waitForTimeout(1200)
+      await selectRows(page, "影片1 (1951)", false)
+    }
     const m = await page.evaluate(() => {
       const bar = document.querySelector("[data-files-toolbar]").getBoundingClientRect()
-      const cards = [...document.querySelectorAll(".viselect-item")]
-      const first = cards[0]?.getBoundingClientRect()
-      return { cards: cards.length, gap: first ? Math.round(first.top - bar.bottom) : null }
+      const rows = [...document.querySelectorAll(".viselect-item")]
+      const head = document.querySelector(".list > .title")
+      const tops = [rows[0], head].filter(Boolean).map((e) => e.getBoundingClientRect().top)
+      return {
+        rows: rows.length,
+        list: !!document.querySelector(".list"),
+        gap: tops.length ? Math.round(Math.min(...tops) - bar.bottom) : null,
+      }
     })
-    log("library root", JSON.stringify(m))
-    if (!m.cards) throw new Error("the library root shows no entries")
-    if (m.gap > 90) throw new Error(`${m.gap}px between the breadcrumb bar and the first entry (${m.cards} entries)`)
+    log(`library root ${view}`, JSON.stringify(m))
+    if (!m.rows) throw new Error("the library root shows no entries")
+    if (view === "list" && !m.list) throw new Error("the list view did not come up")
+    if (m.gap > 90) throw new Error(`${m.gap}px between the breadcrumb bar and the first entry (${m.rows} entries)`)
   })
 }
+
 
 // ---- 4. cards and frames have a visible edge
 for (const theme of ["light", "dark"]) {
