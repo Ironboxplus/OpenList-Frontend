@@ -3,12 +3,13 @@ import "./audio.css"
 import APlayer from "aplayer"
 import { Box } from "@hope-ui/solid"
 import { onCleanup, onMount } from "solid-js"
-import { useLink, useRouter, useTitle } from "~/hooks"
+import { useLink, useRouter, useT, useTitle } from "~/hooks"
 import { getMainColor, getSetting, getSettingBool, objStore } from "~/store"
 import { ObjType, StoreObj } from "~/types"
 import { baseName, fsGet, asPreview } from "~/utils"
 
 const Preview = () => {
+  const t = useT()
   const { previewLink, previewPage } = useLink()
   const { searchParams } = useRouter()
   let audios = objStore.objs.filter((obj) => obj.type === ObjType.AUDIO)
@@ -67,7 +68,11 @@ const Preview = () => {
     ap = new APlayer({
       container: document.querySelector("#audio-player"),
       mini: false,
-      autoplay: getSettingBool("audio_autoplay"),
+      // Started below, once the current file is selected: APlayer's own
+      // autoplay plays the first track, and switching tracks while playing
+      // calls audio.play() without handling its rejection (a page error when
+      // the browser blocks autoplay).
+      autoplay: false,
       theme: getMainColor(),
       loop: "all",
       order: "list",
@@ -106,6 +111,17 @@ const Preview = () => {
     const curIndex = audios.findIndex((obj) => obj.name === objStore.obj.name)
     if (curIndex !== -1) {
       ap.list.switch(curIndex)
+    }
+    if (getSettingBool("audio_autoplay")) {
+      // As APlayer.play(), plus telling the user when the browser refused to
+      // start without a click: the player stays paused with its play button.
+      ap.setUIPlaying()
+      ap.audio.play()?.catch((e: DOMException) => {
+        ap.setUIPaused()
+        if (e.name === "NotAllowedError")
+          ap.notice(t("home.preview.click_to_play"), 0)
+      })
+      ap.on("play", () => ap.notice("", 1))
     }
     if ("mediaSession" in navigator) {
       navigator.mediaSession.setActionHandler("seekto", (evt) =>
