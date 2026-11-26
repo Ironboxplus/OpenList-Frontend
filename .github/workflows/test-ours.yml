@@ -7,6 +7,15 @@ on:
   # by hand too, e.g. after GitHub re-enables Actions on this fork and a push
   # made meanwhile never ran
   workflow_dispatch:
+    inputs:
+      frontend_src:
+        description: "Old-code run: take src/ (but not the tests and test-setup.ts) from this commit; skips lint and build"
+        required: false
+        default: ""
+      test_filter:
+        description: "Run only the unit test files matching this filter"
+        required: false
+        default: ""
 
 jobs:
   test-ours:
@@ -15,6 +24,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+
+      - name: Frontend source from another commit
+        if: inputs.frontend_src != ''
+        env:
+          SRC_SHA: ${{ inputs.frontend_src }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$SRC_SHA"
+          git checkout FETCH_HEAD -- src ':(exclude)src/**/__tests__/**' ':(exclude)src/test-setup.ts'
+          git status --short | head -50
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -41,10 +59,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
+        if: inputs.frontend_src == ''
         run: pnpm lint
 
       - name: Test
-        run: pnpm test
+        env:
+          FILTER: ${{ inputs.test_filter }}
+        run: |
+          if [ -n "$FILTER" ]; then pnpm vitest run "$FILTER"; else pnpm test; fi
 
       - name: Build
+        if: inputs.frontend_src == ''
         run: pnpm build

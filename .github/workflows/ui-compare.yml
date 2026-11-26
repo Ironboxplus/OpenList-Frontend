@@ -40,6 +40,10 @@ on:
         required: false
         type: boolean
         default: true
+      frontend_src:
+        description: "Old-code run: build src/ of this commit, with the specs of the checked-out ref"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -55,6 +59,15 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
+
+      - name: Frontend source from another commit
+        if: inputs.frontend_src != ''
+        env:
+          SRC_SHA: ${{ inputs.frontend_src }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$SRC_SHA"
+          rm -rf src
+          git checkout FETCH_HEAD -- src
 
       - uses: actions/setup-node@v7
         with:
