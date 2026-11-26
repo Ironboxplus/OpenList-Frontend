@@ -226,6 +226,34 @@ for (const theme of ["light", "dark"]) {
     if (!report.inside) throw new Error(`the deepest level cannot be scrolled into view (${report.label})`)
   })
 }
+// with the deep path open the tree is taller than the side nav: its last row
+// must be reachable by scrolling down (a clipping wrapper cut it off, run 45808288515)
+await spec("nav-tree-last-row-reachable", {}, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/深层/${DEEP.join("/")}`, 1500)
+  await page.locator('[role="treeitem"][aria-selected="true"]').first().waitFor()
+  const r = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('nav[aria-label="main"] [role="treeitem"] > div')]
+    const last = rows[rows.length - 1]
+    // the user's way: scroll every vertically scrollable ancestor to its end
+    for (let a = last.parentElement; a; a = a.parentElement) {
+      const o = getComputedStyle(a).overflowY
+      if ((o === "auto" || o === "scroll") && a.scrollHeight > a.clientHeight) a.scrollTop = a.scrollHeight
+    }
+    const lr = last.getBoundingClientRect()
+    const where = `${Math.round(lr.top)}..${Math.round(lr.bottom)}`
+    for (let a = last.parentElement; a && a !== document.body; a = a.parentElement) {
+      if (getComputedStyle(a).overflowY === "visible") continue
+      const ar = a.getBoundingClientRect()
+      if (lr.top < ar.top - 1 || lr.bottom > ar.bottom + 1)
+        return { ok: false, rows: rows.length, text: last.textContent, why: `row at ${where} is cut by ${a.tagName.toLowerCase()}.${String(a.className).split(" ").slice(0, 3).join(".")} at ${Math.round(ar.top)}..${Math.round(ar.bottom)}` }
+    }
+    if (lr.bottom > innerHeight + 1) return { ok: false, rows: rows.length, text: last.textContent, why: `row at ${where} is below the window` }
+    return { ok: true, rows: rows.length, text: last.textContent, why: where }
+  })
+  log("nav tree last row", JSON.stringify(r))
+  if (!r.ok) throw new Error(`the last of ${r.rows} tree rows ("${r.text}") cannot be scrolled into view: ${r.why}`)
+})
 // the same tree in the copy / move dialog (FolderTree without the nav look):
 // opened down to the deepest level, it scrolls inside the dialog, never widens it
 for (const action of ["copy", "move"]) {
