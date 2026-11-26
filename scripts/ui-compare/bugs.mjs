@@ -241,38 +241,56 @@ for (const theme of ["light", "dark"]) {
   })
 }
 // m4 of the audit: after going to a deep folder its row is brought into view by
-// itself, both ways: the name starts at the scroll area's left edge (4px inset)
-// and fills the visible width, the row is within the visible height
+// itself, vertically only. scrollLeft stays as the user had it: 0 by default,
+// and a sideways scroll the user made survives going to another folder.
+// (A first version also scrolled sideways to the name; that hid the shallow
+// rows, so the lead reversed it to vertical only on 2026-11-26.)
 await spec("nav-tree-current-row-in-view", {}, async (env) => {
   const { page } = env
   await go(page, `${MOUNT}/深层/${DEEP.join("/")}`, 2000)
-  const row = page.locator('[role="treeitem"][aria-selected="true"] > div').first()
-  await row.waitFor()
-  const m = await row.evaluate((rowEl) => {
-    const el = rowEl.querySelector("span:last-of-type")
-    let box = el.parentElement
-    while (box && !["auto", "scroll"].includes(getComputedStyle(box).overflowX)) box = box.parentElement
-    const b = box.getBoundingClientRect()
-    const l = b.left + box.clientLeft
-    const rr = l + box.clientWidth
-    const t = b.top + box.clientTop
-    const bb = t + box.clientHeight
-    const r = el.getBoundingClientRect()
-    const rowR = rowEl.getBoundingClientRect()
-    const shown = Math.min(r.right, rr) - Math.max(r.left, l)
-    return {
-      leftShown: r.left >= l - 1 && r.left < rr,
-      shown: Math.round(shown),
-      need: Math.round(Math.min(r.width, box.clientWidth - 8)),
-      rowShown: rowR.top >= t - 1 && rowR.bottom <= bb + 1 && rowR.bottom <= innerHeight + 1,
-      name: `${Math.round(r.left)}..${Math.round(r.right)} in ${Math.round(l)}..${Math.round(rr)}`,
-      row: `${Math.round(rowR.top)}..${Math.round(rowR.bottom)} in ${Math.round(t)}..${Math.round(bb)}`,
-    }
-  })
-  log("nav tree current row", JSON.stringify(m))
-  if (!m.leftShown) throw new Error(`the current folder's name does not start in view (${m.name})`)
-  if (m.shown < m.need - 1) throw new Error(`only ${m.shown}px of the current folder's name show, ${m.need}px fit (${m.name})`)
-  if (!m.rowShown) throw new Error(`the current folder's row is out of view vertically (${m.row})`)
+  const current = page.locator('nav[aria-label="main"] [role="treeitem"][aria-selected="true"] > div').first()
+  await current.waitFor()
+  const measure = () =>
+    current.evaluate((rowEl) => {
+      const box = rowEl.closest(".folder-tree-box")
+      const b = box.getBoundingClientRect()
+      const t = b.top + box.clientTop
+      const bb = t + box.clientHeight
+      const rowR = rowEl.getBoundingClientRect()
+      return {
+        text: rowEl.textContent,
+        scrollLeft: box.scrollLeft,
+        canScroll: box.scrollWidth - box.clientWidth,
+        rowShown: rowR.top >= t - 1 && rowR.bottom <= bb + 1 && rowR.bottom <= innerHeight + 1,
+        row: `${Math.round(rowR.top)}..${Math.round(rowR.bottom)} in ${Math.round(t)}..${Math.round(bb)}`,
+      }
+    })
+  const deep = await measure()
+  log("nav tree current row (deep url)", JSON.stringify(deep))
+  if (!deep.text.includes("level8")) throw new Error(`the current row is "${deep.text}", not the deepest level`)
+  if (!deep.rowShown) throw new Error(`the current folder's row is out of view vertically (${deep.row})`)
+  if (deep.scrollLeft !== 0) throw new Error(`going deep scrolled the tree sideways: scrollLeft ${deep.scrollLeft}, default 0`)
+  if (deep.canScroll < 40) throw new Error(`the tree does not scroll sideways (${deep.canScroll}px), the next check would prove nothing`)
+  // the user scrolls sideways, then opens level 7 from the tree; el.click()
+  // because Playwright's click would scroll the row into view itself
+  const userLeft = 37
+  await page.locator('nav[aria-label="main"] .folder-tree-box').evaluate((box, x) => (box.scrollLeft = x), userLeft)
+  await page
+    .locator('nav[aria-label="main"] [role="treeitem"] > div')
+    .filter({ hasText: DEEP[6] })
+    .first()
+    .evaluate((el) => el.click())
+  await page.waitForFunction(
+    (name) => document.querySelector('nav[aria-label="main"] [role="treeitem"][aria-selected="true"] > div')?.textContent.includes(name),
+    DEEP[6],
+    { timeout: 6000 },
+  )
+  await page.waitForTimeout(500)
+  const after = await measure()
+  log("nav tree current row (after the user scrolled and opened level 7)", JSON.stringify(after))
+  if (!after.rowShown) throw new Error(`the current folder's row is out of view vertically (${after.row})`)
+  if (Math.abs(after.scrollLeft - userLeft) > 1)
+    throw new Error(`opening a folder moved the user's sideways scroll: scrollLeft ${after.scrollLeft}, the user left ${userLeft}`)
 })
 // with the deep path open the tree is taller than the side nav: its last row
 // must be reachable by scrolling down (a clipping wrapper cut it off, run 45808288515)
@@ -297,7 +315,17 @@ await spec("nav-tree-last-row-reachable", {}, async (env) => {
         return { ok: false, rows: rows.length, text: last.textContent, why: `row at ${where} is cut by ${a.tagName.toLowerCase()}.${String(a.className).split(" ").slice(0, 3).join(".")} at ${Math.round(ar.top)}..${Math.round(ar.bottom)}` }
     }
     if (lr.bottom > innerHeight + 1) return { ok: false, rows: rows.length, text: last.textContent, why: `row at ${where} is below the window` }
-    return { ok: true, rows: rows.length, text: last.textContent, why: where }
+    // and sideways at the default scroll position (scrollLeft untouched): the
+    // row's name starts inside the tree box and the window
+    const box = last.closest(".folder-tree-box")
+    const b = box.getBoundingClientRect()
+    const l = b.left + box.clientLeft
+    const rr = Math.min(l + box.clientWidth, innerWidth)
+    const name = last.querySelector(":scope > span:last-of-type").getBoundingClientRect()
+    const across = `name ${Math.round(name.left)}..${Math.round(name.right)} in ${Math.round(l)}..${Math.round(rr)}, scrollLeft ${box.scrollLeft}`
+    if (box.scrollLeft !== 0) return { ok: false, rows: rows.length, text: last.textContent, why: `the tree is not at the default scroll position (${across})` }
+    if (name.left < l - 1 || name.left > rr - 24) return { ok: false, rows: rows.length, text: last.textContent, why: `the name does not start in view sideways (${across})` }
+    return { ok: true, rows: rows.length, text: last.textContent, why: `${where}; ${across}` }
   })
   log("nav tree last row", JSON.stringify(r))
   if (!r.ok) throw new Error(`the last of ${r.rows} tree rows ("${r.text}") cannot be scrolled into view: ${r.why}`)

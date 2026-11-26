@@ -196,20 +196,16 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
   const depth = () => props.depth ?? 0
   const isRoot = () => props.path === "/"
   let rowEl: HTMLDivElement | undefined
-  let nameEl: HTMLSpanElement | undefined
-  // Nav look: the current folder's row comes into view by itself, both ways.
-  // Its name is wider than the nav, so the name's start is put 4px inside the
-  // tree box's left edge (not just the row, which would show only the caret
-  // and the icon), and the row within the box's visible height.
+  // Nav look: the current folder's row comes into view by itself, vertically
+  // only. scrollLeft stays where the user left it: following a deep row
+  // sideways scrolled the shallow rows (and the root) out of the nav.
   createEffect(() => {
     if (variant !== "nav" || !active()) return
     requestAnimationFrame(() => {
       const box = rowEl?.closest<HTMLElement>(".folder-tree-box")
-      if (!box || !rowEl || !nameEl) return
+      if (!box || !rowEl) return
       const b = box.getBoundingClientRect()
-      const name = nameEl.getBoundingClientRect()
       const row = rowEl.getBoundingClientRect()
-      box.scrollLeft += name.left - (b.left + box.clientLeft) - 4
       const top = b.top + box.clientTop
       const bottom = top + box.clientHeight
       if (row.top < top) box.scrollTop += row.top - top
@@ -254,7 +250,7 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
         >
           <TbHome class="size-4 shrink-0 text-muted-foreground" />
         </Show>
-        <span ref={nameEl} class="ml-1 whitespace-nowrap">
+        <span class="ml-1 whitespace-nowrap">
           {isRoot() ? (rootLabel ?? "root") : pathBase(props.path)}
         </span>
       </div>
