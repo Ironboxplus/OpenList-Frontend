@@ -958,7 +958,7 @@ const edgeState = (page) =>
     const desc = (e) =>
       e.tagName.toLowerCase() +
       [...e.attributes].filter((a) => a.name.startsWith("data-")).map((a) => `[${a.name}]`).join("") +
-      (typeof e.className === "string" ? e.className : "").split(/s+/).filter((c) => /border|rounded|card|grid-item|list|row/.test(c)).slice(0, 4).map((c) => "." + c).join("")
+      (typeof e.className === "string" ? e.className : "").split(/\s+/).filter((c) => /^(obj-box|files-card|list|title|list-item|grid-item|grid-card|selected|border|rounded.*)$/.test(c)).slice(0, 5).map((c) => "." + c).join("")
     const side = (cs, s) => (parseFloat(cs[`border${s}Width`]) > 0 && cs[`border${s}Style`] !== "none" ? `${cs[`border${s}Width`]} ${cs[`border${s}Style`]} ${cs[`border${s}Color`]}` : "-")
     const out = []
     const roots = ["[data-shell-content]", "[data-shell-mask]", "[data-storage-card]"].map((q) => document.querySelector(q)).filter(Boolean)
@@ -967,15 +967,21 @@ const edgeState = (page) =>
         if (out.length >= 150) break
         const cs = getComputedStyle(e)
         const sides = ["Top", "Right", "Bottom", "Left"].map((s) => side(cs, s))
-        const classed = /(^|s)(border|divide)(s|$|-)/.test(typeof e.className === "string" ? e.className : "")
+        const classed = /(^|\s)(border|divide)(\s|$|-)/.test(typeof e.className === "string" ? e.className : "")
         const shadow = cs.boxShadow !== "none" ? cs.boxShadow : ""
         if (!classed && !shadow && sides.every((x) => x === "-")) continue
         out.push({ el: desc(e), sides: sides.join(" | "), shadow, bg: cs.backgroundColor })
       }
     const cls = (el) => [...el.classList].sort().join(" ")
+    const box = document.querySelector(".obj-box")
     return {
       html: cls(document.documentElement),
       body: cls(document.body),
+      // the files page's own card and its rows: which classes they carry
+      objBox: box ? cls(box) : "none",
+      rows: [...document.querySelectorAll(".obj-box .list-item, .obj-box .grid-item, .obj-box .list > .title")]
+        .slice(0, 3)
+        .map(cls),
       sheets: [...document.styleSheets].map((s, i) => `${i}:${s.href ? s.href.split("/").pop() : s.ownerNode?.tagName.toLowerCase() + (s.ownerNode?.id ? "#" + s.ownerNode.id : "")}:${s.cssRules.length}`),
       edges: out,
     }
@@ -1010,6 +1016,9 @@ for (const layout of ["grid", "list"]) {
       await page.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {})
       await page.waitForTimeout(1500)
       const card = page.locator("[data-shell-content]")
+      // the pointer rests off every control, before both measurements
+      await page.mouse.move(1, 1)
+      await page.waitForTimeout(500)
       const first = await edgeState(page)
       const firstShot = await card.screenshot({ path: path.join(out, `${id}.first.png`) })
       const rules = [...(await edgeRules(cdp, "[data-shell-content]")), ...(await edgeRules(cdp, "[data-shell-mask]"))]
@@ -1017,18 +1026,34 @@ for (const layout of ["grid", "list"]) {
       await toggle.click()
       await page.waitForTimeout(700)
       await toggle.click()
-      await page.waitForTimeout(1000)
+      // the toggle's tooltip closes once the pointer has left it
+      await page.mouse.move(1, 1)
+      await page.waitForTimeout(1500)
       const again = await edgeState(page)
       const againShot = await card.screenshot({ path: path.join(out, `${id}.again.png`) })
       log(`edges ${layout} ${mode.name}`, JSON.stringify({ html: first.html, body: first.body, sheets: first.sheets }))
+      log("  obj-box first", first.objBox)
+      log("  obj-box again", again.objBox)
+      first.rows.forEach((r, i) => log(`  row ${i} first`, r))
+      again.rows.forEach((r, i) => log(`  row ${i} again`, r))
       for (const r of rules) log("  rule", r)
-      const diffs = []
-      const n = Math.max(first.edges.length, again.edges.length)
-      for (let i = 0; i < n; i++) {
-        const x = JSON.stringify(first.edges[i])
-        const y = JSON.stringify(again.edges[i])
-        if (x !== y) diffs.push(`${x} -> ${y}`)
+      // compared by element, the n-th of its kind
+      const keyed = (edges) => {
+        const seen = new Map()
+        return new Map(
+          edges.map((e) => {
+            const k = seen.get(e.el) ?? 0
+            seen.set(e.el, k + 1)
+            return [`${e.el}#${k}`, JSON.stringify({ sides: e.sides, shadow: e.shadow, bg: e.bg })]
+          }),
+        )
       }
+      const a = keyed(first.edges)
+      const b = keyed(again.edges)
+      const diffs = []
+      for (const k of new Set([...a.keys(), ...b.keys()]))
+        if (a.get(k) !== b.get(k)) diffs.push(`${k}: ${a.get(k) ?? "absent"} -> ${b.get(k) ?? "absent"}`)
+      if (first.objBox !== again.objBox) diffs.unshift(`.obj-box classes: "${first.objBox}" -> "${again.objBox}"`)
       const samePixels = firstShot.equals(againShot)
       log(`edges ${layout} ${mode.name}: ${first.edges.length} edged elements, ${diffs.length} differ after two toggles; pixels ${samePixels ? "identical" : "differ"}`)
       for (const d of diffs.slice(0, 25)) log("  differs", d)
