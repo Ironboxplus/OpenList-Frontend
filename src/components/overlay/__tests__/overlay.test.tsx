@@ -319,7 +319,7 @@ describe("Tooltip (no wrapper element)", () => {
     // Download.tsx: MenuTrigger as={CenterIcon}, and CenterIcon is a Tooltip
     const TipButton = (p: Record<string, unknown>) => (
       <Tooltip label="the tip">
-        <button id="both" {...p}>
+        <button data-both {...p}>
           dl
         </button>
       </Tooltip>
@@ -332,7 +332,7 @@ describe("Tooltip (no wrapper element)", () => {
         </MenuContent>
       </Menu>
     ))
-    const both = document.getElementById("both")!
+    const both = document.querySelector<HTMLElement>("[data-both]")!
     fireEvent.pointerEnter(both)
     fireEvent.pointerDown(both, { button: 0, pointerType: "mouse" })
     await waitFor(() =>
