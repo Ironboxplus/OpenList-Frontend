@@ -142,7 +142,9 @@ export function layoutChecks() {
       const outside = el.parentElement ? bgOf(el.parentElement) : own
       const seen = over(col, own)
       const d = Math.min(diff(seen, own), diff(over(col, outside), outside))
-      if (d <= 6) add("border-invisible", el, `${side.toLowerCase()} ${w}px diff ${Math.round(d)} (alpha ${col[3].toFixed(2)})`)
+      // a transparent border on a control is how it keeps its size, not a missing frame
+      const control = el.matches('button, a, input, select, textarea, label, [role], [class*="hope-"]') || el.getBoundingClientRect().width < 120 || el.getBoundingClientRect().height < 40
+      if (d <= 6 && !(col[3] === 0 && control)) add("border-invisible", el, `${side.toLowerCase()} ${w}px diff ${Math.round(d)} (alpha ${col[3].toFixed(2)})`)
       else if (d <= 24 && el.getBoundingClientRect().width > 120 && el.getBoundingClientRect().height > 40)
         add("border-faint", el, `${side.toLowerCase()} ${w}px diff ${Math.round(d)}`)
       break

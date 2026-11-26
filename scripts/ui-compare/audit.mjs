@@ -65,6 +65,7 @@ const browser = await chromium.launch()
 const seeded = await seed(out)
 const ids = seeded.ids
 const token = seeded.token
+const shares = seeded.shares
 
 class Env {
   constructor(width, height, theme, tok) {
@@ -134,7 +135,7 @@ function helpers(env, page) {
       await h.act("pick layout", () => page.getByRole("menuitem", { name: tr(`home.layouts.${kind}`) }).first().click())
       await h.settle(900)
     },
-    /** Selects by the real input: a click with Ctrl on desktop, a long press then taps on a phone. */
+    /** Selects by the real input: Ctrl+click on desktop (a plain click opens the row), a long press then taps on a phone. */
     async select(names) {
       let first = true
       for (const name of [].concat(names)) {
@@ -149,7 +150,7 @@ function helpers(env, page) {
             await page.waitForTimeout(800)
             await page.mouse.up()
           } else await page.mouse.click(x, y)
-        } else await h.item(name).click({ modifiers: first ? [] : ["Control"] })
+        } else await h.item(name).click({ modifiers: ["Control"] })
         first = false
       }
       await page.waitForTimeout(500)
@@ -225,7 +226,7 @@ for (const sub of manageRoutes()) {
     .replace("/storages/edit/:id", `/storages/edit/${ids.storage?.[0] ?? 1}`)
     .replace("/users/edit/:id", `/users/edit/${ids.user?.[0] ?? 1}`)
     .replace("/metas/edit/:id", `/metas/edit/${ids.meta?.[0] ?? 1}`)
-    .replace("/shares/edit/:id", "/shares/edit/audit-open")
+    .replace("/shares/edit/:id", `/shares/edit/${shares.open}`)
   at(`manage${url.replace(/[/:]/g, "-")}`, `/@manage${url}`, null, { wait: 1200 })
 }
 
@@ -299,7 +300,7 @@ scr("menu-account", async (h) => {
   await h.go(`${MOUNT}/文档`)
   await h.act("account", () => h.page.getByRole("button", { name: tr("shell.nav.account") }).first().click())
   await h.page.waitForTimeout(500)
-})
+}, { only: "wide" })
 scr("palette", async (h) => {
   await h.go(`${MOUNT}/文档`)
   await h.act("ctrl+k", () => h.key("Control+k"))
@@ -319,7 +320,7 @@ scr("task-center", async (h) => {
   await h.go(`${MOUNT}/文档`)
   await h.act("tasks", () => h.page.getByRole("button", { name: tr("shell.task_center.title") }).first().click())
   await h.page.waitForTimeout(600)
-})
+}, { only: "wide" })
 scr("error-center", async (h) => {
   await h.go(`${MOUNT}/文档`)
   await h.act("errors", () => h.page.locator("[data-error-center-trigger]").first().click())
@@ -438,21 +439,21 @@ for (const [id, file, wait] of [
 }
 
 // share-link pages: a guest opens them
-at("share-open", "/@s/audit-open", null, { guest: true, wait: 1500 })
-at("share-password-prompt", "/@s/audit-pwd", null, { guest: true, wait: 1500 })
+at("share-open", `/@s/${shares.open}`, null, { guest: true, wait: 1500 })
+at("share-password-prompt", `/@s/${shares.pwdId}`, null, { guest: true, wait: 1500 })
 scr("share-password-wrong", async (h) => {
-  await h.go("/@s/audit-pwd", 1000)
+  await h.go(`/@s/${shares.pwdId}`, 1000)
   await h.act("fill", () => h.page.locator("input").first().fill("wrong-password"))
   await h.page.keyboard.press("Enter")
   await h.settle(1000)
 }, { guest: true })
 scr("share-password-ok", async (h) => {
-  await h.go("/@s/audit-pwd", 1000)
-  await h.act("fill", () => h.page.locator("input").first().fill("audit1234"))
+  await h.go(`/@s/${shares.pwdId}`, 1000)
+  await h.act("fill", () => h.page.locator("input").first().fill(shares.pwd))
   await h.page.keyboard.press("Enter")
   await h.settle(1500)
 }, { guest: true })
-at("share-as-admin", "/@s/audit-open", null, { wait: 1500 })
+at("share-as-admin", `/@s/${shares.open}`, null, { wait: 1500 })
 
 // ---------- run ----------
 function rel(p) {

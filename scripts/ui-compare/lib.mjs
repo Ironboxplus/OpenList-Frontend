@@ -72,11 +72,10 @@ const addStorage = async (token, mount, root) => {
 }
 
 /** Share bodies are the ones the Share dialog posts. */
-const createShare = (token, id, files, pwd) =>
+const createShare = (token, files, pwd) =>
   olPost(
     "/api/share/create",
     {
-      id,
       files,
       pwd,
       expires: null,
@@ -110,6 +109,7 @@ export async function seed(dir) {
       ["announcement", ""],
       ["hide_storage_details", "false"],
       ["search_index", "database"],
+      ["media_enabled", "true"],
     ]) {
       await step(`setting ${key}`, () => setSetting(token, key, value))
     }
@@ -129,9 +129,10 @@ export async function seed(dir) {
     await olPost("/api/admin/media/scan/start", { media_type: "video" }, token)
   })
   await step("shares", async () => {
-    await createShare(token, "audit-open", [`${MOUNT}/文档`], "")
-    await createShare(token, "audit-pwd", [`${MOUNT}/文档`], "audit1234")
-    out.shares = { open: "audit-open", pwd: "audit1234", pwdId: "audit-pwd" }
+    // a custom id needs a permission the admin lacks: the server picks the ids
+    const open = await createShare(token, [`${MOUNT}/文档`], "")
+    const pwd = await createShare(token, [`${MOUNT}/文档`], "audit1234")
+    out.shares = { open: open.id, pwdId: pwd.id, pwd: "audit1234" }
   })
   await step("guest enabled", async () => {
     const users = await olGet("/api/admin/user/list", token)
