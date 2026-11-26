@@ -248,7 +248,7 @@ for (const theme of ["light", "dark"]) {
 await spec("nav-tree-current-row-in-view", {}, async (env) => {
   const { page } = env
   await go(page, `${MOUNT}/深层/${DEEP.join("/")}`, 2000)
-  const current = page.locator('nav[aria-label="main"] [role="treeitem"][aria-selected="true"] > div').first()
+  const current = page.locator('nav[aria-label="main"] [role="treeitem"][aria-selected="true"] > div:first-child').first()
   await current.waitFor()
   const measure = () =>
     current.evaluate((rowEl) => {
@@ -272,16 +272,18 @@ await spec("nav-tree-current-row-in-view", {}, async (env) => {
   if (deep.scrollLeft !== 0) throw new Error(`going deep scrolled the tree sideways: scrollLeft ${deep.scrollLeft}, default 0`)
   if (deep.canScroll < 40) throw new Error(`the tree does not scroll sideways (${deep.canScroll}px), the next check would prove nothing`)
   // the user scrolls sideways, then opens level 7 from the tree; el.click()
-  // because Playwright's click would scroll the row into view itself
+  // because Playwright's click would scroll the row into view itself. A
+  // treeitem's first div is its row, the second its children's group (which
+  // holds the deeper names too).
   const userLeft = 37
   await page.locator('nav[aria-label="main"] .folder-tree-box').evaluate((box, x) => (box.scrollLeft = x), userLeft)
   await page
-    .locator('nav[aria-label="main"] [role="treeitem"] > div')
+    .locator('nav[aria-label="main"] [role="treeitem"] > div:first-child')
     .filter({ hasText: DEEP[6] })
     .first()
     .evaluate((el) => el.click())
   await page.waitForFunction(
-    (name) => document.querySelector('nav[aria-label="main"] [role="treeitem"][aria-selected="true"] > div')?.textContent.includes(name),
+    (name) => document.querySelector('nav[aria-label="main"] [role="treeitem"][aria-selected="true"] > div:first-child')?.textContent.includes(name),
     DEEP[6],
     { timeout: 6000 },
   )
@@ -299,7 +301,7 @@ await spec("nav-tree-last-row-reachable", {}, async (env) => {
   await go(page, `${MOUNT}/深层/${DEEP.join("/")}`, 1500)
   await page.locator('[role="treeitem"][aria-selected="true"]').first().waitFor()
   const r = await page.evaluate(() => {
-    const rows = [...document.querySelectorAll('nav[aria-label="main"] [role="treeitem"] > div')]
+    const rows = [...document.querySelectorAll('nav[aria-label="main"] [role="treeitem"] > div:first-child')]
     const last = rows[rows.length - 1]
     // the user's way: scroll every vertically scrollable ancestor to its end
     for (let a = last.parentElement; a; a = a.parentElement) {
