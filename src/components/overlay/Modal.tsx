@@ -125,14 +125,16 @@ export const Modal = (props: ModalProps) => (
 export const ModalOverlay = (_props: Record<string, unknown>) => null
 
 export const ModalContent = (
-  props: ParentProps<{ class?: string } & JSX.HTMLAttributes<HTMLDivElement>>,
+  props: ParentProps<{ class?: string } & JSX.HTMLAttributes<HTMLElement>>,
 ) => {
   const options = useContext(ModalContext)
   const [local, rest] = splitProps(props, ["class", "children"])
-  let content: HTMLDivElement | undefined
+  let content: HTMLElement | undefined
   return (
     <DialogContent
-      ref={(el: HTMLDivElement) => (content = el)}
+      ref={(el: HTMLElement) => {
+        content = el
+      }}
       showClose={false}
       class={cn(
         "flex w-[calc(100%-2rem)] flex-col gap-0 p-0",
@@ -164,11 +166,11 @@ export const ModalContent = (
 // Kobalte's Title drawn by hope's Box: Kobalte gives the id that labels
 // the dialog, Box takes the callers' style props (w, css).
 const BoxTitle = DialogPrimitive.Title as unknown as Component<
-  HTMLHopeProps<"div"> & { as: typeof Box }
+  Omit<HTMLHopeProps<"div">, "as"> & { as: typeof Box }
 >
 
 /** The title, labelling the dialog; hope's look. */
-export const ModalHeader = (props: HTMLHopeProps<"div">) => (
+export const ModalHeader = (props: Omit<HTMLHopeProps<"div">, "as">) => (
   <BoxTitle
     as={Box}
     flex="0"

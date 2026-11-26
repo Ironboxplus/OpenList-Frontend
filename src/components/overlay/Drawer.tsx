@@ -40,7 +40,7 @@ export const DrawerOverlay = (_props: Record<string, unknown>) => null
 
 /** hope's default drawer is 20rem wide ("xs") and scrolls inside. */
 export const DrawerContent = (
-  props: ParentProps<{ class?: string } & JSX.HTMLAttributes<HTMLDivElement>>,
+  props: ParentProps<{ class?: string } & JSX.HTMLAttributes<HTMLElement>>,
 ) => {
   const ctx = useContext(DrawerContext)
   const [local, rest] = splitProps(props, ["class", "children"])
@@ -60,10 +60,10 @@ export const DrawerContent = (
 }
 
 const BoxTitle = DialogPrimitive.Title as unknown as Component<
-  HTMLHopeProps<"div"> & { as: typeof Box }
+  Omit<HTMLHopeProps<"div">, "as"> & { as: typeof Box }
 >
 
-export const DrawerHeader = (props: HTMLHopeProps<"div">) => (
+export const DrawerHeader = (props: Omit<HTMLHopeProps<"div">, "as">) => (
   <BoxTitle
     as={Box}
     flex="0"
