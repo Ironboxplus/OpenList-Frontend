@@ -5,6 +5,7 @@ import { Card } from "~/components/ui/card"
 import { focusRing } from "~/components/ui/focus"
 import { useRouter, useT } from "~/hooks"
 import { rankAll } from "../palette/rank"
+import { cardKeys, LAYOUT_PAGES } from "./layouts"
 import { openSetting } from "./open"
 import { groupSettings, type SettingContribution } from "./registry"
 import { joinBase } from "~/utils/path"
@@ -51,24 +52,49 @@ const SettingCard = (props: { entry: SettingContribution }) => {
   )
 }
 
+/** At most this many single settings are listed for a query. */
+const HITS = 8
+
 /**
  * Landing page of /@manage: one titled block per group, a card per page, and
- * a search box that filters with the same matcher as the command palette.
+ * a search box that filters with the same matcher as the command palette, and
+ * lists the single settings it finds, folded ones too (research 05 §二.4).
  * `items` is already permission-filtered by the caller.
  */
 export const SettingsHome = (props: { items: SettingContribution[] }) => {
   const t = useT()
+  const { to } = useRouter()
   const [query, setQuery] = createSignal("")
+  // the single settings of the pages laid out in cards (layouts.ts), by
+  // their names and keys: a hit leads to the page, which opens its group
+  const settingsOf = (entry: SettingContribution) =>
+    cardKeys(LAYOUT_PAGES[entry.id] ?? []).map((key) => ({
+      entry,
+      key,
+      title: t(`settings.${key}`),
+      keywords: [key],
+    }))
   const searchable = createMemo(() =>
     props.items.map((entry) => ({
       entry,
       title: t(entry.title),
-      keywords: [...entry.keywords, t(entry.description)],
+      keywords: [
+        ...entry.keywords,
+        t(entry.description),
+        ...settingsOf(entry).map((s) => s.title),
+      ],
     })),
   )
   const sections = createMemo(() =>
     groupSettings(rankAll(query(), searchable()).map((r) => r.entry)),
   )
+  const hits = createMemo(() =>
+    query().trim()
+      ? rankAll(query(), props.items.flatMap(settingsOf)).slice(0, HITS)
+      : [],
+  )
+  const hitRoute = (hit: { entry: SettingContribution; key: string }) =>
+    `${hit.entry.route}?focus=${encodeURIComponent(hit.key)}`
   return (
     <div class="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-8">
       {/* The TopBar crumb is the visible title (as on Files); keep it for screen readers. */}
@@ -107,6 +133,41 @@ export const SettingsHome = (props: { items: SettingContribution[] }) => {
           </button>
         </Show>
       </div>
+
+      <Show when={hits().length > 0}>
+        <section data-setting-hits class="flex flex-col gap-2">
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("settings.layout.hits")}
+          </h2>
+          <Card class="flex flex-col divide-y divide-border p-0">
+            <For each={hits()}>
+              {(hit) => (
+                <a
+                  data-setting-hit={hit.key}
+                  href={joinBase(hitRoute(hit))}
+                  class={cn(
+                    "flex items-baseline justify-between gap-3 px-4 py-2.5 text-sm no-underline hover:bg-accent hover:no-underline",
+                    focusRing,
+                  )}
+                  onClick={(e) => {
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey)
+                      return
+                    e.preventDefault()
+                    to(hitRoute(hit))
+                  }}
+                >
+                  <span class="min-w-0 truncate font-medium text-foreground">
+                    {hit.title}
+                  </span>
+                  <span class="shrink-0 text-xs text-muted-foreground">
+                    {t(hit.entry.title)}
+                  </span>
+                </a>
+              )}
+            </For>
+          </Card>
+        </section>
+      </Show>
 
       <Show
         when={sections().length > 0}

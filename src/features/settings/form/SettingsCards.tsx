@@ -1,8 +1,10 @@
 import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js"
 import { AdvancedGroup } from "~/components/ui/advanced-group"
-import { useT } from "~/hooks"
+import { useRouter, useT } from "~/hooks"
 import type { SettingItem } from "~/types"
+import { joinBase } from "~/utils/path"
 import { cardKeys, type SettingsCard } from "../layouts"
+import { SETTINGS } from "../registry"
 import { FieldRenderer } from "./FieldRenderer"
 import { settingField, settingFromRaw, settingValue } from "./field"
 import type { SettingsGroup } from "./settings-group"
@@ -25,15 +27,29 @@ export interface SettingsCardsProps {
  */
 export const SettingsCards = (props: SettingsCardsProps) => {
   const t = useT()
+  const { to } = useRouter()
   const byKey = createMemo(
     () => new Map(props.group.settings.map((row) => [row.key, row])),
   )
   // keys of the group that no card names: shown all the same, last
   const rest = createMemo(() => {
-    const named = new Set(cardKeys(props.cards))
+    const named = new Set([
+      ...cardKeys(props.cards),
+      ...props.cards.flatMap((c) => c.elsewhere?.keys ?? []),
+    ])
     return props.group.settings
       .map((row) => row.key)
       .filter((key) => !named.has(key))
+  })
+  // the defaults tell which folded settings were changed: read once there
+  // are folded settings to mark
+  let asked = false
+  createEffect(() => {
+    if (asked) return
+    if (props.cards.some((c) => c.advanced?.some((k) => byKey().has(k)))) {
+      asked = true
+      void props.group.readDefaults()
+    }
   })
 
   const Field = (p: { row: SettingItem; card?: SettingsCard }) => {
@@ -64,6 +80,9 @@ export const SettingsCards = (props: SettingsCardsProps) => {
         .map((key) => byKey().get(key))
         .filter((row): row is SettingItem => !!row)
     const folded = createMemo(() => rows(p.card.advanced))
+    const elsewhere = () =>
+      p.card.elsewhere &&
+      SETTINGS.find((s) => s.id === p.card.elsewhere!.entry && !s.external)
     const changed = createMemo(() => {
       const d = props.group.defaults()
       if (!d) return 0
@@ -111,6 +130,27 @@ export const SettingsCards = (props: SettingsCardsProps) => {
               </For>
             </AdvancedGroup>
           </div>
+        </Show>
+        <Show when={elsewhere()}>
+          {(page) => (
+            <p class="py-3 text-sm text-muted-foreground">
+              {t("settings.layout.elsewhere", {
+                count: p.card.elsewhere!.keys.length,
+              })}{" "}
+              <a
+                data-elsewhere
+                href={joinBase(page().route)}
+                class="font-medium text-primary underline-offset-4 hover:underline"
+                onClick={(e) => {
+                  if (e.button !== 0 || e.metaKey || e.ctrlKey) return
+                  e.preventDefault()
+                  to(page().route)
+                }}
+              >
+                {t(page().title)}
+              </a>
+            </p>
+          )}
         </Show>
       </SettingsSection>
     )

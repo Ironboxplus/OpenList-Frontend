@@ -26,7 +26,6 @@ const Transfer = () => {
   useManageTitle("settings.items.transfers.title")
   const g = createSettingsGroup(Group.TRAFFIC)
   g.load()
-  g.readDefaults()
   const removal = createDeleteConfirm<string>({
     name: (key) => t(`settings.${key}`),
     run: g.remove,
