@@ -17,9 +17,12 @@ const GONE: RegExp[] = [
 const BRIDGE = "app/ColorSchemeSync.tsx"
 const SELF = "app/__tests__/no-hope.test.ts"
 
+// The glob keys are relative to this file and Vite shortens them for the files
+// beside it ("../App.tsx" for app/App.tsx), so each is resolved to its path
+// under src/ before the lists above are matched against it.
 const raw = (glob: Record<string, unknown>) =>
-  Object.entries(glob as Record<string, string>).map(([path, src]) => ({
-    path: path.replace(/^\.\.\/\.\.\//, ""),
+  Object.entries(glob as Record<string, string>).map(([key, src]) => ({
+    path: new URL(key, import.meta.url).pathname.replace(/^.*\/src\//, ""),
     src,
   }))
 const sources = raw(
@@ -41,6 +44,12 @@ describe("hope-ui leaving src (P5)", () => {
   it("scans the sources and the styles", () => {
     expect(sources.length).toBeGreaterThan(400)
     expect(styles.length).toBeGreaterThan(5)
+    // the paths the lists name are the ones the scan has
+    const paths = sources.map((f) => f.path)
+    expect(paths).toContain("app/App.tsx")
+    expect(paths).toContain(BRIDGE)
+    expect(paths).toContain("store/color-mode.ts")
+    expect(paths).not.toContain(SELF)
   })
 
   it("is not imported where it is gone", () => {
