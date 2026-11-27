@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { ObjStore, pageOf, setSingleFileShare, setViewerPath } from "~/store"
 import { Obj, ObjType } from "~/types"
-import { drawable, whereOf } from "../state"
+import { drawable, takeRestore, whereOf } from "../state"
 
 const file = (name: string, type: ObjType, size = 10) =>
   ({ name, type, size, is_dir: false }) as Obj
@@ -50,6 +50,22 @@ describe("where a file opens", () => {
     ).toBe("doc")
     // one it does not have is ignored
     expect(whereOf(v, list, "pdf")).toBe("dock")
+  })
+})
+
+describe("the scroll a closing viewer gives back", () => {
+  afterEach(() => history.replaceState(null, ""))
+  it("is the one stamped on the entry Back landed on", () => {
+    history.replaceState({ scrollY: 120 }, "")
+    expect(takeRestore()).toBe(120)
+    // Forward then Back finds it again
+    expect(takeRestore()).toBe(120)
+  })
+  it("is none on an entry reached otherwise", () => {
+    history.replaceState({ opened: true }, "")
+    expect(takeRestore()).toBeUndefined()
+    history.replaceState(null, "")
+    expect(takeRestore()).toBeUndefined()
   })
 })
 

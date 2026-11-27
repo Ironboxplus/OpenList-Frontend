@@ -156,20 +156,18 @@ export const takeOrigin = () => {
   return el
 }
 
-/** Scroll the folder had before the open that this Back undoes. */
-let restoreTo: number | undefined
-export const takeRestore = () => {
-  const y = restoreTo
-  restoreTo = undefined
-  return y
-}
 let keepScroll = false
-/** Called on popstate: the folder's entry carries the scroll it had. */
-export const notePop = () => {
-  restoreTo = keepScroll
-    ? undefined
-    : (history.state?.scrollY as number | undefined)
+/**
+ * Scroll the folder had before the open that this Back undoes, read when the
+ * viewer closes: by then the history is on the folder's entry, which openPath
+ * stamped with it (Forward then Back finds it again). An entry reached
+ * otherwise has none. Read here rather than on popstate, so it does not hang
+ * on which popstate listener runs first.
+ */
+export const takeRestore = () => {
+  const keep = keepScroll
   keepScroll = false
+  return keep ? undefined : (history.state?.scrollY as number | undefined)
 }
 
 const hrefOf = (path: string, preview?: string) => {
@@ -198,7 +196,6 @@ export const openPath = (
 ) => {
   if (!nav) return
   originEl = opts.from
-  restoreTo = undefined
   const switching =
     opts.replace ||
     (opts.video &&

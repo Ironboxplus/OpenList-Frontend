@@ -31,7 +31,6 @@ import {
   dialogPath,
   dismissed,
   entryOf,
-  notePop,
   overlay,
   setDismissed,
   setLoaded,
@@ -48,11 +47,7 @@ export const ViewerHost = () => {
     navigate: (to, o) => navigate(to, o),
     search: () => location.search,
   })
-  // before the router's own listener: the scroll the folder had is read from
-  // the entry Back lands on, before the viewers react to it
-  window.addEventListener("popstate", notePop, true)
   onCleanup(() => {
-    window.removeEventListener("popstate", notePop, true)
     bindNav(undefined)
     apply(undefined)
   })
