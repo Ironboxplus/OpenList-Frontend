@@ -3147,6 +3147,46 @@ await spec("p3-settings-search", {}, async (env) => {
   c.done()
 })
 
+// P3: the dialogs with two or more rarely changed options fold them under
+// Advanced (05 §一; counted in PLAN_FE_SYSTEM_UX_1127 P3): Decompress, the
+// upload panel and Generate transfer seed. What is asked every time stays out
+const foldsIn = async (c, dialog, testid, common, rare) => {
+  const group = dialog.locator(`[data-testid="${testid}"]`)
+  c(`${testid}: the Advanced title is in sight`, await group.waitFor({ timeout: 5000 }).then(() => true, () => false))
+  for (const key of common) c(`${testid}: ${key} stays out`, await dialog.getByText(tr(key)).first().isVisible())
+  for (const key of rare) c(`${testid}: ${key} is folded`, await dialog.getByText(tr(key)).first().isHidden())
+  await group.click()
+  for (const key of rare) c(`${testid}: ${key} shows on a click`, await dialog.getByText(tr(key)).first().waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false))
+}
+const moreActions = async (page, name, action) => {
+  await go(page, `${MOUNT}/文档`, 1200)
+  await item(page, name).click({ button: "right" })
+  await page.locator('[role="menu"]').getByRole("menuitem", { name: tr("files.more_actions") }).first().hover()
+  const sub = page.locator('[role="menu"]').nth(1)
+  await sub.waitFor()
+  await sub.getByRole("menuitem", { name: tr(action) }).first().click()
+  return page.locator('[role="dialog"]').last()
+}
+await spec("p3-dialog-advanced", {}, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  let dialog = await moreActions(page, "压缩包.zip", "home.toolbar.decompress")
+  await foldsIn(c, dialog, "advanced-decompress", ["home.toolbar.decompress-pass", "home.conflict_policy.overwrite_existing"], ["home.toolbar.decompress-cache-full", "home.toolbar.decompress-put-into-new"])
+  await page.keyboard.press("Escape")
+  dialog = await moreActions(page, "笔记", "home.toolbar.generate_transfer_seed")
+  await foldsIn(c, dialog, "advanced-seed", ["home.transfer_seed.formats", "home.transfer_seed.seed_name", "home.transfer_seed.output_path"], ["home.transfer_seed.hash_matrix", "home.transfer_seed.piece_size", "home.transfer_seed.comment"])
+  await page.keyboard.press("Escape")
+  // the upload panel opens its file picker as it mounts: let it come and go
+  await go(page, `${MOUNT}/文档`, 1200)
+  const chooser = page.waitForEvent("filechooser", { timeout: 3000 }).catch(() => null)
+  await page.locator("[data-files-new]").click()
+  await page.locator('[role="menuitem"][data-action="upload"]').click()
+  await chooser
+  dialog = page.locator('[role="dialog"]').last()
+  await foldsIn(c, dialog, "advanced-upload", ["home.upload.add_as_task", "home.upload.try_rapid"], ["home.upload.sidecars"])
+  c.done()
+})
+
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
 await browser.close()
 await chromeBrowser?.close()
