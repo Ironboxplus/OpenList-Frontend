@@ -43,7 +43,7 @@ export const TooltipContent = <T extends ValidComponent = "div">(
             data-motion="tooltip"
             ref={withRef(ref, local.ref)}
             class={cn(
-              "z-[1500] origin-[var(--kb-tooltip-content-transform-origin)] overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground",
+              "z-[1540] origin-[var(--kb-tooltip-content-transform-origin)] overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground",
               local.class,
             )}
             {...rest}

@@ -34,9 +34,12 @@ type DropdownMenuContentProps =
     ref?: unknown
   }
 
-/** A menu's panel: grows from its anchor, 120ms in and 90ms out. */
+/**
+ * A menu's panel: grows from its anchor, 120ms in and 90ms out. Drawn over
+ * the toasts (z-[1520]) as over dialogs, app/theme.ts.
+ */
 export const menuPanel =
-  "z-[1500] min-w-[8rem] origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md"
+  "z-[1540] min-w-[8rem] origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md"
 
 export const DropdownMenuContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, DropdownMenuContentProps>,

@@ -2,10 +2,11 @@ import { globalCss, HopeThemeConfig } from "@hope-ui/solid"
 import { hoverColor } from "~/utils"
 
 /**
- * The overlays still on hope (Select lists outside dialogs, toasts) sit above
- * the kit's layer, z-[1500] for every dialog, sheet, menu and popover in
- * components/ui, so one opened from a dialog is not drawn under it
- * (PLAN_FE_UNIFY_OVERLAYS_1126 §2.2 F). hope's defaults are 1400 / 1500.
+ * The overlays still on hope (Select lists outside dialogs) sit above the
+ * kit's layers in components/ui: z-[1500] for dialogs and sheets, z-[1520] for
+ * the toasts, z-[1540] for menus, popovers, lists and tooltips. So one opened
+ * from a dialog is not drawn under it (PLAN_FE_UNIFY_OVERLAYS_1126 §2.2 F).
+ * hope's defaults are 1400 / 1500.
  */
 export const zIndices = {
   dropdown: 1550,

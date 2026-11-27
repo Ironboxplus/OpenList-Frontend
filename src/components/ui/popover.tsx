@@ -61,7 +61,7 @@ export const PopoverContent = <T extends ValidComponent = "div">(
             data-motion="popover"
             ref={withRef(ref, local.ref)}
             class={cn(
-              "z-[1500] w-72 origin-[var(--kb-popover-content-transform-origin)] rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none!",
+              "z-[1540] w-72 origin-[var(--kb-popover-content-transform-origin)] rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none!",
               local.class,
             )}
             {...rest}

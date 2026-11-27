@@ -83,7 +83,7 @@ export const SelectContent = <T extends ValidComponent = "div">(
             data-motion="select"
             ref={withRef(ref, local.ref)}
             class={cn(
-              "relative z-[1500] min-w-[8rem] origin-[var(--kb-select-content-transform-origin)] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+              "relative z-[1540] min-w-[8rem] origin-[var(--kb-select-content-transform-origin)] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
               local.class,
             )}
             {...rest}

@@ -448,9 +448,11 @@ export const ToastRegion = (props: { bottom?: string }) => {
       tabIndex={-1}
       aria-label={`${t("global.notifications")} (${HOTKEY_LABEL})`}
       // [S] index.tsx:25, :28, :34: 24px from the edges and 356px wide;
-      // 16px from them on a phone. Above everything, hope's tooltips too
-      // (the layer hope's own toasts had, app/theme.ts)
-      class="pointer-events-none fixed inset-x-4 z-[1800] [--toast-offset:16px] min-[601px]:left-auto min-[601px]:right-6 min-[601px]:w-[356px] min-[601px]:[--toast-offset:24px]"
+      // 16px from them on a phone. Over dialogs and sheets, so what one says
+      // is seen and can be closed; under a menu or popover someone has just
+      // opened, which on a phone comes up where the toasts are and would
+      // otherwise be under them, its taps taken by them (app/theme.ts)
+      class="pointer-events-none fixed inset-x-4 z-[1520] [--toast-offset:16px] min-[601px]:left-auto min-[601px]:right-6 min-[601px]:w-[356px] min-[601px]:[--toast-offset:24px]"
       style={{
         bottom: `calc(${props.bottom ?? "0px"} + env(safe-area-inset-bottom) + var(--toast-offset))`,
       }}
