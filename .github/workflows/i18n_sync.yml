@@ -47,6 +47,11 @@ jobs:
       - name: Generate and update lang files
         run: |
           cd backend
+          # public/public.go embeds all:dist. Upstream commits a placeholder
+          # (public/dist/README.md), Ironboxplus/OpenList does not: without one
+          # the build stops at "pattern all:dist: no matching files found"
+          mkdir -p public/dist
+          [ -n "$(ls -A public/dist)" ] || echo "placeholder" > public/dist/README.md
           go run ./main.go lang --frontend-path ../
           cd ..
 
