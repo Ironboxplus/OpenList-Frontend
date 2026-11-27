@@ -14,8 +14,9 @@ const stop = (e: Event) => e.stopPropagation()
 
 /**
  * The row's own download button (plan §0.2 下载: every file downloads from the
- * list). It shows on hover and on focus; its clicks never reach the row, which
- * would open the file.
+ * list). It shows on hover and on focus, and always where nothing hovers (a
+ * touch screen), so no tap lands on a button it cannot see; its clicks never
+ * reach the row, which would open the file.
  */
 export const RowDownload = (props: { obj: StoreObj }) => {
   const t = useT()
@@ -27,7 +28,7 @@ export const RowDownload = (props: { obj: StoreObj }) => {
         data-testid="row-download"
         aria-label={t("files.download")}
         title={t("files.download")}
-        class="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
+        class="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100 [@media(hover:none)]:opacity-100"
         on:mousedown={stop}
         on:pointerdown={stop}
         on:click={(e: MouseEvent) => {

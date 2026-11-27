@@ -132,7 +132,10 @@ export const FileCard = (props: {
   selecting?: boolean
   checkbox?: () => JSX.Element
   extra?: JSX.Element
-  /** At the end of the name row (the playing mark, the download). */
+  /**
+   * In the thumbnail's top corner (the playing mark, the download), so the
+   * name keeps the card's width.
+   */
   actions?: JSX.Element
   onThumbClick?: (e: MouseEvent) => void
 }) => (
@@ -143,7 +146,6 @@ export const FileCard = (props: {
       selecting={props.selecting}
       checkbox={props.checkbox}
       sub={<CardMeta obj={props.obj} />}
-      extra={props.actions}
     />
     <div
       data-card-thumb
@@ -157,6 +159,11 @@ export const FileCard = (props: {
           <div class="rounded-md bg-background/85 px-1 py-0.5">
             {props.extra}
           </div>
+        </div>
+      </Show>
+      <Show when={props.actions}>
+        <div class="absolute right-1 top-1 flex items-center gap-1 [&>button]:bg-background/85">
+          {props.actions}
         </div>
       </Show>
     </div>
