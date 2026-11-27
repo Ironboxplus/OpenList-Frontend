@@ -3125,7 +3125,8 @@ await spec("p3-transfer-settings", {}, async (env) => {
   await page.locator('[data-setting="transfers"]').click()
   await page.waitForURL(/\/@manage\/settings\/transfer$/, { timeout: 5000 }).catch(() => {})
   c("Transfer settings opens a settings page", /\/@manage\/settings\/transfer$/.test(page.url()), page.url())
-  for (const id of ["task-threads", "speed-limits", "sync-bandwidth", "connections"]) {
+  c("every setting of the group has its card", (await page.locator('[data-card="rest"]').count()) === 0)
+  for (const id of ["task-threads", "speed-limits", "multipart-uploads", "sync-bandwidth", "connections"]) {
     const scope = await page.locator(`[data-card="${id}"] [data-scope]`).first().innerText({ timeout: 5000 }).catch(() => "")
     c(`${id} says what it governs`, scope.trim().length > 0, scope)
   }

@@ -9,7 +9,7 @@ import { cardKeys, LAYOUTS, TRANSFER_CARDS } from "../layouts"
 const flat = i18n.flatten(dict) as unknown as Record<string, string>
 
 // The keys of each group as the backend makes them (OP
-// internal/bootstrap/data/setting.go:144-247, :309-320).
+// internal/bootstrap/data/setting.go:144-247, :309-320, :458-460).
 const BACKEND: Partial<Record<Group, string[]>> = {
   [Group.SITE]: [
     "version",
@@ -101,6 +101,10 @@ const BACKEND: Partial<Record<Group, string[]>> = {
     "max_client_upload_speed",
     "max_server_download_speed",
     "max_server_upload_speed",
+    // :458-460, below the others (the CI audit of 5fa54008 found them in a
+    // leftover card on Transfer settings)
+    "multipart_enabled",
+    "multipart_chunk_size",
   ],
 }
 
