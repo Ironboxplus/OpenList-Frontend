@@ -110,9 +110,9 @@ const MediaNav = () => {
               data-media-nav-item={entry.id}
               class={cn(
                 focusRing,
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm no-underline transition-colors hover:no-underline",
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm no-underline transition-colors hover:no-underline",
                 active()
-                  ? "border-primary bg-primary text-primary-foreground"
+                  ? "border-transparent bg-primary text-primary-foreground"
                   : "bg-card text-foreground hover:bg-accent",
               )}
             >

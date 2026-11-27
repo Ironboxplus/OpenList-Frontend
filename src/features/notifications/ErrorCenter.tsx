@@ -118,7 +118,7 @@ const ErrorCenter = () => {
       focusRing,
       "shrink-0 rounded-full border px-3 py-1 text-sm text-foreground transition-colors",
       selected
-        ? "border-primary bg-primary text-primary-foreground"
+        ? "border-transparent bg-primary text-primary-foreground"
         : "bg-card hover:bg-accent",
     )
 

@@ -35,7 +35,7 @@ export const VersionPicker = (props: {
               focusRing,
               "inline-flex h-8 max-w-[260px] items-center rounded-full border px-3 text-xs transition-colors",
               props.value === row.file_name
-                ? "border-primary bg-primary text-primary-foreground"
+                ? "border-transparent bg-primary text-primary-foreground"
                 : "bg-card text-foreground hover:bg-accent",
             )}
             onClick={() => props.onChange(row)}

@@ -355,7 +355,7 @@ export const MediaBrowser = (props: MediaBrowserProps) => {
           focusRing,
           "flex size-8 shrink-0 items-center justify-center rounded-full",
           p.overlay
-            ? "absolute right-2 top-2 z-[2] border border-white/25 bg-black/45 text-slate-100"
+            ? "absolute right-2 top-2 z-[2] bg-black/45 text-slate-100"
             : "bg-transparent text-muted-foreground hover:bg-accent",
           on() && "text-yellow-400",
         )}

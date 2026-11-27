@@ -278,7 +278,12 @@ const Login = () => {
               <CheckboxControl />
               <CheckboxLabel>{t("login.remember")}</CheckboxLabel>
             </Checkbox>
-            <a target="_blank" href={t("login.forget_url")}>
+            <a
+              target="_blank"
+              href={t("login.forget_url")}
+              // 32px to click around one line of text
+              class="inline-flex min-h-8 items-center"
+            >
               {t("login.forget")}
             </a>
           </div>

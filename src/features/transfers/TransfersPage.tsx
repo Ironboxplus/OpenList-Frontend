@@ -75,7 +75,7 @@ const Section = (props: {
           type="button"
           class={cn(
             focusRing,
-            "flex items-center gap-1 rounded-sm bg-transparent text-base font-semibold text-foreground",
+            "flex min-h-8 items-center gap-1 rounded-sm bg-transparent text-base font-semibold text-foreground",
           )}
           aria-expanded={props.open}
           onClick={props.onToggle}

@@ -188,7 +188,7 @@ export const MediaItemDetail = (props: MediaItemDetailProps) => {
             }}
             class={cn(
               focusRing,
-              "absolute right-2 top-2 flex size-8 items-center justify-center rounded-full border border-white/25 bg-black/45 text-slate-100 backdrop-blur-sm",
+              "absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-black/45 text-slate-100 backdrop-blur-sm",
               props.favorite && "text-yellow-400",
             )}
           >

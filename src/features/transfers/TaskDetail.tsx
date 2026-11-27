@@ -328,7 +328,7 @@ const SyncDetail = (props: {
                   focusRing,
                   "rounded-full border bg-transparent px-2.5 py-0.5 text-xs text-foreground transition-colors",
                   kind() === k
-                    ? "border-primary bg-primary text-primary-foreground"
+                    ? "border-transparent bg-primary text-primary-foreground"
                     : "hover:bg-accent",
                 )}
                 onClick={() => setKind(k)}

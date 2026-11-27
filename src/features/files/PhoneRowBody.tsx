@@ -47,7 +47,7 @@ export const PhoneRowBody = (props: { obj: StoreObj }) => {
           class={cn(
             "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-2",
             props.obj.selected
-              ? "border-primary bg-primary text-primary-foreground"
+              ? "border-transparent bg-primary text-primary-foreground"
               : "border-muted-foreground/50",
           )}
         >

@@ -13,7 +13,7 @@ export const SelectCheck = (props: { selected?: boolean }) => (
     class={cn(
       "absolute left-1 top-1 z-10 inline-flex size-6 items-center justify-center rounded-full border-2",
       props.selected
-        ? "border-primary bg-primary text-primary-foreground"
+        ? "border-transparent bg-primary text-primary-foreground"
         : "border-white/80 bg-black/20",
     )}
   >
