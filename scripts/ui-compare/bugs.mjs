@@ -3189,6 +3189,27 @@ await spec("p3-dialog-advanced", {}, async (env) => {
   c.done()
 })
 
+// P3: the storage form shows the required items and the ones not at their
+// default; the rest of each section is folded under Advanced. The seed's
+// Local storage sets its mount path, cache time and thumbnails (lib.mjs addStorage)
+await spec("p3-storage-advanced", {}, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  const list = await olGet("/api/admin/storage/list", token)
+  const local = (list.content ?? []).find((s) => s.mount_path === MOUNT)
+  c("the seed's storage is there", !!local, (list.content ?? []).map((s) => s.mount_path))
+  await go(page, `/@manage/storages/edit/${local?.id}`, 1500)
+  const f = (key) => page.locator(`[data-field="${key}"]`)
+  await f("mount_path").waitFor({ timeout: 8000 }).catch(() => {})
+  for (const key of ["mount_path", "cache_expiration", "root_folder_path", "thumbnail"]) c(`${key} is in sight`, await f(key).isVisible())
+  for (const key of ["remark", "disable_index"]) c(`${key}, at its default, is folded`, await f(key).isHidden())
+  const common = page.locator('[data-testid="advanced-storage-common"]')
+  c("the common section has an Advanced title", await common.isVisible())
+  await common.click().catch(() => {})
+  c("which opens on a click", await f("remark").waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false))
+  c.done()
+})
+
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
 await browser.close()
 await chromeBrowser?.close()
