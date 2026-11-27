@@ -65,7 +65,7 @@ const SERVER_LIMITS = ["max_server_download_speed", "max_server_upload_speed"]
 // any negative value is no limit (OP internal/bootstrap/stream_limit.go:33-38)
 const UNLIMITED: SpecialValue = { value: "-1", labelKey: "global.unlimited" }
 
-/** The Traffic group (OP internal/bootstrap/data/setting.go:309-320). */
+/** The Traffic group (OP internal/bootstrap/data/setting.go:309-320, :458-460). */
 export const TRANSFER_CARDS: SettingsCard[] = [
   card("task-threads", THREADS, {
     advanced: RARE_THREADS,
@@ -77,6 +77,10 @@ export const TRANSFER_CARDS: SettingsCard[] = [
     special: Object.fromEntries(
       [...CLIENT_LIMITS, ...SERVER_LIMITS].map((k) => [k, UNLIMITED]),
     ),
+  }),
+  // the upload panel's Multipart method (pages/home/uploads/uploads.ts)
+  card("multipart-uploads", ["multipart_enabled", "multipart_chunk_size"], {
+    help: scopeOf(["multipart_enabled"]),
   }),
 ]
 
