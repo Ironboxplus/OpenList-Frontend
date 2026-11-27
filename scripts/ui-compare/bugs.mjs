@@ -2127,8 +2127,13 @@ const anims = (page) => page.evaluate(() => window.__viewer?.anims ?? [])
 const dockRun = (heights, from, to) => {
   // heights holds changes only: the one before the window is where it rested
   const before = heights.filter((h) => h[0] < from).pop()
-  const span = heights.filter((h) => h[0] >= from && h[0] <= to)
-  if (span.length < 3) return null
+  const all = heights.filter((h) => h[0] >= from && h[0] <= to)
+  // the run starts with the first move of half a pixel or more: at rest the
+  // box can read a hundredth off (e7a9db3d: 459.98, then 460 79ms before the
+  // run, whose first step was 0.9px)
+  const rest = before ? before[1] : all[0]?.[1]
+  const span = all.slice(Math.max(0, all.findIndex((h) => Math.abs(h[1] - rest) >= 0.5)))
+  if (all.length < 3 || span.length < 3) return null
   const end = span[span.length - 1]
   const t0 = span[0][2] ?? span[0][0] - 16
   return {
