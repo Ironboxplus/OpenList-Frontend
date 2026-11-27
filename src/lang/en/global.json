@@ -39,5 +39,10 @@
   "invalid_filename_chars": "Filename cannot contain: / \\ ? < > * : | \"",
   "invalid_regex": "Invalid regular expression",
   "name": "Name",
-  "go_to_storages": "Go to Storages"
+  "go_to_storages": "Go to Storages",
+  "not_set": "Not set",
+  "unlimited": "Unlimited",
+  "never_expires": "Never expires",
+  "advanced_count": "({{count}})",
+  "advanced_changed": "{{count}} changed"
 }
