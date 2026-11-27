@@ -228,7 +228,10 @@ html.shell-phone body {
   *:not([role="progressbar"], [role="progressbar"] *),
   *::before,
   *::after {
-    transition-duration: 0.01ms !important;
+    /* 0s, not the usual 0.01ms: with transition-property's default "all"
+       that made a transition of every style change (nothing here waits for
+       transitionend) */
+    transition-duration: 0s !important;
     transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
