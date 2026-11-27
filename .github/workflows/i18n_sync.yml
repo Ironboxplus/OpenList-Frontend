@@ -67,7 +67,10 @@ jobs:
         if: steps.verify-changed-files.outputs.changed == 'true' && env.HAS_BOT != 'true'
         run: |
           echo "::warning::the backend's lang files differ from src/lang/en; no BOT_TOKEN/BOT_GPG_PRIVATE_KEY here to open a PR"
+          echo "backend: $(git -C backend remote get-url origin) $(git -C backend rev-parse HEAD)"
           git diff --cached --stat -- src/lang/en/
+          # the keys themselves (OP cmd/lang.go only adds the missing ones)
+          git diff --cached -- src/lang/en/
 
       - name: Import GPG key
         if: steps.verify-changed-files.outputs.changed == 'true' && env.HAS_BOT == 'true'
