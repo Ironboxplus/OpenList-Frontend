@@ -1393,7 +1393,12 @@ const ACCEL = "cubic-bezier(0.3,0,0.8,0.15)"
 /** The probe's record of the last overlay of `kind`, durations relative to its insertion. */
 const overlayRecord = async (page, kind) => {
   const recs = await page.evaluate(() =>
-    window.__overlayMotion.map((r) => ({ ...r, closedAt: r.closedAt === null ? null : Math.round(r.closedAt - r.t0), removedAt: r.removedAt === null ? null : Math.round(r.removedAt - r.t0), frames: r.frames.slice(0, 40) })),
+    window.__overlayMotion.map((r) => {
+      const closed = r.closedAt === null ? Infinity : r.closedAt - r.t0
+      // how it looked at rest, just before it was told to close
+      const rest = r.frames.filter((f) => f[0] < closed).pop() ?? null
+      return { ...r, closedAt: r.closedAt === null ? null : Math.round(r.closedAt - r.t0), removedAt: r.removedAt === null ? null : Math.round(r.removedAt - r.t0), rest, frames: r.frames.slice(0, 40) }
+    }),
   )
   const mine = recs.filter((r) => r.kind === kind)
   return { rec: mine[mine.length - 1], kinds: recs.map((r) => r.kind) }
@@ -1411,6 +1416,8 @@ const expectOverlayMotion = (env, kind, { rec, kinds }, enter, exit, moves) => {
   const inMove = rec.anims.find((a) => a.phase === "enter" && moves && a.props.includes(moves))
   if (moves && (!inMove || Math.abs(inMove.duration - enter) > 2 || inMove.easing !== DECEL)) fail.push(`enter should move (${moves}) for ${enter}ms ${DECEL}`)
   if (!outA || Math.abs(outA.duration - exit) > 2 || outA.easing !== ACCEL) fail.push(`exit should be ${exit}ms ${ACCEL}`)
+  // at rest it is whole: opaque and at full size (CI 45952006402: menus came to rest at scale(0))
+  if (!rec.rest || rec.rest[1] < 0.99 || !["none", "matrix(1, 0, 0, 1, 0, 0)"].includes(rec.rest[2])) fail.push(`at rest it is ${JSON.stringify(rec.rest)}, not opaque at full size`)
   if (rec.closedAt === null || rec.removedAt === null) fail.push(`closed at ${rec.closedAt}, removed at ${rec.removedAt}`)
   else if (rec.removedAt - rec.closedAt < exit - 10) fail.push(`removed ${rec.removedAt - rec.closedAt}ms after it was told to close, before its ${exit}ms exit ran`)
   env.report = { ...(env.report ?? {}), [kind]: { enter: inA?.duration ?? null, exit: outA?.duration ?? null, closeToRemoved: rec.removedAt !== null && rec.closedAt !== null ? rec.removedAt - rec.closedAt : null } }
