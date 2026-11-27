@@ -11,10 +11,16 @@ jobs:
     permissions:
       contents: write
 
+    # The bot's token and signing key exist upstream only. Without them (a
+    # fork: Ironboxplus/OpenList-Frontend has none of the three) the code is
+    # still formatted and what would change is reported; nothing is pushed.
+    env:
+      HAS_BOT: ${{ secrets.BOT_TOKEN != '' && secrets.BOT_GPG_PRIVATE_KEY != '' }}
+
     steps:
       - uses: actions/checkout@v7
         with:
-          token: ${{ secrets.BOT_TOKEN }}
+          token: ${{ secrets.BOT_TOKEN || github.token }}
       - uses: pnpm/action-setup@v6
 
       - name: Setup Node.js environment
@@ -29,6 +35,7 @@ jobs:
         run: pnpm run format
 
       - name: Import GPG key
+        if: env.HAS_BOT == 'true'
         id: import-gpg
         uses: crazy-max/ghaction-import-gpg@v7
         with:
@@ -38,9 +45,21 @@ jobs:
           git_commit_gpgsign: true
 
       - name: Commit and push formatting changes
+        if: env.HAS_BOT == 'true'
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "[skip ci] style: format code with prettier"
           commit_author: "${{ steps.import-gpg.outputs.name }} <${{ steps.import-gpg.outputs.email }}>"
           commit_user_name: ${{ steps.import-gpg.outputs.name }}
           commit_user_email: ${{ steps.import-gpg.outputs.email }}
+
+      - name: Report formatting changes (no bot to push them)
+        if: env.HAS_BOT != 'true'
+        run: |
+          changed=$(git status --porcelain)
+          if [ -n "$changed" ]; then
+            echo "::warning::prettier would change these files; no BOT_TOKEN/BOT_GPG_PRIVATE_KEY here to push them"
+            echo "$changed"
+          else
+            echo "already formatted"
+          fi

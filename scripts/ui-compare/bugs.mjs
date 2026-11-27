@@ -2803,20 +2803,59 @@ await spec("p4-toast-undo", { init: [viewerProbe, layoutOf(P4UNDO, "list")], vid
   c.done()
 })
 
+// a submenu stands still once it is open: on a phone the batch bar's Copy
+// link submenu kept moving, too long for a click (45991318607). Its box is
+// read every frame for 1.5s after the click; it may move while it comes in,
+// and must hold still from 500ms on
+await spec("menu-submenu-still-390", { width: 390, height: 844 }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`, 1200)
+  await selectRows(page, "笔记.txt", true)
+  await page.locator('[data-batch="more"]').click()
+  await seen(page, '[data-motion="menu"]')
+  const run = page.evaluate(
+    () =>
+      new Promise((done) => {
+        const boxes = []
+        const t0 = performance.now()
+        const f = () => {
+          const menus = document.querySelectorAll('[data-motion="menu"]')
+          const sub = menus.length > 1 ? menus[menus.length - 1] : null
+          const r = sub?.getBoundingClientRect()
+          const b = r ? [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)].join(",") : "none"
+          if (!boxes.length || boxes[boxes.length - 1][1] !== b) boxes.push([Math.round(performance.now() - t0), b])
+          if (performance.now() - t0 < 1500) requestAnimationFrame(f)
+          else done(boxes)
+        }
+        requestAnimationFrame(f)
+      }),
+  )
+  await page.getByRole("menuitem", { name: tr("home.toolbar.copy_link") }).click()
+  const boxes = await run
+  const last = boxes[boxes.length - 1]
+  c("the submenu opens", last && last[1] !== "none", boxes)
+  c("and holds still from 500ms on", last && last[0] <= 500, boxes)
+  c("inside the screen", last && last[1] !== "none" && (() => {
+    const [x, y, w, h] = last[1].split(",").map(Number)
+    return x >= 0 && y >= 0 && x + w <= 390 && y + h <= 844
+  })(), last)
+  c.done()
+})
+
 // the toasts' stack, as sonner (src/index.tsx) and Kobalte's toast keep it:
 // the newest in front and three in sight; alt+T takes the focus there; a
 // toast is swiped away (right or down), a short drag lets it go back. On the
-// desktop: the phone's Copy link submenu never held still for a click
-// (45991318607, reported apart)
-await spec("p4-toast-stack", {}, async (env) => {
+// desktop and on a phone, through the batch menus of both
+for (const phone of [false, true]) await spec("p4-toast-stack", phone ? { width: 390, height: 844 } : {}, async (env) => {
   const { page, ctx } = env
   const c = checker(env)
   await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: OL })
   await go(page, `${MOUNT}/文档`, 1200)
   // four notices through the UI: a link copied from the batch menu, four times
-  await selectRows(page, "笔记.txt", false)
+  await selectRows(page, "笔记.txt", phone)
   for (let i = 0; i < 4; i++) {
-    await page.locator('[data-selection-bar] [data-action="batch-more"]').click()
+    await page.locator(phone ? '[data-batch="more"]' : '[data-selection-bar] [data-action="batch-more"]').click()
     await page.getByRole("menuitem", { name: tr("home.toolbar.copy_link") }).click()
     await page.getByRole("menuitem", { name: tr("home.toolbar.down_link") }).click()
   }
