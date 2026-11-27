@@ -40,7 +40,8 @@ export const LibraryBadge = () => {
         class="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary"
       >
         <TbBooks class="size-3.5" />
-        <span>{t("media.library.badge")}</span>
+        {/* a phone keeps the icon and the counts; the name of the folder comes first */}
+        <span class="hidden sm:inline">{t("media.library.badge")}</span>
         <span class="sm:hidden">
           {libraryCounts().done}/{libraryCounts().total}
         </span>

@@ -187,7 +187,9 @@ const PhoneCrumbs = () => {
   const parent = () => parentCrumb(crumbs())
   const current = () => crumbs()[crumbs().length - 1]
   return (
-    <div class="flex min-w-0 items-center gap-1">
+    // takes the row's room before the library badge does: the folder name is
+    // what the bar is for (390px audit: "媒体库" cut under the badge)
+    <div class="flex min-w-0 flex-1 items-center gap-1">
       <Show when={parent()}>
         {(p) => (
           <a
@@ -213,7 +215,7 @@ const PhoneCrumbs = () => {
         onClick={() => setOpen(true)}
         class={cn(
           focusRing,
-          "flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-md bg-transparent px-1.5 py-1 text-sm font-medium text-foreground",
+          "flex min-h-8 min-w-8 max-w-full items-center justify-center gap-1.5 rounded-md bg-transparent px-1.5 py-1 text-sm font-medium text-foreground",
         )}
       >
         <span class="flex min-w-0 items-center gap-1.5 truncate">
