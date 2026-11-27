@@ -2599,7 +2599,8 @@ await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, asy
   c("none moves or clips", moving.length === 0, moving)
   // the dock's height jumps: no frame between closed and open
   const full = Math.max(0, ...heights.map((h) => h[1]))
-  const between = heights.filter((h) => h[1] > 0 && h[1] < full)
+  // (read to the hundredth: an open dock can read 459.98 of 460 at rest)
+  const between = heights.filter((h) => h[1] >= 0.5 && h[1] <= full - 0.5)
   c("the dock's height does not run", between.length === 0, heights)
   c.done()
 })
