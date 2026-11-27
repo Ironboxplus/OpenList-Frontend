@@ -113,7 +113,8 @@ export const ConnectionsPerFile = () => {
             <tbody>
               <For each={rows()}>
                 {(row) => {
-                  const href = `/@manage/storages/edit/${row.id}`
+                  // the storage form opens the item's fold and marks it
+                  const href = `/@manage/storages/edit/${row.id}?focus=max_conns_per_file`
                   return (
                     <tr data-storage={row.id} class="border-t">
                       <td class="py-2 pr-3">

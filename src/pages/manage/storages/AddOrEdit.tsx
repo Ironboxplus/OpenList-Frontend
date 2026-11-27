@@ -1,5 +1,6 @@
-import { createMemo, createSignal, For, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
+import { AdvancedGroup } from "~/components/ui/advanced-group"
 import { Alert, AlertDescription } from "~/components/ui/alert"
 import { Button } from "~/components/ui/button"
 import { DataState } from "~/components/ui/data-state"
@@ -10,7 +11,9 @@ import {
   FieldRenderer,
   SettingsForm,
   SettingsSection,
+  type FieldRaw,
   type FieldSpec,
+  type FieldValue,
 } from "~/features/settings/form"
 import { useFetch, useRouter, useT } from "~/hooks"
 import {
@@ -40,10 +43,85 @@ const ALERT_VARIANT = {
   error: "destructive",
 } as const
 
+/**
+ * A section of driver items: those in `inSight` (`<part>:<name>`) in line,
+ * the others under Advanced, counted when no longer at their default.
+ */
+const ItemSection = (props: {
+  id: string
+  part: "common" | "additional"
+  title: string
+  items: DriverItem[]
+  inSight: Set<string>
+  atDefault: (item: DriverItem, value: unknown) => boolean
+  value: (item: DriverItem) => unknown
+  field: (item: DriverItem) => FieldSpec
+  onChange: (item: DriverItem, raw: FieldRaw) => void
+  /** The item a link led to: its fold opens and it is marked. */
+  focus?: string
+}) => {
+  const t = useT()
+  const shown = (item: DriverItem) =>
+    props.inSight.has(`${props.part}:${item.name}`)
+  const inline = createMemo(() => props.items.filter(shown))
+  const folded = createMemo(() => props.items.filter((i) => !shown(i)))
+  const changed = () =>
+    folded().filter((i) => !props.atDefault(i, props.value(i))).length
+  const [open, setOpen] = createSignal(false)
+  // the form was filled again: what differs is in sight, fold the rest, but
+  // for the item a link led to
+  createEffect(
+    on(
+      () => props.inSight,
+      () => {
+        setOpen(folded().some((i) => i.name === props.focus))
+        if (props.items.some((i) => i.name === props.focus))
+          requestAnimationFrame(() =>
+            document
+              .querySelector(`[data-field="${props.focus}"]`)
+              ?.scrollIntoView?.({ block: "center" }),
+          )
+      },
+    ),
+  )
+  const Item = (p: { item: DriverItem }) => (
+    <FieldRenderer
+      field={props.field(p.item)}
+      value={props.value(p.item) as FieldValue}
+      focused={props.focus === p.item.name}
+      onChange={(raw) => props.onChange(p.item, raw)}
+    />
+  )
+  return (
+    <SettingsSection id={props.id} title={props.title}>
+      <For each={inline()}>{(item) => <Item item={item} />}</For>
+      <Show when={folded().length > 0}>
+        <div class="py-2">
+          <AdvancedGroup
+            title={t("global.advanced")}
+            count={folded().length}
+            changed={changed()}
+            open={open()}
+            onOpenChange={setOpen}
+            testid={`advanced-storage-${props.part}`}
+          >
+            <For each={folded()}>{(item) => <Item item={item} />}</For>
+          </AdvancedGroup>
+        </div>
+      </Show>
+    </SettingsSection>
+  )
+}
+
 const AddOrEdit = () => {
   const t = useT()
-  const { params, to } = useRouter()
+  const { params, to, searchParams } = useRouter()
   const { id } = params
+  // the item a link led to (Transfer settings' connections per file)
+  const focus = () => {
+    const f = searchParams?.focus
+    return Array.isArray(f) ? f[0] : f
+  }
   const [driversLoading, loadDrivers] = useFetch(
     (): PResp<Drivers> => r.get("/admin/driver/list"),
     true,
@@ -75,6 +153,7 @@ const AddOrEdit = () => {
       (data) => {
         setError(undefined)
         setDrivers(data)
+        placeItems()
         setBaseline(snapshot())
       },
       setError,
@@ -91,6 +170,7 @@ const AddOrEdit = () => {
           (driverData) => {
             setError(undefined)
             setDrivers({ [storage.driver]: driverData })
+            placeItems()
             setBaseline(snapshot())
           },
           setError,
@@ -104,6 +184,34 @@ const AddOrEdit = () => {
 
   const info = () => drivers()[storage.driver]
   const alertTone = createMemo(() => info()?.config.alert?.split("|")[0])
+
+  // Required items and the ones not at their default are in sight, the rest
+  // of each section folded (PLAN_FE_SYSTEM_UX_1127 P3; research 05 §一: the
+  // driver Item has Default and Required, no advanced flag yet). Decided when
+  // the form is filled, so an item does not jump out of the fold as it is edited.
+  const commonValue = (item: DriverItem) =>
+    (storage as unknown as Record<string, unknown>)[item.name]
+  const atDefault = (item: DriverItem, value: unknown) =>
+    value === undefined ||
+    value === null ||
+    String(value) === String(driverDefault(item.type, item.default))
+  const [inSight, setInSight] = createSignal(new Set<string>())
+  const placeItems = () => {
+    const d = info()
+    if (!d) return setInSight(new Set<string>())
+    const shown = (items: DriverItem[], value: (i: DriverItem) => unknown) =>
+      items
+        .filter((i) => i.required || !atDefault(i, value(i)))
+        .map((i) => i.name)
+    setInSight(
+      new Set([
+        ...shown(d.common, commonValue).map((n) => `common:${n}`),
+        ...shown(d.additional, (i) => addition[i.name]).map(
+          (n) => `additional:${n}`,
+        ),
+      ]),
+    )
+  }
 
   /** What goes to the backend, and what Export shows. */
   const payload = () => ({
@@ -125,6 +233,7 @@ const AddOrEdit = () => {
       setAddition(item.name, driverDefault(item.type, item.default))
     }
     setStorage("driver", driver)
+    placeItems()
   }
 
   const [saving, setSaving] = createSignal(false)
@@ -167,6 +276,7 @@ const AddOrEdit = () => {
       }: Storage = JSON.parse(text)
       setStorage(rest as Partial<Storage>)
       setAddition(JSON.parse(add))
+      placeItems()
       setImportOpen(false)
       notify.success(t("storages.common.import_success"))
     } catch (e: any) {
@@ -244,46 +354,40 @@ const AddOrEdit = () => {
             </Show>
           </SettingsSection>
           <Show when={info()}>
-            <SettingsSection
+            <ItemSection
               id="storage-common"
+              part="common"
               title={t("settings.form.storage_common")}
-            >
-              <For each={info().common}>
-                {(item) => (
-                  <FieldRenderer
-                    field={driverField(item, "common")}
-                    value={
-                      (storage as unknown as Record<string, never>)[item.name]
-                    }
-                    onChange={(raw) =>
-                      setStorage(
-                        item.name as keyof Storage,
-                        driverFromRaw(item.type, raw) as never,
-                      )
-                    }
-                  />
-                )}
-              </For>
-            </SettingsSection>
+              items={info().common}
+              inSight={inSight()}
+              atDefault={atDefault}
+              value={commonValue}
+              field={(item) => driverField(item, "common")}
+              focus={focus()}
+              onChange={(item, raw) =>
+                setStorage(
+                  item.name as keyof Storage,
+                  driverFromRaw(item.type, raw) as never,
+                )
+              }
+            />
             <Show when={info().additional.length > 0}>
-              <SettingsSection
+              <ItemSection
                 id="storage-additional"
+                part="additional"
                 title={t("settings.form.storage_driver", {
                   driver: t(`drivers.drivers.${storage.driver}`),
                 })}
-              >
-                <For each={info().additional}>
-                  {(item) => (
-                    <FieldRenderer
-                      field={driverField(item, storage.driver)}
-                      value={addition[item.name]}
-                      onChange={(raw) =>
-                        setAddition(item.name, driverFromRaw(item.type, raw))
-                      }
-                    />
-                  )}
-                </For>
-              </SettingsSection>
+                items={info().additional}
+                inSight={inSight()}
+                atDefault={atDefault}
+                value={(item) => addition[item.name]}
+                field={(item) => driverField(item, storage.driver)}
+                focus={focus()}
+                onChange={(item, raw) =>
+                  setAddition(item.name, driverFromRaw(item.type, raw))
+                }
+              />
             </Show>
           </Show>
         </DataState>
