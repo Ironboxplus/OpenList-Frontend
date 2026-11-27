@@ -64,14 +64,15 @@ export const MotionDiv = (
   props: JSX.HTMLAttributes<HTMLDivElement> & {
     initial?: MotionStyle
     animate: MotionStyle
-    transition: MotionOptions
+    /** Duration and curve (not `transition`: hope's Box takes that as CSS). */
+    timing: MotionOptions
     ref?: (el: HTMLDivElement) => void
   },
 ) => {
   const [local, rest] = splitProps(props, [
     "initial",
     "animate",
-    "transition",
+    "timing",
     "ref",
   ])
   return (
@@ -80,7 +81,7 @@ export const MotionDiv = (
         animateTo(
           el,
           () => toCss(local.animate),
-          local.transition,
+          local.timing,
           local.initial && toCss(local.initial),
         )
         local.ref?.(el)

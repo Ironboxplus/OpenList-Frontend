@@ -118,7 +118,7 @@ function MarkdownToc(props: {
         as={MotionDiv}
         initial={{ x: 999 }}
         animate={{ x: offsetX() }}
-        transition={MotionTokens.options.pane}
+        timing={MotionTokens.options.pane}
         onMouseEnter={() => setOffsetX(0)}
         onMouseLeave={() => setOffsetX(initialOffsetX)}
         zIndex="$overlay"

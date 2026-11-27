@@ -108,7 +108,7 @@ function SidebarPanel() {
         as={MotionDiv}
         initial={{ x: -999 }}
         animate={{ x: offsetX() }}
-        transition={MotionTokens.options.pane}
+        timing={MotionTokens.options.pane}
         h="$full"
         minW={180}
         p="$2"

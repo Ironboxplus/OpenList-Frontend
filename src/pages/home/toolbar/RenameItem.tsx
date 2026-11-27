@@ -8,7 +8,7 @@ export const RenameItem = (props: { obj: RenameObj; index: number }) => {
     <MotionDiv
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={MotionTokens.options.barEnter}
+      timing={MotionTokens.options.barEnter}
       style={{
         width: "100%",
       }}

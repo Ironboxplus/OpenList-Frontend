@@ -58,7 +58,7 @@ export const Right = () => {
           as={MotionDiv}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={MotionTokens.options.barEnter}
+          timing={MotionTokens.options.barEnter}
         >
           <VStack spacing="$1" class="left-toolbar-in">
             <Show

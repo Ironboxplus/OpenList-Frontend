@@ -35,7 +35,7 @@ const ClassicBackTop = () => {
         as={MotionDiv}
         initial={{ y: -999 }}
         animate={{ y: 0 }}
-        transition={MotionTokens.options.pane}
+        timing={MotionTokens.options.pane}
         zIndex="$overlay"
         pos="fixed"
         right="$5"
