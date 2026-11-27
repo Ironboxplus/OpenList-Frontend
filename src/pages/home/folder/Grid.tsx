@@ -1,7 +1,6 @@
 import { Box, Grid, Text } from "@hope-ui/solid"
 import { createMemo, createSignal, For, onCleanup, Show } from "solid-js"
 import { GridItem } from "./GridItem"
-import "lightgallery/css/lightgallery-bundle.css"
 import { smartCountMsg, local, objStore, getPagination } from "~/store"
 import { useT, useUtil } from "~/hooks"
 import { useSelectWithMouse } from "./helper"
