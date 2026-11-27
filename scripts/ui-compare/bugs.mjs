@@ -8,7 +8,7 @@ import { chromium } from "playwright"
 import { SourceMapConsumer } from "source-map"
 import fs from "node:fs"
 import path from "node:path"
-import { alive, log, MOUNT, OL, row, seed, selectRows, tr } from "./lib.mjs"
+import { alive, log, MOUNT, OL, olGet, olPost, row, seed, selectRows, tr } from "./lib.mjs"
 import { layoutChecks } from "./checks.mjs"
 
 const out = process.argv[2]
@@ -1995,7 +1995,9 @@ const viewerProbe = () => {
       v.anims.push({
         at: Math.round(performance.now() - t0),
         motion: el?.closest?.("[data-motion]")?.getAttribute("data-motion") ?? el?.localName ?? "",
+        pseudo: a.effect?.pseudoElement ?? "",
         duration: Number(tm.duration),
+        delay: Number(tm.delay) || 0,
         iterations: Number(tm.iterations),
         easing: String(tm.easing).replace(/\s+/g, ""),
         props: [...new Set(kf.flatMap((f) => Object.keys(f)))].filter((p) => !["offset", "easing", "composite", "computedOffset"].includes(p)),
@@ -2556,6 +2558,395 @@ await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, asy
   const full = Math.max(0, ...heights.map((h) => h[1]))
   const between = heights.filter((h) => h[1] > 0 && h[1] < full)
   c("the dock's height does not run", between.length === 0, heights)
+  c.done()
+})
+
+// ---- P4: motion across the app (docs/PLAN_FE_SYSTEM_UX_1127.md §P4; the
+// durations and curves of research 02 §三). Each spec reads what the browser
+// ran (viewerProbe: every animation with the data-motion of what it moves) or,
+// for what Motion runs on its own clock (heights), the box frame by frame.
+const STANDARD = "cubic-bezier(0.2,0,0,1)"
+const P4DIR = `${MOUNT}/动效`
+const near = (a, ms, tol = 2) => typeof a === "number" && Math.abs(a - ms) <= tol
+const named = (list, motion, prop) => list.filter((a) => a.motion === motion && (!prop || a.props.includes(prop)))
+const freshAnims = (page) => page.evaluate(() => (window.__viewer.anims = []).length)
+const putFile = (p, text) =>
+  fetch(OL + "/api/fs/put", { method: "PUT", headers: { Authorization: token, "File-Path": encodeURIComponent(p), "Content-Type": "application/octet-stream" }, body: text }).then((r) => r.json())
+const listNames = async (dir) => ((await olPost("/api/fs/list", { path: dir, refresh: true }, token))?.content ?? []).map((o) => o.name)
+const removeAll = (dir, names) => olPost("/api/fs/remove", { dir, names }, token).catch(() => {})
+const layoutOf = (dir, kind) => new Function(`localStorage.setItem("layoutRecord", JSON.stringify({ ${JSON.stringify(dir)}: ${JSON.stringify(kind)} }))`)
+const inPath = (page, end) => page.waitForFunction((end) => decodeURI(location.pathname).replace(/\/$/, "").endsWith(end), end, { timeout: 8000 }).then(() => true, () => false)
+
+// entering a folder: the old content fades out in 90ms, the new one fades in
+// in 150ms after it (MD fade through), nothing moves; Back does the same
+await spec("p4-folder-fade", { init: viewerProbe, video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, MOUNT, 1200)
+  await freshAnims(page)
+  await openRow(page, "文档")
+  c("a folder opens", await inPath(page, "/文档"))
+  await settle(page)
+  let a = await anims(page)
+  const out = named(a, "files-ghost", "opacity")[0]
+  const inn = named(a, "files-live", "opacity")[0]
+  c("the folder left fades out in 90ms", out && near(out.duration, 90) && out.easing === ACCEL, out ?? a)
+  c("the folder entered fades in in 150ms, once the other is gone", inn && near(inn.duration, 150) && near(inn.delay, 90) && inn.easing === DECEL, inn ?? a)
+  c("neither moves", [...named(a, "files-ghost"), ...named(a, "files-live")].every((x) => x.props.every((p) => p === "opacity")), a)
+  c("the picture of the folder left is taken away", await page.evaluate(() => !document.querySelector("[data-files-ghost]")?.children.length))
+  await freshAnims(page)
+  await page.goBack()
+  c("Back returns", await inPath(page, MOUNT))
+  await settle(page)
+  a = await anims(page)
+  c("Back fades through too", named(a, "files-ghost", "opacity").length > 0 && named(a, "files-live", "opacity").length > 0, a)
+  c.done()
+})
+
+// grid <-> list: the two cross-fade in 150ms
+await spec("p4-layout-crossfade", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`, 1200)
+  await freshAnims(page)
+  await page.locator("[data-files-view]").click()
+  await page.getByRole("menuitem", { name: tr("home.layouts.list") }).click()
+  c("the list shows", await seen(page, ".list"))
+  await settle(page)
+  const a = await anims(page)
+  const out = named(a, "files-ghost", "opacity")[0]
+  const inn = named(a, "files-live", "opacity")[0]
+  c("the grid fades out in 150ms", out && near(out.duration, 150), out ?? a)
+  c("the list fades in in 150ms at the same time", inn && near(inn.duration, 150) && near(inn.delay, 0), inn ?? a)
+  c.done()
+})
+
+// the selection's bar: slides and fades in (200ms), out (150ms); leaving, it
+// is out of the flow at once, so the search box takes its place without a jump
+await spec("p4-selection-bar", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`, 1200)
+  await freshAnims(page)
+  await selectRows(page, "笔记.txt", false)
+  c("the bar shows", await seen(page, "[data-selection-bar]"))
+  await settle(page)
+  let a = named(await anims(page), "selection-bar")
+  const enter = a.find((x) => x.props.includes("opacity"))
+  const slide = a.find((x) => x.props.includes("transform"))
+  c("it comes in in 200ms, fading", enter && near(enter.duration, 200) && enter.easing === DECEL, a)
+  c("and sliding", slide && near(slide.duration, 200), a)
+  await freshAnims(page)
+  const position = await page.evaluate(() => {
+    document.querySelector('[data-action="cancel_select"]').click()
+    const bar = document.querySelector('[data-motion="selection-bar"]')
+    return bar ? getComputedStyle(bar).position : "gone"
+  })
+  c("leaving, it is out of the flow at once", position === "absolute", position)
+  await settle(page)
+  a = named(await anims(page), "selection-bar", "opacity")
+  c("it leaves in 150ms", a[0] && near(a[0].duration, 150) && a[0].easing === ACCEL, a)
+  c("and is gone after", await gone(page, "[data-selection-bar]"))
+  c.done()
+})
+
+// rows that come, go and move: a new row fades in (200ms) and is lit for
+// 1200ms; a removed one fades out (150ms) where it was; the others slide to
+// their new places (250ms, standard), also when the order changes
+await spec("p4-list-changes", { init: [viewerProbe, layoutOf(P4DIR, "list")], video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await olPost("/api/fs/mkdir", { path: P4DIR }, token).catch(() => {})
+  for (const n of ["b.txt", "c.txt", "d.txt", "e.txt"]) await putFile(`${P4DIR}/${n}`, n)
+  try {
+    await go(page, P4DIR, 1200)
+    await freshAnims(page)
+    await putFile(`${P4DIR}/a.txt`, "a")
+    await page.locator('[data-action="refresh"]').first().click()
+    c("the new row shows", await seen(page, '[data-row-name="a.txt"]'))
+    await settle(page)
+    let a = await anims(page)
+    const come = named(a, "row", "opacity")[0]
+    const lit = named(a, "row", "backgroundColor")[0]
+    c("a new row fades in in 200ms", come && near(come.duration, 200) && come.easing === DECEL, a)
+    c("and is lit for 1200ms", lit && near(lit.duration, 1200), a)
+    await freshAnims(page)
+    await removeAll(P4DIR, ["c.txt"])
+    await page.locator('[data-action="refresh"]').first().click()
+    c("the removed row goes", await gone(page, '[data-row-name="c.txt"]'))
+    await settle(page)
+    a = await anims(page)
+    const leave = named(a, "row-ghost", "opacity")[0]
+    const slide = named(a, "row", "transform")[0]
+    c("a removed row fades out in 150ms", leave && near(leave.duration, 150) && leave.easing === ACCEL, a)
+    c("the rows under it slide up in 250ms", slide && near(slide.duration, 250) && slide.easing === STANDARD, a)
+    c("nothing is left of it", await page.evaluate(() => !document.querySelector('[data-motion="row-ghost"]')))
+    await freshAnims(page)
+    await page.locator("[data-files-sort]").first().click()
+    await page.locator('[data-sort-dir="desc"]').click()
+    await settle(page)
+    a = await anims(page)
+    const moved = named(a, "row", "transform")
+    c("a new order slides the rows to their places", moved.length >= 2 && moved.every((x) => near(x.duration, 250) && x.easing === STANDARD), a)
+  } finally {
+    await removeAll(MOUNT, ["动效"])
+  }
+  c.done()
+})
+
+// the side nav's folder tree: a folder's children open (220ms) and fold
+// (180ms) by height; its caret turns on the same clock
+const foldRun = (page, label) =>
+  page.evaluate(async (label) => {
+    const items = [...document.querySelectorAll('[role="treeitem"]')]
+    const item = items.find((r) => r.querySelector(":scope > div span:last-child")?.textContent?.trim() === label)
+    if (!item) return { error: `no tree row ${label}` }
+    const t0 = performance.now()
+    item.querySelector(':scope > div button[aria-label="toggle"]').click()
+    const hs = []
+    await new Promise((done) => {
+      const f = () => {
+        const fold = item.querySelector(':scope > [data-motion="fold"]')
+        const h = fold ? Math.round(fold.getBoundingClientRect().height) : -1
+        if (!hs.length || hs[hs.length - 1][1] !== h) hs.push([Math.round(performance.now() - t0), h])
+        if (performance.now() - t0 < 2500) requestAnimationFrame(f)
+        else done()
+      }
+      requestAnimationFrame(f)
+    })
+    const caret = item.querySelector(":scope > div button svg")
+    return { hs, caret: caret ? getComputedStyle(caret).transitionDuration : "" }
+  }, label)
+/** From the first frame it changed to the frame it settled. */
+const runOf = (hs) => {
+  const moving = hs.filter((h) => h[1] > 0)
+  if (hs.length < 3) return null
+  const end = hs[hs.length - 1]
+  const startAt = hs.find((h, i) => i > 0 && h[1] !== hs[0][1])
+  return startAt ? { ran: end[0] - startAt[0] + 16, to: end[1], frames: hs.length, max: Math.max(...moving.map((h) => h[1])) } : null
+}
+await spec("p4-tree", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, "/", 1500)
+  const open = await foldRun(page, "审计")
+  const o = runOf(open.hs ?? [])
+  c("a folder's children open by height in 220ms", o && o.to > 0 && Math.abs(o.ran - 220) <= 50, open)
+  c("its caret turns in 220ms", open.caret === "0.22s", open.caret)
+  const shut = await foldRun(page, "审计")
+  const s = runOf(shut.hs ?? [])
+  c("and fold in 180ms", s && s.to === 0 && Math.abs(s.ran - 180) <= 50, shut)
+  c("its caret turns back in 180ms", shut.caret === "0.18s", shut.caret)
+  c.done()
+})
+
+// one kind of toast, Motion's (200ms in, 150ms out); a rename offers to undo
+// it for 5 seconds, undoing is renaming back, and an undo that cannot be done
+// says why
+const P4UNDO = `${MOUNT}/撤销`
+const renameIn = async (page, from, to) => {
+  await selectRows(page, from, false)
+  await page.locator('[data-selection-bar] [data-action="rename"]').click()
+  const input = page.locator('[role="dialog"] input').first()
+  await input.fill(to)
+  await page.locator('[role="dialog"]').getByRole("button", { name: tr("global.ok") }).click()
+}
+await spec("p4-toast-undo", { init: [viewerProbe, layoutOf(P4UNDO, "list")], video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await olPost("/api/fs/mkdir", { path: P4UNDO }, token).catch(() => {})
+  await putFile(`${P4UNDO}/原名.txt`, "x")
+  try {
+    await go(page, P4UNDO, 1200)
+    await freshAnims(page)
+    await renameIn(page, "原名.txt", "新名.txt")
+    const toast = page.locator('[data-motion="toast"]').filter({ has: page.locator('[data-testid="toast-action"]') }).first()
+    c("a rename says so, with Undo", await toast.waitFor({ timeout: 5000 }).then(() => true, () => false))
+    await settle(page)
+    let a = named(await anims(page), "toast")
+    const tin = a.find((x) => x.props.includes("opacity"))
+    c("the toast comes in in 200ms", tin && near(tin.duration, 200) && tin.easing === DECEL, a)
+    c("hope's notifications are not used", (await page.locator(".hope-notification__root, [class*='hope-notification']").count()) === 0)
+    await toast.locator('[data-testid="toast-action"]').click()
+    const back = await (async () => {
+      for (let i = 0; i < 20; i++) {
+        const n = await listNames(P4UNDO)
+        if (n.includes("原名.txt") && !n.includes("新名.txt")) return true
+        await sleep(250)
+      }
+      return false
+    })()
+    c("Undo renames it back", back, await listNames(P4UNDO))
+    c("and the list shows the old name", await seen(page, '[data-row-name="原名.txt"]'))
+    // an undo that cannot be done: the old name is taken again by then
+    await renameIn(page, "原名.txt", "新名.txt")
+    await toast.waitFor({ timeout: 5000 }).catch(() => {})
+    await putFile(`${P4UNDO}/原名.txt`, "taken")
+    await toast.locator('[data-testid="toast-action"]').click()
+    const err = page.locator('[data-motion="toast"][data-toast-kind="error"]').first()
+    c("a failed undo says why", await err.waitFor({ timeout: 5000 }).then(() => true, () => false))
+    const text = await err.innerText().catch(() => "")
+    c("in words, with the server's reason", tr("files.undo_failed").test(text) || /undo/i.test(text), text)
+    await freshAnims(page)
+    await err.locator('[data-testid="toast-close"]').click()
+    c("a toast closes on its button", await gone(page, '[data-motion="toast"][data-toast-kind="error"]'))
+    a = named(await anims(page), "toast", "opacity")
+    c("leaving in 150ms", a[0] && near(a[0].duration, 150) && a[0].easing === ACCEL, a)
+  } finally {
+    await removeAll(MOUNT, ["撤销"])
+  }
+  c.done()
+})
+
+// copying from a button: its icon turns into a check (100ms) for 1.5s
+await spec("p4-copy-check", { init: viewerProbe }, async (env) => {
+  const { page, ctx } = env
+  const c = checker(env)
+  await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: OL })
+  await go(page, `${MOUNT}/文档`, 1200)
+  await selectRows(page, "笔记.txt", false)
+  await page.locator('[data-selection-bar] [data-action="share"]').click()
+  await page.locator('[data-testid="share-create"]').click()
+  const btn = page.locator('[data-testid="share-dialog"] [data-testid="copy-button"]')
+  c("the link has a copy button", await btn.waitFor({ timeout: 5000 }).then(() => true, () => false))
+  await freshAnims(page)
+  await btn.click()
+  c("it shows a check", await seen(page, '[data-testid="share-dialog"] [data-testid="copy-button"][data-copied]', 2000))
+  const a = named(await anims(page), "copy-icon")
+  c("turning in 100ms", a.length > 0 && a.every((x) => near(x.duration, 100)), a)
+  await sleep(1700)
+  c("and turns back after 1.5s", (await page.locator('[data-testid="share-dialog"] [data-testid="copy-button"][data-copied]').count()) === 0)
+  c("the clipboard holds the link", /\/@s\//.test(await page.evaluate(() => navigator.clipboard.readText()).catch(() => "")))
+  c.done()
+})
+
+// an upload's progress: the bar runs to each new value (200ms) and a check
+// shows once it is done
+await spec("p4-progress", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`, 1200)
+  await freshAnims(page)
+  await page.locator("[data-files-new]").click()
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser", { timeout: 8000 }), page.locator('[data-action="upload"]').click()])
+  await chooser.setFiles({ name: "进度.bin", mimeType: "application/octet-stream", buffer: Buffer.alloc(3 * 1024 * 1024, 7) })
+  try {
+    c("the upload is done, with a check", await seen(page, '[data-testid="progress-done"]', 20000))
+    const a = named(await anims(page), "progress-fill", "width")
+    c("the bar runs to its value in 200ms", a.length > 0 && a.every((x) => near(x.duration, 200) && x.easing === STANDARD), a)
+  } finally {
+    await removeAll(`${MOUNT}/文档`, ["进度.bin"])
+  }
+  c.done()
+})
+
+// switching the theme: the new colors spread from the button (a view
+// transition, 200ms); reduced motion switches at once
+const themeButton = (page) => page.getByRole("button", { name: tr("shell.nav.toggle_theme") }).first()
+await spec("p4-theme", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, MOUNT, 1200)
+  await freshAnims(page)
+  const dark0 = await page.evaluate(() => document.documentElement.classList.contains("dark"))
+  await themeButton(page).click()
+  await sleep(600)
+  const a = (await anims(page)).filter((x) => x.pseudo === "::view-transition-new(root)")
+  c("the new theme spreads from the button in 200ms", a.some((x) => x.props.includes("clipPath") && near(x.duration, 200)), await anims(page))
+  c("the theme changed", (await page.evaluate(() => document.documentElement.classList.contains("dark"))) !== dark0)
+  c.done()
+})
+
+// reduced motion: these are fades of at most 100ms, or nothing
+await spec("p4-reduced", { reducedMotion: "reduce", init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, MOUNT, 1200)
+  await freshAnims(page)
+  await openRow(page, "文档")
+  await inPath(page, "/文档")
+  await settle(page)
+  await selectRows(page, "笔记.txt", false)
+  await settle(page)
+  await page.locator('[data-action="cancel_select"]').click()
+  await settle(page)
+  const dark0 = await page.evaluate(() => document.documentElement.classList.contains("dark"))
+  await themeButton(page).click()
+  await sleep(400)
+  const ours = (await anims(page)).filter((a) => a.iterations !== Infinity && /^(files-|selection-bar|row|toast|copy-icon|progress|drop-overlay)/.test(a.motion))
+  env.report = { ...(env.report ?? {}), anims: ours }
+  c("folder and selection animations ran", ours.length > 0, ours)
+  c("none longer than 100ms", ours.every((a) => a.duration <= 100), ours)
+  c("none moves", ours.every((a) => a.props.every((p) => p === "opacity")), ours)
+  c("the theme switches without a transition", (await page.evaluate(() => document.documentElement.classList.contains("dark"))) !== dark0 && !(await anims(page)).some((x) => x.pseudo.startsWith("::view-transition")))
+  c.done()
+})
+
+// files dragged in from the desktop, in any layout: a layer saying where they
+// will go fades in (100ms); dropping them opens the upload with them
+await spec("p4-drop", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`, 1200)
+  await freshAnims(page)
+  const dt = await page.evaluateHandle(() => {
+    const d = new DataTransfer()
+    d.items.add(new File(["dropped\n"], "拖入.txt", { type: "text/plain" }))
+    return d
+  })
+  const area = page.locator("[data-files-area]").first()
+  await area.dispatchEvent("dragenter", { dataTransfer: dt })
+  await area.dispatchEvent("dragover", { dataTransfer: dt })
+  const layer = page.locator('[data-testid="drop-overlay"]')
+  c("a layer says where the files will go", await layer.waitFor({ timeout: 3000 }).then(() => true, () => false))
+  c("naming the folder", /文档/.test(await layer.innerText().catch(() => "")))
+  c("the upload does not open before the drop", (await page.locator('[role="dialog"]').count()) === 0)
+  await settle(page)
+  const a = named(await anims(page), "drop-overlay", "opacity")
+  c("it fades in in 100ms", a[0] && near(a[0].duration, 100), a)
+  await layer.dispatchEvent("drop", { dataTransfer: dt })
+  try {
+    c("the drop opens the upload with the file", await page.getByText("拖入.txt").first().waitFor({ timeout: 8000 }).then(() => true, () => false))
+    c("the layer goes", await gone(page, '[data-testid="drop-overlay"]'))
+    await sleep(2000)
+  } finally {
+    await removeAll(`${MOUNT}/文档`, ["拖入.txt"])
+  }
+  c.done()
+})
+
+// the CI backend makes video thumbnails (ffmpeg in the image): the folder's
+// video card asks for one and gets a picture
+await spec("p4-video-thumb", {}, async (env) => {
+  const c = checker(env)
+  const list = await olPost("/api/fs/list", { path: `${MOUNT}/预览`, refresh: false }, token)
+  const v = (list?.content ?? []).find((o) => o.name === "示例视频.mp4")
+  c("the video has a thumbnail address", !!v?.thumb, v)
+  const r = v?.thumb ? await fetch(v.thumb.startsWith("http") ? v.thumb : OL + v.thumb) : null
+  const body = r && !r.ok ? (await r.text()).slice(0, 300) : ""
+  c("which answers with a picture", r?.status === 200 && /^image\//.test(r.headers.get("content-type") ?? ""), { status: r?.status, type: r?.headers.get("content-type"), body })
+  c.done()
+})
+
+// a group's advanced part with fewer than two items is not folded: the share
+// dialog's access group shows its one rarely used item in line
+await spec("p4-advanced-flat", {}, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`, 1200)
+  await selectRows(page, "笔记.txt", false)
+  await page.locator('[data-selection-bar] [data-action="share"]').click()
+  const dialog = page.locator('[data-testid="share-dialog"]')
+  c("the share dialog opens", await dialog.waitFor({ timeout: 5000 }).then(() => true, () => false))
+  c("Who can open it has no Advanced (1)", (await dialog.locator('[data-testid="advanced-access"]').count()) === 0)
+  c("its one item is in sight", await dialog.locator('[data-field="burn_after_read"]').isVisible())
+  c("a group of more still folds", (await dialog.locator('[data-testid="advanced-page"]').count()) === 1)
+  // an empty share code says what it means (OP internal/model/sharing.go:55, :72)
+  const ph = await dialog.locator('[data-field="pwd"] input').getAttribute("placeholder")
+  c("an empty share code says anyone with the link can open it", tr("shares.pwd_empty").test(ph ?? ""), ph)
+  await page.goto(OL + "/@manage/shares/add", { waitUntil: "domcontentloaded" })
+  const ph2 = await page.locator("input#pwd").getAttribute("placeholder", { timeout: 8000 }).catch(() => null)
+  c("so does the share form", tr("shares.pwd_empty").test(ph2 ?? ""), ph2)
   c.done()
 })
 

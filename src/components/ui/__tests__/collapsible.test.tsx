@@ -83,6 +83,41 @@ describe("AdvancedGroup", () => {
     await waitFor(() => expect(content().hidden).toBe(false))
   })
 
+  it("does not fold fewer than two items: they show in line, with no trigger", () => {
+    const { queryByTestId, getByText } = render(() => (
+      <AdvancedGroup
+        title="Advanced"
+        count={1}
+        changed={0}
+        open={false}
+        onOpenChange={() => {}}
+        testid="adv"
+      >
+        <span>only item</span>
+      </AdvancedGroup>
+    ))
+    expect(queryByTestId("adv")).toBeNull()
+    expect(document.querySelector('[data-motion="collapsible"]')).toBeNull()
+    expect(getByText("only item").closest("[hidden]")).toBeNull()
+  })
+
+  it("keeps a group's title when its only item is shown in line", () => {
+    const { getByText } = render(() => (
+      <AdvancedGroup
+        heading
+        title="Link"
+        count={1}
+        changed={0}
+        open={false}
+        onOpenChange={() => {}}
+      >
+        <span>only item</span>
+      </AdvancedGroup>
+    ))
+    expect(getByText("Link")).toBeTruthy()
+    expect(getByText("only item").closest("[hidden]")).toBeNull()
+  })
+
   it("has no changed mark when everything is at its default", () => {
     const { queryByTestId } = render(() => (
       <AdvancedGroup
