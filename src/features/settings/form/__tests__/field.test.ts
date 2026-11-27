@@ -54,4 +54,10 @@ describe("settingField", () => {
       settingField(setting("token_expires_in")).zeroLabelKey,
     ).toBeUndefined()
   })
+
+  it("shows a link lifetime of 0 as never expiring (OP internal/sign/sign.go:16-21)", () => {
+    expect(settingField(setting("link_expiration")).zeroLabelKey).toBe(
+      "global.never_expires",
+    )
+  })
 })

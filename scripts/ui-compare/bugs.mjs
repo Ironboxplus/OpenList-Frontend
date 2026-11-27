@@ -1542,36 +1542,58 @@ const STANDARD = "cubic-bezier(0.2,0,0,1)"
 const heightRun = (frames, from, to) => {
   const span = frames.filter((f) => f[0] >= from && f[0] < to)
   const h = span.map((f) => f[3])
-  const end = h[h.length - 1]
   const startIdx = h.findIndex((v) => Math.abs(v - h[0]) >= JITTER)
   if (startIdx < 1) return null
-  // over for good: every frame from here on reads the final height
-  let endIdx = h.length - 1
-  while (endIdx > startIdx && h[endIdx - 1] === end) endIdx--
-  // surely still running: the last frame a visible step away from it
-  let farIdx = endIdx - 1
-  while (farIdx > startIdx && Math.abs(h[farIdx] - end) < JITTER) farIdx--
+  const b = runBounds(span.map((f) => f[0]), h, startIdx)
   const t = (i) => span[i][0]
   return {
     lead: t(startIdx - 1) - from,
-    ran: t(endIdx) - t(startIdx - 1),
-    moved: t(farIdx) - t(startIdx),
-    frames: span.slice(Math.max(0, startIdx - 2), endIdx + 2).map((f) => [f[0] - from, f[3]]),
+    ...b,
+    frames: span.slice(Math.max(0, startIdx - 2), b.endIdx + 2).map((f) => [f[0] - from, f[3]]),
     from: h[0],
-    to: end,
+    to: h[h.length - 1],
   }
 }
 /**
  * Less than a twentieth of a pixel: a box at rest can read a hundredth off
- * (the dock: 460, then 459.98 with nothing running, 46039802741), and the
- * last frames of a decelerating curve move by about as little (46042634934:
- * 73.81, 73.98 at 300ms, 74 at 332ms). Such a frame tells neither that the
- * run goes on nor that it is over: `ran` ends on the first frame at the final
- * height for good, `moved` on the last one a visible step away from it.
+ * (the dock: 460, then 459.98 with nothing running, 46039802741; 459.98, then
+ * 460 595ms after the run, 46048158984). Within it the height has arrived: a
+ * jitter like that neither starts a run nor keeps one going. The same
+ * tolerance as viewer-reduced's "the height does not run".
  */
 const JITTER = 0.05
-/** A run of `ms` fits what the frames saw (one frame's rounding either side). */
-const ranFor = (run, ms) => !!run && run.moved - 2 <= ms && ms <= run.ran + 2
+/**
+ * The bounds of a run whose first move is at `startIdx` (`times` and `h` per
+ * frame, or per change): `ran` from the frame before the first move to the
+ * first frame from which the height stays within JITTER of where it ends,
+ * `moved` from the first move to the last frame still JITTER or more away.
+ * `frame` is the median time between frames.
+ */
+const runBounds = (times, h, startIdx) => {
+  const end = h[h.length - 1]
+  let endIdx = h.length - 1
+  while (endIdx > startIdx && Math.abs(h[endIdx - 1] - end) < JITTER) endIdx--
+  let farIdx = endIdx - 1
+  while (farIdx > startIdx && Math.abs(h[farIdx] - end) < JITTER) farIdx--
+  const gaps = times.slice(startIdx, endIdx + 1).map((t, i, a) => (i ? t - a[i - 1] : 0)).slice(1).sort((a, b) => a - b)
+  return {
+    ran: times[endIdx] - times[startIdx - 1],
+    moved: times[farIdx] - times[startIdx],
+    frame: gaps[gaps.length >> 1] ?? 16,
+    endIdx,
+  }
+}
+/**
+ * A run of `ms` fits what the frames saw: no longer than it surely moved
+ * (`moved`, one ms of rounding), no shorter than it took to arrive (`ran`);
+ * the frame it arrived on may come up to a frame before the end, while the
+ * last of a decelerating curve moves by less than JITTER (dock 46048158984:
+ * 459.95 at 498ms of 500). And the frames must pin the run down: the two
+ * bounds no more than three frames apart (lead, 11-28: a wider bracket checks
+ * nothing; 46048158984 read 1093ms for 500).
+ */
+const runWidthOk = (run) => !!run && run.ran - run.moved <= 3 * run.frame
+const ranFor = (run, ms) => runWidthOk(run) && run.moved - 2 <= ms && ms <= run.ran + run.frame
 await spec("motion-collapsible", { init: overlayProbe, video: true }, async (env) => {
   const { page } = env
   await go(page, "/@manage/shares/add", 1500)
@@ -1594,6 +1616,8 @@ await spec("motion-collapsible", { init: overlayProbe, video: true }, async (env
   log("motion collapsible", JSON.stringify({ marks, enter, exit, anims: rec?.anims, hidden }))
   const bad = []
   // the height runs on Motion's JS clock: measured by frame (heightRun)
+  for (const [name, run] of [["opening", enter], ["folding", exit]])
+    if (run && !runWidthOk(run)) bad.push(`the frames do not pin the ${name} down (bounds over 3 frames apart): ${JSON.stringify(run)}`)
   if (!ranFor(enter, 220) || enter.lead < 24) bad.push(`height should open in 220ms after 40ms: ${JSON.stringify(enter)}`)
   if (!ranFor(exit, 180) || exit.to !== 0) bad.push(`height should fold in 180ms to 0: ${JSON.stringify(exit)}`)
   if (!fadeIn || Math.abs(fadeIn.duration - 220) > 2 || fadeIn.easing !== STANDARD) bad.push(`body should fade in 220ms ${STANDARD}`)
@@ -2149,14 +2173,14 @@ const dockRun = (heights, from, to) => {
   const rest = before ? before[1] : all[0]?.[1]
   const final = all[all.length - 1]?.[1]
   const span = all.slice(Math.max(0, all.findIndex((h) => Math.abs(h[1] - rest) >= JITTER)))
-  let farIdx = span.length - 2
-  while (farIdx > 0 && Math.abs(span[farIdx][1] - final) < JITTER) farIdx--
   if (all.length < 3 || span.length < 3) return null
-  const end = span[span.length - 1]
   const t0 = span[0][2] ?? span[0][0] - 16
+  // the frame before the first move leads: times[0] is t0, the moves follow
+  const b = runBounds([t0, ...span.map((h) => h[0])], [rest, ...span.map((h) => h[1])], 1)
   return {
-    ran: end[0] - t0,
-    moved: span[farIdx][0] - span[0][0],
+    ran: b.ran,
+    moved: b.moved,
+    frame: b.frame,
     from: before ? before[1] : null,
     to: final,
     frames: span.map((h) => [h[0] - t0, h[1]]),
@@ -2255,6 +2279,8 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
   env.report = { ...(env.report ?? {}), dockOpen: opened, dockClose: closed }
   // the height runs on Motion's JS clock: measured by frame, what the frames
   // bracket (ranFor)
+  c("the frames pin the opening down (bounds within 3 frames)", runWidthOk(opened), opened)
+  c("the frames pin the closing down (bounds within 3 frames)", runWidthOk(closed), closed)
   c("the dock opens in 500ms", opened && opened.from === 0 && ranFor(opened, 500), opened)
   c("the dock closes in 200ms", closed && closed.to === 0 && ranFor(closed, 200), closed)
   c.done()
@@ -2622,7 +2648,7 @@ await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, asy
   // the dock's height jumps: no frame between closed and open
   const full = Math.max(0, ...heights.map((h) => h[1]))
   // (read to the hundredth: an open dock can read 459.98 of 460 at rest)
-  const between = heights.filter((h) => h[1] >= 0.5 && h[1] <= full - 0.5)
+  const between = heights.filter((h) => h[1] >= JITTER && h[1] <= full - JITTER)
   c("the dock's height does not run", between.length === 0, heights)
   c.done()
 })
@@ -3268,6 +3294,178 @@ await spec("p3-storage-advanced", {}, async (env) => {
   c("the common section has an Advanced title", await common.isVisible())
   await common.click().catch(() => {})
   c("which opens on a click", await f("remark").waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false))
+  c.done()
+})
+
+// ---- the audit's leftovers (2c3a492a: 310 findings), one spec per place in
+// the code. Each reads the audit's own checks (checks.mjs) on the screen the
+// audit flagged, so a finding gone here is gone there.
+/** Edge findings (faint or invisible) whose element matches `re`. */
+const edges = async (page, re) => {
+  const r = await page.evaluate(layoutChecks)
+  return r.findings.filter((f) => /^border-(faint|invisible)$/.test(f.type) && re.test(f.el)).map((f) => `${f.el.replace(/ @.*$/, "")} ${f.detail}`)
+}
+for (const theme of ["light", "dark"]) {
+  // the media library's cards drew their edge in rgba(0,0,0,0.08) / rgba(255,255,255,0.06)
+  // (pages/media/video/VideoLibrary.tsx VideoCard): 120 audit findings
+  await spec("leftover-media-card-edge", { theme }, async (env) => {
+    const { page } = env
+    const c = checker(env)
+    await go(page, "/@media/video", 2000)
+    const cards = await page.getByText("电影丙", { exact: false }).count()
+    c("the library lists the seeded works", cards > 0)
+    const bad = await edges(page, /电影|影片|剧集/)
+    c("each card's edge can be seen", bad.length === 0, bad)
+    c.done()
+  })
+  // a README's h1 and h2 are underlined in GitHub's #eaecef / #21262d
+  // (components/markdown.css): 48 audit findings
+  await spec("leftover-markdown-heading-rule", { theme }, async (env) => {
+    const { page } = env
+    const c = checker(env)
+    await go(page, MOUNT, 2000)
+    const h = page.locator(".markdown-body h1").first()
+    await h.scrollIntoViewIfNeeded().catch(() => {})
+    c("the README is shown", await h.isVisible().catch(() => false))
+    const bad = await edges(page, /^h[12]\b/)
+    c("the rule under its headings can be seen", bad.length === 0, bad)
+    c.done()
+  })
+}
+// dark: the menus (popover #262626), the sign-in card on its page and the
+// phone's storage card sit on lifted surfaces the border #3d3d3d barely
+// differs from (app/tokens.css): 27 + 6 + 1 audit findings
+await spec("leftover-dark-lifted-edges", { theme: "dark" }, async (env) => {
+  const { page, ctx } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`)
+  await page.locator("[data-files-view]").click()
+  await page.locator('[role="menu"]').first().waitFor()
+  c("a menu's edge can be seen", (await edges(page, /menu/)).length === 0, await edges(page, /menu/))
+  await page.keyboard.press("Escape")
+  await item(page, "笔记").click({ button: "right" })
+  await page.locator('[role="menu"]').first().waitFor()
+  c("so can the context menu's", (await edges(page, /menu/)).length === 0, await edges(page, /menu/))
+  // signed out, in a context of its own (the spec's context signs in)
+  const guest = await ctx.browser().newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark", locale: "zh-CN" })
+  const gp = await guest.newPage()
+  await go(gp, "/@login", 1500)
+  const login = await edges(gp, /rounded-xl/)
+  c("and the sign-in card's", login.length === 0, login)
+  await guest.close()
+  c.done()
+})
+await spec("leftover-dark-lifted-edges", { theme: "dark", width: 390, height: 844 }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`)
+  await page.getByRole("button", { name: /^(Me|我的?)$/ }).click()
+  await page.locator("[data-storage-card]").first().waitFor()
+  await page.waitForTimeout(600)
+  const bad = await edges(page, /data-storage-card/)
+  c("the Me sheet's storage card has an edge that can be seen", bad.length === 0, bad)
+  c.done()
+})
+// the share form's paths were hope's filled textarea (components/MultiPathInput.tsx)
+// among the kit's outlined fields: 12 audit findings
+await spec("leftover-share-paths-field", {}, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, "/@manage/shares/add", 1500)
+  const edge = (sel) => page.locator(sel).first().evaluate((el) => getComputedStyle(el).borderTopColor)
+  const paths = await edge("textarea#files")
+  const remark = await edge("textarea#remark")
+  c("the paths field is framed as the others", paths === remark, { paths, remark })
+  c.done()
+})
+// a transparent border is how a filled control keeps its size (checks.mjs:145);
+// the audit still counted it as faint (hope's filled textarea, the offline
+// download dialog): 6 audit findings
+await spec("leftover-filled-control-edge", {}, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, `${MOUNT}/文档`)
+  await page.locator("[data-files-new]").click()
+  await page.locator('[role="menuitem"][data-action="offline_download"]').click()
+  await page.locator('[role="dialog"] textarea').first().waitFor()
+  await page.waitForTimeout(500)
+  const bad = await edges(page, /textarea/)
+  c("a filled field is not read as a faint frame", bad.length === 0, bad)
+  c.done()
+})
+// click targets under 32px: the plugins page's admin link, the local
+// settings' steppers and the phone palette's Close (22 audit findings)
+const box = (loc) => loc.first().boundingBox().catch(() => null)
+for (const size of [{}, { width: 390, height: 844 }]) {
+  await spec("leftover-small-targets", size, async (env) => {
+    const { page } = env
+    const c = checker(env)
+    await go(page, "/@plugins", 1200)
+    const link = await box(page.locator('[data-testid="system-plugins-link"]'))
+    c("the link to the system plugins is 32px high", link && link.height >= 32, link)
+    if (size.width === 390) {
+      await go(page, `${MOUNT}/文档`)
+      await page.keyboard.press("Control+k")
+      const close = await box(page.locator('[role="dialog"]').getByRole("button", { name: /^(Close|关闭)$/ }))
+      c("the palette's Close is 32px each way", close && close.width >= 32 && close.height >= 32, close)
+    } else {
+      await go(page, `${MOUNT}/文档`)
+      await page.locator("[data-files-more]").click()
+      await page.getByRole("menuitem", { name: tr("home.toolbar.local_settings") }).first().click()
+      const dec = await box(page.locator('[role="dialog"] [aria-label="decrease"]'))
+      const inc = await box(page.locator('[role="dialog"] [aria-label="increase"]'))
+      c("the steppers are 32px each way", [dec, inc].every((b) => b && b.width >= 32 && b.height >= 32), { dec, inc })
+    }
+    c.done()
+  })
+}
+// the save bar of a settings page sticks to the bottom of the screen while the
+// cards go on under it: scrolled to the end, the last field must come out
+// whole above it and take a click (the lead's question, 11-28)
+for (const size of [{}, { width: 390, height: 844 }]) {
+  await spec("settings-bar-clears-last-field", size, async (env) => {
+    const { page } = env
+    const c = checker(env)
+    for (const p of ["/@manage/settings/transfer", "/@manage/settings/global", "/@manage/settings/preview", "/@manage/shares/add", "/@manage/storages/add"]) {
+      await go(page, p, 1500)
+      const m = await page.evaluate(async () => {
+        const bar = document.querySelector('[data-testid="settings-action-bar"]')
+        if (!bar) return { error: "no save bar" }
+        for (let e = bar.parentElement; e; e = e.parentElement)
+          if (e.scrollHeight > e.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(e).overflowY)) e.scrollTop = e.scrollHeight
+        window.scrollTo(0, document.documentElement.scrollHeight)
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+        const shown = (el) => {
+          const r = el.getBoundingClientRect()
+          return r.width > 4 && r.height > 4 && !el.closest("[hidden]") && getComputedStyle(el).visibility === "visible"
+        }
+        const controls = [...bar.closest("form").querySelectorAll('input:not([type="hidden"]), textarea, select, button, a[href], [role="switch"], [role="combobox"]')].filter((el) => !bar.contains(el) && shown(el))
+        const last = controls[controls.length - 1]
+        if (!last) return { error: "no field" }
+        const r = last.getBoundingClientRect()
+        const b = bar.getBoundingClientRect()
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        return { last: last.outerHTML.slice(0, 70), bottom: Math.round(r.bottom), barTop: Math.round(b.top), barHeight: Math.round(b.height), room: Math.round(innerHeight - r.bottom), hits: !!hit && (hit === last || last.contains(hit)) }
+      })
+      log("bar", p, JSON.stringify(m))
+      c(`${p}: the last field is whole above the bar`, !m.error && m.bottom <= m.barTop + 0.5, m)
+      c(`${p}: and takes a click`, !m.error && m.hits, m)
+    }
+    c.done()
+  })
+}
+// the gap check took a sticky save bar for a block of the page: a card the
+// bar is drawn over, or a bar pushed to the bottom of a short page, read as
+// "120px or more of nothing" (24 audit findings, all next to the bar)
+await spec("leftover-sticky-gap", { width: 390, height: 844 }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  for (const p of ["/@manage/settings/preview", "/@manage/storages/add"]) {
+    await go(page, p, 1500)
+    const r = await page.evaluate(layoutChecks)
+    const gaps = r.findings.filter((f) => f.type === "gap").map((f) => `${f.el.replace(/ @.*$/, "")} ${f.detail}`)
+    c(`${p}: no gap next to the save bar`, gaps.every((g) => !/sticky/.test(g)), gaps)
+  }
   c.done()
 })
 

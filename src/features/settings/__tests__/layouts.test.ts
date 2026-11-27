@@ -136,6 +136,30 @@ describe("settings layouts", () => {
       }
   })
 
+  // OP cmd/lang.go convert(): the label the backend makes from a key
+  const generated = (key: string) =>
+    key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+  // keys whose generated label already reads as plain words
+  const PLAIN = new Set(["site_title", "main_color", "home_icon", "share_icon"])
+
+  it("names every setting of a laid-out page in English", () => {
+    for (const cards of Object.values(LAYOUTS))
+      for (const key of cardKeys(cards!))
+        expect(flat[`settings.${key}`], key).toBeTruthy()
+  })
+
+  it("names the settings in the user's words, not by their keys (P1 text rules)", () => {
+    const keyed: string[] = []
+    for (const cards of Object.values(LAYOUTS))
+      for (const key of cardKeys(cards!)) {
+        const label = flat[`settings.${key}`] ?? ""
+        if (!key.includes("_") || PLAIN.has(key)) continue
+        if (label === generated(key) || /\bnum\b/i.test(label))
+          keyed.push(`${key}: ${label}`)
+      }
+    expect(keyed).toEqual([])
+  })
+
   it("folds only where there are at least two rare items", () => {
     for (const cards of Object.values(LAYOUTS))
       for (const c of cards!)
