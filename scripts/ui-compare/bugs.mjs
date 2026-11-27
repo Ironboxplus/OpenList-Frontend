@@ -3086,6 +3086,42 @@ await spec("p4-advanced-flat", {}, async (env) => {
   c.done()
 })
 
+// P3: Transfer settings is a settings page of its own (PLAN_FE_SYSTEM_UX_1127
+// §0.2 设置归位): the task threads, the speed limits, the sync bandwidth and
+// each storage's connections per file, each saying what it governs. Traffic's
+// old address leads there and the transfers page keeps a way in
+await spec("p3-transfer-settings", {}, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, "/@manage", 1200)
+  await page.locator('[data-setting="transfers"]').click()
+  await page.waitForURL(/\/@manage\/settings\/transfer$/, { timeout: 5000 }).catch(() => {})
+  c("Transfer settings opens a settings page", /\/@manage\/settings\/transfer$/.test(page.url()), page.url())
+  for (const id of ["task-threads", "speed-limits", "sync-bandwidth", "connections"]) {
+    const scope = await page.locator(`[data-card="${id}"] [data-scope]`).first().innerText({ timeout: 5000 }).catch(() => "")
+    c(`${id} says what it governs`, scope.trim().length > 0, scope)
+  }
+  const rare = page.locator('[data-field="move_task_threads_num"]')
+  c("the rarely changed thread counts are folded", await rare.isHidden())
+  await page.locator('[data-testid="advanced-task-threads"]').click()
+  c("and open on a click", await rare.waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false))
+  // the sync bandwidth is not a saved setting: it applies at once
+  const sync = page.locator('[data-card="sync-bandwidth"]')
+  await sync.locator('[data-testid="bwlimit-input"]').fill("10M")
+  await sync.locator('[data-testid="bwlimit-apply"]').click()
+  c("the sync bandwidth is set at once", await sync.locator('[data-testid="bwlimit-current"]', { hasText: "10.0 MiB/s" }).waitFor({ timeout: 5000 }).then(() => true, () => false))
+  const bw = await olGet("/api/admin/sync/bwlimit", token).catch((e) => String(e))
+  c("on the server", bw?.bytes_per_second === 10485760, bw)
+  await olPost("/api/admin/sync/bwlimit", { rate: "off" }, token).catch(() => {})
+  c("connections per file is only shown here", (await page.locator('[data-card="connections"] input').count()) === 0)
+  await go(page, "/@manage/settings/traffic", 1500)
+  c("the old Traffic address leads here", /\/@manage\/settings\/transfer$/.test(page.url()), page.url())
+  await go(page, "/@transfers", 1500)
+  const link = page.locator('[data-testid="transfer-settings-link"]')
+  c("the transfers page keeps a way in", await link.isVisible().catch(() => false))
+  c.done()
+})
+
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
 await browser.close()
 await chromeBrowser?.close()

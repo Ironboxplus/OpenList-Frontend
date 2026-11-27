@@ -12,6 +12,7 @@ import {
   canAccess,
   groupSettings,
   manageSubPath,
+  MOVED,
   SETTING_GROUPS,
   SETTINGS,
   settingsForBackend,
@@ -56,15 +57,26 @@ const flat = i18n.flatten(dict) as unknown as Record<string, string>
 const flatZh = i18n.flatten(zhCenter) as unknown as Record<string, string>
 
 describe("registry integrity", () => {
-  it("has an entry for every legacy route", () => {
+  it("has an entry for every legacy route, or says where it moved", () => {
     const routes = new Set(SETTINGS.map((s) => s.route))
-    for (const r of LEGACY_ROUTES) expect(routes.has(r), r).toBe(true)
+    for (const r of LEGACY_ROUTES)
+      expect(routes.has(r) || routes.has(MOVED[r]), r).toBe(true)
   })
 
-  it("adds the transfers page and a direct cluster entry", () => {
-    const routes = SETTINGS.map((s) => s.route)
-    expect(routes).toContain("/@transfers")
-    expect(routes).toContain("/@manage/plugins#cluster")
+  it("moves Traffic into the transfer settings page", () => {
+    expect(MOVED["/@manage/settings/traffic"]).toBe(
+      "/@manage/settings/transfer",
+    )
+    expect(SETTINGS.some((s) => s.id === "traffic")).toBe(false)
+  })
+
+  it("makes Transfer settings a settings page, and adds a direct cluster entry", () => {
+    const transfers = SETTINGS.find((s) => s.id === "transfers")!
+    expect(transfers.route).toBe("/@manage/settings/transfer")
+    expect(transfers.permission).toBeUndefined()
+    // the task list stays in the shell's navigation, not among the settings
+    expect(SETTINGS.map((s) => s.route)).not.toContain("/@transfers")
+    expect(SETTINGS.map((s) => s.route)).toContain("/@manage/plugins#cluster")
   })
 
   it("does not list the profile page", () => {
@@ -98,9 +110,9 @@ describe("registry integrity", () => {
     expect(["site", "style", "preview", "other"].map(group)).toEqual(
       Array(4).fill("site"),
     )
-    expect(
-      ["storages", "shares", "traffic", "s3", "ftp", "transfers"].map(group),
-    ).toEqual(Array(6).fill("storage"))
+    expect(["storages", "shares", "s3", "ftp", "transfers"].map(group)).toEqual(
+      Array(5).fill("storage"),
+    )
     expect(group("indexes")).toBe("indexing")
     expect(["users", "metas", "sso", "ldap"].map(group)).toEqual(
       Array(4).fill("access"),
@@ -142,9 +154,23 @@ describe("registry integrity", () => {
 
   it("keeps keywords bilingual and pointed at inner setting names", () => {
     const kw = (id: string) => SETTINGS.find((s) => s.id === id)!.keywords
-    expect(kw("traffic")).toEqual(expect.arrayContaining(["限速", "bandwidth"]))
     expect(kw("sso")).toEqual(expect.arrayContaining(["oidc", "github"]))
-    expect(kw("transfers")).toEqual(expect.arrayContaining(["同步", "sync"]))
+    // what the transfer settings page holds: threads, limits, sync bandwidth,
+    // connections per file
+    expect(kw("transfers")).toEqual(
+      expect.arrayContaining([
+        "限速",
+        "bandwidth",
+        "同步",
+        "sync",
+        "线程",
+        "threads",
+        "连接数",
+        "connections",
+      ]),
+    )
+    // Other holds the download tools, not the task threads any more
+    expect(kw("other")).not.toContain("task threads")
     for (const s of SETTINGS) {
       expect(
         s.keywords.some((k) => /[一-鿿]/.test(k)),
@@ -168,18 +194,12 @@ describe("permission filter", () => {
     expect(visibleSettings(ADMIN)).toHaveLength(settingsForBackend().length)
   })
 
-  it("a normal user sees only shares, transfers, about and docs", () => {
-    expect(ids(GENERAL)).toEqual(["about", "docs", "shares", "transfers"])
+  it("a normal user sees only shares, about and docs", () => {
+    expect(ids(GENERAL)).toEqual(["about", "docs", "shares"])
   })
 
   it("a delegated user also sees the users page", () => {
-    expect(ids(DELEGATED)).toEqual([
-      "about",
-      "docs",
-      "shares",
-      "transfers",
-      "users",
-    ])
+    expect(ids(DELEGATED)).toEqual(["about", "docs", "shares", "users"])
   })
 
   it("a guest sees only about and docs", () => {
@@ -204,6 +224,9 @@ describe("manageSubPath", () => {
   it("strips the prefix and the hash", () => {
     expect(manageSubPath("/@manage/plugins#cluster")).toBe("/plugins")
     expect(manageSubPath("/@manage/settings/site")).toBe("/settings/site")
+    expect(manageSubPath("/@manage/settings/transfer")).toBe(
+      "/settings/transfer",
+    )
     expect(manageSubPath("/@transfers")).toBeUndefined()
     expect(manageSubPath("https://doc.oplist.org")).toBeUndefined()
   })

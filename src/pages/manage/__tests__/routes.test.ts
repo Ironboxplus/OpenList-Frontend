@@ -22,6 +22,12 @@ describe("getRoutes per backend", () => {
     expect(paths()).not.toContain("/plugins/config/:id")
   })
 
+  it("mounts the transfer settings page, and keeps the old Traffic address leading there", () => {
+    expect(paths()).toEqual(
+      expect.arrayContaining(["/settings/transfer", "/settings/traffic"]),
+    )
+  })
+
   it("mounts one plugin page at /plugins on either backend", () => {
     for (const kind of ["go", "ts-worker"] as const) {
       setBackendKind(kind)

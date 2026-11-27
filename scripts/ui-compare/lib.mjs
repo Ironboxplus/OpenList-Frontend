@@ -7,6 +7,17 @@ import path from "node:path"
 
 export const OL = "http://127.0.0.1:5244"
 export const MOUNT = "/审计"
+/**
+ * The poster and backdrop of 电影甲 (2020), seeded by "work with unreachable
+ * images" below: port 9 never answers (the browser does not even ask, it is on
+ * Chrome's list of unsafe ports), so the header card is shown with every image
+ * failed and must stay readable. audit.mjs counts their load errors as
+ * expected, by these exact addresses.
+ */
+export const UNREACHABLE_IMAGES = [
+  "http://127.0.0.1:9/poster.jpg",
+  "http://127.0.0.1:9/backdrop.jpg",
+]
 
 export const log = (...a) => console.log("[ui]", ...a)
 
@@ -148,8 +159,8 @@ export async function seed(dir) {
         title: "电影甲",
         year: 2020,
         overview: "一部用来检查封面和背景图都加载失败时页头是否仍然可读的示例影片。",
-        cover: "http://127.0.0.1:9/poster.jpg",
-        backdrop: "http://127.0.0.1:9/backdrop.jpg",
+        cover: UNREACHABLE_IMAGES[0],
+        backdrop: UNREACHABLE_IMAGES[1],
       },
       token,
     )

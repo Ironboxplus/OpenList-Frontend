@@ -9,7 +9,7 @@
 import { chromium } from "playwright"
 import fs from "node:fs"
 import path from "node:path"
-import { alive, log, MOUNT, OL, row, seed, selectRows, tr } from "./lib.mjs"
+import { alive, log, MOUNT, OL, row, seed, selectRows, tr, UNREACHABLE_IMAGES } from "./lib.mjs"
 import { layoutChecks } from "./checks.mjs"
 
 const out = process.argv[2]
@@ -42,6 +42,8 @@ const uncovered = () => {
 
 // ---------- state ----------
 const findings = []
+/** Errors the seed causes on purpose: reported in their own table, not as findings. */
+const expected = []
 const screens = []
 const browser = await chromium.launch()
 const seeded = await seed(out)
@@ -68,7 +70,15 @@ class Env {
     page.setDefaultTimeout(8000)
     page.on("pageerror", (e) => this.events.push(["pageerror", String(e?.message || e).split("\n")[0].slice(0, 200)]))
     page.on("console", (m) => {
-      if (m.type() === "error") this.events.push(["console-error", m.text().split("\n")[0].slice(0, 200)])
+      if (m.type() !== "error") return
+      const text = m.text().split("\n")[0].slice(0, 200)
+      // the seeded unreachable images (lib.mjs:144-167, the step "work with
+      // unreachable images"; :133-155 before UNREACHABLE_IMAGES moved to the
+      // top): the header card must stay readable with every image failed
+      // fail on purpose: listed apart as expected, matched by exact address only
+      const url = m.location()?.url ?? ""
+      if (UNREACHABLE_IMAGES.includes(url)) this.events.push(["expected", `${url} ${text}`])
+      else this.events.push(["console-error", text])
     })
     page.on("response", (r) => {
       if (r.status() >= 400) this.events.push(["http-error", `${r.status()} ${decodeURIComponent(r.url().replace(OL, "")).slice(0, 120)}`])
@@ -471,7 +481,7 @@ async function runScreen(env, s) {
   for (const [type, detail] of env.events) {
     if (seen.has(type + detail)) continue
     seen.add(type + detail)
-    findings.push({ ...base, type, detail, el: "", screenshot: shot })
+    ;(type === "expected" ? expected : findings).push({ ...base, type, detail, el: "", screenshot: shot })
   }
   screens.push({ ...base, shot, ok: !failed, counts: res?.counts ?? {} })
   log(`${s.id} ${env.width} ${env.theme}`, failed ? `FAILED ${failed}` : "ok", JSON.stringify(res?.counts ?? {}))
@@ -491,7 +501,7 @@ await browser.close()
 for (const p of uncovered()) findings.push({ page: "router", width: 0, theme: "", type: "uncovered-route", detail: p, el: "", screenshot: "" })
 
 // ---------- report ----------
-fs.writeFileSync(path.join(out, "audit.json"), JSON.stringify({ screens, findings }, null, 1))
+fs.writeFileSync(path.join(out, "audit.json"), JSON.stringify({ screens, findings, expected }, null, 1))
 const byPage = new Map()
 for (const f of findings) {
   const m = byPage.get(f.page) ?? new Map()
@@ -514,7 +524,7 @@ for (const f of findings) {
   top.set(k, r)
 }
 const cell = (s) => String(s ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ")
-let md = `# UI audit\n\n${screens.length} screen runs, ${findings.length} findings.\n\n`
+let md = `# UI audit\n\n${screens.length} screen runs, ${findings.length} findings, ${expected.length} expected errors (seeded on purpose, listed apart below).\n\n`
 md += "## Counts per page\n\n| page | findings | by type |\n|---|---|---|\n"
 for (const [p, m] of [...byPage].sort((a, b) => b[1].size - a[1].size)) {
   const types = [...m].map(([t, n]) => `${t}:${n}`).join(" ")
@@ -529,6 +539,8 @@ md += "\n## Hangs, failed steps and errors\n\n| page | width | theme | type | de
 for (const f of findings.filter((f) => ["hang", "step-failed", "pageerror", "console-error", "http-error", "uncovered-route", "checks-failed"].includes(f.type))) {
   md += `| ${f.page} | ${f.width} | ${f.theme} | ${f.type} | ${cell(f.detail)} | ${f.screenshot} |\n`
 }
+md += `\n## Expected errors (${expected.length}): the seed's unreachable images, lib.mjs UNREACHABLE_IMAGES\n\n| page | width | theme | detail | screenshot |\n|---|---|---|---|---|\n`
+for (const f of expected) md += `| ${f.page} | ${f.width} | ${f.theme} | ${cell(f.detail)} | ${f.screenshot} |\n`
 md += "\n## Layout findings (page x width x theme x finding)\n\n| page | width | theme | finding | n | example | screenshot |\n|---|---|---|---|---|---|---|\n"
 for (const r of [...rows.values()].filter((r) => r.el || r.type === "page-hscroll")) {
   md += `| ${r.page} | ${r.width} | ${r.theme} | ${r.type} | ${r.count ?? r.n} | ${cell(r.el)} ${cell(r.detail)} | ${r.screenshot} |\n`
