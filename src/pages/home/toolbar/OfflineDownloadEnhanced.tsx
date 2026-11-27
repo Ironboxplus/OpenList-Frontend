@@ -10,7 +10,6 @@ import {
   Checkbox,
   Input,
   SimpleGrid,
-  Divider,
 } from "@hope-ui/solid"
 import { SelectWrapper, FolderChooseInput } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
@@ -58,6 +57,7 @@ import {
   ModalFooter,
   createDisclosure,
 } from "~/components/overlay"
+import { AdvancedGroup } from "~/components/ui/advanced-group"
 
 const deletePolicies = [
   "upload_download_stream",
@@ -142,6 +142,18 @@ export const TransferSeedGenerator = () => {
     sha256: { whole: false, pieces: false },
   })
 
+  // the matrix the selection's hashes preselect (loadCapabilities)
+  const [baseMatrix, setBaseMatrix] = createSignal<SeedHashMatrix>(matrix())
+  // The hashes, the piece size, the comment and the trackers are rarely
+  // changed: folded under Advanced (PLAN_FE_SYSTEM_UX_1127 P3)
+  const [advanced, setAdvanced] = createSignal(false)
+  const advancedCount = () => (availableTrackers().length > 0 ? 4 : 3)
+  const advancedChanged = () =>
+    Number(JSON.stringify(matrix()) !== JSON.stringify(baseMatrix())) +
+    Number(pieceSize() !== 10 * 1024 * 1024) +
+    Number(comment().trim() !== "") +
+    Number(trackers().length > 0)
+
   const effectiveMatrix = createMemo<SeedHashMatrix>(() => {
     const value = matrix()
     return {
@@ -200,7 +212,7 @@ export const TransferSeedGenerator = () => {
         const defaultMatrix = value.default_matrix
         const hasProvided = provided.size > 0
         const reuseOnly = value.hash_reuse_only === true
-        setMatrix({
+        const preselected: SeedHashMatrix = {
           md5: {
             whole: hasProvided
               ? provided.has("md5")
@@ -231,7 +243,9 @@ export const TransferSeedGenerator = () => {
                 ? false
                 : !!defaultMatrix?.sha256?.pieces,
           },
-        })
+        }
+        setMatrix(preselected)
+        setBaseMatrix(preselected)
       })
     } finally {
       setChecking(false)
@@ -251,6 +265,7 @@ export const TransferSeedGenerator = () => {
     setShareFiles([])
     setDirectFiles([])
     setFileComments({})
+    setAdvanced(false)
     onOpen()
     void loadCapabilities(payload.paths)
   }
@@ -358,6 +373,11 @@ export const TransferSeedGenerator = () => {
       (file) => requiresDownload(file) && file.streamable === false,
     )
 
+  // the fix for either is in the folded hashes: open them
+  createEffect(() => {
+    if (hasUnsupportedHashes() || hasUnstreamableDownload()) setAdvanced(true)
+  })
+
   const toggleTracker = (tracker: string, checked: boolean) => {
     setTrackers((current) =>
       checked
@@ -413,91 +433,7 @@ export const TransferSeedGenerator = () => {
               </HStack>
             </Box>
 
-            <Divider />
-            <Box>
-              <Text fontSize="$sm" fontWeight="$semibold" mb="$2">
-                {t("home.transfer_seed.hash_matrix")}
-              </Text>
-              <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$3">
-                <For each={["md5", "sha1", "sha256"] as SeedHashAlgorithm[]}>
-                  {(algorithm) => {
-                    const forced = () =>
-                      (algorithm === "sha1" && formats().includes("torrent")) ||
-                      (algorithm === "md5" && formats().includes("cas"))
-                    return (
-                      <VStack
-                        alignItems="flex-start"
-                        spacing="$1"
-                        border="1px solid $neutral7"
-                        borderRadius="$md"
-                        p="$2"
-                      >
-                        <Text fontWeight="$semibold">
-                          {algorithm.toUpperCase()}
-                        </Text>
-                        <Checkbox
-                          checked={effectiveMatrix()[algorithm].whole}
-                          disabled={
-                            forced() ||
-                            (reuseOnly() &&
-                              !availableWholeHashes().has(algorithm))
-                          }
-                          onChange={(event) =>
-                            setHashScope(
-                              algorithm,
-                              "whole",
-                              event.currentTarget.checked,
-                            )
-                          }
-                        >
-                          {t("home.transfer_seed.whole")}
-                        </Checkbox>
-                        <Checkbox
-                          checked={effectiveMatrix()[algorithm].pieces}
-                          disabled={
-                            forced() ||
-                            (reuseOnly() &&
-                              !availablePieceHashes().has(algorithm))
-                          }
-                          onChange={(event) =>
-                            setHashScope(
-                              algorithm,
-                              "pieces",
-                              event.currentTarget.checked,
-                            )
-                          }
-                        >
-                          {t("home.transfer_seed.pieces")}
-                        </Checkbox>
-                        <Show when={forced()}>
-                          <Text fontSize="$xs" color="$neutral10">
-                            {t("home.transfer_seed.required_by_format")}
-                          </Text>
-                        </Show>
-                      </VStack>
-                    )
-                  }}
-                </For>
-              </SimpleGrid>
-            </Box>
-
             <SimpleGrid columns={{ "@initial": 1, "@md": 2 }} gap="$3">
-              <Box>
-                <Text fontSize="$sm" mb="$1">
-                  {t("home.transfer_seed.piece_size")}
-                </Text>
-                <SelectWrapper
-                  value={pieceSize().toString()}
-                  onChange={(value) => setPieceSize(Number(value))}
-                  options={(formats().includes("cas")
-                    ? [10]
-                    : [1, 2, 4, 8, 10, 16]
-                  ).map((size) => ({
-                    value: String(size * 1024 * 1024),
-                    label: `${size} MiB`,
-                  }))}
-                />
-              </Box>
               <Box>
                 <Text fontSize="$sm" mb="$1">
                   {t("home.transfer_seed.seed_name")}
@@ -521,38 +457,142 @@ export const TransferSeedGenerator = () => {
               </Box>
             </SimpleGrid>
 
-            <Box>
-              <Text fontSize="$sm" mb="$1">
-                {t("home.transfer_seed.comment")}
-              </Text>
-              <Input
-                value={comment()}
-                onInput={(e) => setComment(e.currentTarget.value)}
-              />
+            <Box w="$full">
+              <AdvancedGroup
+                title={t("global.advanced")}
+                count={advancedCount()}
+                changed={advancedChanged()}
+                open={advanced()}
+                onOpenChange={setAdvanced}
+                testid="advanced-seed"
+              >
+                <Box>
+                  <Text fontSize="$sm" fontWeight="$semibold" mb="$2">
+                    {t("home.transfer_seed.hash_matrix")}
+                  </Text>
+                  <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$3">
+                    <For
+                      each={["md5", "sha1", "sha256"] as SeedHashAlgorithm[]}
+                    >
+                      {(algorithm) => {
+                        const forced = () =>
+                          (algorithm === "sha1" &&
+                            formats().includes("torrent")) ||
+                          (algorithm === "md5" && formats().includes("cas"))
+                        return (
+                          <VStack
+                            alignItems="flex-start"
+                            spacing="$1"
+                            border="1px solid $neutral7"
+                            borderRadius="$md"
+                            p="$2"
+                          >
+                            <Text fontWeight="$semibold">
+                              {algorithm.toUpperCase()}
+                            </Text>
+                            <Checkbox
+                              checked={effectiveMatrix()[algorithm].whole}
+                              disabled={
+                                forced() ||
+                                (reuseOnly() &&
+                                  !availableWholeHashes().has(algorithm))
+                              }
+                              onChange={(event) =>
+                                setHashScope(
+                                  algorithm,
+                                  "whole",
+                                  event.currentTarget.checked,
+                                )
+                              }
+                            >
+                              {t("home.transfer_seed.whole")}
+                            </Checkbox>
+                            <Checkbox
+                              checked={effectiveMatrix()[algorithm].pieces}
+                              disabled={
+                                forced() ||
+                                (reuseOnly() &&
+                                  !availablePieceHashes().has(algorithm))
+                              }
+                              onChange={(event) =>
+                                setHashScope(
+                                  algorithm,
+                                  "pieces",
+                                  event.currentTarget.checked,
+                                )
+                              }
+                            >
+                              {t("home.transfer_seed.pieces")}
+                            </Checkbox>
+                            <Show when={forced()}>
+                              <Text fontSize="$xs" color="$neutral10">
+                                {t("home.transfer_seed.required_by_format")}
+                              </Text>
+                            </Show>
+                          </VStack>
+                        )
+                      }}
+                    </For>
+                  </SimpleGrid>
+                </Box>
+
+                <Box maxW="$48">
+                  <Text fontSize="$sm" mb="$1">
+                    {t("home.transfer_seed.piece_size")}
+                  </Text>
+                  <SelectWrapper
+                    value={pieceSize().toString()}
+                    onChange={(value) => setPieceSize(Number(value))}
+                    options={(formats().includes("cas")
+                      ? [10]
+                      : [1, 2, 4, 8, 10, 16]
+                    ).map((size) => ({
+                      value: String(size * 1024 * 1024),
+                      label: `${size} MiB`,
+                    }))}
+                  />
+                </Box>
+
+                <Box>
+                  <Text fontSize="$sm" mb="$1">
+                    {t("home.transfer_seed.comment")}
+                  </Text>
+                  <Input
+                    value={comment()}
+                    onInput={(e) => setComment(e.currentTarget.value)}
+                  />
+                </Box>
+                <Show when={availableTrackers().length > 0}>
+                  <Box>
+                    <Text fontSize="$sm" fontWeight="$semibold" mb="$2">
+                      {t("home.transfer_seed.trackers")}
+                    </Text>
+                    <HStack spacing="$4" flexWrap="wrap">
+                      <For each={availableTrackers()}>
+                        {(tracker) => (
+                          <Checkbox
+                            checked={trackers().includes(tracker)}
+                            onChange={(event) =>
+                              toggleTracker(
+                                tracker,
+                                event.currentTarget.checked,
+                              )
+                            }
+                          >
+                            <Text
+                              fontSize="$xs"
+                              css={{ wordBreak: "break-all" }}
+                            >
+                              {tracker}
+                            </Text>
+                          </Checkbox>
+                        )}
+                      </For>
+                    </HStack>
+                  </Box>
+                </Show>
+              </AdvancedGroup>
             </Box>
-            <Show when={availableTrackers().length > 0}>
-              <Box>
-                <Text fontSize="$sm" fontWeight="$semibold" mb="$2">
-                  {t("home.transfer_seed.trackers")}
-                </Text>
-                <HStack spacing="$4" flexWrap="wrap">
-                  <For each={availableTrackers()}>
-                    {(tracker) => (
-                      <Checkbox
-                        checked={trackers().includes(tracker)}
-                        onChange={(event) =>
-                          toggleTracker(tracker, event.currentTarget.checked)
-                        }
-                      >
-                        <Text fontSize="$xs" css={{ wordBreak: "break-all" }}>
-                          {tracker}
-                        </Text>
-                      </Checkbox>
-                    )}
-                  </For>
-                </HStack>
-              </Box>
-            </Show>
 
             <Box
               border="1px solid $neutral7"

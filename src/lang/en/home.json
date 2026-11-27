@@ -297,6 +297,7 @@
     "back": "Back to Upload",
     "clear_done": "Clear Done",
     "retry": "Retry",
+    "method": "Upload method",
     "sidecars": "Generate transfer seed sidecars",
     "sidecars_hint": "Sidecars are disabled by default and generated after each upload completes."
   },

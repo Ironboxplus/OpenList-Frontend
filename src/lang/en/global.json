@@ -43,6 +43,7 @@
   "not_set": "Not set",
   "unlimited": "Unlimited",
   "never_expires": "Never expires",
+  "advanced": "Advanced",
   "advanced_count": "({{count}})",
   "advanced_changed": "{{count}} changed",
   "notifications": "Notifications"

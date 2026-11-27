@@ -6,6 +6,7 @@ import { ModalFolderChoose } from "~/components"
 import { selectedObjs } from "~/store"
 import { CreateFolderButton } from "./CopyMove"
 import { createDisclosure } from "~/components/overlay"
+import { AdvancedGroup } from "~/components/ui/advanced-group"
 
 export const Decompress = () => {
   const t = useT()
@@ -16,10 +17,17 @@ export const Decompress = () => {
   const [innerPath, setInnerPath] = createSignal("")
   const [archivePass, setArchivePass] = createSignal("")
   const [cacheFull, setCacheFull] = createSignal(true)
+  // what Cache full starts as: on for a whole archive, off for a part of one
+  const [cacheDefault, setCacheDefault] = createSignal(true)
   const [putIntoNewDir, setPutIntoNewDir] = createSignal(false)
   const [overwrite, setOverwrite] = createSignal(false)
   const [srcPath, setSrcPath] = createSignal("")
   const [srcName, setSrcName] = createSignal<string[]>()
+  // Cache full and Into a new folder are rarely changed: folded under
+  // Advanced (PLAN_FE_SYSTEM_UX_1127 P3), open when one is not at its default
+  const changed = () =>
+    Number(cacheFull() !== cacheDefault()) + Number(putIntoNewDir())
+  const [advanced, setAdvanced] = createSignal(false)
   const handler = (name: string) => {
     if (name === "decompress") {
       const path = pathname()
@@ -27,8 +35,10 @@ export const Decompress = () => {
         setSrcPath(path)
         setSrcName(selectedObjs().map((o) => o.name))
         setCacheFull(true)
+        setCacheDefault(true)
         setInnerPath("/")
         setArchivePass("")
+        setAdvanced(changed() > 0)
       })
       onOpen()
     }
@@ -41,8 +51,10 @@ export const Decompress = () => {
       setSrcPath(path.slice(0, idx))
       setSrcName([path.slice(idx + 1)])
       setCacheFull(false)
+      setCacheDefault(false)
       setInnerPath(inner)
       setArchivePass(pass)
+      setAdvanced(changed() > 0)
     })
     onOpen()
   }
@@ -107,19 +119,31 @@ export const Decompress = () => {
             flexGrow="1"
           />
         </HStack>
-        <Checkbox
-          checked={cacheFull()}
-          onChange={(e: any) => setCacheFull(e.target.checked as boolean)}
-        >
-          {t(`home.toolbar.decompress-cache-full`)}
-        </Checkbox>
-        <Checkbox
-          checked={putIntoNewDir()}
-          onChange={(e: any) => setPutIntoNewDir(e.target.checked as boolean)}
-        >
-          {t(`home.toolbar.decompress-put-into-new`)}
-        </Checkbox>
-        <div />
+        <div class="w-full">
+          <AdvancedGroup
+            title={t("global.advanced")}
+            count={2}
+            changed={changed()}
+            open={advanced()}
+            onOpenChange={setAdvanced}
+            testid="advanced-decompress"
+          >
+            <Checkbox
+              checked={cacheFull()}
+              onChange={(e: any) => setCacheFull(e.target.checked as boolean)}
+            >
+              {t(`home.toolbar.decompress-cache-full`)}
+            </Checkbox>
+            <Checkbox
+              checked={putIntoNewDir()}
+              onChange={(e: any) =>
+                setPutIntoNewDir(e.target.checked as boolean)
+              }
+            >
+              {t(`home.toolbar.decompress-put-into-new`)}
+            </Checkbox>
+          </AdvancedGroup>
+        </div>
       </VStack>
     </ModalFolderChoose>
   )

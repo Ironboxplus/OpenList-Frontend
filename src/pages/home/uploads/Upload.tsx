@@ -11,8 +11,8 @@ import {
   Box,
   Stack,
   SimpleGrid,
-  Divider,
 } from "@hope-ui/solid"
+import { AdvancedGroup } from "~/components/ui/advanced-group"
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js"
 import { TbCircleCheck } from "solid-icons/tb"
 import { Progress } from "~/components/ui/progress"
@@ -170,6 +170,13 @@ const Upload = () => {
     sidecars().length
       ? uploaders.find((uploader) => uploader.name === "Stream")!
       : curUploader()
+  // the upload method and the seed sidecars are rarely changed: folded under
+  // Advanced (PLAN_FE_SYSTEM_UX_1127 P3); the hashes and the piece size come
+  // with a sidecar
+  const [advanced, setAdvanced] = createSignal(false)
+  const advancedCount = () => (sidecars().length ? 4 : 2)
+  const advancedChanged = () =>
+    Number(curUploader() !== uploaders[0]) + Number(sidecars().length > 0)
   const asTaskUnsupported = () =>
     sidecars().length > 0 || effectiveUploader()?.name === "Multipart"
   const effectiveSeedMatrix = (): SeedHashMatrix => ({
@@ -324,22 +331,6 @@ const Upload = () => {
             <Heading size="lg" textAlign="center">
               {t("home.upload.upload-tips")}
             </Heading>
-            <Box w={{ "@initial": "80%", "@md": "30%" }}>
-              <SelectWrapper
-                value={curUploader()?.name}
-                onChange={(name) => {
-                  setCurUploader(
-                    uploaders.find((uploader) => uploader.name === name)!,
-                  )
-                }}
-                options={uploaders.map((uploader) => {
-                  return {
-                    label: uploader.name,
-                    value: uploader.name,
-                  }
-                })}
-              />
-            </Box>
             <HStack spacing="$4">
               <VStack spacing="$2" alignItems="center">
                 <IconButton
@@ -402,96 +393,129 @@ const Upload = () => {
                 {t("home.upload.try_rapid")}
               </Checkbox>
             </Stack>
-            <Divider w="$full" />
-            <VStack w="$full" alignItems="stretch" spacing="$2">
-              <Text fontSize="$sm" fontWeight="$semibold">
-                {t("home.upload.sidecars")}
-              </Text>
-              <HStack spacing="$4" flexWrap="wrap">
-                <For each={["torrent", "cas", "oss"] as SeedFormat[]}>
-                  {(format) => (
-                    <Checkbox
-                      checked={sidecars().includes(format)}
-                      onChange={(event) =>
-                        toggleSidecar(format, event.currentTarget.checked)
-                      }
-                    >
-                      {format.toUpperCase()}
-                    </Checkbox>
-                  )}
-                </For>
-              </HStack>
-              <Text fontSize="$xs" color="$neutral10">
-                {t("home.upload.sidecars_hint")}
-              </Text>
-              <Show when={sidecars().length > 0}>
-                <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$2">
-                  <For each={["md5", "sha1", "sha256"] as SeedHashAlgorithm[]}>
-                    {(algorithm) => {
-                      const forced = () =>
-                        (algorithm === "sha1" &&
-                          sidecars().includes("torrent")) ||
-                        (algorithm === "md5" && sidecars().includes("cas"))
-                      return (
-                        <VStack
-                          alignItems="flex-start"
-                          spacing="$1"
-                          border="1px solid $neutral7"
-                          borderRadius="$md"
-                          p="$2"
-                        >
-                          <Text fontSize="$sm" fontWeight="$semibold">
-                            {algorithm.toUpperCase()}
-                          </Text>
-                          <Checkbox
-                            checked={effectiveSeedMatrix()[algorithm].whole}
-                            disabled={forced()}
-                            onChange={(event) =>
-                              setSeedHash(
-                                algorithm,
-                                "whole",
-                                event.currentTarget.checked,
-                              )
-                            }
-                          >
-                            {t("home.transfer_seed.whole")}
-                          </Checkbox>
-                          <Checkbox
-                            checked={effectiveSeedMatrix()[algorithm].pieces}
-                            disabled={forced()}
-                            onChange={(event) =>
-                              setSeedHash(
-                                algorithm,
-                                "pieces",
-                                event.currentTarget.checked,
-                              )
-                            }
-                          >
-                            {t("home.transfer_seed.pieces")}
-                          </Checkbox>
-                        </VStack>
-                      )
-                    }}
-                  </For>
-                </SimpleGrid>
-                <Box maxW="$48">
+            <Box w="$full">
+              <AdvancedGroup
+                title={t("global.advanced")}
+                count={advancedCount()}
+                changed={advancedChanged()}
+                open={advanced()}
+                onOpenChange={setAdvanced}
+                testid="advanced-upload"
+              >
+                <Box maxW="$64">
                   <Text fontSize="$sm" mb="$1">
-                    {t("home.transfer_seed.piece_size")}
+                    {t("home.upload.method")}
                   </Text>
                   <SelectWrapper
-                    value={seedPieceSize().toString()}
-                    onChange={(value) => setSeedPieceSize(Number(value))}
-                    options={(sidecars().includes("cas")
-                      ? [10]
-                      : [1, 2, 4, 8, 10, 16]
-                    ).map((size) => ({
-                      value: String(size * 1024 * 1024),
-                      label: `${size} MiB`,
-                    }))}
+                    value={curUploader()?.name}
+                    onChange={(name) => {
+                      setCurUploader(
+                        uploaders.find((uploader) => uploader.name === name)!,
+                      )
+                    }}
+                    options={uploaders.map((uploader) => {
+                      return {
+                        label: uploader.name,
+                        value: uploader.name,
+                      }
+                    })}
                   />
                 </Box>
-              </Show>
-            </VStack>
+                <VStack w="$full" alignItems="stretch" spacing="$2">
+                  <Text fontSize="$sm" fontWeight="$semibold">
+                    {t("home.upload.sidecars")}
+                  </Text>
+                  <HStack spacing="$4" flexWrap="wrap">
+                    <For each={["torrent", "cas", "oss"] as SeedFormat[]}>
+                      {(format) => (
+                        <Checkbox
+                          checked={sidecars().includes(format)}
+                          onChange={(event) =>
+                            toggleSidecar(format, event.currentTarget.checked)
+                          }
+                        >
+                          {format.toUpperCase()}
+                        </Checkbox>
+                      )}
+                    </For>
+                  </HStack>
+                  <Text fontSize="$xs" color="$neutral10">
+                    {t("home.upload.sidecars_hint")}
+                  </Text>
+                  <Show when={sidecars().length > 0}>
+                    <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$2">
+                      <For
+                        each={["md5", "sha1", "sha256"] as SeedHashAlgorithm[]}
+                      >
+                        {(algorithm) => {
+                          const forced = () =>
+                            (algorithm === "sha1" &&
+                              sidecars().includes("torrent")) ||
+                            (algorithm === "md5" && sidecars().includes("cas"))
+                          return (
+                            <VStack
+                              alignItems="flex-start"
+                              spacing="$1"
+                              border="1px solid $neutral7"
+                              borderRadius="$md"
+                              p="$2"
+                            >
+                              <Text fontSize="$sm" fontWeight="$semibold">
+                                {algorithm.toUpperCase()}
+                              </Text>
+                              <Checkbox
+                                checked={effectiveSeedMatrix()[algorithm].whole}
+                                disabled={forced()}
+                                onChange={(event) =>
+                                  setSeedHash(
+                                    algorithm,
+                                    "whole",
+                                    event.currentTarget.checked,
+                                  )
+                                }
+                              >
+                                {t("home.transfer_seed.whole")}
+                              </Checkbox>
+                              <Checkbox
+                                checked={
+                                  effectiveSeedMatrix()[algorithm].pieces
+                                }
+                                disabled={forced()}
+                                onChange={(event) =>
+                                  setSeedHash(
+                                    algorithm,
+                                    "pieces",
+                                    event.currentTarget.checked,
+                                  )
+                                }
+                              >
+                                {t("home.transfer_seed.pieces")}
+                              </Checkbox>
+                            </VStack>
+                          )
+                        }}
+                      </For>
+                    </SimpleGrid>
+                    <Box maxW="$48">
+                      <Text fontSize="$sm" mb="$1">
+                        {t("home.transfer_seed.piece_size")}
+                      </Text>
+                      <SelectWrapper
+                        value={seedPieceSize().toString()}
+                        onChange={(value) => setSeedPieceSize(Number(value))}
+                        options={(sidecars().includes("cas")
+                          ? [10]
+                          : [1, 2, 4, 8, 10, 16]
+                        ).map((size) => ({
+                          value: String(size * 1024 * 1024),
+                          label: `${size} MiB`,
+                        }))}
+                      />
+                    </Box>
+                  </Show>
+                </VStack>
+              </AdvancedGroup>
+            </Box>
           </Show>
         </VStack>
       </Show>

@@ -3152,9 +3152,11 @@ await spec("p3-settings-search", {}, async (env) => {
 // upload panel and Generate transfer seed. What is asked every time stays out
 const foldsIn = async (c, dialog, testid, common, rare) => {
   const group = dialog.locator(`[data-testid="${testid}"]`)
-  c(`${testid}: the Advanced title is in sight`, await group.waitFor({ timeout: 5000 }).then(() => true, () => false))
+  const there = await group.waitFor({ timeout: 5000 }).then(() => true, () => false)
+  c(`${testid}: the Advanced title is in sight`, there)
   for (const key of common) c(`${testid}: ${key} stays out`, await dialog.getByText(tr(key)).first().isVisible())
   for (const key of rare) c(`${testid}: ${key} is folded`, await dialog.getByText(tr(key)).first().isHidden())
+  if (!there) return
   await group.click()
   for (const key of rare) c(`${testid}: ${key} shows on a click`, await dialog.getByText(tr(key)).first().waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false))
 }
