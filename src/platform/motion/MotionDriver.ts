@@ -214,7 +214,9 @@ export class MotionDriver {
       }
       const rest = { ...k }
       delete rest.opacity
-      setStyles(t, rest, last)
+      // what fades out stays where it is: jumping to its exit position
+      // (scale 0.95, off the edge) would be the movement reduced motion avoids
+      if (last(k.opacity ?? 1) !== 0) setStyles(t, rest, last)
     }
     c.settle = () => setStyles(t, run, last)
     if (

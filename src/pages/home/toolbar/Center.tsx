@@ -33,7 +33,7 @@ export const Center = () => {
     enter: [
       {
         opacity: [0, 1],
-        transform: ["translateY(10px) scale(0.9)", "none"],
+        transform: ["translateY(10px) scale(0.9)", "translateY(0px) scale(1)"],
       },
       MotionTokens.options.barEnter,
     ],

@@ -262,7 +262,7 @@ const AppShell = (props: ParentProps) => {
                       el,
                       {
                         opacity: [0.001, 1],
-                        transform: ["translateY(6px)", "none"],
+                        transform: ["translateY(6px)", "translateY(0px)"],
                       },
                       MotionTokens.options.section,
                     ).finished.then(() => el.style.removeProperty("transform"))

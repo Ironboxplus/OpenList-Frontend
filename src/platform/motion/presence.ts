@@ -32,6 +32,19 @@ const fromHere = (k: MotionKeyframes): MotionKeyframes =>
     ]),
   )
 
+/** A transform that leaves the element where it is. */
+const IDENTITY = /^(none|scale\(1\)|translate[XY]?\(0(%|px)?\))$/
+/**
+ * Once in place, an identity transform is dropped: kept inline it would make
+ * the overlay the containing block of its fixed descendants.
+ */
+const restAt = (el: HTMLElement, k: MotionKeyframes) => {
+  const t = k.transform
+  const end = Array.isArray(t) ? t[t.length - 1] : t
+  if (typeof end === "string" && IDENTITY.test(end))
+    el.style.removeProperty("transform")
+}
+
 export function createPresence(open: Accessor<boolean>): Presence {
   const [present, setPresent] = createSignal(untrack(open))
   const parts = new Map<
@@ -47,7 +60,11 @@ export function createPresence(open: Accessor<boolean>): Presence {
     p.leaving = false
     el.style.removeProperty("pointer-events")
     const [k, o] = p.m.enter
-    p.run = motion.animate(el, turning ? fromHere(k) : k, o)
+    const run = motion.animate(el, turning ? fromHere(k) : k, o)
+    p.run = run
+    void run.finished.then(() => {
+      if (p.run === run && run.state === "finished") restAt(el, k)
+    })
   }
 
   const leave = () => {

@@ -16,20 +16,24 @@ export interface OverlayMotion {
 }
 
 const o = MotionTokens.options
+// `at` is the resting transform written in the same function as `from`:
+// motion turns a "none" keyframe into the type's zero (scale(0)), so a menu
+// that should come to rest at full size shrank to nothing
 const grow = (
   enter: MotionOptions,
   exit: MotionOptions,
   from = "scale(0.95)",
+  at = "scale(1)",
 ): OverlayMotion => ({
-  enter: [{ opacity: [0, 1], transform: [from, "none"] }, enter],
+  enter: [{ opacity: [0, 1], transform: [from, at] }, enter],
   // from where it is now: a close during the enter starts from there
   exit: [{ opacity: [null, 0], transform: [null, from] }, exit],
 })
-const offEdge: Record<SheetSide, string> = {
-  top: "translateY(-100%)",
-  bottom: "translateY(100%)",
-  left: "translateX(-100%)",
-  right: "translateX(100%)",
+const offEdge: Record<SheetSide, [string, string]> = {
+  top: ["translateY(-100%)", "translateY(0%)"],
+  bottom: ["translateY(100%)", "translateY(0%)"],
+  left: ["translateX(-100%)", "translateX(0%)"],
+  right: ["translateX(100%)", "translateX(0%)"],
 }
 
 export const overlayMotion = (
@@ -40,7 +44,7 @@ export const overlayMotion = (
     case "dialog":
       return grow(o.dialogEnter, o.dialogExit)
     case "sheet":
-      return grow(o.sheetEnter, o.sheetExit, offEdge[side])
+      return grow(o.sheetEnter, o.sheetExit, ...offEdge[side])
     default:
       return grow(o.menuEnter, o.menuExit)
   }

@@ -118,12 +118,27 @@ describe("MotionDriver levels", () => {
     const el = animatable()
     d.animate(
       el,
-      { opacity: [0, 1], transform: ["translateX(100%)", "none"] },
+      { opacity: [0, 1], transform: ["translateX(100%)", "translateX(0%)"] },
       MotionTokens.options.sheetEnter,
     )
-    expect(el.style.transform).toBe("none")
+    expect(el.style.transform).toBe("translateX(0%)")
     expect(calls[0].keyframes).toEqual({ opacity: [0, 1] })
     expect(calls[0].options).toEqual({ duration: 0.1, ease: "linear" })
+  })
+
+  it("subtle leaves what fades out where it is", () => {
+    const d = new MotionDriver({
+      preference: createMotionPreference({ initial: "subtle" }),
+    })
+    const el = animatable()
+    el.style.transform = "translateX(0%)"
+    d.animate(
+      el,
+      { opacity: [null, 0], transform: [null, "translateX(100%)"] },
+      MotionTokens.options.sheetExit,
+    )
+    expect(el.style.transform).toBe("translateX(0%)")
+    expect(calls[0].keyframes).toEqual({ opacity: [null, 0] })
   })
 
   it("subtle with nothing to fade does not animate", async () => {
@@ -172,11 +187,23 @@ describe("overlay motions", () => {
   it("slide a sheet in from its own edge", () => {
     expect(overlayMotion("sheet", "bottom").enter[0].transform).toEqual([
       "translateY(100%)",
-      "none",
+      "translateY(0%)",
     ])
     expect(overlayMotion("sheet", "left").enter[0].transform).toEqual([
       "translateX(-100%)",
-      "none",
+      "translateX(0%)",
+    ])
+  })
+
+  it("come to rest at full size, never at motion's zero for none", () => {
+    // motion turns a "none" keyframe into scale(0): menus shrank to nothing
+    for (const k of ["dialog", "menu", "sheet"] as const)
+      expect((overlayMotion(k).enter[0].transform as string[])[1]).not.toBe(
+        "none",
+      )
+    expect(overlayMotion("menu").enter[0].transform).toEqual([
+      "scale(0.95)",
+      "scale(1)",
     ])
   })
 
@@ -264,7 +291,16 @@ describe("createPresence", () => {
     const el = t.mount()
     // jsdom cannot animate: the driver lands the enter at its end
     expect(el.style.opacity).toBe("1")
-    expect(el.style.transform).toBe("none")
+    expect(el.style.transform).toBe("scale(1)")
+    t.dispose()
+  })
+
+  it("drops the resting transform once the part has entered", async () => {
+    const t = setup(true)
+    const el = t.mount()
+    await tick()
+    // kept inline, scale(1) would be the containing block of fixed children
+    expect(el.style.transform).toBe("")
     t.dispose()
   })
 })
