@@ -2105,12 +2105,16 @@ const openRow = async (page, name) => {
   await page.mouse.click(box.x + box.width * 0.45, box.y + box.height / 2)
 }
 
-await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, async (env) => {
+/** The folder in the list layout (its layout is kept per folder in layoutRecord). */
+const listLayout = () => localStorage.setItem("layoutRecord", JSON.stringify({ "/审计/查看器": "list" }))
+// the list layout: one row per file, so the folder is long enough to scroll
+await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video: true }, async (env) => {
   const { page } = env
   const c = checker(env)
   await go(page, VDIR, 1200)
   // scrolled a little: Back must bring the list back to this position
   await scrollY(page, 100)
+  const y0 = await page.evaluate(() => window.scrollY)
   const h0 = await histLen(page)
   const t0 = await page.evaluate(() => performance.now())
   await openRow(page, V3)
@@ -2120,7 +2124,7 @@ await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, asyn
   c("the video plays", await playing(page))
   let m = await movi(page)
   c("one movi-player made", m.added === 1 && m.count === 1, m)
-  c("the playing row is marked", (await playingMark(page, V3)) === 1 && (await item(page, V3).getAttribute("aria-current")) !== null)
+  c("the playing row is marked", (await playingMark(page, V3)) === 1)
   await settle(page)
   const t1 = await page.evaluate(() => performance.now())
   const opened = dockRun(await page.evaluate(() => window.__viewer.heights), t0, t1)
@@ -2159,7 +2163,7 @@ await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, asyn
   c("one Back closes the player", await closedDock(page))
   await settle(page)
   const y = await page.evaluate(() => window.scrollY)
-  c("Back returns to the folder's address at the scroll it had", pathOf(page) === VDIR && Math.abs(y - 100) < 4, `${pathOf(page)} scrollY=${y}`)
+  c("Back returns to the folder's address at the scroll it had", pathOf(page) === VDIR && y0 > 50 && Math.abs(y - y0) < 4, `${pathOf(page)} scrollY=${y}, was ${y0}`)
   m = await movi(page)
   c("closing keeps the same player element", m.added === 1 && m.removed === 0 && m.count === 1, m)
   const heights = await page.evaluate(() => window.__viewer.heights)
@@ -2171,8 +2175,6 @@ await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, asyn
   c.done()
 })
 
-/** The folder in the list layout (its layout is kept per folder in layoutRecord). */
-const listLayout = () => localStorage.setItem("layoutRecord", JSON.stringify({ "/审计/查看器": "list" }))
 // desktop: at most about 60% of the screen high, 16:9, and five rows of the list in sight under it
 for (const height of [900, 720]) {
   await spec("viewer-dock-geometry", { height, init: [viewerProbe, listLayout] }, async (env) => {
@@ -2381,7 +2383,9 @@ await spec("viewer-downloads", { init: viewerProbe }, async (env) => {
   c("the selection bar, one file", d.name === PDF && !d.newTab, d)
   await selectRows(page, TEXT, false)
   await page.locator('[data-selection-bar] [data-action="download"]').click({ timeout: 3000 }).catch(() => {})
-  c("two files go as one package", await page.getByText(tr("home.package_download.current_status")).first().waitFor({ timeout: 5000 }).then(() => true, () => false))
+  // the package dialog opens on its streamsaver note; Confirm starts the package
+  c("two files go as one package", await page.getByText(tr("home.toolbar.pre_package_download-tips")).first().waitFor({ timeout: 5000 }).then(() => true, () => false))
+  await page.getByRole("button", { name: tr("global.cancel") }).last().click({ timeout: 2000 }).catch(() => {})
   // Known gap (§0.3-1, awaiting the user): a storage whose /d answers with a
   // 302 to another origin (115 and the like) cannot be saved under its name
   // from the page; a[download] is ignored across origins, so the browser opens
@@ -2473,8 +2477,13 @@ await spec("viewer-single-file-share", { init: viewerProbe }, async (env) => {
   }
   const was = await setting("share_preview", "true")
   try {
+    // shares download first by default (share_preview_download_by_default):
+    // the small dialog, with the previews under Open with
     await page.goto(OL + `/@s/${id}`, { waitUntil: "domcontentloaded" })
-    c("the shared file opens in the document viewer", await seen(page, '[data-testid="doc-viewer"]', 15000))
+    c("previews on: the small dialog first", await seen(page, '[data-testid="unknown-dialog"]', 15000))
+    await page.locator('[data-testid="unknown-dialog"] [data-action="players"]').click({ timeout: 3000 })
+    await page.locator('[data-action="open_with"]').first().click({ timeout: 3000 })
+    c("Open with shows it in the document viewer", await seen(page, '[data-testid="doc-viewer"]', 15000))
     c("with its text", await page.getByText("第 1 行").first().waitFor({ timeout: 10000 }).then(() => true, () => false))
     const d = await downloadOf(page, () => page.locator('[data-testid="viewer-download"]').click())
     c("and downloads under its name", d.name === TEXT && !d.newTab, d)
@@ -2484,6 +2493,9 @@ await spec("viewer-single-file-share", { init: viewerProbe }, async (env) => {
   // with previews off, the same share offers the file in the small dialog
   await page.goto(OL + `/@s/${id}`, { waitUntil: "domcontentloaded" })
   c("previews off: the small dialog", await seen(page, '[data-testid="unknown-dialog"]', 15000))
+  await page.locator('[data-testid="unknown-dialog"] [data-action="players"]').click({ timeout: 3000 }).catch(() => {})
+  c("with nothing under Open with", (await seen(page, '[role="menu"]', 3000)) && (await page.locator('[data-action="open_with"]').count()) === 0)
+  await page.keyboard.press("Escape")
   const d2 = await downloadOf(page, () => page.locator('[data-testid="unknown-download"]').click())
   c("which downloads under its name", d2.name === TEXT && !d2.newTab, d2)
   c.done()

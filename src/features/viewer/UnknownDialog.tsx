@@ -95,7 +95,9 @@ export const UnknownDialog = () => {
                 formatDate(obj()?.modified ?? ""),
               ].join(" · ")}
               <br />
-              {t("home.viewer.no_preview")}
+              {previews().length
+                ? t("home.viewer.download_first")
+                : t("home.viewer.no_preview")}
             </DialogDescription>
           </div>
         </div>
@@ -130,7 +132,9 @@ export const UnknownDialog = () => {
                   data-action="players"
                 >
                   <TbExternalLink class="size-4" />
-                  {t("home.viewer.players")}
+                  {previews().length
+                    ? t("home.viewer.open_with")
+                    : t("home.viewer.players")}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent class="max-h-[60vh] overflow-y-auto">
                   <For each={shownPlayers()}>

@@ -447,6 +447,7 @@
     "episodes": "Episodes",
     "episode_n": "Episode {{n}}",
     "no_preview": "Nothing here can show this type",
+    "download_first": "This site downloads files first; previews are under Open with",
     "no_extension": "No extension",
     "playing": "Playing",
     "loading": "Loading…"

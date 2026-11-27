@@ -232,6 +232,7 @@ export const Dock = () => {
       frame.style.opacity = ""
       anchoring(true)
       busy = false
+      checkMini()
       return
     }
     host.style.height = "0px"
@@ -250,6 +251,8 @@ export const Dock = () => {
     host.style.opacity = ""
     anchoring(true)
     busy = false
+    // a scroll while it opened went unanswered
+    checkMini()
   }
 
   const collapse = async () => {
@@ -293,22 +296,24 @@ export const Dock = () => {
   )
 
   // Shrink when the slot is scrolled mostly under the top bar, grow back when
-  // it comes back.
+  // it comes back. The observer says when to look; the slot's box decides,
+  // also once an opening ends (scrolls during it are not acted on).
+  function checkMini() {
+    if (!open() || busy) return
+    const r = slot.getBoundingClientRect()
+    const bar = shellTop()
+    const seen = Math.min(r.bottom, innerHeight) - Math.max(r.top, bar)
+    const ratio = r.height > 0 ? Math.max(0, seen) / r.height : 1
+    const want = ratio < 0.5 && r.top < bar
+    if (want !== mini()) toMini(want)
+  }
   createEffect(() => {
     isPhone() // the top bar differs per tier
     const bar = shellTop()
-    const io = new IntersectionObserver(
-      ([en]) => {
-        if (!open() || busy || !en) return
-        const want =
-          en.intersectionRatio < 0.5 && en.boundingClientRect.top < shellTop()
-        if (want !== mini()) toMini(want)
-      },
-      {
-        rootMargin: `-${bar}px 0px 0px 0px`,
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-      },
-    )
+    const io = new IntersectionObserver(() => checkMini(), {
+      rootMargin: `-${bar}px 0px 0px 0px`,
+      threshold: [0, 0.25, 0.5, 0.75, 1],
+    })
     io.observe(slot)
     onCleanup(() => io.disconnect())
   })
