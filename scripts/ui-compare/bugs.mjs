@@ -2565,7 +2565,6 @@ await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, asy
 // durations and curves of research 02 §三). Each spec reads what the browser
 // ran (viewerProbe: every animation with the data-motion of what it moves) or,
 // for what Motion runs on its own clock (heights), the box frame by frame.
-const STANDARD = "cubic-bezier(0.2,0,0,1)"
 const P4DIR = `${MOUNT}/动效`
 const near = (a, ms, tol = 2) => typeof a === "number" && Math.abs(a - ms) <= tol
 const named = (list, motion, prop) => list.filter((a) => a.motion === motion && (!prop || a.props.includes(prop)))
