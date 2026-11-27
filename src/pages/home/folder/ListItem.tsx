@@ -14,11 +14,7 @@ import {
 } from "~/features/files/ItemMeta"
 import { PhoneRowBody } from "~/features/files/PhoneRowBody"
 import { RowThumb } from "~/features/files/RowThumb"
-import {
-  isPlaying,
-  PlayingBadge,
-  RowDownload,
-} from "~/features/files/RowExtras"
+import { PlayingBadge, RowDownload } from "~/features/files/RowExtras"
 import { phoneShell } from "~/features/shell/topbar-slot"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
 import {
@@ -118,7 +114,6 @@ export const ListItem = (props: {
         class={`list-item viselect-item group/row${props.obj.selected ? " selected" : ""}`}
         data-index={props.index}
         data-row-name={props.obj.name}
-        aria-current={isPlaying(props.obj.name) ? "true" : undefined}
         w="$full"
         p="$2"
         rounded="$lg"

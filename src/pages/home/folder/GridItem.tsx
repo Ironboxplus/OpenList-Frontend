@@ -10,6 +10,7 @@ import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
 import type { GridDecor } from "~/features/files/grid-decor"
 import { FileCard, FolderChip } from "~/features/files/GridCard"
+import { PlayingBadge, RowDownload } from "~/features/files/RowExtras"
 import { CardBadge, CardTag, SelectCheck } from "~/features/files/GridBadges"
 import { PosterArt } from "~/features/files/PosterArt"
 import { selectionMode } from "~/features/files/selection-mode"
@@ -75,7 +76,7 @@ export const GridItem = (props: {
     >
       <VStack
         class={[
-          "grid-item viselect-item",
+          "grid-item viselect-item group/row",
           props.obj.selected && "selected",
           props.card && "grid-card",
           props.card && props.obj.is_dir && "folder",
@@ -256,6 +257,12 @@ export const GridItem = (props: {
                 selecting={selectionMode()}
                 checkbox={cardCheckbox()}
                 extra={<ExtraBadges extra={props.obj.extra} maxTags={1} />}
+                actions={
+                  <>
+                    <PlayingBadge name={props.obj.name} />
+                    <RowDownload obj={props.obj} />
+                  </>
+                }
                 onThumbClick={
                   props.obj.type === ObjType.IMAGE
                     ? (e) => {

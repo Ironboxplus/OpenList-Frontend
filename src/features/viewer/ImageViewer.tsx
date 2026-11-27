@@ -349,8 +349,9 @@ export const ImageViewer = () => {
         <div
           ref={scrim}
           data-motion="viewer-scrim"
-          class="fixed inset-0 z-[1500] bg-black/95"
-          style={{ opacity: 0 }}
+          class="fixed inset-0 z-[1500]"
+          // 95% black (plan §0.2), the same in both themes
+          style={{ opacity: 0, "background-color": "rgba(0, 0, 0, 0.95)" }}
         />
         <DialogPrimitive.Content
           ref={content}

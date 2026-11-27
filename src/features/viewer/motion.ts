@@ -60,10 +60,24 @@ export const run = (
 const viewport = createRoot(() => createViewport())
 export const isPhone = () => viewport() === "phone"
 
-/** Where the page's top bar ends: fixed things of the viewers sit under it. */
+/**
+ * Where the page's top bar ends: fixed things of the viewers sit under it.
+ * --shell-top is any length (rem on a phone, a calc elsewhere): its computed
+ * value is given to a hidden fixed element, which the browser resolves.
+ */
+let probe: HTMLElement | undefined
 export const shellTop = () => {
   const frame = document.querySelector("[data-shell-frame]")
-  return frame
-    ? parseFloat(getComputedStyle(frame).getPropertyValue("--shell-top")) || 0
-    : 0
+  if (!frame) return 0
+  const top = getComputedStyle(frame).getPropertyValue("--shell-top").trim()
+  if (!top) return 0
+  if (!probe?.isConnected) {
+    probe = document.createElement("div")
+    probe.setAttribute("aria-hidden", "true")
+    probe.style.cssText =
+      "position:fixed;left:0;width:0;height:0;visibility:hidden;pointer-events:none"
+    document.body.append(probe)
+  }
+  probe.style.top = top
+  return probe.getBoundingClientRect().top
 }

@@ -37,7 +37,7 @@ import { MotionTokens } from "~/platform/motion"
 import { mediaFs, mediaPath } from "~/features/media/state"
 import { MoviCore } from "~/pages/home/previews/movi_core"
 import { autoNext } from "./auto-next"
-import { boxOf, isPhone, reduced, run, shellTop } from "./motion"
+import { boxOf, isPhone, run, shellTop } from "./motion"
 import {
   closeCurrent,
   dialogPath,
@@ -64,21 +64,11 @@ const isVideo = (o: Obj) => o.type === ObjType.VIDEO
 const nameOf = (path: string) => path.split("/").pop()!
 
 /**
- * Scrolls the window to `top` and waits until it is there. Smooth unless
- * reduced motion is asked for; a scroll that goes nowhere ends at once.
+ * Puts the window's scroll at `top` at once. The dock's own height and the
+ * mini window's FLIP are the motion; a smooth scroll before them would only
+ * delay them (and a scroll that cannot move never says it ended).
  */
-const scrollToTop = (top: number) =>
-  new Promise<void>((resolve) => {
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    const to = Math.max(0, Math.min(top, max))
-    if (Math.abs(window.scrollY - to) < 1) return resolve()
-    if (reduced()) {
-      window.scrollTo(0, to)
-      return resolve()
-    }
-    window.addEventListener("scrollend", () => resolve(), { once: true })
-    window.scrollTo({ top: to, behavior: "smooth" })
-  })
+const scrollToTop = (top: number) => window.scrollTo(0, Math.max(0, top))
 
 /**
  * The page keeps its place by itself when content above the screen changes
@@ -101,6 +91,11 @@ export const Dock = () => {
   const [open, setOpen] = createSignal(false)
   const [mini, setMini] = createSignal(false)
   const [paused, setPaused] = createSignal(true)
+  /**
+   * The player waits for the dock to open before it loads: movi's start-up
+   * holds the main thread, which would make the opening stutter (plan §0.3-3).
+   */
+  const [holding, setHolding] = createSignal(false)
   /** Where the corner window was dragged to, from its place. */
   const [drag, setDrag] = createSignal<[number, number]>([0, 0])
   /** The video the element plays: its fs/get answer. */
@@ -241,14 +236,15 @@ export const Dock = () => {
     }
     host.style.height = "0px"
     // the dock right under the top bar, the list below it
-    await scrollToTop(window.scrollY + top - bar - 8)
-    if (token !== phase) return
+    scrollToTop(window.scrollY + top - bar - 8)
+    setHolding(true)
     await run(
       host,
       { height: ["0px", `${h}px`] },
       MotionTokens.options.dockEnter,
       [0, 1],
     )
+    setHolding(false)
     if (token !== phase) return
     host.style.height = "auto"
     host.style.opacity = ""
@@ -260,6 +256,8 @@ export const Dock = () => {
     const token = ++phase
     busy = true
     anchoring(false)
+    // a playing video keeps the main thread busy: stop it before the fold
+    player?.pause()
     const y = takeRestore()
     if (mini()) {
       setMini(false)
@@ -279,7 +277,6 @@ export const Dock = () => {
     host.style.height = "0px"
     host.style.opacity = ""
     setOpen(false)
-    player?.pause()
     if (y !== undefined) window.scrollTo(0, y)
     anchoring(true)
     busy = false
@@ -304,7 +301,7 @@ export const Dock = () => {
       ([en]) => {
         if (!open() || busy || !en) return
         const want =
-          en.intersectionRatio < 0.5 && en.boundingClientRect.top < bar
+          en.intersectionRatio < 0.5 && en.boundingClientRect.top < shellTop()
         if (want !== mini()) toMini(want)
       },
       {
@@ -317,13 +314,9 @@ export const Dock = () => {
   })
 
   /** Back to the player: scroll to it, then it grows into its place. */
-  const backToPlayer = async () => {
-    const token = ++phase
-    busy = true
+  const backToPlayer = () => {
     const top = host.getBoundingClientRect().top
-    await scrollToTop(window.scrollY + top - shellTop() - 8)
-    if (token !== phase) return
-    busy = false
+    scrollToTop(window.scrollY + top - shellTop() - 8)
     if (mini()) toMini(false)
   }
 
@@ -435,7 +428,7 @@ export const Dock = () => {
               )}
             >
               <MoviCore
-                path={src()?.path ?? ""}
+                path={holding() ? "" : (src()?.path ?? "")}
                 rawUrl={src()?.url ?? ""}
                 provider={src()?.provider ?? ""}
                 fill
@@ -485,7 +478,7 @@ export const Dock = () => {
                   label={t("home.viewer.back_to_player")}
                   testid="mini-expand"
                   dark={!isPhone()}
-                  onClick={() => void backToPlayer()}
+                  onClick={backToPlayer}
                 >
                   <TbArrowBarToUp />
                 </ToolButton>

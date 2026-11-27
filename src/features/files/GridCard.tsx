@@ -109,6 +109,7 @@ const CardThumb = (props: { obj: StoreObj }) => {
       }
     >
       <img
+        data-origin
         src={props.obj.thumb}
         alt=""
         loading="lazy"
@@ -131,6 +132,8 @@ export const FileCard = (props: {
   selecting?: boolean
   checkbox?: () => JSX.Element
   extra?: JSX.Element
+  /** At the end of the name row (the playing mark, the download). */
+  actions?: JSX.Element
   onThumbClick?: (e: MouseEvent) => void
 }) => (
   <>
@@ -140,6 +143,7 @@ export const FileCard = (props: {
       selecting={props.selecting}
       checkbox={props.checkbox}
       sub={<CardMeta obj={props.obj} />}
+      extra={props.actions}
     />
     <div
       data-card-thumb

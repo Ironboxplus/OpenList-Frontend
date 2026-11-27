@@ -1,5 +1,5 @@
 import { render } from "@solidjs/testing-library"
-import { createSignal } from "solid-js"
+import { batch, createSignal } from "solid-js"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 const { registerJassubHost, post, subtitleGate } = vi.hoisted(() => ({
@@ -182,8 +182,11 @@ describe("MoviCore", () => {
     await settle()
     const el = r.container.querySelector("movi-player") as HTMLElement
     expect(el.querySelectorAll("track").length).toBe(3)
-    setPath("/m/b.mkv")
-    setRaw("http://x/b.mkv")
+    // the docked player hands over the path and the stream together
+    batch(() => {
+      setPath("/m/b.mkv")
+      setRaw("http://x/b.mkv")
+    })
     await settle()
     // b's subtitle list is still out: a's tracks have already left
     expect(r.container.querySelector("movi-player")).toBe(el)

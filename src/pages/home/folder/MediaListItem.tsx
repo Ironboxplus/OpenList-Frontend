@@ -9,11 +9,7 @@ import { getIconByObj } from "~/utils/icon"
 import { readExtra } from "./extra-meta"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
 import { episodeFor } from "~/features/media/state"
-import {
-  isPlaying,
-  PlayingBadge,
-  RowDownload,
-} from "~/features/files/RowExtras"
+import { PlayingBadge, RowDownload } from "~/features/files/RowExtras"
 
 /**
  * Two-line media row, used instead of {@link ListItem} inside storages whose
@@ -81,7 +77,6 @@ export const MediaListItem = (props: {
         class={`media-list-item viselect-item group/row${props.obj.selected ? " selected" : ""}`}
         data-index={props.index}
         data-row-name={props.obj.name}
-        aria-current={isPlaying(props.obj.name) ? "true" : undefined}
         w="$full"
         p="$2"
         spacing="$3"

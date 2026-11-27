@@ -47,7 +47,10 @@ export const PlayingBadge = (props: { name: string }) => {
   const t = useT()
   return (
     <Show when={isPlaying(props.name)}>
-      <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+      <span
+        data-testid="playing-badge"
+        class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+      >
         {t("home.viewer.playing")}
       </span>
     </Show>
