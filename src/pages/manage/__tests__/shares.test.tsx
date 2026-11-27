@@ -12,7 +12,6 @@ import { ADMIN_ME, SHARE } from "./fixtures"
 import {
   buttonByText,
   chooseMenuItem,
-  chooseOption,
   clickButton,
   expectGolden,
   failure,
@@ -60,9 +59,19 @@ describe("share editor payloads", () => {
     )!
     expect(group.getAttribute("aria-expanded")).toBe("false")
     fireEvent.click(group)
-    await chooseOption("extract_folder", /bottom/i)
-    await chooseOption("order_by", /size/i)
-    await chooseOption("order_direction", /desc/i)
+    // the order of the files is one control: basis, direction, folders on top
+    const order = document.querySelector<HTMLElement>(
+      '[data-testid="share-order"]',
+    )!
+    const direction = order.querySelector<HTMLButtonElement>(
+      '[data-testid="share-order-direction"]',
+    )!
+    expect(direction.disabled).toBe(true)
+    fireEvent.click(order.querySelector('[data-segment="size"]')!)
+    expect(direction.disabled).toBe(false)
+    fireEvent.click(direction)
+    fireEvent.click(order.querySelector('input[role="switch"]')!)
+    await settle()
     setValue(document.getElementById("pwd")!, "abcde")
     setValue(document.getElementById("max_accessed")!, "7")
     setValue(document.getElementById("expires")!, "2030-01-01T00:00:00Z")
@@ -148,12 +157,10 @@ describe("share editor payloads", () => {
     )!
     expect(group.getAttribute("aria-expanded")).toBe("false")
     expect(group.textContent).not.toContain("changed")
-    expect(document.getElementById("order_by")!.textContent).toContain(
-      "As the storage lists them",
-    )
-    expect(document.getElementById("extract_folder")!.textContent).toContain(
-      "Mixed with files",
-    )
+    const order = document.querySelector('[data-testid="share-order"]')!
+    expect(order.textContent).toContain("As the storage lists them")
+    expect(order.textContent).toContain("Ascending")
+    expect(order.textContent).toContain("Mixed with files")
     const max = document.getElementById("max_accessed") as HTMLInputElement
     expect(max.value).toBe("")
     expect(max.placeholder).toBe("Unlimited")

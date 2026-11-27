@@ -64,5 +64,15 @@
   "downloads": "Downloads",
   "last_access": "Last access",
   "no_preview": "No preview",
-  "no_download": "No download"
+  "no_download": "No download",
+  "group_access": "Who can open it",
+  "group_link": "Link and remark",
+  "group_page": "What visitors see",
+  "advanced": "Advanced",
+  "find_setting": "Find a setting",
+  "random_pwd": "Random code",
+  "create_link": "Create link",
+  "link_created": "Link created",
+  "done": "Done",
+  "visitor_order": "Order visitors see"
 }

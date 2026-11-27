@@ -20,7 +20,7 @@ import { ModalWrapper } from "./ModalWrapper"
 import { LocalSettings } from "./LocalSettings"
 import { BackTop } from "./BackTop"
 import { Decompress } from "./Decompress"
-import { Share } from "./Share"
+import { ShareDialog } from "~/features/shares/ShareDialog"
 
 const Upload = lazy(() => import("../uploads/Upload"))
 
@@ -34,7 +34,7 @@ export const Modal = () => {
       <Decompress />
       <NewFile />
       <Mkdir />
-      <Share />
+      <ShareDialog />
       <RecursiveMove />
       <RemoveEmptyDirectory />
       <BatchRename />

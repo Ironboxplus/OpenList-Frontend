@@ -2,7 +2,7 @@
   "id": "mine",
   "files": ["/x", "/y"],
   "remark": "r",
-  "extract_folder": "back",
+  "extract_folder": "front",
   "order_by": "size",
   "order_direction": "desc",
   "pwd": "abcde",

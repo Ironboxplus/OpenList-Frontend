@@ -1,6 +1,7 @@
 import { batch, createMemo, createSignal, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
 import { AdvancedGroup } from "~/components/ui/advanced-group"
+import { orderChanges, VisitorOrder } from "~/features/shares/VisitorOrder"
 import { Alert, AlertDescription } from "~/components/ui/alert"
 import { DataState } from "~/components/ui/data-state"
 import {
@@ -8,21 +9,11 @@ import {
   FieldRenderer,
   SettingsForm,
   SettingsSection,
-  type FieldOption,
 } from "~/features/settings/form"
 import { useFetch, useRouter, useT } from "~/hooks"
 import { me } from "~/store"
 import { PResp, Share, ShareInfo, ShareUpdate, Type } from "~/types"
 import { getExpireDate, handleResp, notify, r, randomPwd } from "~/utils"
-
-const options = (name: string, csv: string): FieldOption[] =>
-  csv.split(",").map((value) => ({
-    value,
-    labelKey: `shares.${name}s.${value}`,
-  }))
-
-type ChoiceName = "extract_folder" | "order_by" | "order_direction"
-const CHOICES: ChoiceName[] = ["extract_folder", "order_by", "order_direction"]
 
 const AddOrEdit = () => {
   const t = useT()
@@ -43,7 +34,7 @@ const AddOrEdit = () => {
   const [baseline, setBaseline] = createSignal(snapshot())
   const dirty = createMemo(() => snapshot() !== baseline())
   // the order of the files is folded away unless this share changed it
-  const orderChanged = () => CHOICES.filter((c) => !!share[c]).length
+  const orderChanged = () => orderChanges(share)
   const [orderOpen, setOrderOpen] = createSignal(false)
 
   const init = async () => {
@@ -118,21 +109,6 @@ const AddOrEdit = () => {
       setShare("expires", date.toISOString())
     }
   }
-
-  const Choice = (props: { name: ChoiceName; csv: string }) => (
-    <FieldRenderer
-      field={{
-        id: props.name,
-        type: Type.Select,
-        labelKey: `shares.${props.name}`,
-        options: options(props.name, props.csv),
-        // what the backend does when it is left empty (OP internal/model/obj.go)
-        emptyLabelKey: `shares.${props.name}_default`,
-      }}
-      value={share[props.name]}
-      onChange={(raw) => setShare(props.name, String(raw) as never)}
-    />
-  )
 
   const Flag = (props: {
     name: "burn_after_read" | "allow_preview" | "allow_download"
@@ -221,15 +197,16 @@ const AddOrEdit = () => {
         >
           <AdvancedGroup
             title={t("shares.display_group")}
-            count={CHOICES.length}
+            count={3}
             changed={orderChanged()}
             open={orderOpen()}
             onOpenChange={setOrderOpen}
             testid="share-order-group"
           >
-            <Choice name="extract_folder" csv="front,back" />
-            <Choice name="order_by" csv="name,size,modified" />
-            <Choice name="order_direction" csv="asc,desc" />
+            <VisitorOrder
+              value={share}
+              onChange={(patch) => setShare(patch as never)}
+            />
           </AdvancedGroup>
           <FieldRenderer
             field={{
