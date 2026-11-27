@@ -29,7 +29,7 @@ import { cn } from "~/utils/cn"
 import { Portal } from "solid-js/web"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
-import { formatMediaSize, mediaChip } from "../ui"
+import { formatMediaSize, mediaCard, mediaChip } from "../ui"
 import {
   downloadMediaStrm,
   getMediaItem,
@@ -123,12 +123,6 @@ const VideoCard = (props: { item: MediaItem }) => {
   const t = useT()
   const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
-  const cardBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-  )
-  const cardBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-  )
   const coverBg = createMemo(() => (isDark() ? "#1e293b" : "#e2e8f0"))
   const titleColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
   const subColor = createMemo(() => (isDark() ? "#64748b" : "#94a3b8"))
@@ -146,10 +140,7 @@ const VideoCard = (props: { item: MediaItem }) => {
   return (
     <div
       style={{
-        background: cardBg(),
-        "border-radius": "12px",
-        overflow: "hidden",
-        border: `1px solid ${cardBorder()}`,
+        ...mediaCard,
         transition: "transform 0.2s, box-shadow 0.2s",
       }}
       onMouseEnter={(e) => {

@@ -54,6 +54,19 @@ export const mediaChip = (isDark: boolean) => ({
   "font-size": "12px",
 })
 
+/**
+ * A card of a library grid: the card surface and the theme's border, as every
+ * other card of the app (app/tokens.css). The cards drew their edge in
+ * rgba(0,0,0,0.08) / rgba(255,255,255,0.06) before, which the eye barely
+ * finds on the page (the audit: 19 of 255 apart, light and dark).
+ */
+export const mediaCard = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  "border-radius": "12px",
+  overflow: "hidden",
+} as const
+
 export const mediaMetaText = (isDark: boolean) => ({
   color: isDark ? "#64748b" : "#94a3b8",
   "font-size": "14px",

@@ -6,7 +6,7 @@ import { useColorMode } from "@hope-ui/solid"
 import { useT } from "~/hooks"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
-import { formatMediaSize, mediaPrimaryBtn } from "../ui"
+import { formatMediaSize, mediaCard, mediaPrimaryBtn } from "../ui"
 import { PdfReader } from "./PdfReader"
 import { EpubReader } from "./EpubReader"
 import { readerBtnStyle } from "./reader_style"
@@ -176,12 +176,6 @@ const BookCard = (props: { item: MediaItem }) => {
   const t = useT()
   const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
-  const cardBg = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-  )
-  const cardBorder = createMemo(() =>
-    isDark() ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-  )
   const coverBg = createMemo(() => (isDark() ? "#1e293b" : "#e2e8f0"))
   const coverFallbackBg = createMemo(() =>
     isDark()
@@ -197,10 +191,8 @@ const BookCard = (props: { item: MediaItem }) => {
   return (
     <div
       style={{
-        background: cardBg(),
+        ...mediaCard,
         "border-radius": "10px",
-        overflow: "hidden",
-        border: `1px solid ${cardBorder()}`,
         transition: "transform 0.2s, box-shadow 0.2s",
       }}
       onMouseEnter={(e) => {

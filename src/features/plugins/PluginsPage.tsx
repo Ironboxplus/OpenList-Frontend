@@ -23,7 +23,8 @@ const PluginsPage = () => {
         <NavLink
           path="/@manage/plugins"
           data-testid="system-plugins-link"
-          class="mr-2 whitespace-nowrap text-sm text-primary underline-offset-4 hover:underline"
+          // 32px high, as every click target (the audit's small-target)
+          class="mr-2 inline-flex min-h-8 items-center whitespace-nowrap text-sm text-primary underline-offset-4 hover:underline"
         >
           {t("plugins.page.manage_system")}
         </NavLink>

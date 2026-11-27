@@ -59,7 +59,7 @@
     "lists": "File lists",
     "lists_scope": "How file lists page through long folders and keep their sort order.",
     "visibility": "Search engines and other servers",
-    "visibility_scope": "Whether search engines may index the site and other OpenList servers may mount it.",
+    "visibility_scope": "What search engines may crawl (robots.txt), and whether other OpenList servers may mount this site and index it.",
     "brand": "Brand",
     "brand_scope": "The logo, icons and colour of the site.",
     "page_layout": "Page layout",

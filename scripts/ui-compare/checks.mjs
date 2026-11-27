@@ -142,9 +142,11 @@ export function layoutChecks() {
       const outside = el.parentElement ? bgOf(el.parentElement) : own
       const seen = over(col, own)
       const d = Math.min(diff(seen, own), diff(over(col, outside), outside))
-      // a transparent border on a control is how it keeps its size, not a missing frame
+      // a transparent border on a control is how it keeps its size, not a missing
+      // frame, nor a faint one (hope's filled textarea read as faint until 11-28)
       const control = el.matches('button, a, input, select, textarea, label, [role], [class*="hope-"]') || el.getBoundingClientRect().width < 120 || el.getBoundingClientRect().height < 40
-      if (d <= 6 && !(col[3] === 0 && control)) add("border-invisible", el, `${side.toLowerCase()} ${w}px diff ${Math.round(d)} (alpha ${col[3].toFixed(2)})`)
+      if (col[3] === 0 && control) break
+      if (d <= 6) add("border-invisible", el, `${side.toLowerCase()} ${w}px diff ${Math.round(d)} (alpha ${col[3].toFixed(2)})`)
       else if (d <= 24 && el.getBoundingClientRect().width > 120 && el.getBoundingClientRect().height > 40)
         add("border-faint", el, `${side.toLowerCase()} ${w}px diff ${Math.round(d)}`)
       break
@@ -154,9 +156,13 @@ export function layoutChecks() {
   // ---- empty gaps between stacked siblings, and uneven side insets
   for (const c of vis) {
     const cr = c.getBoundingClientRect()
+    // (a sticky child is drawn where the screen holds it, not after the one
+    // before it: the settings' save bar over the cards still to come, or at
+    // the bottom of a short page, is not a gap; bugs.mjs
+    // settings-bar-clears-last-field shows the cards come out above it)
     const kids = [...c.children]
       .filter(visible)
-      .filter((k) => !["absolute", "fixed"].includes(getComputedStyle(k).position))
+      .filter((k) => !["absolute", "fixed", "sticky"].includes(getComputedStyle(k).position))
       .map((k) => [k, k.getBoundingClientRect()])
       .sort((a, b) => a[1].top - b[1].top)
     if (kids.length < 2) continue

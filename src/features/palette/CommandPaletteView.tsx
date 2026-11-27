@@ -184,7 +184,8 @@ export const CommandPaletteView = (props: CommandPaletteViewProps) => {
                   <Dialog.CloseButton
                     aria-label={props.labels.close}
                     class={cn(
-                      "rounded-md bg-transparent px-2 py-1 text-sm text-muted-foreground hover:text-foreground",
+                      // 32px each way, as every click target
+                      "inline-flex min-h-8 min-w-8 items-center justify-center rounded-md bg-transparent px-2 text-sm text-muted-foreground hover:text-foreground",
                       focusRing,
                     )}
                   >

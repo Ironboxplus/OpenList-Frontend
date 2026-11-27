@@ -63,10 +63,16 @@ const optionList = (csv: string | undefined, prefix: string): FieldOption[] =>
     ? csv.split(",").map((v) => ({ value: v, labelKey: `${prefix}.${v}` }))
     : []
 
-/** Settings whose 0 means "no limit" (OP internal/session/session.go). */
+/**
+ * Settings whose 0 is a word: no limit (OP internal/session/session.go;
+ * internal/op/fs.go:1121-1124, the hooks' rate) or never expiring
+ * (internal/sign/sign.go:16-21, a link's lifetime).
+ */
 const settingZeroLabels: Record<string, string> = {
   max_devices: "global.unlimited",
   device_session_ttl: "global.never_expires",
+  link_expiration: "global.never_expires",
+  handle_hook_rate_limit: "global.unlimited",
 }
 
 /** A row of /admin/setting/list. Its value is always a string on the wire. */

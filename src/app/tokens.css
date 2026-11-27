@@ -62,11 +62,14 @@
   --destructive-foreground: hsl(0 0% 100%);
   --success: hsl(142 60% 52%);
   --warning: hsl(38 92% 56%);
-  --border: #3d3d3d;
+  /* 29 or more off every lifted surface: #3d3d3d was 23 off the menus
+     (--popover) and 19 off --muted, under the audit's border-faint threshold
+     of 24 (the menus, the sign-in card, the Me sheet's storage card) */
+  --border: #474747;
   --input: #444444;
   --ring: #90caf9;
-  /* a grid card is --muted on the files card: --border (#3d3d3d) was 19 off
-     both, under the audit's border-faint threshold of 24; this is 40 off */
+  /* a grid card is --muted on the files card: --border (#3d3d3d then) was 19
+     off both, under the audit's border-faint threshold of 24; this is 40 off */
   --card-edge: #525252;
   /* hope's $neutral3 and dark $lg shadow */
   --files-card-bg: rgb(32 36 37);

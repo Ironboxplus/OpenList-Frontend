@@ -66,8 +66,10 @@ function LocalSettingEdit(props: LocalSetting) {
         </Match>
         <Match when={props.type === "number"}>
           <ButtonGroup attached>
+            {/* 40px wide, as high: hope's IconButton was 31px (the audit's small-target) */}
             <IconButton
               aria-label="decrease"
+              minW="$10"
               icon={<FaSolidMinus />}
               onClick={() => {
                 setLocal(
@@ -93,6 +95,7 @@ function LocalSettingEdit(props: LocalSetting) {
             />
             <IconButton
               aria-label="increase"
+              minW="$10"
               icon={<FaSolidPlus />}
               onClick={() => {
                 setLocal(props.key, (parseInt(local[props.key]) + 1).toString())

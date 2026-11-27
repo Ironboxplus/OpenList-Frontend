@@ -1,6 +1,8 @@
-import { VStack, HStack, Button, Textarea, IconButton } from "@hope-ui/solid"
+import { VStack, Button } from "@hope-ui/solid"
 import { createSignal } from "solid-js"
 import { TbPlus, TbFolder } from "solid-icons/tb"
+import { Button as KitButton } from "~/components/ui/button"
+import { Textarea } from "~/components/ui/input"
 import { useT } from "~/hooks"
 import { pathJoin } from "~/utils"
 import { EnhancedFolderTree } from "~/components/EnhancedFolderTree"
@@ -44,25 +46,30 @@ export const MultiPathInput = (props: MultiPathInputProps) => {
 
   return (
     <VStack w="$full" spacing="$2" alignItems="stretch">
-      <HStack w="$full" spacing="$2">
+      {/* the kit's field and button, framed as the rest of the forms it is
+          in (it was hope's filled textarea among outlined fields) */}
+      <div class="flex w-full items-start gap-2">
         <Textarea
           id={props.id}
-          flex="1"
+          class="flex-1 resize-y"
           value={props.value}
-          invalid={!props.valid}
+          aria-invalid={props.valid === false ? true : undefined}
           readOnly={props.readOnly}
           placeholder={props.placeholder || t("shares.files_placeholder")}
           onInput={(e) => props.onChange(e.currentTarget.value)}
         />
-        <IconButton
-          colorScheme="accent"
+        <KitButton
+          type="button"
+          variant="outline"
+          size="icon"
           aria-label={t("global.choose_or_input_path")}
-          icon={<TbFolder />}
+          title={t("global.choose_or_input_path")}
           onClick={onOpen}
-          size="lg"
           disabled={props.readOnly}
-        />
-      </HStack>
+        >
+          <TbFolder class="size-4" />
+        </KitButton>
+      </div>
 
       <Modal size="xl" opened={isOpen()} onClose={onClose}>
         <ModalOverlay />
