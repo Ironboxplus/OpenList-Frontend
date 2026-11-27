@@ -188,6 +188,22 @@ export function layoutChecks() {
   }
 
   // ---- text boxes drawn over each other (only what is on top at its centre)
+  const clipToOverflow = (rect, from) => {
+    let { left, right, top, bottom } = rect
+    for (let e = from; e && e !== document.body; e = e.parentElement) {
+      const cs = getComputedStyle(e)
+      const er = e.getBoundingClientRect()
+      if (cs.overflowX !== "visible") {
+        left = Math.max(left, er.left)
+        right = Math.min(right, er.right)
+      }
+      if (cs.overflowY !== "visible") {
+        top = Math.max(top, er.top)
+        bottom = Math.min(bottom, er.bottom)
+      }
+    }
+    return { left, right, top, bottom, width: Math.max(0, right - left), height: Math.max(0, bottom - top) }
+  }
   const boxes = []
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -196,7 +212,8 @@ export function layoutChecks() {
     if (!p || !visible(p) || ["SCRIPT", "STYLE", "TEXTAREA"].includes(p.tagName)) continue
     const rg = document.createRange()
     rg.selectNodeContents(n)
-    const r = rg.getBoundingClientRect()
+    // the text as drawn: an ellipsised or scrolled box hides what runs past it
+    const r = clipToOverflow(rg.getBoundingClientRect(), p)
     if (r.width < 2 || r.height < 2 || !inViewport(r)) continue
     const top = document.elementFromPoint(Math.min(vw - 1, Math.max(0, r.left + r.width / 2)), Math.min(vh - 1, Math.max(0, r.top + r.height / 2)))
     if (!top || !(p.contains(top) || top.contains(p))) continue
