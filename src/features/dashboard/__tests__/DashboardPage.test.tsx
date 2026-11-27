@@ -241,7 +241,8 @@ describe("DashboardPage", () => {
     expect(traffic.querySelector("[data-period=total]")!.textContent).toContain(
       "1.00T",
     )
-    expect(traffic.textContent).toContain("cfscan")
+    // the relay note ("Relayed by cfscan; direct (302) links...") is gone
+    expect(traffic.textContent).not.toContain("cfscan")
     expect(screen.getByTestId("dashboard-speed").textContent).toContain(
       "8.00M/s",
     )
