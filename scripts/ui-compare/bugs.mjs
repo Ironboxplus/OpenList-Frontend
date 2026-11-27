@@ -1368,7 +1368,8 @@ const overlayProbe = () => {
       for (const n of m.removedNodes)
         if (n.nodeType === 1) for (const e of [n, ...n.querySelectorAll(SEL)]) if (e.__om && e.__om.removedAt === null) e.__om.removedAt = performance.now()
     }
-  }).observe(document.documentElement, { childList: true, subtree: true })
+    // the document: an init script runs before <html> exists
+  }).observe(document, { childList: true, subtree: true })
 }
 const DECEL = "cubic-bezier(0.05,0.7,0.1,1)"
 const ACCEL = "cubic-bezier(0.3,0,0.8,0.15)"
@@ -1389,7 +1390,9 @@ const expectOverlayMotion = (env, kind, { rec, kinds }, enter, exit, moves) => {
   const inA = rec.anims.find((a) => a.phase === "enter" && a.props.includes("opacity"))
   const outA = rec.anims.find((a) => a.phase === "exit" && a.props.includes("opacity"))
   if (!inA || Math.abs(inA.duration - enter) > 2 || inA.easing !== DECEL) fail.push(`enter should be ${enter}ms ${DECEL}`)
-  if (inA && moves && !inA.props.includes(moves)) fail.push(`enter should move (${moves})`)
+  // the browser runs one animation per property: the move is its own
+  const inMove = rec.anims.find((a) => a.phase === "enter" && moves && a.props.includes(moves))
+  if (moves && (!inMove || Math.abs(inMove.duration - enter) > 2 || inMove.easing !== DECEL)) fail.push(`enter should move (${moves}) for ${enter}ms ${DECEL}`)
   if (!outA || Math.abs(outA.duration - exit) > 2 || outA.easing !== ACCEL) fail.push(`exit should be ${exit}ms ${ACCEL}`)
   if (rec.closedAt === null || rec.removedAt === null) fail.push(`closed at ${rec.closedAt}, removed at ${rec.removedAt}`)
   else if (rec.removedAt - rec.closedAt < exit - 10) fail.push(`removed ${rec.removedAt - rec.closedAt}ms after it was told to close, before its ${exit}ms exit ran`)
