@@ -49,7 +49,7 @@ function LocalSettingEdit(props: LocalSetting) {
             id={props.key}
             value={local[props.key]}
             onChange={(v) => setLocal(props.key, v)}
-            placeholder={t("global.choose")}
+            placeholder={t("global.not_set")}
             options={(props.options ?? []).map((item) => ({
               value: item,
               label: t(`home.local_settings.${props.key}_options.${item}`),

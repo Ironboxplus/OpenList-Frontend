@@ -148,7 +148,7 @@ export const Share = () => {
                 <SelectWrapper
                   value={share.extract_folder}
                   onChange={(v) => setShare("extract_folder", v)}
-                  placeholder={t("global.choose")}
+                  placeholder={t("shares.extract_folder_default")}
                   options={[
                     {
                       value: ExtractFolder.Front,
@@ -164,7 +164,7 @@ export const Share = () => {
                 <SelectWrapper
                   value={share.order_by}
                   onChange={(v) => setShare("order_by", v)}
-                  placeholder={t("global.choose")}
+                  placeholder={t("shares.order_by_default")}
                   options={[
                     { value: OrderBy.Name, label: t("shares.order_bys.name") },
                     { value: OrderBy.Size, label: t("shares.order_bys.size") },
@@ -178,7 +178,7 @@ export const Share = () => {
                 <SelectWrapper
                   value={share.order_direction}
                   onChange={(v) => setShare("order_direction", v)}
-                  placeholder={t("global.choose")}
+                  placeholder={t("shares.order_direction_default")}
                   options={[
                     {
                       value: OrderDirection.Asc,
@@ -213,9 +213,14 @@ export const Share = () => {
                 <Input
                   type="number"
                   size="sm"
-                  value={share.max_accessed}
+                  // 0 is unlimited: an empty box that says so
+                  value={share.max_accessed || ""}
+                  placeholder={t("shares.max_accessed_unlimited")}
                   onInput={(e) => {
-                    setShare("max_accessed", parseInt(e.currentTarget.value))
+                    setShare(
+                      "max_accessed",
+                      parseInt(e.currentTarget.value) || 0,
+                    )
                   }}
                 />
                 <Checkbox
@@ -232,7 +237,8 @@ export const Share = () => {
                   size="sm"
                   invalid={!expireValid()}
                   value={expireString()}
-                  placeholder="yyyy-MM-dd HH:mm:ss or +1w1d1H1m1s1ms"
+                  placeholder={t("shares.expires_never")}
+                  title={t("shares.expires_help")}
                   onInput={(e) => {
                     setExpireString(e.currentTarget.value)
                     if (e.currentTarget.value === "") {

@@ -27,8 +27,16 @@ export interface FieldSpec {
   searchable?: boolean
   /** Select: several values (the value is a string[]). */
   multiple?: boolean
-  /** Select: text shown when nothing is chosen. */
+  /**
+   * Select: text shown when nothing is chosen, which says what the backend
+   * does then (default "Not set").
+   */
   emptyLabelKey?: string
+  /**
+   * Number: 0 is a special value (no limit, never); the box is empty then and
+   * shows this text, and emptying the box stores 0.
+   */
+  zeroLabelKey?: string
   invalid?: boolean
   /** A setting on its way out: offers a delete control next to the label. */
   deprecated?: boolean
@@ -53,9 +61,16 @@ const optionList = (csv: string | undefined, prefix: string): FieldOption[] =>
     ? csv.split(",").map((v) => ({ value: v, labelKey: `${prefix}.${v}` }))
     : []
 
+/** Settings whose 0 means "no limit" (OP internal/session/session.go). */
+const settingZeroLabels: Record<string, string> = {
+  max_devices: "global.unlimited",
+  device_session_ttl: "global.never_expires",
+}
+
 /** A row of /admin/setting/list. Its value is always a string on the wire. */
 export const settingField = (item: SettingItem): FieldSpec => ({
   id: item.key,
+  zeroLabelKey: settingZeroLabels[item.key],
   type: item.type,
   labelKey: `settings.${item.key}`,
   helpKey: item.help ? `settings.${item.key}-tips` : undefined,
@@ -71,6 +86,13 @@ export const settingValue = (item: SettingItem): FieldValue =>
 /** What to store back into a setting for what its control emitted. */
 export const settingFromRaw = (raw: FieldRaw): string => String(raw)
 
+/** Common driver items whose empty value is a behaviour of its own. */
+const commonDefaults = new Set([
+  "order_by",
+  "order_direction",
+  "extract_folder",
+])
+
 /**
  * A storage driver's form item. Driver `common` items (mount path, order...)
  * live under storages.common.*, the driver's own under drivers.<driver>.*.
@@ -85,6 +107,11 @@ export const driverField = (item: DriverItem, driver: string): FieldSpec => {
     required: item.required,
     secret: item.name === "password",
     options: optionList(item.options, `${ns}.${item.name}s`),
+    // left empty, the backend keeps the driver's order (OP internal/model/obj.go)
+    emptyLabelKey:
+      driver === "common" && commonDefaults.has(item.name)
+        ? `storages.common.${item.name}_default`
+        : undefined,
   }
 }
 

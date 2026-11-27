@@ -1,5 +1,6 @@
 import { batch, createMemo, createSignal, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
+import { AdvancedGroup } from "~/components/ui/advanced-group"
 import { Alert, AlertDescription } from "~/components/ui/alert"
 import { DataState } from "~/components/ui/data-state"
 import {
@@ -21,6 +22,7 @@ const options = (name: string, csv: string): FieldOption[] =>
   }))
 
 type ChoiceName = "extract_folder" | "order_by" | "order_direction"
+const CHOICES: ChoiceName[] = ["extract_folder", "order_by", "order_direction"]
 
 const AddOrEdit = () => {
   const t = useT()
@@ -40,6 +42,9 @@ const AddOrEdit = () => {
   const snapshot = () => JSON.stringify([share, files(), expireString()])
   const [baseline, setBaseline] = createSignal(snapshot())
   const dirty = createMemo(() => snapshot() !== baseline())
+  // the order of the files is folded away unless this share changed it
+  const orderChanged = () => CHOICES.filter((c) => !!share[c]).length
+  const [orderOpen, setOrderOpen] = createSignal(false)
 
   const init = async () => {
     if (!id) {
@@ -56,6 +61,7 @@ const AddOrEdit = () => {
         setExpireString("")
         setExpireValid(true)
         setBaseline(snapshot())
+        setOrderOpen(false)
       })
       return
     }
@@ -71,6 +77,7 @@ const AddOrEdit = () => {
           )
           setFilesValid(true)
           setBaseline(snapshot())
+          setOrderOpen(orderChanged() > 0)
         })
       },
       setError,
@@ -119,6 +126,8 @@ const AddOrEdit = () => {
         type: Type.Select,
         labelKey: `shares.${props.name}`,
         options: options(props.name, props.csv),
+        // what the backend does when it is left empty (OP internal/model/obj.go)
+        emptyLabelKey: `shares.${props.name}_default`,
       }}
       value={share[props.name]}
       onChange={(raw) => setShare(props.name, String(raw) as never)}
@@ -210,15 +219,25 @@ const AddOrEdit = () => {
           id="share-options"
           title={t("settings.form.share_options")}
         >
-          <Choice name="extract_folder" csv="front,back" />
-          <Choice name="order_by" csv="name,size,modified" />
-          <Choice name="order_direction" csv="asc,desc" />
+          <AdvancedGroup
+            title={t("shares.display_group")}
+            count={CHOICES.length}
+            changed={orderChanged()}
+            open={orderOpen()}
+            onOpenChange={setOrderOpen}
+            testid="share-order-group"
+          >
+            <Choice name="extract_folder" csv="front,back" />
+            <Choice name="order_by" csv="name,size,modified" />
+            <Choice name="order_direction" csv="asc,desc" />
+          </AdvancedGroup>
           <FieldRenderer
             field={{
               id: "max_accessed",
               type: Type.Number,
               labelKey: "shares.max_accessed",
               helpKey: "shares.max_accessed_help",
+              zeroLabelKey: "shares.max_accessed_unlimited",
             }}
             value={share.max_accessed}
             onChange={(raw) =>
@@ -255,8 +274,9 @@ const AddOrEdit = () => {
               id: "expires",
               type: Type.String,
               labelKey: "shares.expires",
+              helpKey: "shares.expires_help",
               invalid: !expireValid(),
-              placeholder: "yyyy-MM-dd HH:mm:ss or +1w1d1H1m1s1ms",
+              placeholder: t("shares.expires_never"),
             }}
             value={expireString()}
             onChange={(raw) => setExpires(String(raw))}

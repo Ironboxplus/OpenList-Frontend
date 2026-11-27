@@ -33,6 +33,13 @@
     "desc": "Descending"
   },
   "extract_folder": "Folder Order",
+  "extract_folder_default": "Mixed with files",
+  "order_by_default": "As the storage lists them",
+  "order_direction_default": "Ascending",
+  "max_accessed_unlimited": "Unlimited",
+  "expires_never": "Never",
+  "expires_help": "A date and time (yyyy-MM-dd HH:mm:ss), or a time from now such as +1w2d: w weeks, d days, H hours, m minutes, s seconds. Empty: the share never expires.",
+  "display_group": "Order of the files",
   "extract_folders": {
     "front": "Folders on Top",
     "back": "Folders at Bottom"
@@ -48,7 +55,7 @@
   "allow_download": "Allow download",
   "allow_download_help": "The download button and direct links are offered to visitors.",
   "policy_note": "These switches are a policy for this page and for well-behaved clients, not copy protection. Anyone who can view a file can also save its bytes.",
-  "max_accessed_help": "0 means unlimited, or 1 when burn after read is on. Each visitor (by IP) counts once per 30 minutes.",
+  "max_accessed_help": "Empty means unlimited, or 1 when burn after read is on. Each visitor (by IP) counts once per 30 minutes.",
   "not_found": "This share does not exist.",
   "expired_or_used_up": "This share has expired or been used up.",
   "preview_disabled": "The owner of this share disabled preview.",

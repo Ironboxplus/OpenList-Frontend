@@ -54,6 +54,12 @@ describe("share editor payloads", () => {
     setValue(document.getElementById("id")!, "mine")
     setValue(document.getElementById("files")!, "/x\n/y")
     setValue(document.getElementById("remark")!, "r")
+    // a new share keeps the order of the files folded away
+    const group = document.querySelector<HTMLElement>(
+      '[data-testid="share-order-group"]',
+    )!
+    expect(group.getAttribute("aria-expanded")).toBe("false")
+    fireEvent.click(group)
     await chooseOption("extract_folder", /bottom/i)
     await chooseOption("order_by", /size/i)
     await chooseOption("order_direction", /desc/i)
@@ -110,6 +116,50 @@ describe("share editor payloads", () => {
     expect(router.to).toHaveBeenCalledWith("/@manage/shares", false, {
       replace: true,
     })
+  })
+
+  it("edit: a share whose order was changed opens with it unfolded", async () => {
+    router.params = { id: "abc" }
+    renderPage(() => <AddOrEdit />)
+    await settle()
+    const group = document.querySelector<HTMLElement>(
+      '[data-testid="share-order-group"]',
+    )!
+    expect(group.getAttribute("aria-expanded")).toBe("true")
+    expect(group.textContent).toContain("(3)")
+    expect(group.textContent).toContain("3 changed")
+  })
+
+  it("edit: a share at the default order keeps it folded; empty choices say what happens", async () => {
+    router.params = { id: "abc" }
+    mockApi({
+      "GET /share/get": () => ({
+        ...structuredClone(SHARE),
+        order_by: "",
+        order_direction: "",
+        extract_folder: "",
+        max_accessed: 0,
+      }),
+    })
+    renderPage(() => <AddOrEdit />)
+    await settle()
+    const group = document.querySelector<HTMLElement>(
+      '[data-testid="share-order-group"]',
+    )!
+    expect(group.getAttribute("aria-expanded")).toBe("false")
+    expect(group.textContent).not.toContain("changed")
+    expect(document.getElementById("order_by")!.textContent).toContain(
+      "As the storage lists them",
+    )
+    expect(document.getElementById("extract_folder")!.textContent).toContain(
+      "Mixed with files",
+    )
+    const max = document.getElementById("max_accessed") as HTMLInputElement
+    expect(max.value).toBe("")
+    expect(max.placeholder).toBe("Unlimited")
+    expect(
+      (document.getElementById("expires") as HTMLInputElement).placeholder,
+    ).toBe("Never")
   })
 })
 

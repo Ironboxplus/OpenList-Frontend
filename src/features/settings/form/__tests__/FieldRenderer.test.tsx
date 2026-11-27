@@ -145,6 +145,42 @@ describe("FieldRenderer", () => {
     expect((document.getElementById("f") as HTMLInputElement).value).toBe("")
   })
 
+  it("a number whose 0 is special shows the word in an empty box; emptied, it stores 0", () => {
+    const out = mount(
+      base({ type: Type.Number, zeroLabelKey: "global.unlimited" }),
+      0,
+    )
+    const el = document.getElementById("f") as HTMLInputElement
+    expect(el.value).toBe("")
+    expect(el.placeholder).toBe("Unlimited")
+    type(el, "4")
+    expect(el.value).toBe("4")
+    type(el, "")
+    expect(out).toEqual(["4", "0"])
+    expect(el.value).toBe("")
+    document.body.innerHTML = ""
+    // settings carry the 0 as text
+    mount(base({ type: Type.Number, zeroLabelKey: "global.unlimited" }), "0")
+    expect((document.getElementById("f") as HTMLInputElement).value).toBe("")
+  })
+
+  it("an empty select says Not set unless the field says what empty means", () => {
+    const options = [{ value: "asc", labelKey: "shares.order_directions.asc" }]
+    mount(base({ type: Type.Select, options }), "")
+    expect(document.getElementById("f")!.textContent).toContain("Not set")
+    expect(document.body.textContent).not.toContain("Choose")
+    document.body.innerHTML = ""
+    mount(
+      base({
+        type: Type.Select,
+        options,
+        emptyLabelKey: "shares.order_direction_default",
+      }),
+      "",
+    )
+    expect(document.getElementById("f")!.textContent).toContain("Ascending")
+  })
+
   it("text is a textarea", () => {
     const out = mount(base({ type: Type.Text }), "line")
     const el = document.getElementById("f") as HTMLTextAreaElement

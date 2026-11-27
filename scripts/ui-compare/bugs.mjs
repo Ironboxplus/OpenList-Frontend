@@ -1331,35 +1331,52 @@ const overlayProbe = () => {
     if (el.__om) return
     // a role element inside a data-motion element is the same overlay
     if (!el.hasAttribute("data-motion") && el.parentElement?.closest("[data-motion]")) return
-    const r = { kind: el.getAttribute("data-motion") || el.getAttribute("role"), t0: performance.now(), closedAt: null, removedAt: null, anims: [], frames: [] }
+    const kind = el.getAttribute("data-motion") || el.getAttribute("role")
+    const r = { kind, t0: performance.now(), closedAt: null, removedAt: null, anims: [], frames: [], marks: [] }
     el.__om = r
     recs.push(r)
     const grab = () => {
-      for (const a of el.getAnimations()) {
+      // a collapsible fades its body, a child of the element whose height moves
+      for (const a of el.getAnimations(kind === "collapsible" ? { subtree: true } : undefined)) {
         if (a.__om) continue
         a.__om = true
         const kf = a.effect?.getKeyframes?.() ?? []
         const tm = a.effect?.getTiming?.() ?? {}
         const props = [...new Set(kf.flatMap((f) => Object.keys(f)))].filter((p) => !["offset", "easing", "composite", "computedOffset"].includes(p))
-        r.anims.push({ at: Math.round(performance.now() - r.t0), phase: r.closedAt === null ? "enter" : "exit", duration: Number(tm.duration), easing: String(tm.easing).replace(/\s+/g, ""), kfEasing: kf.map((f) => String(f.easing).replace(/\s+/g, "")), props, css: a.animationName || "" })
+        const last = r.marks[r.marks.length - 1]
+        r.anims.push({ at: Math.round(performance.now() - r.t0), phase: last ? (last[1] === "closed" ? "exit" : "enter") : r.closedAt === null ? "enter" : "exit", target: a.effect?.target === el ? "self" : "child", duration: Number(tm.duration), easing: String(tm.easing).replace(/\s+/g, ""), kfEasing: kf.map((f) => String(f.easing).replace(/\s+/g, "")), props, css: a.animationName || "" })
       }
     }
+    // sampled for 400 frames after it appears and after each open or close
+    let budget = 400
+    let running = false
     const frame = () => {
       if (!el.isConnected) {
         if (r.removedAt === null) r.removedAt = performance.now()
+        running = false
         return
       }
       const cs = getComputedStyle(el)
-      r.frames.push([Math.round(performance.now() - r.t0), +(+cs.opacity).toFixed(3), cs.transform, Math.round(el.getBoundingClientRect().height)])
+      r.frames.push([Math.round(performance.now() - r.t0), +(+cs.opacity).toFixed(3), cs.transform, +el.getBoundingClientRect().height.toFixed(2)])
       grab()
-      if (r.frames.length < 400) requestAnimationFrame(frame)
+      if (--budget > 0) requestAnimationFrame(frame)
+      else running = false
     }
-    frame()
-    new MutationObserver(() => {
-      if (el.hasAttribute("data-closed") && r.closedAt === null) {
-        r.closedAt = performance.now()
-        grab()
+    const sample = () => {
+      budget = 400
+      if (!running) {
+        running = true
+        frame()
       }
+    }
+    sample()
+    new MutationObserver(() => {
+      const closed = el.hasAttribute("data-closed")
+      const last = r.marks[r.marks.length - 1]
+      if (!last || last[1] !== (closed ? "closed" : "expanded")) r.marks.push([Math.round(performance.now() - r.t0), closed ? "closed" : "expanded"])
+      if (closed && r.closedAt === null) r.closedAt = performance.now()
+      grab()
+      sample()
     }).observe(el, { attributes: true, attributeFilter: ["data-closed", "data-expanded"] })
   }
   new MutationObserver((ms) => {
@@ -1451,6 +1468,8 @@ await spec("motion-sheet", { ...PHONE, init: overlayProbe, video: true }, async 
 await spec("motion-select", { init: overlayProbe, video: true }, async (env) => {
   const { page } = env
   await go(page, "/@manage/shares/add", 1500)
+  await page.locator('[data-testid="share-order-group"]').click()
+  await page.waitForTimeout(500)
   await page.locator("#order_by").click()
   await page.locator('[role="listbox"]').first().waitFor()
   await page.waitForTimeout(500)
@@ -1478,6 +1497,73 @@ await spec("motion-palette", { init: overlayProbe }, async (env) => {
   await page.waitForTimeout(600)
   expectOverlayMotion(env, "dialog", await overlayRecord(page, "dialog"), 200, 150, "transform")
 })
+// the share form folds the order of the files (research 05 §二.3): the height
+// opens in 220ms after a 40ms lead and folds in 180ms, the body fades
+// 220/180 on the standard curve; folded, it is hidden
+const STANDARD = "cubic-bezier(0.2,0,0,1)"
+/** How long the height moved after `from`: from its last resting frame to its first settled one. */
+const heightRun = (frames, from, to) => {
+  const span = frames.filter((f) => f[0] >= from && f[0] < to)
+  const h = span.map((f) => f[3])
+  const end = h[h.length - 1]
+  const startIdx = h.findIndex((v) => v !== h[0])
+  const endIdx = h.findIndex((v, i) => i >= startIdx && v === end)
+  if (startIdx < 1 || endIdx < 0) return null
+  return { lead: span[startIdx - 1][0] - from, ran: span[endIdx][0] - span[startIdx - 1][0], from: h[0], to: end }
+}
+await spec("motion-collapsible", { init: overlayProbe, video: true }, async (env) => {
+  const { page } = env
+  await go(page, "/@manage/shares/add", 1500)
+  const trigger = page.locator('[data-testid="share-order-group"]')
+  if ((await trigger.getAttribute("aria-expanded")) !== "false") throw new Error("a new share should open with the order of the files folded")
+  await trigger.click()
+  await page.waitForTimeout(800)
+  await trigger.click()
+  await page.waitForTimeout(800)
+  const rec = await page.evaluate(() => window.__overlayMotion.filter((r) => r.kind === "collapsible").pop())
+  const hidden = await page.locator('[data-motion="collapsible"]').evaluate((e) => e.hidden)
+  const marks = rec?.marks ?? []
+  const opened = marks.find((m) => m[1] === "expanded")
+  const closed = marks.find((m) => m[1] === "closed" && opened && m[0] > opened[0])
+  const enter = opened && closed ? heightRun(rec.frames, opened[0], closed[0]) : null
+  const exit = closed ? heightRun(rec.frames, closed[0], Infinity) : null
+  const fadeIn = rec?.anims.find((a) => a.phase === "enter" && a.target === "child" && a.props.includes("opacity"))
+  const fadeOut = rec?.anims.find((a) => a.phase === "exit" && a.target === "child" && a.props.includes("opacity"))
+  env.report = { ...(env.report ?? {}), collapsible: { enterHeight: enter, exitHeight: exit, fadeIn: fadeIn?.duration ?? null, fadeOut: fadeOut?.duration ?? null } }
+  log("motion collapsible", JSON.stringify({ marks, enter, exit, anims: rec?.anims, hidden }))
+  const bad = []
+  // the height runs on Motion's JS clock: measured by frame, within two frames
+  if (!enter || Math.abs(enter.ran - 220) > 34 || enter.lead < 24) bad.push(`height should open in 220ms after 40ms: ${JSON.stringify(enter)}`)
+  if (!exit || Math.abs(exit.ran - 180) > 34 || exit.to !== 0) bad.push(`height should fold in 180ms to 0: ${JSON.stringify(exit)}`)
+  if (!fadeIn || Math.abs(fadeIn.duration - 220) > 2 || fadeIn.easing !== STANDARD) bad.push(`body should fade in 220ms ${STANDARD}`)
+  if (!fadeOut || Math.abs(fadeOut.duration - 180) > 2 || fadeOut.easing !== STANDARD) bad.push(`body should fade out 180ms ${STANDARD}`)
+  if (!hidden) bad.push("folded content is not hidden")
+  if (bad.length) throw new Error(bad.join("; "))
+})
+// a share whose order was changed opens with it unfolded and says how many changed
+await spec("share-order-group-default", {}, async (env) => {
+  const { page } = env
+  const created = await fetch(OL + "/api/share/create", {
+    method: "POST",
+    headers: { Authorization: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ files: [`${MOUNT}/文档`], pwd: "", expires: null, max_accessed: 0, burn_after_read: false, order_by: "size", order_direction: "desc", extract_folder: "", remark: "order group", readme: "", header: "" }),
+  }).then((r) => r.json())
+  const id = created?.data?.id
+  if (!id) throw new Error(`could not create a share: ${JSON.stringify(created)}`)
+  const bad = []
+  for (const [sid, open, changed] of [[shares.open, "false", null], [id, "true", 2]]) {
+    await go(page, `/@manage/shares/edit/${sid}`, 1500)
+    const g = page.locator('[data-testid="share-order-group"]')
+    const state = await g.getAttribute("aria-expanded")
+    const mark = await g.locator('[data-testid="changed-mark"]').innerText().catch(() => "")
+    log("share order group", JSON.stringify({ sid, state, mark }))
+    if (state !== open) bad.push(`share ${sid}: expanded ${state}, want ${open}`)
+    if (changed && !mark.includes(String(changed))) bad.push(`share ${sid}: changed mark "${mark}", want ${changed}`)
+    if (!changed && mark) bad.push(`share ${sid}: has a changed mark "${mark}"`)
+  }
+  if (bad.length) throw new Error(bad.join("; "))
+})
+
 // reduced motion (system setting): what moves becomes a fade of at most 100ms,
 // nothing translates or scales; CSS transitions stop
 for (const size of [{}, PHONE]) {
@@ -1762,6 +1848,9 @@ await spec("texts-share-dialog", {}, async (env) => {
 await spec("texts-share-form", {}, async (env) => {
   const { page } = env
   await go(page, "/@manage/shares/add", 1500)
+  // the order of the files is folded on a new share
+  await page.locator('[data-testid="share-order-group"]').click()
+  await page.waitForTimeout(500)
   const texts = await triggerTexts(page.locator("body"))
   const max = await page.locator("#max_accessed").evaluate((i) => ({ value: i.value, placeholder: i.placeholder }))
   const expires = await page.locator("#expires").getAttribute("placeholder")

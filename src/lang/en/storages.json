@@ -50,8 +50,11 @@
       "desc": "Descending"
     },
     "extract_folder": "Folder Order",
+    "extract_folder_default": "Mixed with files",
+    "order_by_default": "As the storage lists them",
+    "order_direction_default": "Ascending",
     "extract_folders": {
-      "front": " Folders on Top",
+      "front": "Folders on Top",
       "back": "Folders at Bottom"
     },
     "enable_sign": "Enable sign",

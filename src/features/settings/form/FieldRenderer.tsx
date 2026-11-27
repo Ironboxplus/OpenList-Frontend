@@ -98,6 +98,9 @@ export const FieldRenderer = (props: FieldRendererProps) => {
     setRevealed((v) => !v)
   }
 
+  // a number whose 0 is a special value shows it as words, in an empty box
+  const zero = () =>
+    !!f().zeroLabelKey && (props.value === 0 || props.value === "0")
   const Text = () => (
     <div class="flex w-full gap-2">
       <Input
@@ -112,12 +115,15 @@ export const FieldRenderer = (props: FieldRendererProps) => {
         }
         step={f().type === Type.Float ? "any" : undefined}
         autocomplete={f().secret ? "new-password" : undefined}
-        value={display(props.value)}
+        value={zero() ? "" : display(props.value)}
         readOnly={f().readonly}
         required={f().required}
-        placeholder={f().placeholder}
+        placeholder={f().zeroLabelKey ? t(f().zeroLabelKey!) : f().placeholder}
         aria-invalid={invalid()}
-        onInput={(e) => emit(e.currentTarget.value)}
+        onInput={(e) => {
+          const v = e.currentTarget.value
+          emit(v === "" && f().zeroLabelKey ? "0" : v)
+        }}
       />
       <Show when={f().secret && props.reveal}>
         <Button
@@ -164,7 +170,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
       disabled={f().readonly}
       required={f().required}
       validationState={shownInvalid() ? "invalid" : "valid"}
-      placeholder={t(f().emptyLabelKey ?? "global.choose")}
+      placeholder={t(f().emptyLabelKey ?? "global.not_set")}
       itemComponent={(p) => (
         <SelectItem item={p.item}>{optionText(p.item.rawValue)}</SelectItem>
       )}
@@ -207,7 +213,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
       onChange={(next) => next && emit(next.value)}
       disabled={f().readonly}
       triggerMode="focus"
-      placeholder={t(f().emptyLabelKey ?? "global.choose")}
+      placeholder={t(f().emptyLabelKey ?? "global.not_set")}
       itemComponent={(p) => (
         <ComboboxItem item={p.item}>{optionText(p.item.rawValue)}</ComboboxItem>
       )}
