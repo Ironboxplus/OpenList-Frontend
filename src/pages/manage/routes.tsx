@@ -1,9 +1,12 @@
+import { Navigate } from "@solidjs/router"
 import { Component, lazy, Show } from "solid-js"
 import { Forbidden } from "~/features/shell/states"
+import { joinBase } from "~/utils/path"
 import {
   availableOn,
   canAccess,
   manageSubPath,
+  MOVED,
   settingsForBackend,
   visibleSettings,
   type SettingPermission,
@@ -78,6 +81,9 @@ const hide_routes: Route[] = [
   },
 ]
 
+/** An old address of a page that moved: it leads to the new one, in place. */
+const movedTo = (target: string) => () => <Navigate href={joinBase(target)} />
+
 /** Settings landing page: the registry, filtered to what this user may open. */
 const SettingsIndex = () => <SettingsHome items={visibleSettings(me())} />
 
@@ -109,6 +115,11 @@ export const getRoutes = (): Route[] => {
         entryComponents[entry.id] ?? routeComponents[sub],
       ),
     })
+  }
+  for (const [from, target] of Object.entries(MOVED)) {
+    const sub = manageSubPath(from)
+    if (sub && !acc.has(sub))
+      acc.set(sub, { to: sub, component: movedTo(target) })
   }
   return [...acc.values(), ...hide_routes.filter((r) => availableOn(r.backend))]
 }

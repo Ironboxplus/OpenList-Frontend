@@ -73,6 +73,21 @@ export const createSettingsGroup = (group: Group) => {
     })
   }
 
+  // The defaults as values, to tell which settings were changed (the
+  // "N changed" of a folded group). Read quietly: without them nothing is
+  // marked, the page works the same.
+  const [defaults, setDefaults] = createSignal<Record<string, string>>()
+  const readDefaults = async () => {
+    const resp = (await r
+      .post(`/admin/setting/default?group=${group}`)
+      .catch(() => undefined)) as Resp<SettingItem[]> | undefined
+    setDefaults(
+      resp?.code === 200 && Array.isArray(resp.data)
+        ? Object.fromEntries(resp.data.map((i) => [i.key, i.value]))
+        : {},
+    )
+  }
+
   const set = (key: string, value: string) =>
     setItems((i) => i.key === key, "value", value)
 
@@ -96,6 +111,8 @@ export const createSettingsGroup = (group: Group) => {
     load,
     save,
     loadDefaults,
+    defaults,
+    readDefaults,
     set,
     value,
     remove,

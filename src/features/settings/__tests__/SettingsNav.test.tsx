@@ -27,7 +27,7 @@ const nav = (over: { pathname?: string; hash?: string } = {}) =>
   render(() => (
     <SettingsNav
       sections={sections}
-      pathname={over.pathname ?? "/@manage/settings/traffic"}
+      pathname={over.pathname ?? "/@manage/settings/transfer"}
       hash={over.hash ?? ""}
     />
   ))
@@ -50,7 +50,7 @@ describe("SettingsNav", () => {
     const { container } = nav()
     const current = container.querySelectorAll('[aria-current="page"]')
     expect(current).toHaveLength(1)
-    expect(current[0].getAttribute("data-settings-nav-item")).toBe("traffic")
+    expect(current[0].getAttribute("data-settings-nav-item")).toBe("transfers")
   })
 
   it("marks the cluster entry, not plugins, on the cluster hash", () => {
@@ -87,9 +87,11 @@ describe("SettingsNav", () => {
 
   it("names every item for the icon-only widths and has no fold button of its own", () => {
     const { container } = nav()
-    const item = container.querySelector('[data-settings-nav-item="traffic"]')!
-    expect(item.getAttribute("aria-label")).toBe("Traffic")
-    expect(item.getAttribute("title")).toBe("Traffic")
+    const item = container.querySelector(
+      '[data-settings-nav-item="transfers"]',
+    )!
+    expect(item.getAttribute("aria-label")).toBe("Transfer settings")
+    expect(item.getAttribute("title")).toBe("Transfer settings")
     expect(container.querySelector("button")).toBeNull()
   })
 })
@@ -97,9 +99,9 @@ describe("SettingsNav", () => {
 describe("SettingsTopLeft", () => {
   it("phone: back button to the settings home plus the page title", () => {
     const { container } = render(() => (
-      <SettingsTopLeft phone pathname="/@manage/settings/traffic" hash="" />
+      <SettingsTopLeft phone pathname="/@manage/settings/transfer" hash="" />
     ))
-    expect(container.textContent).toContain("Traffic")
+    expect(container.textContent).toContain("Transfer settings")
     fireEvent.click(container.querySelector("[data-settings-back]")!)
     expect(to).toHaveBeenCalledWith("/@manage")
   })

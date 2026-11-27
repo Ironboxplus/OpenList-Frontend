@@ -49,6 +49,8 @@ export interface FieldRendererProps {
   reveal?: () => void | Promise<void>
   /** Extra control belonging to this field, drawn under it (e.g. "apply to subfolders"). */
   after?: JSX.Element
+  /** The setting a search led to: marked, and brought into view by the page. */
+  focused?: boolean
   class?: string
 }
 
@@ -98,9 +100,10 @@ export const FieldRenderer = (props: FieldRendererProps) => {
     setRevealed((v) => !v)
   }
 
-  // a number whose 0 is a special value shows it as words, in an empty box
-  const zero = () =>
-    !!f().zeroLabelKey && (props.value === 0 || props.value === "0")
+  // a number whose special value (0, or -1 for the speed limits) means "no
+  // limit" or "never" shows it as words, in an empty box
+  const special = () => f().specialValue ?? "0"
+  const zero = () => !!f().zeroLabelKey && display(props.value) === special()
   const Text = () => (
     <div class="flex w-full gap-2">
       <Input
@@ -129,7 +132,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
         aria-invalid={invalid()}
         onInput={(e) => {
           const v = e.currentTarget.value
-          emit(v === "" && f().zeroLabelKey ? "0" : v)
+          emit(v === "" && f().zeroLabelKey ? special() : v)
         }}
       />
       <Show when={f().secret && props.reveal}>
@@ -236,8 +239,11 @@ export const FieldRenderer = (props: FieldRendererProps) => {
   return (
     <div
       data-field={f().id}
+      data-focused={props.focused ? "" : undefined}
       class={cn(
         "grid gap-2 py-3",
+        // the setting a search led to (research 05 §二.4)
+        props.focused && "-mx-2 rounded-md bg-primary/10 px-2",
         !props.stacked &&
           "md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] md:gap-6",
         props.class,
@@ -268,7 +274,9 @@ export const FieldRenderer = (props: FieldRendererProps) => {
             </Show>
           </div>
           <Show when={f().helpKey}>
-            <p class="text-xs text-muted-foreground">{t(f().helpKey!)}</p>
+            <p data-help class="text-xs text-muted-foreground">
+              {t(f().helpKey!)}
+            </p>
           </Show>
         </div>
       </Show>

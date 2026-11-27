@@ -33,10 +33,12 @@ export interface FieldSpec {
    */
   emptyLabelKey?: string
   /**
-   * Number: 0 is a special value (no limit, never); the box is empty then and
-   * shows this text, and emptying the box stores 0.
+   * Number: 0 (or `specialValue`) is a special value (no limit, never); the
+   * box is empty then and shows this text, and emptying the box stores it.
    */
   zeroLabelKey?: string
+  /** The special value of `zeroLabelKey` when it is not 0 (the speed limits' -1). */
+  specialValue?: string
   invalid?: boolean
   /** A setting on its way out: offers a delete control next to the label. */
   deprecated?: boolean

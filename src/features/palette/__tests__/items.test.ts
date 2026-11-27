@@ -38,7 +38,7 @@ describe("buildPaletteItems", () => {
         "nav:files",
         "nav:transfers",
         "nav:settings",
-        "setting:traffic",
+        "setting:transfers",
         "setting:cluster",
         "action:new-sync",
         "action:task-center",
@@ -48,9 +48,10 @@ describe("buildPaletteItems", () => {
     )
   })
 
-  it("lists Transfers once: the navigation entry, not the settings duplicate", () => {
+  it("lists the Transfers tab and the transfer settings apart", () => {
     expect(ids(ctx()).filter((i) => i.endsWith("transfers"))).toEqual([
       "nav:transfers",
+      "setting:transfers",
     ])
   })
 
@@ -63,7 +64,7 @@ describe("buildPaletteItems", () => {
   it("filters settings by permission", () => {
     const general = ids(ctx({ user: GENERAL }))
     expect(general).toContain("setting:shares")
-    expect(general).not.toContain("setting:traffic")
+    expect(general).not.toContain("setting:transfers")
     expect(general).not.toContain("setting:users")
     const delegated = ids(
       ctx({ user: { role: UserRole.GENERAL, permission: 1 << 16 } }),
@@ -93,8 +94,8 @@ describe("buildPaletteItems", () => {
     expect(c.toggleLanguage).toHaveBeenCalled()
     by("nav:files").run()
     expect(c.go).toHaveBeenLastCalledWith("/")
-    by("setting:traffic").run()
-    expect(c.go).toHaveBeenLastCalledWith("/@manage/settings/traffic")
+    by("setting:transfers").run()
+    expect(c.go).toHaveBeenLastCalledWith("/@manage/settings/transfer")
     by("setting:cluster").run()
     expect(c.go).toHaveBeenLastCalledWith("/@manage/plugins#cluster")
   })
@@ -115,11 +116,11 @@ describe("searching the palette (acceptance phrases)", () => {
   const items = buildPaletteItems(ctx())
   const top = (q: string) => rankAll(q, items)[0]?.id
 
-  it("限速 reaches the traffic page first", () => {
-    expect(top("限速")).toBe("setting:traffic")
+  it("限速 reaches the transfer settings first", () => {
+    expect(top("限速")).toBe("setting:transfers")
   })
-  it("bandwidth reaches the traffic page first", () => {
-    expect(top("bandwidth")).toBe("setting:traffic")
+  it("bandwidth reaches the transfer settings first", () => {
+    expect(top("bandwidth")).toBe("setting:transfers")
   })
   it("同步 offers New sync job", () => {
     expect(rankAll("同步", items).map((i) => i.id)).toContain("action:new-sync")
@@ -138,10 +139,10 @@ describe("searching the palette (acceptance phrases)", () => {
   })
   it("pinyin initials do not find the Chinese-named page", () => {
     expect(rankAll("xs", items).map((i) => i.id)).not.toContain(
-      "setting:traffic",
+      "setting:transfers",
     )
     expect(rankAll("xiansu", items).map((i) => i.id)).not.toContain(
-      "setting:traffic",
+      "setting:transfers",
     )
   })
 })
@@ -149,9 +150,13 @@ describe("searching the palette (acceptance phrases)", () => {
 describe("emptyQueryList", () => {
   const items = buildPaletteItems(ctx())
   it("puts recent first, skips unavailable ids, and omits settings otherwise", () => {
-    const rows = emptyQueryList(items, ["setting:traffic", "gone", "nav:files"])
+    const rows = emptyQueryList(items, [
+      "setting:transfers",
+      "gone",
+      "nav:files",
+    ])
     expect(rows.slice(0, 2).map((r) => r.item.id)).toEqual([
-      "setting:traffic",
+      "setting:transfers",
       "nav:files",
     ])
     expect(rows.slice(0, 2).every((r) => r.recent)).toBe(true)

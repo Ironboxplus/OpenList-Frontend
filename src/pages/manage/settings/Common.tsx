@@ -23,7 +23,6 @@ const GROUP_ITEM: Partial<Record<Group, string>> = {
   [Group.SSO]: "sso",
   [Group.LDAP]: "ldap",
   [Group.FTP]: "ftp",
-  [Group.TRAFFIC]: "traffic",
   [Group.S3]: "s3",
   [Group.TRANSCODE]: "media-transcode",
 }

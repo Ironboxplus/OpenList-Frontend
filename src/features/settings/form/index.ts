@@ -20,6 +20,7 @@ export {
   type RowAction,
   type ToolbarAction,
 } from "./ResourceList"
+export { SettingsCards } from "./SettingsCards"
 export { SettingsForm } from "./SettingsForm"
 export { SettingsSection } from "./SettingsSection"
 export { createSettingsGroup, type SettingsGroup } from "./settings-group"

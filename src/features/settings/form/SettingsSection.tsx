@@ -12,6 +12,8 @@ export interface SettingsSectionProps {
   class?: string
   /** Stable hook for tests and in-page links. */
   id?: string
+  /** A card of a laid-out settings page (layouts.ts): its id there. */
+  card?: string
 }
 
 /**
@@ -23,6 +25,7 @@ export const SettingsSection = (props: SettingsSectionProps) => (
   <Card
     id={props.id}
     data-section={props.id}
+    data-card={props.card}
     class={cn("flex flex-col", props.class)}
   >
     <Show when={props.title || props.description || props.actions}>
@@ -32,7 +35,7 @@ export const SettingsSection = (props: SettingsSectionProps) => (
             <h2 class="text-base font-semibold leading-tight">{props.title}</h2>
           </Show>
           <Show when={props.description}>
-            <p class="mt-1 text-sm text-muted-foreground">
+            <p data-scope class="mt-1 text-sm text-muted-foreground">
               {props.description}
             </p>
           </Show>

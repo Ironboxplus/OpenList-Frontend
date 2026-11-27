@@ -31,7 +31,7 @@
     },
     "other": {
       "title": "Other",
-      "description": "Offline download tools and task thread counts."
+      "description": "Offline download tools, temporary folders of cloud drives and the API token."
     },
     "storages": {
       "title": "Storages",
@@ -55,7 +55,7 @@
     },
     "transfers": {
       "title": "Transfer settings",
-      "description": "Copy, upload, offline download and sync jobs."
+      "description": "Task threads, speed limits, sync bandwidth and each storage's connections per file."
     },
     "indexes": {
       "title": "Indexes",

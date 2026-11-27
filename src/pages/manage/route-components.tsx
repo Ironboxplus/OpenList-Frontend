@@ -29,7 +29,7 @@ export const routeComponents: Record<string, Component> = {
   "/settings/ldap": () => <CommonSettings group={Group.LDAP} />,
   "/settings/s3": lazy(() => import("./settings/S3")),
   "/settings/ftp": () => <CommonSettings group={Group.FTP} />,
-  "/settings/traffic": () => <CommonSettings group={Group.TRAFFIC} />,
+  "/settings/transfer": lazy(() => import("./settings/Transfer")),
   "/settings/other": lazy(() => import("./settings/Other")),
   "/settings/seed": lazy(() => import("./settings/Seed")),
   "/users": lazy(() => import("./users/Users")),

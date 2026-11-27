@@ -8,10 +8,10 @@ describe("settingsCrumbs", () => {
   })
 
   it("is Settings > group > page, with Settings linking home", () => {
-    expect(settingsCrumbs("/@manage/settings/traffic")).toEqual([
+    expect(settingsCrumbs("/@manage/settings/transfer")).toEqual([
       { key: "shell.nav.settings", href: "/@manage" },
       { key: "settings.groups.storage" },
-      { key: "settings.items.traffic.title" },
+      { key: "settings.items.transfers.title" },
     ])
   })
 

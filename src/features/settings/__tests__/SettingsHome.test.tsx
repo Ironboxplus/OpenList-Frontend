@@ -45,7 +45,7 @@ describe("SettingsHome", () => {
     const ids = [...container.querySelectorAll("a[data-setting]")].map((a) =>
       a.getAttribute("data-setting"),
     )
-    expect(ids.sort()).toEqual(["about", "docs", "shares", "transfers"])
+    expect(ids.sort()).toEqual(["about", "docs", "shares"])
   })
 
   it("filters with the shared matcher, by an inner setting name", () => {
@@ -57,7 +57,7 @@ describe("SettingsHome", () => {
     const ids = [...container.querySelectorAll("a[data-setting]")].map((a) =>
       a.getAttribute("data-setting"),
     )
-    expect(ids).toContain("traffic")
+    expect(ids).toContain("transfers")
     expect(ids).not.toContain("users")
     expect(
       container.querySelectorAll("section[data-group]").length,
@@ -80,9 +80,9 @@ describe("SettingsHome", () => {
     const { container } = render(() => (
       <SettingsHome items={visibleSettings(admin)} />
     ))
-    const link = container.querySelector('a[data-setting="traffic"]')!
+    const link = container.querySelector('a[data-setting="transfers"]')!
     fireEvent.click(link)
-    expect(to).toHaveBeenCalledWith("/@manage/settings/traffic")
+    expect(to).toHaveBeenCalledWith("/@manage/settings/transfer")
     to.mockClear()
     fireEvent.click(link, { ctrlKey: true })
     expect(to).not.toHaveBeenCalled()

@@ -1,6 +1,12 @@
 import { focusRing } from "~/components/ui/focus"
 import { useSearchParams } from "@solidjs/router"
-import { TbChevronDown, TbChevronRight, TbPlus, TbSearch } from "solid-icons/tb"
+import {
+  TbChevronDown,
+  TbChevronRight,
+  TbPlus,
+  TbSearch,
+  TbSettings,
+} from "solid-icons/tb"
 import {
   createEffect,
   createMemo,
@@ -33,6 +39,7 @@ import { me } from "~/store"
 import { UserMethods } from "~/types"
 import type { UnifiedTask } from "~/platform/contracts/task"
 import { cn } from "~/utils/cn"
+import { joinBase } from "~/utils/path"
 import {
   FILTER_KEYS,
   isFilterKey,
@@ -51,6 +58,7 @@ import { TaskCard } from "./TaskCard"
 import { TaskDetail } from "./TaskDetail"
 
 export const DONE_LIMIT = 50
+const TRANSFER_SETTINGS = "/@manage/settings/transfer"
 
 const GRID =
   "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
@@ -115,16 +123,35 @@ const TransfersPage = () => {
   const syncOn = () => isAdmin() && transfers.syncAvailable()
   useTopBarSlots(() => ({
     right: () => (
-      <Show when={syncOn()}>
+      <Show when={isAdmin()}>
         <div class="mr-1 flex items-center gap-2">
-          <BandwidthPopover />
+          <Show when={syncOn()}>
+            <BandwidthPopover />
+            <Button
+              size="sm"
+              data-testid="new-sync"
+              onClick={() => setNewOpen(true)}
+            >
+              <TbPlus class="mr-1.5 size-4" />
+              {t("transfers.sync.new_job")}
+            </Button>
+          </Show>
+          {/* the quick way to the threads, limits and bandwidth (§0.2 设置归位) */}
           <Button
-            size="sm"
-            data-testid="new-sync"
-            onClick={() => setNewOpen(true)}
+            as="a"
+            href={joinBase(TRANSFER_SETTINGS)}
+            variant="ghost"
+            size="icon"
+            data-testid="transfer-settings-link"
+            aria-label={t("settings.items.transfers.title")}
+            title={t("settings.items.transfers.title")}
+            onClick={(e: MouseEvent) => {
+              if (e.button !== 0 || e.metaKey || e.ctrlKey) return
+              e.preventDefault()
+              to(TRANSFER_SETTINGS)
+            }}
           >
-            <TbPlus class="mr-1.5 size-4" />
-            {t("transfers.sync.new_job")}
+            <TbSettings class="size-4" />
           </Button>
         </div>
       </Show>

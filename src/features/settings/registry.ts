@@ -2,7 +2,6 @@
 // Manage sidebar, the settings home and the command palette all read it.
 // Navigation only: each entry points at an existing page route.
 import {
-  BsArrowLeftRight,
   BsBucket,
   BsCameraFill,
   BsFront,
@@ -145,16 +144,15 @@ export const SETTINGS: SettingContribution[] = [
   item("other", "site", "/@manage/settings/other", BsMedium, [
     "其他",
     "离线下载",
-    "任务线程",
+    "临时目录",
+    "令牌",
     "aria2",
     "qbittorrent",
     "transmission",
     "other",
     "offline download",
-    "task threads",
-    "copy task",
-    "upload task",
-    "decompress",
+    "temp dir",
+    "token",
   ]),
 
   // Storage and transfer
@@ -178,20 +176,6 @@ export const SETTINGS: SettingContribution[] = [
     ["分享", "分享链接", "共享", "share", "shares", "share link", "sharing"],
     { permission: "general" },
   ),
-  item("traffic", "storage", "/@manage/settings/traffic", BsArrowLeftRight, [
-    "流量",
-    "限速",
-    "带宽",
-    "下载限速",
-    "上传限速",
-    "traffic",
-    "bandwidth",
-    "rate limit",
-    "speed limit",
-    "download speed",
-    "upload speed",
-    "stream",
-  ]),
   item(
     "s3",
     "storage",
@@ -217,33 +201,35 @@ export const SETTINGS: SettingContribution[] = [
     "tls",
     "ftp server",
   ]),
-  item(
+  // Task threads, speed limits (Traffic's, which moved here), the sync
+  // bandwidth and each storage's connections per file (PLAN_FE_SYSTEM_UX_1127
+  // §0.2 设置归位). The task list itself is the shell's Transfers tab.
+  item("transfers", "storage", "/@manage/settings/transfer", TbArrowsUpDown, [
+    "传输",
+    "任务线程",
+    "线程",
+    "限速",
+    "带宽",
+    "流量",
+    "下载限速",
+    "上传限速",
+    "同步",
+    "同步带宽",
+    "连接数",
     "transfers",
-    "storage",
-    "/@transfers",
-    TbArrowsUpDown,
-    [
-      "传输",
-      "任务",
-      "同步",
-      "同步作业",
-      "复制",
-      "移动",
-      "上传",
-      "下载",
-      "离线下载",
-      "transfers",
-      "tasks",
-      "task center",
-      "sync",
-      "sync job",
-      "copy",
-      "move",
-      "upload",
-      "download",
-    ],
-    { permission: "general" },
-  ),
+    "task threads",
+    "threads",
+    "traffic",
+    "bandwidth",
+    "rate limit",
+    "speed limit",
+    "download speed",
+    "upload speed",
+    "sync",
+    "sync bandwidth",
+    "connections",
+    "connections per file",
+  ]),
 
   item("seed", "storage", "/@manage/settings/seed", TbSeeding, [
     "传输种子",
@@ -541,6 +527,14 @@ export const SETTINGS: SettingContribution[] = [
     { permission: "guest", external: true },
   ),
 ]
+
+/**
+ * Old settings addresses whose page moved into another: the old address still
+ * works and leads to the new one (pages/manage/routes.tsx).
+ */
+export const MOVED: Record<string, string> = {
+  "/@manage/settings/traffic": "/@manage/settings/transfer",
+}
 
 type Subject = Pick<User, "role" | "permission">
 
