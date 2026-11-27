@@ -8,9 +8,9 @@ import remarkGfm from "remark-gfm"
 import remarkParse from "remark-parse"
 import remarkRehype from "remark-rehype"
 import { For, Show, createEffect, createMemo, createSignal, on } from "solid-js"
-import { Motion } from "solid-motionone"
 import { unified } from "unified"
 import { useCDN, useParseText, useRouter } from "~/hooks"
+import { MotionDiv, MotionTokens } from "~/platform/motion"
 import { useScrollListener } from "~/pages/home/toolbar/BackTop.jsx"
 import { getMainColor, getSettingBool, me } from "~/store"
 import {
@@ -115,9 +115,10 @@ function MarkdownToc(props: {
   return (
     <Show when={!isTocDisabled() && isTocVisible()}>
       <Box
-        as={Motion.div}
+        as={MotionDiv}
         initial={{ x: 999 }}
         animate={{ x: offsetX() }}
+        transition={MotionTokens.options.pane}
         onMouseEnter={() => setOffsetX(0)}
         onMouseLeave={() => setOffsetX(initialOffsetX)}
         zIndex="$overlay"

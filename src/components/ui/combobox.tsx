@@ -5,9 +5,13 @@ import { cn } from "~/utils/cn"
 import * as ComboboxPrimitive from "@kobalte/core/combobox"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { ParentProps, ValidComponent } from "solid-js"
+import { OverlayPresence, withRef } from "./overlay-presence"
 import { splitProps } from "solid-js"
 
-export const Combobox = ComboboxPrimitive.Root
+/** Mounted through its exit (overlay-presence.tsx): Kobalte keeps the list mounted. */
+export const Combobox = ((props: any) => (
+  <ComboboxPrimitive.Root forceMount {...props} />
+)) as typeof ComboboxPrimitive.Root
 export const ComboboxItemLabel = ComboboxPrimitive.ItemLabel
 export const ComboboxHiddenSelect = ComboboxPrimitive.HiddenSelect
 
@@ -84,24 +88,34 @@ export const ComboboxTrigger = <T extends ValidComponent = "button">(
   )
 }
 
-type ContentProps = ComboboxPrimitive.ComboboxContentProps & { class?: string }
+type ContentProps = ComboboxPrimitive.ComboboxContentProps & {
+  class?: string
+  ref?: unknown
+}
 
 export const ComboboxContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, ContentProps>,
 ) => {
-  const [local, rest] = splitProps(props as ContentProps, ["class"])
+  const [local, rest] = splitProps(props as ContentProps, ["class", "ref"])
+  const list = ComboboxPrimitive.useComboboxContext()
   return (
-    <ComboboxPrimitive.Portal>
-      <ComboboxPrimitive.Content
-        class={cn(
-          "relative z-[1500] min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-          local.class,
-        )}
-        {...rest}
-      >
-        <ComboboxPrimitive.Listbox class="max-h-72 overflow-y-auto p-1 outline-none!" />
-      </ComboboxPrimitive.Content>
-    </ComboboxPrimitive.Portal>
+    <OverlayPresence open={list.isOpen} kind="select">
+      {(ref) => (
+        <ComboboxPrimitive.Portal>
+          <ComboboxPrimitive.Content
+            data-motion="select"
+            ref={withRef(ref, local.ref)}
+            class={cn(
+              "relative z-[1500] min-w-[8rem] origin-[var(--kb-combobox-content-transform-origin)] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+              local.class,
+            )}
+            {...rest}
+          >
+            <ComboboxPrimitive.Listbox class="max-h-72 overflow-y-auto p-1 outline-none!" />
+          </ComboboxPrimitive.Content>
+        </ComboboxPrimitive.Portal>
+      )}
+    </OverlayPresence>
   )
 }
 

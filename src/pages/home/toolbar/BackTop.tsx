@@ -1,7 +1,7 @@
 import { Show, createSignal, onCleanup } from "solid-js"
 import { Box, Icon } from "@hope-ui/solid"
 import { FiArrowUp } from "solid-icons/fi"
-import { Motion } from "solid-motionone"
+import { MotionDiv, MotionTokens } from "~/platform/motion"
 import { isMobile } from "~/utils/compatibility"
 import { getMainColor } from "~/store"
 import { BackToTop } from "~/features/files/BackToTop"
@@ -32,9 +32,10 @@ const ClassicBackTop = () => {
   return (
     <Show when={visible()}>
       <Box
-        as={Motion.div}
+        as={MotionDiv}
         initial={{ y: -999 }}
         animate={{ y: 0 }}
+        transition={MotionTokens.options.pane}
         zIndex="$overlay"
         pos="fixed"
         right="$5"

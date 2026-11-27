@@ -85,12 +85,8 @@ export const PopoverContent = (props: HTMLHopeProps<"div">) => {
   return (
     <UiPopoverContent
       showClose={false}
-      class={cn(
-        "w-auto p-0",
-        !ctx.animated() &&
-          "data-[expanded]:animate-none data-[closed]:animate-none",
-        local.class,
-      )}
+      animated={ctx.animated()}
+      class={cn("w-auto p-0", local.class)}
     >
       <Box display="flex" flexDirection="column" w="100%" maxW="$xs" {...rest}>
         {local.children}

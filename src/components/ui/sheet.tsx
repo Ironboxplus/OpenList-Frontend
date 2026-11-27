@@ -6,15 +6,21 @@ import * as DialogPrimitive from "@kobalte/core/dialog"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { VariantProps } from "class-variance-authority"
 import { cva } from "class-variance-authority"
-import { DialogCloseButton } from "./dialog"
+import { DialogCloseButton, DialogPresence } from "./dialog"
+import { withRef } from "./overlay-presence"
 import type { ComponentProps, ParentProps, ValidComponent } from "solid-js"
 import { mergeProps, Show, splitProps } from "solid-js"
+import { overlayMotion, scrimMotion } from "~/platform/motion"
 
-export const Sheet = DialogPrimitive.Root
+/** A dialog that slides in from an edge; mounted through its exit like Dialog. */
+export const Sheet = ((props: DialogPrimitive.DialogRootProps) => (
+  <DialogPrimitive.Root forceMount {...props} />
+)) as typeof DialogPrimitive.Root
 export const SheetTrigger = DialogPrimitive.Trigger
 
 type SheetOverlayProps = DialogPrimitive.DialogOverlayProps & {
   class?: string
+  ref?: unknown
 }
 
 export const SheetOverlay = <T extends ValidComponent = "div">(
@@ -24,8 +30,9 @@ export const SheetOverlay = <T extends ValidComponent = "div">(
 
   return (
     <DialogPrimitive.Overlay
+      data-motion="scrim"
       class={cn(
-        "fixed inset-0 z-[1500] bg-background/80 backdrop-blur-sm data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0",
+        "fixed inset-0 z-[1500] bg-background/80 backdrop-blur-sm",
         local.class,
       )}
       {...rest}
@@ -34,16 +41,14 @@ export const SheetOverlay = <T extends ValidComponent = "div">(
 }
 
 export const sheetVariants = cva(
-  "fixed z-[1500] gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[expanded]:animate-in data-[closed]:animate-out duration-200",
+  "fixed z-[1500] gap-4 bg-background p-6 shadow-lg",
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[closed]:slide-out-to-top data-[expanded]:slide-in-from-top",
-        bottom:
-          "inset-x-0 bottom-0 border-t data-[closed]:slide-out-to-bottom data-[expanded]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[closed]:slide-out-to-left data-[expanded]:slide-in-from-left sm:max-w-sm",
-        right:
-          "inset-y-0 right-0 h-full w-3/4 border-l data-[closed]:slide-out-to-right data-[expanded]:slide-in-from-right sm:max-w-sm",
+        top: "inset-x-0 top-0 border-b",
+        bottom: "inset-x-0 bottom-0 border-t",
+        left: "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+        right: "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
       },
     },
     defaultVariants: {
@@ -58,6 +63,7 @@ type SheetContentProps = ParentProps<
       class?: string
       /** The X in the corner; on by default. */
       showClose?: boolean
+      ref?: unknown
     }
 >
 
@@ -70,21 +76,32 @@ export const SheetContent = <T extends ValidComponent = "div">(
     "children",
     "side",
     "showClose",
+    "ref",
   ])
+  const side = () => local.side ?? "right"
 
   return (
-    <DialogPrimitive.Portal>
-      <SheetOverlay />
-      <DialogPrimitive.Content
-        class={cn(sheetVariants({ side: local.side }), local.class)}
-        {...rest}
-      >
-        {local.children}
-        <Show when={local.showClose !== false}>
-          <DialogCloseButton />
-        </Show>
-      </DialogPrimitive.Content>
-    </DialogPrimitive.Portal>
+    <DialogPresence
+      panel={overlayMotion("sheet", side())}
+      scrim={scrimMotion("sheet")}
+    >
+      {(refs) => (
+        <>
+          <SheetOverlay ref={refs.scrim} />
+          <DialogPrimitive.Content
+            data-motion="sheet"
+            ref={withRef(refs.panel, local.ref)}
+            class={cn(sheetVariants({ side: local.side }), local.class)}
+            {...rest}
+          >
+            {local.children}
+            <Show when={local.showClose !== false}>
+              <DialogCloseButton />
+            </Show>
+          </DialogPrimitive.Content>
+        </>
+      )}
+    </DialogPresence>
   )
 }
 

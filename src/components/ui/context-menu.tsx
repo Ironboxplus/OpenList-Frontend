@@ -6,7 +6,10 @@ import * as ContextMenuPrimitive from "@kobalte/core/context-menu"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { ValidComponent } from "solid-js"
 import { splitProps } from "solid-js"
+import { useMenuContext } from "@kobalte/core/menu"
+import { menuPanel } from "./dropdown-menu"
 import { createMenuCloseQueue, MenuCloseContext } from "./menu-after-close"
+import { OverlayPresence, withRef } from "./overlay-presence"
 
 export {
   DropdownMenuGroup as ContextMenuGroup,
@@ -17,11 +20,17 @@ export {
   DropdownMenuSubTrigger as ContextMenuSubTrigger,
 } from "./dropdown-menu"
 
-export const ContextMenu = ContextMenuPrimitive.Root
+/** Mounted through its exit, like DropdownMenu (overlay-presence.tsx). */
+export const ContextMenu = ((
+  props: ContextMenuPrimitive.ContextMenuRootProps,
+) => (
+  <ContextMenuPrimitive.Root forceMount {...props} />
+)) as typeof ContextMenuPrimitive.Root
 export const ContextMenuTrigger = ContextMenuPrimitive.Trigger
 
 type ContextMenuContentProps = ContextMenuPrimitive.ContextMenuContentProps & {
   class?: string
+  ref?: unknown
 }
 
 export const ContextMenuContent = <T extends ValidComponent = "div">(
@@ -31,22 +40,27 @@ export const ContextMenuContent = <T extends ValidComponent = "div">(
     "class",
     "onOpenAutoFocus",
     "onCloseAutoFocus",
+    "ref",
   ])
   const close = createMenuCloseQueue(local)
+  const menu = useMenuContext()
 
   return (
     <MenuCloseContext.Provider value={close.queue}>
-      <ContextMenuPrimitive.Portal>
-        <ContextMenuPrimitive.Content
-          onOpenAutoFocus={close.onOpenAutoFocus}
-          onCloseAutoFocus={close.onCloseAutoFocus}
-          class={cn(
-            "z-[1500] min-w-[200px] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md outline-none! data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-            local.class,
-          )}
-          {...rest}
-        />
-      </ContextMenuPrimitive.Portal>
+      <OverlayPresence open={menu.isOpen} kind="menu">
+        {(ref) => (
+          <ContextMenuPrimitive.Portal>
+            <ContextMenuPrimitive.Content
+              data-motion="menu"
+              ref={withRef(ref, local.ref)}
+              onOpenAutoFocus={close.onOpenAutoFocus}
+              onCloseAutoFocus={close.onCloseAutoFocus}
+              class={cn(menuPanel, "min-w-[200px] outline-none!", local.class)}
+              {...rest}
+            />
+          </ContextMenuPrimitive.Portal>
+        )}
+      </OverlayPresence>
     </MenuCloseContext.Provider>
   )
 }

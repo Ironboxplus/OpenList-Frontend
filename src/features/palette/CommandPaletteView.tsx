@@ -10,7 +10,9 @@ import {
   Show,
 } from "solid-js"
 import { Dynamic } from "solid-js/web"
+import { DialogPresence } from "~/components/ui/dialog"
 import { focusRing } from "~/components/ui/focus"
+import { overlayMotion, scrimMotion } from "~/platform/motion"
 import { cn } from "~/utils/cn"
 import { emptyQueryList, type PaletteItem } from "./items"
 import { rankAll } from "./rank"
@@ -118,108 +120,133 @@ export const CommandPaletteView = (props: CommandPaletteViewProps) => {
   }
 
   return (
-    <Dialog.Root open={props.open} onOpenChange={props.onOpenChange} modal>
-      <Dialog.Portal>
-        <Dialog.Overlay class="fixed inset-0 z-[1500] bg-background/80 backdrop-blur-sm data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0" />
-        <Dialog.Content
-          data-palette={props.phone ? "sheet" : "dialog"}
-          class={cn(
-            "fixed z-[1500] flex flex-col overflow-hidden border bg-background text-foreground shadow-lg outline-none! duration-200 data-[expanded]:animate-in data-[closed]:animate-out",
-            props.phone
-              ? "inset-0 data-[closed]:slide-out-to-bottom data-[expanded]:slide-in-from-bottom"
-              : "left-1/2 top-[12vh] max-h-[70vh] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-          )}
-        >
-          <Dialog.Title class="sr-only">{props.labels.title}</Dialog.Title>
-          <div
-            class="flex items-center gap-2 border-b px-3"
-            style={
-              props.phone
-                ? { "padding-top": "env(safe-area-inset-top)" }
-                : undefined
-            }
-          >
-            <TbSearch class="size-4 shrink-0 text-muted-foreground" />
-            <input
-              role="combobox"
-              aria-expanded="true"
-              aria-controls={listId}
-              aria-autocomplete="list"
-              aria-activedescendant={
-                rows().length > 0 ? optionId(active()) : undefined
-              }
-              aria-label={props.labels.title}
-              autocomplete="off"
-              spellcheck={false}
-              placeholder={props.labels.placeholder}
-              value={query()}
-              onInput={(e) => setQuery(e.currentTarget.value)}
-              onKeyDown={onKeyDown}
-              class="h-12 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none! placeholder:text-muted-foreground"
+    // forceMount: the shared presence unmounts it after its exit (ui/dialog.tsx)
+    <Dialog.Root
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      modal
+      forceMount
+    >
+      <DialogPresence
+        panel={
+          props.phone
+            ? overlayMotion("sheet", "bottom")
+            : overlayMotion("dialog")
+        }
+        scrim={scrimMotion(props.phone ? "sheet" : "dialog")}
+      >
+        {(refs) => (
+          <>
+            <Dialog.Overlay
+              ref={refs.scrim}
+              data-motion="scrim"
+              class="fixed inset-0 z-[1500] bg-background/80 backdrop-blur-sm"
             />
-            <Show when={props.phone}>
-              <Dialog.CloseButton
-                aria-label={props.labels.close}
-                class={cn(
-                  "rounded-md bg-transparent px-2 py-1 text-sm text-muted-foreground hover:text-foreground",
-                  focusRing,
-                )}
-              >
-                {props.labels.close}
-              </Dialog.CloseButton>
-            </Show>
-          </div>
-
-          <ul
-            id={listId}
-            ref={list}
-            role="listbox"
-            aria-label={props.labels.title}
-            class="m-0 min-h-0 flex-1 list-none overflow-y-auto p-1.5"
-          >
-            <For each={rows()}>
-              {(row, i) => (
-                <li
-                  id={optionId(i())}
-                  role="option"
-                  aria-selected={i() === active()}
-                  data-palette-id={row.item.id}
-                  class={cn(
-                    "flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm",
-                    i() === active() && "bg-accent text-accent-foreground",
-                  )}
-                  onMouseMove={() => active() !== i() && setActive(i())}
-                  onClick={() => run(i())}
-                >
-                  <Dynamic
-                    component={row.item.icon}
-                    class="size-4 shrink-0 text-muted-foreground"
-                  />
-                  <span class="min-w-0 flex-1 truncate">{row.item.title}</span>
-                  <Show when={row.item.hint}>
-                    <span class="hidden shrink-0 truncate text-xs text-muted-foreground sm:inline">
-                      {row.item.hint}
-                    </span>
-                  </Show>
-                  <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {row.recent
-                      ? props.labels.group.recent
-                      : props.labels.group[row.item.group]}
-                  </span>
-                </li>
+            <Dialog.Content
+              ref={refs.panel}
+              data-motion={props.phone ? "sheet" : "dialog"}
+              data-palette={props.phone ? "sheet" : "dialog"}
+              class={cn(
+                "fixed z-[1500] flex flex-col overflow-hidden border bg-background text-foreground shadow-lg outline-none!",
+                props.phone
+                  ? "inset-0"
+                  : "left-1/2 top-[12vh] max-h-[70vh] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl",
               )}
-            </For>
-          </ul>
-          <Show when={rows().length === 0}>
-            <p class="px-4 py-8 text-center text-sm text-muted-foreground">
-              {props.labels.empty(query().trim())}
-            </p>
-          </Show>
-          <div role="status" aria-live="polite" class="sr-only">
-            {props.labels.count(rows().length)}
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
+            >
+              <Dialog.Title class="sr-only">{props.labels.title}</Dialog.Title>
+              <div
+                class="flex items-center gap-2 border-b px-3"
+                style={
+                  props.phone
+                    ? { "padding-top": "env(safe-area-inset-top)" }
+                    : undefined
+                }
+              >
+                <TbSearch class="size-4 shrink-0 text-muted-foreground" />
+                <input
+                  role="combobox"
+                  aria-expanded="true"
+                  aria-controls={listId}
+                  aria-autocomplete="list"
+                  aria-activedescendant={
+                    rows().length > 0 ? optionId(active()) : undefined
+                  }
+                  aria-label={props.labels.title}
+                  autocomplete="off"
+                  spellcheck={false}
+                  placeholder={props.labels.placeholder}
+                  value={query()}
+                  onInput={(e) => setQuery(e.currentTarget.value)}
+                  onKeyDown={onKeyDown}
+                  class="h-12 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none! placeholder:text-muted-foreground"
+                />
+                <Show when={props.phone}>
+                  <Dialog.CloseButton
+                    aria-label={props.labels.close}
+                    class={cn(
+                      "rounded-md bg-transparent px-2 py-1 text-sm text-muted-foreground hover:text-foreground",
+                      focusRing,
+                    )}
+                  >
+                    {props.labels.close}
+                  </Dialog.CloseButton>
+                </Show>
+              </div>
+
+              <ul
+                id={listId}
+                ref={list}
+                role="listbox"
+                aria-label={props.labels.title}
+                class="m-0 min-h-0 flex-1 list-none overflow-y-auto p-1.5"
+              >
+                <For each={rows()}>
+                  {(row, i) => (
+                    <li
+                      id={optionId(i())}
+                      role="option"
+                      aria-selected={i() === active()}
+                      data-palette-id={row.item.id}
+                      class={cn(
+                        "flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm",
+                        i() === active() && "bg-accent text-accent-foreground",
+                      )}
+                      onMouseMove={() => active() !== i() && setActive(i())}
+                      onClick={() => run(i())}
+                    >
+                      <Dynamic
+                        component={row.item.icon}
+                        class="size-4 shrink-0 text-muted-foreground"
+                      />
+                      <span class="min-w-0 flex-1 truncate">
+                        {row.item.title}
+                      </span>
+                      <Show when={row.item.hint}>
+                        <span class="hidden shrink-0 truncate text-xs text-muted-foreground sm:inline">
+                          {row.item.hint}
+                        </span>
+                      </Show>
+                      <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {row.recent
+                          ? props.labels.group.recent
+                          : props.labels.group[row.item.group]}
+                      </span>
+                    </li>
+                  )}
+                </For>
+              </ul>
+              <Show when={rows().length === 0}>
+                <p class="px-4 py-8 text-center text-sm text-muted-foreground">
+                  {props.labels.empty(query().trim())}
+                </p>
+              </Show>
+              <div role="status" aria-live="polite" class="sr-only">
+                {props.labels.count(rows().length)}
+              </div>
+            </Dialog.Content>
+          </>
+        )}
+      </DialogPresence>
     </Dialog.Root>
   )
 }

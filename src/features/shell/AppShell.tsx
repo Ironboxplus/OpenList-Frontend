@@ -8,11 +8,10 @@ import {
   Suspense,
   onCleanup,
 } from "solid-js"
-import { Motion } from "solid-motionone"
 import { FullLoading } from "~/components"
 import { useRouter } from "~/hooks"
 import { me } from "~/store"
-import { asMotion, motionProps, sectionEnter } from "~/utils/motion-presets"
+import { MotionTokens, playOnce } from "~/platform/motion"
 import { UserMethods } from "~/types"
 import { isPaletteHotkey, paletteOpen, setPaletteOpen } from "../palette/state"
 import { transfers } from "../transfers/service"
@@ -255,16 +254,22 @@ const AppShell = (props: ParentProps) => {
           <Suspense fallback={<FullLoading />}>
             <Show when={activeNavId(pathname()) ?? "none"} keyed>
               {(_section) => (
-                <Motion.div
-                  {...asMotion(motionProps(sectionEnter))}
-                  // A resting transform would make this box the containing
-                  // block of the page's position: fixed elements.
-                  onMotionComplete={(e) =>
-                    (e.target as HTMLElement).style.removeProperty("transform")
+                <div
+                  ref={(el) =>
+                    // A resting transform would make this box the containing
+                    // block of the page's position: fixed elements.
+                    void playOnce(
+                      el,
+                      {
+                        opacity: [0.001, 1],
+                        transform: ["translateY(6px)", "none"],
+                      },
+                      MotionTokens.options.section,
+                    ).finished.then(() => el.style.removeProperty("transform"))
                   }
                 >
                   {props.children}
-                </Motion.div>
+                </div>
               )}
             </Show>
           </Suspense>

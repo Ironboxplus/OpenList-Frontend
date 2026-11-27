@@ -5,6 +5,7 @@ import { cn } from "~/utils/cn"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import * as TooltipPrimitive from "@kobalte/core/tooltip"
 import { type ValidComponent, mergeProps, splitProps } from "solid-js"
+import { OverlayPresence, withRef } from "./overlay-presence"
 
 export const TooltipTrigger = TooltipPrimitive.Trigger
 /** Kobalte's arrow, pointing at the trigger; put it inside TooltipContent. */
@@ -12,7 +13,8 @@ export const TooltipArrow = TooltipPrimitive.Arrow
 
 export const Tooltip = (props: TooltipPrimitive.TooltipRootProps) => {
   const merge = mergeProps<TooltipPrimitive.TooltipRootProps[]>(
-    { gutter: 4 },
+    // forceMount: our presence unmounts the content after its exit (overlay-presence.tsx)
+    { gutter: 4, forceMount: true },
     props,
   )
 
@@ -21,22 +23,33 @@ export const Tooltip = (props: TooltipPrimitive.TooltipRootProps) => {
 
 type TooltipContentProps = TooltipPrimitive.TooltipContentProps & {
   class?: string
+  ref?: unknown
 }
 
 export const TooltipContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, TooltipContentProps>,
 ) => {
-  const [local, rest] = splitProps(props as TooltipContentProps, ["class"])
+  const [local, rest] = splitProps(props as TooltipContentProps, [
+    "class",
+    "ref",
+  ])
+  const tooltip = TooltipPrimitive.useTooltipContext()
 
   return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        class={cn(
-          "z-[1500] overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-          local.class,
-        )}
-        {...rest}
-      />
-    </TooltipPrimitive.Portal>
+    <OverlayPresence open={tooltip.isOpen} kind="tooltip">
+      {(ref) => (
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content
+            data-motion="tooltip"
+            ref={withRef(ref, local.ref)}
+            class={cn(
+              "z-[1500] origin-[var(--kb-tooltip-content-transform-origin)] overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground",
+              local.class,
+            )}
+            {...rest}
+          />
+        </TooltipPrimitive.Portal>
+      )}
+    </OverlayPresence>
   )
 }

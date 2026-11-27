@@ -10,7 +10,7 @@ import {
   Icon,
   useColorMode,
 } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
+import { MotionDiv, MotionTokens } from "~/platform/motion"
 import {
   batch,
   createEffect,
@@ -87,10 +87,10 @@ const ListItem = (props: ListItemProps) => {
   const { isMouseSupported } = useSelectWithMouse()
   const filenameStyle = () => local["list_item_filename_overflow"]
   return (
-    <Motion.div
+    <MotionDiv
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
+      transition={MotionTokens.options.barEnter}
       style={{
         width: "100%",
       }}
@@ -158,7 +158,7 @@ const ListItem = (props: ListItemProps) => {
           {formatDate(props.obj.modified)}
         </Text>
       </HStack>
-    </Motion.div>
+    </MotionDiv>
   )
 }
 

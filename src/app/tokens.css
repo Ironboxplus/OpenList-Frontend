@@ -137,26 +137,6 @@ html.shell-phone body {
   border-color: var(--border);
 }
 
-/*
- * Stand-ins for the tailwindcss-animate utilities the copied shadcn-solid
- * components use (animate-in / fade-in-0 / zoom-in-95 / slide-in-from-*).
- */
-@keyframes ui-enter {
-  from {
-    opacity: var(--ui-enter-opacity, 1);
-    transform: translate3d(var(--ui-enter-x, 0), var(--ui-enter-y, 0), 0)
-      scale(var(--ui-enter-scale, 1));
-  }
-}
-
-@keyframes ui-exit {
-  to {
-    opacity: var(--ui-exit-opacity, 1);
-    transform: translate3d(var(--ui-exit-x, 0), var(--ui-exit-y, 0), 0)
-      scale(var(--ui-exit-scale, 1));
-  }
-}
-
 @keyframes indeterminate {
   0% {
     transform: translateX(-100%);
@@ -166,59 +146,87 @@ html.shell-phone body {
   }
 }
 
-@utility animate-in {
-  animation: ui-enter 150ms ease-out;
+/*
+ * Motion tokens for styles. The values are those of
+ * src/platform/motion/MotionTokens.ts, the one source (a test keeps them
+ * equal); the overlays and every scripted animation take theirs from there.
+ */
+:root {
+  --motion-emphasized-decel: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --motion-emphasized-accel: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --motion-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-dialog-open: 200ms;
+  --motion-dialog-close: 150ms;
+  --motion-sheet-open: 250ms;
+  --motion-sheet-close: 200ms;
+  --motion-menu-open: 120ms;
+  --motion-menu-close: 90ms;
+  --motion-collapse-open: 220ms;
+  --motion-collapse-close: 180ms;
+  --motion-collapse-lead: 40ms;
+  --motion-viewer-open: 320ms;
+  --motion-viewer-close: 240ms;
+  --motion-viewer-sheet: 350ms;
+  --motion-viewer-switch: 220ms;
+  --motion-scrim: 200ms;
+  --motion-dock-open: 500ms;
+  --motion-dock-close: 200ms;
+  --motion-dock-mini: 250ms;
+  --motion-bar-open: 200ms;
+  --motion-bar-close: 150ms;
+  --motion-pane: 220ms;
+  --motion-section: 160ms;
+  --motion-attention: 900ms;
+  --motion-reduced: 100ms;
+  --motion-watchdog: 2000ms;
 }
-@utility animate-out {
-  animation: ui-exit 150ms ease-in forwards;
+
+@theme inline {
+  --ease-emph-decel: var(--motion-emphasized-decel);
+  --ease-emph-accel: var(--motion-emphasized-accel);
+  --ease-standard: var(--motion-standard);
 }
-@utility fade-in-0 {
-  --ui-enter-opacity: 0;
-}
-@utility fade-out-0 {
-  --ui-exit-opacity: 0;
-}
-@utility zoom-in-95 {
-  --ui-enter-scale: 0.95;
-}
-@utility zoom-out-95 {
-  --ui-exit-scale: 0.95;
-}
-@utility slide-in-from-top {
-  --ui-enter-y: -100%;
-}
-@utility slide-in-from-bottom {
-  --ui-enter-y: 100%;
-}
-@utility slide-in-from-left {
-  --ui-enter-x: -100%;
-}
-@utility slide-in-from-right {
-  --ui-enter-x: 100%;
-}
-@utility slide-out-to-top {
-  --ui-exit-y: -100%;
-}
-@utility slide-out-to-bottom {
-  --ui-exit-y: 100%;
-}
-@utility slide-out-to-left {
-  --ui-exit-x: -100%;
-}
-@utility slide-out-to-right {
-  --ui-exit-x: 100%;
-}
-@utility slide-in-from-top-48 {
-  --ui-enter-y: -48%;
-}
-@utility slide-out-to-top-48 {
-  --ui-exit-y: -48%;
-}
-@utility slide-in-from-left-half {
-  --ui-enter-x: -50%;
-}
-@utility slide-out-to-left-half {
-  --ui-exit-x: -50%;
+
+/*
+ * Reduced motion, the system setting (research 02 §四): the scripted
+ * animations already keep only a fade of at most 100ms (MotionDriver); here
+ * every duration token drops to that and CSS transitions stop, hope-ui's
+ * included. Video, progress bars and spinners are information, not
+ * decoration: their keyframe animations are left alone and so is a progress
+ * bar's own transition.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-dialog-open: 100ms;
+    --motion-dialog-close: 100ms;
+    --motion-sheet-open: 100ms;
+    --motion-sheet-close: 100ms;
+    --motion-menu-open: 100ms;
+    --motion-menu-close: 100ms;
+    --motion-collapse-open: 100ms;
+    --motion-collapse-close: 100ms;
+    --motion-collapse-lead: 0ms;
+    --motion-viewer-open: 100ms;
+    --motion-viewer-close: 100ms;
+    --motion-viewer-sheet: 100ms;
+    --motion-viewer-switch: 100ms;
+    --motion-scrim: 100ms;
+    --motion-dock-open: 100ms;
+    --motion-dock-close: 100ms;
+    --motion-dock-mini: 100ms;
+    --motion-bar-open: 100ms;
+    --motion-bar-close: 100ms;
+    --motion-pane: 100ms;
+    --motion-section: 100ms;
+    --motion-attention: 100ms;
+  }
+  *:not([role="progressbar"], [role="progressbar"] *),
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /*

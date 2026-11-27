@@ -18,17 +18,9 @@ for (const k of ["task", "palette"] as const)
 vi.mock("@hope-ui/solid", () => ({
   useColorMode: () => ({ colorMode: () => "light" }),
 }))
-vi.mock("solid-motionone", () => ({
-  Motion: { div: (p: any) => <div>{p.children}</div> },
-}))
 vi.mock("~/components", () => ({ FullLoading: () => <span /> }))
 vi.mock("~/hooks", () => ({
   useRouter: () => ({ pathname: () => "/@manage" }),
-}))
-vi.mock("~/utils/motion-presets", () => ({
-  asMotion: (x: unknown) => x,
-  motionProps: (x: unknown) => x,
-  sectionEnter: {},
 }))
 vi.mock("~/store", async () => {
   const { createSignal } = await import("solid-js")

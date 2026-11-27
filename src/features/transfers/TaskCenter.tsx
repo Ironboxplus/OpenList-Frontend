@@ -7,7 +7,7 @@ import {
   SheetTitle,
 } from "~/components/ui/sheet"
 import { useRouter, useT } from "~/hooks"
-import { prefersReducedMotion } from "~/utils/motion-presets"
+import { motionLevel } from "~/platform/motion"
 import {
   highlighted,
   setTaskCenterOpen,
@@ -56,7 +56,7 @@ const TaskCenter = () => {
     scrolledFor = ids
     card.scrollIntoView({
       block: "nearest",
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
+      behavior: motionLevel() === "expressive" ? "smooth" : "auto",
     })
   })
   const goAll = () => {

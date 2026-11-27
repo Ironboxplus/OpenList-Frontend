@@ -14,7 +14,7 @@ import { CopyLink } from "./CopyLink"
 import { CenterIcon } from "./Icon"
 import { bus, isTouchDevice } from "~/utils"
 import { Download } from "./Download"
-import { Motion, Presence } from "solid-motionone"
+import { createPresence, MotionTokens } from "~/platform/motion"
 import { useRouter } from "~/hooks"
 
 export const Center = () => {
@@ -27,110 +27,110 @@ export const Center = () => {
   const { isShare } = useRouter()
   const selectedCount = createMemo(() => selectedObjs().length)
   const isTouch = isTouchDevice()
+  // the bar stays mounted through its exit
+  const presence = createPresence(show)
+  const bar = presence.part({
+    enter: [
+      {
+        opacity: [0, 1],
+        transform: ["translateY(10px) scale(0.9)", "none"],
+      },
+      MotionTokens.options.barEnter,
+    ],
+    exit: [
+      { opacity: [null, 0], transform: [null, "scale(0.9)"] },
+      MotionTokens.options.barExit,
+    ],
+  })
   return (
-    <Presence exitBeforeEnter>
-      <Show when={show()}>
-        <Box
-          class="center-toolbar"
-          pos="fixed"
-          bottom="calc(var(--shell-gap, 0px) + 1rem)"
-          // Centred on the content panel, not on the window.
-          left="calc((var(--shell-content-left, 0px) + 100% - var(--shell-content-right, 0px)) / 2)"
-          w="max-content"
-          // On touch, cap width to viewport minus gutters so labels can wrap
-          maxW={isTouch ? "calc(100vw - 2rem)" : undefined}
-          color="$neutral11"
-          transform="translateX(-50%)"
-        >
+    <Show when={presence.present()}>
+      <Box
+        class="center-toolbar"
+        pos="fixed"
+        bottom="calc(var(--shell-gap, 0px) + 1rem)"
+        // Centred on the content panel, not on the window.
+        left="calc((var(--shell-content-left, 0px) + 100% - var(--shell-content-right, 0px)) / 2)"
+        w="max-content"
+        // On touch, cap width to viewport minus gutters so labels can wrap
+        maxW={isTouch ? "calc(100vw - 2rem)" : undefined}
+        color="$neutral11"
+        transform="translateX(-50%)"
+      >
+        <div ref={bar}>
           <Box
-            as={Motion.div}
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            // @ts-ignore
-            transition={{ duration: 0.2 }}
+            p="$2"
+            bgColor={useColorModeValue("white", "#000000d0")()}
+            shadow="0px 10px 30px -5px rgba(0, 0, 0, 0.3)"
+            rounded="$lg"
+            css={{
+              backdropFilter: "blur(8px)",
+            }}
           >
-            <Box
-              p="$2"
-              bgColor={useColorModeValue("white", "#000000d0")()}
-              shadow="0px 10px 30px -5px rgba(0, 0, 0, 0.3)"
-              rounded="$lg"
-              css={{
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              {/* Selection count indicator */}
-              <HStack spacing="$2" mb="$1_5" px="$1">
-                <Box
-                  display="inline-flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  minW="$5"
-                  h="$5"
-                  px="$1"
-                  rounded="$full"
-                  bgColor="$primary9"
-                  css={{ color: "white" }}
-                >
-                  <Text fontSize="$xs" fontWeight="$semibold" lineHeight="1">
-                    {selectedCount()}
-                  </Text>
-                </Box>
-                <Text fontSize="$sm" color="$neutral10">
-                  {selectedMsg()}
-                </Text>
-              </HStack>
-              {/* Action buttons — wrappable on touch so labels don't overflow */}
-              <HStack
-                spacing="$1"
-                flexWrap={isTouch ? "wrap" : "nowrap"}
-                justifyContent={isTouch ? "center" : "flex-start"}
+            {/* Selection count indicator */}
+            <HStack spacing="$2" mb="$1_5" px="$1">
+              <Box
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                minW="$5"
+                h="$5"
+                px="$1"
+                rounded="$full"
+                bgColor="$primary9"
+                css={{ color: "white" }}
               >
-                <Show when={!isShare() && objStore.write}>
-                  <For
-                    each={
-                      [
-                        "rename",
-                        "move",
-                        "copy",
-                        "delete",
-                        "decompress",
-                      ] as const
-                    }
-                  >
-                    {(name) => {
-                      return userCan(name) ? (
-                        <CenterIcon
-                          name={name}
-                          onClick={() => {
-                            bus.emit("tool", name)
-                          }}
-                        />
-                      ) : null
-                    }}
-                  </For>
-                </Show>
-                <Show when={userCan("share") && !isShare()}>
-                  <CenterIcon
-                    name="share"
-                    onClick={() => {
-                      bus.emit("tool", "share")
-                    }}
-                  />
-                </Show>
-                <CopyLink />
-                <Download />
+                <Text fontSize="$xs" fontWeight="$semibold" lineHeight="1">
+                  {selectedCount()}
+                </Text>
+              </Box>
+              <Text fontSize="$sm" color="$neutral10">
+                {selectedMsg()}
+              </Text>
+            </HStack>
+            {/* Action buttons — wrappable on touch so labels don't overflow */}
+            <HStack
+              spacing="$1"
+              flexWrap={isTouch ? "wrap" : "nowrap"}
+              justifyContent={isTouch ? "center" : "flex-start"}
+            >
+              <Show when={!isShare() && objStore.write}>
+                <For
+                  each={
+                    ["rename", "move", "copy", "delete", "decompress"] as const
+                  }
+                >
+                  {(name) => {
+                    return userCan(name) ? (
+                      <CenterIcon
+                        name={name}
+                        onClick={() => {
+                          bus.emit("tool", name)
+                        }}
+                      />
+                    ) : null
+                  }}
+                </For>
+              </Show>
+              <Show when={userCan("share") && !isShare()}>
                 <CenterIcon
-                  name="cancel_select"
+                  name="share"
                   onClick={() => {
-                    selectAll(false)
+                    bus.emit("tool", "share")
                   }}
                 />
-              </HStack>
-            </Box>
+              </Show>
+              <CopyLink />
+              <Download />
+              <CenterIcon
+                name="cancel_select"
+                onClick={() => {
+                  selectAll(false)
+                }}
+              />
+            </HStack>
           </Box>
-        </Box>
-      </Show>
-    </Presence>
+        </div>
+      </Box>
+    </Show>
   )
 }

@@ -1,14 +1,14 @@
 import { HStack, Text } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
+import { MotionDiv, MotionTokens } from "~/platform/motion"
 import { RenameObj } from "~/types"
 import { hoverColor } from "~/utils"
 
 export const RenameItem = (props: { obj: RenameObj; index: number }) => {
   return (
-    <Motion.div
+    <MotionDiv
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
+      transition={MotionTokens.options.barEnter}
       style={{
         width: "100%",
       }}
@@ -50,6 +50,6 @@ export const RenameItem = (props: { obj: RenameObj; index: number }) => {
           {props.obj.new_name}
         </Text>
       </HStack>
-    </Motion.div>
+    </MotionDiv>
   )
 }

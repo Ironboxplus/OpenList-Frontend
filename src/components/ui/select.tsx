@@ -5,9 +5,13 @@ import { cn } from "~/utils/cn"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import * as SelectPrimitive from "@kobalte/core/select"
 import type { ParentProps, ValidComponent } from "solid-js"
+import { OverlayPresence, withRef } from "./overlay-presence"
 import { splitProps } from "solid-js"
 
-export const Select = SelectPrimitive.Root
+/** Mounted through its exit (overlay-presence.tsx): Kobalte keeps the list mounted. */
+export const Select = ((props: any) => (
+  <SelectPrimitive.Root forceMount {...props} />
+)) as typeof SelectPrimitive.Root
 export const SelectValue = SelectPrimitive.Value
 export const SelectDescription = SelectPrimitive.Description
 export const SelectErrorMessage = SelectPrimitive.ErrorMessage
@@ -59,25 +63,36 @@ export const SelectTrigger = <T extends ValidComponent = "button">(
 
 type SelectContentProps = SelectPrimitive.SelectContentProps & {
   class?: string
+  ref?: unknown
 }
 
 export const SelectContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, SelectContentProps>,
 ) => {
-  const [local, rest] = splitProps(props as SelectContentProps, ["class"])
+  const [local, rest] = splitProps(props as SelectContentProps, [
+    "class",
+    "ref",
+  ])
+  const list = SelectPrimitive.useSelectContext()
 
   return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        class={cn(
-          "relative z-[1500] min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-          local.class,
-        )}
-        {...rest}
-      >
-        <SelectPrimitive.Listbox class="p-1 outline-none!" />
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
+    <OverlayPresence open={list.isOpen} kind="select">
+      {(ref) => (
+        <SelectPrimitive.Portal>
+          <SelectPrimitive.Content
+            data-motion="select"
+            ref={withRef(ref, local.ref)}
+            class={cn(
+              "relative z-[1500] min-w-[8rem] origin-[var(--kb-select-content-transform-origin)] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+              local.class,
+            )}
+            {...rest}
+          >
+            <SelectPrimitive.Listbox class="p-1 outline-none!" />
+          </SelectPrimitive.Content>
+        </SelectPrimitive.Portal>
+      )}
+    </OverlayPresence>
   )
 }
 

@@ -10,7 +10,7 @@ import { IoMagnetOutline } from "solid-icons/io"
 import { AiOutlineCloudUpload, AiOutlineSetting } from "solid-icons/ai"
 import { RiSystemRefreshLine } from "solid-icons/ri"
 import { usePath, useRouter } from "~/hooks"
-import { Motion } from "solid-motionone"
+import { MotionDiv, MotionTokens } from "~/platform/motion"
 import { isTocVisible, setTocDisabled } from "~/components"
 import { BiSolidBookContent } from "solid-icons/bi"
 import { createDisclosure } from "~/components/overlay"
@@ -55,12 +55,10 @@ export const Right = () => {
           // shadow="0px 10px 30px -5px rgba(0, 0, 0, 0.3)"
           // bgColor={useColorModeValue("white", "$neutral4")()}
           bgColor="$neutral1"
-          as={Motion.div}
+          as={MotionDiv}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.6 }}
-          // @ts-ignore
-          transition={{ duration: 0.2 }}
+          transition={MotionTokens.options.barEnter}
         >
           <VStack spacing="$1" class="left-toolbar-in">
             <Show

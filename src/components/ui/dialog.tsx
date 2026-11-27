@@ -4,14 +4,29 @@
 import { cn } from "~/utils/cn"
 import * as DialogPrimitive from "@kobalte/core/dialog"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
-import type { ComponentProps, ParentProps, ValidComponent } from "solid-js"
+import type { ComponentProps, JSX, ParentProps, ValidComponent } from "solid-js"
 import { Show, splitProps } from "solid-js"
+import {
+  createPresence,
+  overlayMotion,
+  scrimMotion,
+  type PartMotion,
+} from "~/platform/motion"
+import { withRef } from "./overlay-presence"
 
-export const Dialog = DialogPrimitive.Root
+/**
+ * Kobalte keeps the content mounted (forceMount); our presence decides when it
+ * leaves, after its Motion exit (platform/motion/presence.ts). Sheets, menus,
+ * dropdowns, popovers and tooltips are built the same way.
+ */
+export const Dialog = ((props: DialogPrimitive.DialogRootProps) => (
+  <DialogPrimitive.Root forceMount {...props} />
+)) as typeof DialogPrimitive.Root
 export const DialogTrigger = DialogPrimitive.Trigger
 
 type DialogOverlayProps = DialogPrimitive.DialogOverlayProps & {
   class?: string
+  ref?: unknown
 }
 
 export const DialogOverlay = <T extends ValidComponent = "div">(
@@ -21,12 +36,39 @@ export const DialogOverlay = <T extends ValidComponent = "div">(
 
   return (
     <DialogPrimitive.Overlay
+      data-motion="scrim"
       class={cn(
-        "fixed inset-0 z-[1500] bg-background/80 backdrop-blur-sm data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0",
+        "fixed inset-0 z-[1500] bg-background/80 backdrop-blur-sm",
         local.class,
       )}
       {...rest}
     />
+  )
+}
+
+/**
+ * The portal of a dialog-like overlay (dialog, sheet, palette): mounted while
+ * open and through its exit; `panel` and `scrim` animate its two parts.
+ */
+export const DialogPresence = (props: {
+  panel: PartMotion
+  scrim: PartMotion
+  children: (refs: {
+    panel: (el: HTMLElement) => void
+    scrim: (el: HTMLElement) => void
+  }) => JSX.Element
+}) => {
+  const ctx = DialogPrimitive.useDialogContext()
+  const p = createPresence(ctx.isOpen)
+  return (
+    <Show when={p.present()}>
+      <DialogPrimitive.Portal>
+        {props.children({
+          panel: p.part(props.panel),
+          scrim: p.part(props.scrim),
+        })}
+      </DialogPrimitive.Portal>
+    </Show>
   )
 }
 
@@ -57,6 +99,7 @@ type DialogContentProps = ParentProps<
     class?: string
     /** The X in the corner; on by default. */
     showClose?: boolean
+    ref?: unknown
   }
 >
 
@@ -67,26 +110,36 @@ export const DialogContent = <T extends ValidComponent = "div">(
     "class",
     "children",
     "showClose",
+    "ref",
   ])
 
   return (
-    <DialogPrimitive.Portal>
-      <DialogOverlay />
-      <div class="fixed inset-0 z-[1500] flex items-center justify-center">
-        <DialogPrimitive.Content
-          class={cn(
-            "fixed left-[50%] top-[50%] z-[1500] grid max-h-[calc(100dvh-2rem)] w-full max-w-lg translate-x-[-50%] overflow-y-auto translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-half data-[closed]:slide-out-to-top-48 data-[expanded]:slide-in-from-left-half data-[expanded]:slide-in-from-top-48 sm:rounded-lg md:w-full",
-            local.class,
-          )}
-          {...rest}
-        >
-          {local.children}
-          <Show when={local.showClose !== false}>
-            <DialogCloseButton />
-          </Show>
-        </DialogPrimitive.Content>
-      </div>
-    </DialogPrimitive.Portal>
+    <DialogPresence
+      panel={overlayMotion("dialog")}
+      scrim={scrimMotion("dialog")}
+    >
+      {(refs) => (
+        <>
+          <DialogOverlay ref={refs.scrim} />
+          <div class="fixed inset-0 z-[1500] flex items-center justify-center">
+            <DialogPrimitive.Content
+              data-motion="dialog"
+              ref={withRef(refs.panel, local.ref)}
+              class={cn(
+                "fixed left-[50%] top-[50%] z-[1500] grid max-h-[calc(100dvh-2rem)] w-full max-w-lg translate-x-[-50%] overflow-y-auto translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg md:w-full",
+                local.class,
+              )}
+              {...rest}
+            >
+              {local.children}
+              <Show when={local.showClose !== false}>
+                <DialogCloseButton />
+              </Show>
+            </DialogPrimitive.Content>
+          </div>
+        </>
+      )}
+    </DialogPresence>
   )
 }
 

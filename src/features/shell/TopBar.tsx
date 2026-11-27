@@ -12,7 +12,6 @@ import {
   TbUserCircle,
 } from "solid-icons/tb"
 import { For, Show } from "solid-js"
-import { Motion } from "solid-motionone"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +28,7 @@ import {
 import { useT } from "~/hooks"
 import { getSetting, me } from "~/store"
 import { cn } from "~/utils/cn"
-import { attentionRing, prefersReducedMotion } from "~/utils/motion-presets"
+import { motionLevel, MotionTokens, playOnce } from "~/platform/motion"
 import { errorCenter } from "../notifications/service"
 import { setErrorCenterOpen } from "../notifications/state"
 import { hotkeyLabel, setPaletteOpen } from "../palette/state"
@@ -102,7 +101,8 @@ const ShellButtons = () => {
   const account = useAccountActions()
   const { colorMode } = useColorMode()
   // Reduced motion: no ring; the badge count still changes.
-  const rings = () => (nudge() > 0 && !prefersReducedMotion() ? [nudge()] : [])
+  const rings = () =>
+    nudge() > 0 && motionLevel() === "expressive" ? [nudge()] : []
   return (
     <>
       <Tooltip placement="bottom">
@@ -120,11 +120,20 @@ const ShellButtons = () => {
           {/* a new nudge value is a new item: a fresh ring mounts and plays once */}
           <For each={rings()}>
             {() => (
-              <Motion.span
+              <span
                 data-testid="task-nudge"
                 aria-hidden="true"
                 class="pointer-events-none absolute inset-0 rounded-full bg-primary/40"
-                {...(attentionRing as any)}
+                ref={(el) =>
+                  playOnce(
+                    el,
+                    {
+                      opacity: [0.7, 0],
+                      transform: ["scale(0.9)", "scale(1.7)"],
+                    },
+                    MotionTokens.options.attention,
+                  )
+                }
               />
             )}
           </For>

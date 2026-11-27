@@ -6,6 +6,8 @@ import * as DropdownMenuPrimitive from "@kobalte/core/dropdown-menu"
 import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { ComponentProps, ParentProps, ValidComponent } from "solid-js"
 import { mergeProps, splitProps } from "solid-js"
+import { useMenuContext } from "@kobalte/core/menu"
+import { OverlayPresence, withRef } from "./overlay-presence"
 import {
   createMenuCloseQueue,
   MenuCloseContext,
@@ -20,7 +22,8 @@ export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 export const DropdownMenu = (
   props: DropdownMenuPrimitive.DropdownMenuRootProps,
 ) => {
-  const merge = mergeProps({ gutter: 4 }, props)
+  // forceMount: our presence unmounts the content after its exit (overlay-presence.tsx)
+  const merge = mergeProps({ gutter: 4, forceMount: true }, props)
 
   return <DropdownMenuPrimitive.Root {...merge} />
 }
@@ -28,7 +31,12 @@ export const DropdownMenu = (
 type DropdownMenuContentProps =
   DropdownMenuPrimitive.DropdownMenuContentProps & {
     class?: string
+    ref?: unknown
   }
+
+/** A menu's panel: grows from its anchor, 120ms in and 90ms out. */
+export const menuPanel =
+  "z-[1500] min-w-[8rem] origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md"
 
 export const DropdownMenuContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, DropdownMenuContentProps>,
@@ -37,22 +45,31 @@ export const DropdownMenuContent = <T extends ValidComponent = "div">(
     "class",
     "onOpenAutoFocus",
     "onCloseAutoFocus",
+    "ref",
   ])
   const close = createMenuCloseQueue(local)
+  const menu = useMenuContext()
 
   return (
     <MenuCloseContext.Provider value={close.queue}>
-      <DropdownMenuPrimitive.Portal>
-        <DropdownMenuPrimitive.Content
-          onOpenAutoFocus={close.onOpenAutoFocus}
-          onCloseAutoFocus={close.onCloseAutoFocus}
-          class={cn(
-            "min-w-[8rem] z-[1500] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md transition-shadow outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-            local.class,
-          )}
-          {...rest}
-        />
-      </DropdownMenuPrimitive.Portal>
+      <OverlayPresence open={menu.isOpen} kind="menu">
+        {(ref) => (
+          <DropdownMenuPrimitive.Portal>
+            <DropdownMenuPrimitive.Content
+              data-motion="menu"
+              ref={withRef(ref, local.ref)}
+              onOpenAutoFocus={close.onOpenAutoFocus}
+              onCloseAutoFocus={close.onCloseAutoFocus}
+              class={cn(
+                menuPanel,
+                "transition-shadow outline-none! focus-visible:ring-[1.5px] focus-visible:ring-ring",
+                local.class,
+              )}
+              {...rest}
+            />
+          </DropdownMenuPrimitive.Portal>
+        )}
+      </OverlayPresence>
     </MenuCloseContext.Provider>
   )
 }
@@ -211,6 +228,7 @@ export const DropdownMenuSubTrigger = <T extends ValidComponent = "div">(
 type DropdownMenuSubContentProps =
   DropdownMenuPrimitive.DropdownMenuSubTriggerProps & {
     class?: string
+    ref?: unknown
   }
 
 export const DropdownMenuSubContent = <T extends ValidComponent = "div">(
@@ -218,18 +236,23 @@ export const DropdownMenuSubContent = <T extends ValidComponent = "div">(
 ) => {
   const [local, rest] = splitProps(props as DropdownMenuSubContentProps, [
     "class",
+    "ref",
   ])
+  const menu = useMenuContext()
 
   return (
-    <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.SubContent
-        class={cn(
-          "min-w-[8rem] z-[1500] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-          local.class,
-        )}
-        {...rest}
-      />
-    </DropdownMenuPrimitive.Portal>
+    <OverlayPresence open={menu.isOpen} kind="menu">
+      {(ref) => (
+        <DropdownMenuPrimitive.Portal>
+          <DropdownMenuPrimitive.SubContent
+            data-motion="menu"
+            ref={withRef(ref, local.ref)}
+            class={cn(menuPanel, local.class)}
+            {...rest}
+          />
+        </DropdownMenuPrimitive.Portal>
+      )}
+    </OverlayPresence>
   )
 }
 

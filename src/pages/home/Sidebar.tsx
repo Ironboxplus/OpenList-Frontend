@@ -1,5 +1,4 @@
 import { Box } from "@hope-ui/solid"
-import { Motion } from "solid-motionone"
 import { useLocation } from "@solidjs/router"
 import {
   Show,
@@ -12,6 +11,7 @@ import {
 } from "solid-js"
 import { FolderTree, FolderTreeHandler } from "~/components"
 import { useRouter } from "~/hooks"
+import { MotionDiv, MotionTokens } from "~/platform/motion"
 import { local, objStore } from "~/store"
 import { objBoxRef } from "./Obj"
 
@@ -105,9 +105,10 @@ function SidebarPanel() {
       ref={(el: HTMLDivElement) => setAnchorRef(el)}
     >
       <Box
-        as={Motion.div}
+        as={MotionDiv}
         initial={{ x: -999 }}
         animate={{ x: offsetX() }}
+        transition={MotionTokens.options.pane}
         h="$full"
         minW={180}
         p="$2"
