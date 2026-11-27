@@ -439,8 +439,9 @@ export const ToastRegion = (props: { bottom?: string }) => {
       tabIndex={-1}
       aria-label={`${t("global.notifications")} (${HOTKEY_LABEL})`}
       // [S] index.tsx:25, :28, :34: 24px from the edges and 356px wide;
-      // 16px from them on a phone
-      class="pointer-events-none fixed inset-x-4 z-[1700] [--toast-offset:16px] min-[601px]:left-auto min-[601px]:right-6 min-[601px]:w-[356px] min-[601px]:[--toast-offset:24px]"
+      // 16px from them on a phone. Above everything, hope's tooltips too
+      // (the layer hope's own toasts had, app/theme.ts)
+      class="pointer-events-none fixed inset-x-4 z-[1800] [--toast-offset:16px] min-[601px]:left-auto min-[601px]:right-6 min-[601px]:w-[356px] min-[601px]:[--toast-offset:24px]"
       style={{
         bottom: `calc(${props.bottom ?? "0px"} + env(safe-area-inset-bottom) + var(--toast-offset))`,
       }}

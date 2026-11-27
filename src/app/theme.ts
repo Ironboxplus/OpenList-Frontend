@@ -11,7 +11,6 @@ export const zIndices = {
   dropdown: 1550,
   popover: 1550,
   tooltip: 1600,
-  notification: 1800,
 }
 
 const theme: HopeThemeConfig = {
