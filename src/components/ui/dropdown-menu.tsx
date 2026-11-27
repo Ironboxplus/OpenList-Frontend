@@ -36,7 +36,7 @@ type DropdownMenuContentProps =
 
 /**
  * A menu's panel: grows from its anchor, 120ms in and 90ms out. Drawn over
- * the toasts (z-[1520]) as over dialogs, app/theme.ts.
+ * the toasts as over dialogs (the layers: app/theme.ts).
  */
 export const menuPanel =
   "z-[1540] min-w-[8rem] origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-[var(--radius-menu)] border bg-popover p-1 text-popover-foreground shadow-md"
