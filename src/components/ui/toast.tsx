@@ -298,7 +298,9 @@ const ToastItem = (props: { entry: Entry; stack: Stack }) => {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         class={cn(
-          "pointer-events-auto absolute inset-x-0 bottom-0 m-0 overflow-hidden rounded-lg border bg-popover text-sm text-popover-foreground shadow-lg",
+          // the grid cards' edge: --border is too faint on the dark popover
+          // (audit 45996760824: diff 23 of 24)
+          "pointer-events-auto absolute inset-x-0 bottom-0 m-0 overflow-hidden rounded-lg border border-(--card-edge) bg-popover text-sm text-popover-foreground shadow-lg",
           "origin-bottom touch-none transition-[translate,scale,height] duration-(--motion-item-move) ease-standard",
           // the opacity is the entrance's and exit's, so those out of sight
           // are hidden by visibility ([S] styles.css:319 uses opacity)
