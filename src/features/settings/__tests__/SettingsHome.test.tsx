@@ -64,6 +64,50 @@ describe("SettingsHome", () => {
     ).toBeLessThan(6)
   })
 
+  it("finds a single setting, folded or not, and leads to it on its page", () => {
+    const { container } = render(() => (
+      <SettingsHome items={visibleSettings(admin)} />
+    ))
+    fireEvent.input(screen.getByRole("searchbox"), {
+      target: { value: "Ignore direct link params" },
+    })
+    const hit = container.querySelector(
+      'a[data-setting-hit="ignore_direct_link_params"]',
+    ) as HTMLAnchorElement
+    expect(hit).toBeTruthy()
+    expect(hit.textContent).toContain("Global")
+    expect(hit.getAttribute("href")).toMatch(
+      /\/@manage\/settings\/global\?focus=ignore_direct_link_params$/,
+    )
+    fireEvent.click(hit)
+    expect(to).toHaveBeenCalledWith(
+      "/@manage/settings/global?focus=ignore_direct_link_params",
+    )
+    // and its page is among the pages found
+    expect(container.querySelector('a[data-setting="global"]')).toBeTruthy()
+  })
+
+  it("finds a setting by its key too", () => {
+    const { container } = render(() => (
+      <SettingsHome items={visibleSettings(admin)} />
+    ))
+    fireEvent.input(screen.getByRole("searchbox"), {
+      target: { value: "move_task_threads_num" },
+    })
+    expect(
+      container
+        .querySelector('a[data-setting-hit="move_task_threads_num"]')
+        ?.getAttribute("href"),
+    ).toMatch(/\/@manage\/settings\/transfer\?focus=move_task_threads_num$/)
+  })
+
+  it("lists no single settings without a query", () => {
+    const { container } = render(() => (
+      <SettingsHome items={visibleSettings(admin)} />
+    ))
+    expect(container.querySelector("[data-setting-hit]")).toBeNull()
+  })
+
   it("explains an empty result and clears it", () => {
     render(() => <SettingsHome items={visibleSettings(admin)} />)
     fireEvent.input(screen.getByRole("searchbox"), {

@@ -3122,6 +3122,31 @@ await spec("p3-transfer-settings", {}, async (env) => {
   c.done()
 })
 
+// P3: the long settings pages in cards by what they act on (research 05 §二):
+// each card says what it governs and folds its rare settings under Advanced;
+// the settings search finds a folded one and opens its group on the page
+await spec("p3-settings-search", {}, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, "/@manage/settings/global", 1500)
+  const cards = await page.locator("[data-card]").evaluateAll((l) => l.map((e) => [e.getAttribute("data-card"), (e.querySelector("[data-scope]")?.textContent ?? "").trim().length > 0]))
+  c("Global is in cards by what they act on", cards.length >= 4 && cards.every(([, scoped]) => scoped), cards)
+  c("nothing is left over", (await page.locator('[data-card="rest"]').count()) === 0)
+  const key = "ignore_direct_link_params"
+  c("a rare one is folded", await page.locator(`[data-field="${key}"]`).isHidden())
+  await go(page, "/@manage", 1200)
+  await page.getByRole("searchbox").fill(key)
+  const hit = page.locator(`a[data-setting-hit="${key}"]`)
+  c("the search finds it", await hit.waitFor({ timeout: 3000 }).then(() => true, () => false))
+  await hit.click()
+  await page.waitForURL(/\/@manage\/settings\/global\?focus=/, { timeout: 5000 }).catch(() => {})
+  c("and leads to its page", new RegExp(`/@manage/settings/global\\?focus=${key}$`).test(page.url()), page.url())
+  const field = page.locator(`[data-field="${key}"]`)
+  c("its group opens by itself", await field.waitFor({ state: "visible", timeout: 5000 }).then(() => true, () => false))
+  c("and it is marked", (await field.getAttribute("data-focused")) !== null)
+  c.done()
+})
+
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
 await browser.close()
 await chromeBrowser?.close()
