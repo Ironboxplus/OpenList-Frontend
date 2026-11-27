@@ -1543,8 +1543,8 @@ const heightRun = (frames, from, to) => {
   const span = frames.filter((f) => f[0] >= from && f[0] < to)
   const h = span.map((f) => f[3])
   const end = h[h.length - 1]
-  const startIdx = h.findIndex((v) => v !== h[0])
-  const endIdx = h.findIndex((v, i) => i >= startIdx && v === end)
+  const startIdx = h.findIndex((v) => Math.abs(v - h[0]) >= JITTER)
+  const endIdx = h.findIndex((v, i) => i >= startIdx && Math.abs(v - end) < JITTER)
   if (startIdx < 1 || endIdx < 0) return null
   const t = (i) => span[i][0]
   return {
@@ -1556,6 +1556,14 @@ const heightRun = (frames, from, to) => {
     to: end,
   }
 }
+/**
+ * Less than a twentieth of a pixel from a height is that height: a box at rest
+ * can read a hundredth off (the dock: 460, then 459.98 with nothing running,
+ * 46039802741), and the last frames of a decelerating curve move by less than
+ * anyone sees (46042634934: 73.81, 73.98 at 300ms, 74 at 332ms, for a 220ms
+ * run seen from 45ms on). The run is over where the eye says it is.
+ */
+const JITTER = 0.05
 /** A run of `ms` fits what the frames saw (one frame's rounding either side). */
 const ranFor = (run, ms) => !!run && run.moved - 2 <= ms && ms <= run.ran + 2
 await spec("motion-collapsible", { init: overlayProbe, video: true }, async (env) => {
@@ -2128,19 +2136,21 @@ const dockRun = (heights, from, to) => {
   // heights holds changes only: the one before the window is where it rested
   const before = heights.filter((h) => h[0] < from).pop()
   const all = heights.filter((h) => h[0] >= from && h[0] <= to)
-  // the run starts with the first move of half a pixel or more: at rest the
-  // box can read a hundredth off (e7a9db3d: 459.98, then 460 79ms before the
-  // run, whose first step was 0.9px)
+  // the run starts with its first move and ends on its first frame at the
+  // final height, both past what a box at rest reads off (JITTER; e7a9db3d:
+  // 459.98, then 460 79ms before the run, whose first step was 0.9px)
   const rest = before ? before[1] : all[0]?.[1]
-  const span = all.slice(Math.max(0, all.findIndex((h) => Math.abs(h[1] - rest) >= 0.5)))
-  if (all.length < 3 || span.length < 3) return null
-  const end = span[span.length - 1]
+  const final = all[all.length - 1]?.[1]
+  const span = all.slice(Math.max(0, all.findIndex((h) => Math.abs(h[1] - rest) >= JITTER)))
+  const endIdx = span.findIndex((h) => Math.abs(h[1] - final) < JITTER)
+  if (all.length < 3 || endIdx < 2) return null
+  const end = span[endIdx]
   const t0 = span[0][2] ?? span[0][0] - 16
   return {
     ran: end[0] - t0,
-    moved: span[span.length - 2][0] - span[0][0],
+    moved: span[endIdx - 1][0] - span[0][0],
     from: before ? before[1] : null,
-    to: end[1],
+    to: final,
     frames: span.map((h) => [h[0] - t0, h[1]]),
   }
 }
@@ -2161,7 +2171,11 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
   const { page } = env
   const c = checker(env)
   await go(page, VDIR, 1200)
-  // scrolled a little: Back must bring the list back to this position
+  // scrolled a little: Back must bring the list back to this position. Once
+  // the list is long enough to: 46042634934 scrolled before it was, and read 0
+  await page
+    .waitForFunction(() => document.documentElement.scrollHeight > innerHeight + 150, undefined, { timeout: 10000 })
+    .catch(() => {})
   await scrollY(page, 100)
   const y0 = await page.evaluate(() => window.scrollY)
   const h0 = await histLen(page)
