@@ -3191,7 +3191,9 @@ await spec("p3-dialog-advanced", {}, async (env) => {
 
 // P3: the storage form shows the required items and the ones not at their
 // default; the rest of each section is folded under Advanced. The seed's
-// Local storage sets its mount path, cache time and thumbnails (lib.mjs addStorage)
+// Local storage sets its mount path and thumbnails (lib.mjs addStorage); the
+// WebDAV policy is required (OP internal/op/driver.go getMainItems); Local has
+// no cache time (OP drivers/local/meta.go NoCache)
 await spec("p3-storage-advanced", {}, async (env) => {
   const { page } = env
   const c = checker(env)
@@ -3201,7 +3203,7 @@ await spec("p3-storage-advanced", {}, async (env) => {
   await go(page, `/@manage/storages/edit/${local?.id}`, 1500)
   const f = (key) => page.locator(`[data-field="${key}"]`)
   await f("mount_path").waitFor({ timeout: 8000 }).catch(() => {})
-  for (const key of ["mount_path", "cache_expiration", "root_folder_path", "thumbnail"]) c(`${key} is in sight`, await f(key).isVisible())
+  for (const key of ["mount_path", "webdav_policy", "root_folder_path", "thumbnail"]) c(`${key} is in sight`, await f(key).isVisible())
   for (const key of ["remark", "disable_index"]) c(`${key}, at its default, is folded`, await f(key).isHidden())
   const common = page.locator('[data-testid="advanced-storage-common"]')
   c("the common section has an Advanced title", await common.isVisible())
