@@ -1544,24 +1544,30 @@ const heightRun = (frames, from, to) => {
   const h = span.map((f) => f[3])
   const end = h[h.length - 1]
   const startIdx = h.findIndex((v) => Math.abs(v - h[0]) >= JITTER)
-  const endIdx = h.findIndex((v, i) => i >= startIdx && Math.abs(v - end) < JITTER)
-  if (startIdx < 1 || endIdx < 0) return null
+  if (startIdx < 1) return null
+  // over for good: every frame from here on reads the final height
+  let endIdx = h.length - 1
+  while (endIdx > startIdx && h[endIdx - 1] === end) endIdx--
+  // surely still running: the last frame a visible step away from it
+  let farIdx = endIdx - 1
+  while (farIdx > startIdx && Math.abs(h[farIdx] - end) < JITTER) farIdx--
   const t = (i) => span[i][0]
   return {
     lead: t(startIdx - 1) - from,
     ran: t(endIdx) - t(startIdx - 1),
-    moved: t(endIdx - 1) - t(startIdx),
+    moved: t(farIdx) - t(startIdx),
     frames: span.slice(Math.max(0, startIdx - 2), endIdx + 2).map((f) => [f[0] - from, f[3]]),
     from: h[0],
     to: end,
   }
 }
 /**
- * Less than a twentieth of a pixel from a height is that height: a box at rest
- * can read a hundredth off (the dock: 460, then 459.98 with nothing running,
- * 46039802741), and the last frames of a decelerating curve move by less than
- * anyone sees (46042634934: 73.81, 73.98 at 300ms, 74 at 332ms, for a 220ms
- * run seen from 45ms on). The run is over where the eye says it is.
+ * Less than a twentieth of a pixel: a box at rest can read a hundredth off
+ * (the dock: 460, then 459.98 with nothing running, 46039802741), and the
+ * last frames of a decelerating curve move by about as little (46042634934:
+ * 73.81, 73.98 at 300ms, 74 at 332ms). Such a frame tells neither that the
+ * run goes on nor that it is over: `ran` ends on the first frame at the final
+ * height for good, `moved` on the last one a visible step away from it.
  */
 const JITTER = 0.05
 /** A run of `ms` fits what the frames saw (one frame's rounding either side). */
@@ -2136,19 +2142,21 @@ const dockRun = (heights, from, to) => {
   // heights holds changes only: the one before the window is where it rested
   const before = heights.filter((h) => h[0] < from).pop()
   const all = heights.filter((h) => h[0] >= from && h[0] <= to)
-  // the run starts with its first move and ends on its first frame at the
-  // final height, both past what a box at rest reads off (JITTER; e7a9db3d:
-  // 459.98, then 460 79ms before the run, whose first step was 0.9px)
+  // the run starts with its first move past what a box at rest reads off
+  // (JITTER; e7a9db3d: 459.98, then 460 79ms before the run, whose first step
+  // was 0.9px); it is over on the last change, surely running on the last one
+  // a visible step from the final height
   const rest = before ? before[1] : all[0]?.[1]
   const final = all[all.length - 1]?.[1]
   const span = all.slice(Math.max(0, all.findIndex((h) => Math.abs(h[1] - rest) >= JITTER)))
-  const endIdx = span.findIndex((h) => Math.abs(h[1] - final) < JITTER)
-  if (all.length < 3 || endIdx < 2) return null
-  const end = span[endIdx]
+  let farIdx = span.length - 2
+  while (farIdx > 0 && Math.abs(span[farIdx][1] - final) < JITTER) farIdx--
+  if (all.length < 3 || span.length < 3) return null
+  const end = span[span.length - 1]
   const t0 = span[0][2] ?? span[0][0] - 16
   return {
     ran: end[0] - t0,
-    moved: span[endIdx - 1][0] - span[0][0],
+    moved: span[farIdx][0] - span[0][0],
     from: before ? before[1] : null,
     to: final,
     frames: span.map((h) => [h[0] - t0, h[1]]),
