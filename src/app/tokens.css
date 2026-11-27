@@ -32,6 +32,8 @@
   --border: #c9c9c9;
   --input: #d0d0d0;
   --ring: #1976d2;
+  /* The edge of a grid card (Files' grid layout) */
+  --card-edge: var(--border);
   /* The Files page's list card (hope's white and $lg shadow, the look the user
      chose on 11-26). */
   --files-card-bg: #ffffff;
@@ -63,6 +65,9 @@
   --border: #3d3d3d;
   --input: #444444;
   --ring: #90caf9;
+  /* a grid card is --muted on the files card: --border (#3d3d3d) was 19 off
+     both, under the audit's border-faint threshold of 24; this is 40 off */
+  --card-edge: #525252;
   /* hope's $neutral3 and dark $lg shadow */
   --files-card-bg: rgb(32 36 37);
   --files-card-shadow:
