@@ -153,6 +153,25 @@ describe("MotionDriver levels", () => {
     expect(c.state).toBe("finished")
   })
 
+  it("lands at the end an element that is still out of the document a frame later", async () => {
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) =>
+      setTimeout(() => cb(0), 0),
+    )
+    const d = new MotionDriver()
+    const el = document.createElement("div")
+    ;(el as any).animate = () => {}
+    const c = d.animate(
+      el,
+      { transform: ["translateY(6px)", "translateY(0px)"] },
+      MotionTokens.options.section,
+    )
+    expect(el.style.transform).toBe("translateY(6px)")
+    await c.finished
+    expect(calls).toEqual([])
+    expect(el.style.transform).toBe("translateY(0px)")
+    vi.unstubAllGlobals()
+  })
+
   it("off lands at the end state without animating", async () => {
     const d = new MotionDriver({
       preference: createMotionPreference({ initial: "off" }),

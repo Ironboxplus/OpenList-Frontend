@@ -198,7 +198,8 @@ export class MotionDriver {
   /**
    * Animates `t` through `k`. The first keyframe is written at once, so
    * nothing shows its end state before the animation starts (an element just
-   * created starts on the next frame, once it is in the document).
+   * created starts on the next frame, once it is in the document; one that is
+   * not in it by then is put at its end state).
    */
   animate(t: Element, k: MotionKeyframes, o: MotionOptions, id?: number) {
     const c = new Control()
@@ -244,7 +245,11 @@ export class MotionDriver {
       }
     }
     if (t.isConnected) start()
-    else requestAnimationFrame(start)
+    else
+      // still out of the document a frame later (a Suspense boundary holds
+      // it back): land at the end. Started there, the browser never finished
+      // it and the section kept its 6px entrance offset (CI 45953704987).
+      requestAnimationFrame(() => (t.isConnected ? start() : c.finish()))
     return c
   }
   async animateView(

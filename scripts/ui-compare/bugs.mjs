@@ -1284,7 +1284,13 @@ for (const theme of ["light", "dark"]) {
         // where the sticky row is meant to stop: its resolved `top`
         const stickTop = parseFloat(cs.top)
         const hit = document.elementFromPoint(r.left + 12, r.top + r.height / 2)
-        return { top: Math.round(r.top), stickTop: Math.round(stickTop), position: cs.position, z: cs.zIndex, bg: cs.backgroundColor, cardBg: card.backgroundColor, hit: !!hit && el.contains(hit), scrolled: Math.round(scrollY + (document.querySelector("[data-shell-content]")?.scrollTop ?? 0)) }
+        // ancestors that move it: a transform left behind shifts a stuck row
+        const moved = []
+        for (let e = el.parentElement; e; e = e.parentElement) {
+          const c = getComputedStyle(e)
+          if (c.transform !== "none" || c.translate !== "none") moved.push(`${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 3).join(".")} transform=${c.transform} translate=${c.translate} inline="${e.style.transform}"`)
+        }
+        return { top: Math.round(r.top), stickTop: Math.round(stickTop), position: cs.position, z: cs.zIndex, bg: cs.backgroundColor, cardBg: card.backgroundColor, hit: !!hit && el.contains(hit), scrolled: Math.round(scrollY + (document.querySelector("[data-shell-content]")?.scrollTop ?? 0)), moved }
       })
     const scrollDown = async () => {
       const box = await page.locator(".obj-box .list").first().boundingBox()
