@@ -2907,11 +2907,19 @@ for (const phone of [false, true]) await spec("p4-toast-stack", phone ? { width:
     const item = page.getByRole("menuitem", { name: tr("home.toolbar.down_link") })
     await item.waitFor()
     await settle(page)
-    const ib = await item.boundingBox()
-    const top = await page.evaluate(([x, y]) => {
-      const el = document.elementFromPoint(x, y)
-      return el?.closest('[role="menuitem"]') ? "" : (el?.closest("[data-motion]")?.getAttribute("data-motion") ?? el?.tagName ?? "none")
-    }, [ib.x + ib.width / 2, ib.y + ib.height / 2])
+    // the box and what is drawn there read in one go: read apart, the menu
+    // could be placed again in between (46033629952: "0:menu" with no toast up)
+    const top = await item.evaluate(
+      (it) =>
+        new Promise((done) =>
+          requestAnimationFrame(() => {
+            const r = it.getBoundingClientRect()
+            const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+            const at = `@${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`
+            done(el && it.contains(el) ? "" : `${el?.closest("[data-motion]")?.getAttribute("data-motion") ?? el?.tagName ?? "none"}${at}`)
+          }),
+        ),
+    )
     if (top) {
       under.push(`${i}:${top}`)
       break
