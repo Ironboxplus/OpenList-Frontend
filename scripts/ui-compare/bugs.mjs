@@ -2821,10 +2821,13 @@ await spec("p4-toast-stack", {}, async (env) => {
     await page.getByRole("menuitem", { name: tr("home.toolbar.down_link") }).click()
   }
   const items = page.locator('[data-motion="toast"]')
+  // each copy says so once the clipboard has it: the last may come a moment later
+  await page.waitForFunction(() => document.querySelectorAll('[data-motion="toast"]').length >= 4, null, { timeout: 3000 }).catch(() => {})
+  // the focus in the toasts holds their timers from here (Kobalte toast-list.tsx)
+  await page.keyboard.press("Alt+KeyT")
   c("the notices stack", (await items.count()) >= 4, await items.count())
   const vis = await items.evaluateAll((l) => l.map((t) => t.getAttribute("data-visible")))
   c("three are in sight, the newest in front", vis.slice(0, 3).every((v) => v === "true") && vis.slice(3).every((v) => v === "false"), vis)
-  await page.keyboard.press("Alt+KeyT")
   c("alt+T takes the focus to them", await page.evaluate(() => !!document.activeElement?.closest("[data-toast-region]")))
   // the focus stays there: their timers wait (Kobalte toast-list.tsx) while they are dragged
   const front = items.first()

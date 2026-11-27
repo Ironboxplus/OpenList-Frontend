@@ -190,6 +190,9 @@ const ToastItem = (props: { entry: Entry; stack: Stack }) => {
   let dir: "x" | "y" | null = null
   let amount = { x: 0, y: 0 }
   const [swiping, setSwiping] = createSignal(false)
+  // moved at all: no text selection from here ([S] index.tsx:420-422,
+  // styles.css:354-357)
+  const [swiped, setSwiped] = createSignal(false)
   const dampen = (d: number) => d * (1 / (1.5 + Math.abs(d) / 20))
   const allowed = (d: number, axis: "x" | "y") =>
     (SWIPE_DIRECTIONS as readonly string[]).includes(
@@ -216,6 +219,7 @@ const ToastItem = (props: { entry: Entry; stack: Stack }) => {
       x: dir === "x" ? (allowed(dx, "x") ? dx : dampen(dx)) : 0,
       y: dir === "y" ? (allowed(dy, "y") ? dy : dampen(dy)) : 0,
     }
+    if (amount.x || amount.y) setSwiped(true)
     li.style.transform = `translate(${amount.x}px, ${amount.y}px)`
   }
   const onPointerUp = () => {
@@ -223,6 +227,7 @@ const ToastItem = (props: { entry: Entry; stack: Stack }) => {
     if (!pointerStart) return
     pointerStart = null
     setSwiping(false)
+    setSwiped(false)
     const d = dir
     dir = null
     if (!d) return
@@ -276,6 +281,7 @@ const ToastItem = (props: { entry: Entry; stack: Stack }) => {
         data-front={String(s.index() === 0)}
         data-visible={String(s.index() + 1 <= VISIBLE)}
         data-swiping={String(swiping())}
+        data-swiped={String(swiped())}
         // [K] 6TDKM7BK.jsx:657-670
         role="status"
         tabIndex={0}
@@ -297,6 +303,7 @@ const ToastItem = (props: { entry: Entry; stack: Stack }) => {
           // the opacity is the entrance's and exit's, so those out of sight
           // are hidden by visibility ([S] styles.css:319 uses opacity)
           s.index() + 1 > VISIBLE && "invisible pointer-events-none",
+          swiped() && "select-none",
         )}
         style={{
           translate: `0 ${-lift()}px`,
