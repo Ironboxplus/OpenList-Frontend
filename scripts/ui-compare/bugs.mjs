@@ -2001,7 +2001,8 @@ const viewerProbe = () => {
     if (d) {
       const h = Math.round(d.getBoundingClientRect().height)
       const last = v.heights[v.heights.length - 1]
-      if (!last || last[1] !== h) v.heights.push([Math.round(performance.now() - t0), h])
+      // on the page's clock, as the specs' marks around a run are
+      if (!last || last[1] !== h) v.heights.push([Math.round(performance.now()), h])
     }
     requestAnimationFrame(frame)
   }
