@@ -188,6 +188,9 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
     ro.observe(tbl)
     onCleanup(() => ro.disconnect())
   })
+  // a card that scrolls sideways is the headers' scroll box: stuck at the
+  // top bar's offset inside it they slid over the first rows (820px audit)
+  const sticky = () => (tableScrolls() ? "bg-card" : STICKY)
 
   return (
     <div class={cn("flex w-full flex-col gap-3", props.class)}>
@@ -299,7 +302,7 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
                     <For each={props.columns}>
                       {(col) => (
                         <TableHead
-                          class={cn(STICKY, MIN_COL, col.class)}
+                          class={cn(sticky(), MIN_COL, col.class)}
                           aria-sort={
                             sort()?.id === col.id
                               ? sort()!.dir === 1
@@ -329,7 +332,7 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
                         </TableHead>
                       )}
                     </For>
-                    <TableHead class={cn(STICKY, "w-px text-right")}>
+                    <TableHead class={cn(sticky(), "w-px text-right")}>
                       <span class="sr-only">{t("global.operations")}</span>
                     </TableHead>
                   </TableRow>
