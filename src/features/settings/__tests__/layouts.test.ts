@@ -160,6 +160,29 @@ describe("settings layouts", () => {
     expect(keyed).toEqual([])
   })
 
+  it("names no page the site no longer has (the download and player pages went in P2)", () => {
+    const stale = Object.entries(flat).filter(
+      ([, text]) =>
+        typeof text === "string" &&
+        /\b(download|video|player|preview) (page|view)\b/i.test(text),
+    )
+    expect(stale).toEqual([])
+  })
+
+  it("says what pagination_type chooses: how a big folder is shown, not how long it loads", () => {
+    const label = flat["settings.pagination_type"]
+    expect(label).not.toMatch(/how long|\bload\b/i)
+    expect(label).toMatch(/shown/i)
+  })
+
+  it("says what download-first does now: the small dialog, previews under Open with", () => {
+    for (const key of [
+      "preview_download_by_default",
+      "share_preview_download_by_default",
+    ])
+      expect(flat[`settings.${key}`], key).toMatch(/download.*Open with/)
+  })
+
   it("folds only where there are at least two rare items", () => {
     for (const cards of Object.values(LAYOUTS))
       for (const c of cards!)
