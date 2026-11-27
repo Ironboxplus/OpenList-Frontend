@@ -1024,7 +1024,8 @@ const dialogSelect = (name, opts, open) =>
       if (!after.includes(want)) throw new Error(`${name}: dropdown ${i + 1} shows "${after}" after picking "${want}"`)
     }
   })
-await dialogSelect("dialog-select-share", {}, (p) => ctxEntry(p, MOUNT, "文档", "share"))
+// (the share dialog has no dropdown since P2: its order of the files is one
+// control of buttons and a switch, see share-dialog-order below)
 await dialogSelect("dialog-select-local-settings", {}, async (page) => {
   await go(page, `${MOUNT}/文档`)
   await page.locator("[data-files-more]").click()
@@ -1491,10 +1492,12 @@ await spec("motion-sheet", { ...PHONE, init: overlayProbe, video: true }, async 
 // a dropdown (Select) of a settings form: 120/90 like a menu
 await spec("motion-select", { init: overlayProbe, video: true }, async (env) => {
   const { page } = env
-  await go(page, "/@manage/shares/add", 1500)
-  await page.locator('[data-testid="share-order-group"]').click()
-  await page.waitForTimeout(500)
-  await page.locator("#order_by").click()
+  // a dropdown of a dialog: the local settings (the share form's order of the
+  // files has no dropdown since P2)
+  await go(page, `${MOUNT}/文档`)
+  await page.locator("[data-files-more]").click()
+  await page.getByRole("menuitem", { name: tr("home.toolbar.local_settings") }).first().click()
+  await page.locator('[role="dialog"] button[aria-haspopup="listbox"]').first().click()
   await page.locator('[role="listbox"]').first().waitFor()
   await page.waitForTimeout(500)
   await page.keyboard.press("Escape")
@@ -1870,18 +1873,24 @@ await spec("click-targets-login", {}, async (env) => {
 // ---- P1.3 texts: dropdowns show what an empty choice does; 0 reads as its meaning
 const triggerTexts = (scope) =>
   scope.evaluate((d) => [...d.querySelectorAll('button[aria-haspopup="listbox"]')].map((b) => b.innerText.trim()))
+// The order of the files is one control since P2 (plan §0.2 分享弹窗): its
+// empty choices still read as what they do.
+const ORDER_DEFAULTS = ["shares.extract_folder_default", "shares.order_by_default", "shares.order_direction_default"]
+const orderText = (scope) => scope.locator('[data-testid="share-order"]').first().innerText().catch(() => "")
 await spec("texts-share-dialog", {}, async (env) => {
   const { page } = env
   fire(await ctxEntry(page, MOUNT, "文档", "share"))
   await expectDialog(env, "share")
   const dialog = page.locator('[role="dialog"]').first()
+  await dialog.locator('[data-testid="advanced-page"]').click()
+  await page.waitForTimeout(500)
   const texts = await triggerTexts(dialog)
-  const want = ["shares.extract_folder_default", "shares.order_by_default", "shares.order_direction_default"].map(tr)
+  const order = await orderText(dialog)
   const max = await dialog.locator('input[type="number"]').first().evaluate((i) => ({ value: i.value, placeholder: i.placeholder })).catch(() => null)
-  log("share dialog selects", JSON.stringify({ texts, max }))
+  log("share dialog texts", JSON.stringify({ texts, order, max }))
   const bad = []
   if (texts.some((s) => tr("global.choose").test(s) && s.length < 10)) bad.push(`a dropdown says "${texts.find((s) => tr("global.choose").test(s))}"`)
-  want.forEach((re, i) => !texts.some((s) => re.test(s)) && bad.push(`no dropdown shows ${re}`))
+  for (const k of ORDER_DEFAULTS) if (!tr(k).test(order)) bad.push(`the order of the files does not show ${tr(k)}: "${order}"`)
   if (!max || max.value !== "" || !tr("shares.max_accessed_unlimited").test(max.placeholder)) bad.push(`max visits shows "${max?.value}" / placeholder "${max?.placeholder}", not "Unlimited"`)
   if (bad.length) throw new Error(bad.join("; "))
 })
@@ -1892,14 +1901,45 @@ await spec("texts-share-form", {}, async (env) => {
   await page.locator('[data-testid="share-order-group"]').click()
   await page.waitForTimeout(500)
   const texts = await triggerTexts(page.locator("body"))
+  const order = await orderText(page)
   const max = await page.locator("#max_accessed").evaluate((i) => ({ value: i.value, placeholder: i.placeholder }))
   const expires = await page.locator("#expires").getAttribute("placeholder")
-  log("share form", JSON.stringify({ texts, max, expires }))
+  log("share form", JSON.stringify({ texts, order, max, expires }))
   const bad = []
-  for (const k of ["shares.extract_folder_default", "shares.order_by_default", "shares.order_direction_default"]) if (!texts.some((s) => tr(k).test(s))) bad.push(`no dropdown shows ${tr(k)}`)
+  for (const k of ORDER_DEFAULTS) if (!tr(k).test(order)) bad.push(`the order of the files does not show ${tr(k)}: "${order}"`)
   if (texts.some((s) => tr("global.choose").test(s) && s.length < 10)) bad.push("a dropdown says Choose")
   if (max.value !== "" || !tr("shares.max_accessed_unlimited").test(max.placeholder)) bad.push(`max visits "${max.value}" / "${max.placeholder}"`)
   if (!tr("shares.expires_never").test(expires ?? "")) bad.push(`expires placeholder "${expires}"`)
+  if (bad.length) throw new Error(bad.join("; "))
+})
+
+// The share dialog's order of the files (plan §0.2 分享弹窗): the basis as
+// buttons, the direction beside it, folders on top as a switch; the share made
+// keeps all three. The share's address comes from the link the dialog shows.
+await spec("share-dialog-order", {}, async (env) => {
+  const { page } = env
+  fire(await ctxEntry(page, MOUNT, "文档", "share"))
+  await expectDialog(env, "share")
+  const dialog = page.locator('[role="dialog"]').first()
+  await dialog.locator('[data-testid="advanced-page"]').click()
+  const order = dialog.locator('[data-testid="share-order"]')
+  await order.waitFor({ timeout: 3000 })
+  const direction = order.locator('[data-testid="share-order-direction"]')
+  const bad = []
+  if (!(await direction.isDisabled())) bad.push("the direction can be changed while the order is the storage's own")
+  await order.locator('[data-segment="size"]').click()
+  await direction.click()
+  await order.locator("label").filter({ hasText: tr("shares.extract_folders.front") }).first().click()
+  const mark = await dialog.locator('[data-testid="advanced-page"] [data-testid="changed-mark"]').innerText().catch(() => "")
+  if (!mark.includes("3")) bad.push(`the group does not say 3 changed: "${mark}"`)
+  await dialog.locator('[data-testid="share-create"]').click()
+  const text = await dialog.locator('[data-testid="share-link"]').inputValue({ timeout: 8000 }).catch(() => "")
+  const id = decodeURIComponent(text.match(/\/@s\/([^\s/?#]+)/)?.[1] ?? "")
+  const got = id ? await fetch(OL + `/api/share/get?id=${encodeURIComponent(id)}`, { headers: { Authorization: token } }).then((r) => r.json()) : null
+  const d = got?.data ?? {}
+  log("share dialog order", JSON.stringify({ id, mark, order_by: d.order_by, order_direction: d.order_direction, extract_folder: d.extract_folder }))
+  if (!id) bad.push(`no share link shown: "${text.slice(0, 120)}"`)
+  else if (d.order_by !== "size" || String(d.order_direction).toLowerCase() !== "desc" || d.extract_folder !== "front") bad.push(`the share keeps ${JSON.stringify({ order_by: d.order_by, order_direction: d.order_direction, extract_folder: d.extract_folder })}`)
   if (bad.length) throw new Error(bad.join("; "))
 })
 
@@ -1922,6 +1962,10 @@ const DOCK = '[data-testid="dock"]'
 const DOCK_OPEN = `${DOCK}[data-open="true"]`
 const DOCK_CLOSED = `${DOCK}[data-open="false"]`
 const DOCK_MINI = `${DOCK}[data-mini="true"]`
+/** The closed dock is 0px high: it is never "visible", only there. */
+const closedDock = (page, timeout = 5000) => page.waitForSelector(DOCK_CLOSED, { state: "attached", timeout }).then(() => true, () => false)
+/** The "Playing" mark of a row (the open file's row is also the router's aria-current page). */
+const playingMark = (page, name) => item(page, name).locator('[data-testid="playing-badge"]').count()
 
 // Counts every <movi-player> put into and taken out of the page, every Web
 // Animation that starts (with the data-motion of the element it moves) and the
@@ -2076,7 +2120,7 @@ await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, asyn
   c("the video plays", await playing(page))
   let m = await movi(page)
   c("one movi-player made", m.added === 1 && m.count === 1, m)
-  c("the playing row is marked", (await item(page, V3).getAttribute("aria-current")) === "true")
+  c("the playing row is marked", (await playingMark(page, V3)) === 1 && (await item(page, V3).getAttribute("aria-current")) !== null)
   await settle(page)
   const t1 = await page.evaluate(() => performance.now())
   const opened = dockRun(await page.evaluate(() => window.__viewer.heights), t0, t1)
@@ -2096,7 +2140,7 @@ await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, asyn
   m = await movi(page)
   c("previous switches the source on the same element", switched && m.added === 1 && m.removed === 0, m)
   c("previous replaces the address", pathOf(page) === `${VDIR}/${V2}` && (await histLen(page)) === h1, pathOf(page))
-  c("the mark follows", (await item(page, V2).getAttribute("aria-current")) === "true" && (await item(page, V3).getAttribute("aria-current")) === null)
+  c("the mark follows", (await playingMark(page, V2)) === 1 && (await playingMark(page, V3)) === 0)
   await openRow(page, V1)
   const toV1 = await page.waitForFunction(() => decodeURI(location.pathname).endsWith("01 示例视频.mp4"), undefined, { timeout: 5000 }).then(() => true, () => false)
   c("a click on another video switches, replacing the address", toV1 && (await histLen(page)) === h1)
@@ -2112,7 +2156,7 @@ await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, asyn
   await leaveFullscreen(page)
   const t2 = await page.evaluate(() => performance.now())
   await page.goBack()
-  c("one Back closes the player", await seen(page, DOCK_CLOSED))
+  c("one Back closes the player", await closedDock(page))
   await settle(page)
   const y = await page.evaluate(() => window.scrollY)
   c("Back returns to the folder's address at the scroll it had", pathOf(page) === VDIR && Math.abs(y - 100) < 4, `${pathOf(page)} scrollY=${y}`)
@@ -2127,9 +2171,11 @@ await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, asyn
   c.done()
 })
 
+/** The folder in the list layout (its layout is kept per folder in layoutRecord). */
+const listLayout = () => localStorage.setItem("layoutRecord", JSON.stringify({ "/审计/查看器": "list" }))
 // desktop: at most about 60% of the screen high, 16:9, and five rows of the list in sight under it
 for (const height of [900, 720]) {
-  await spec("viewer-dock-geometry", { height, init: viewerProbe }, async (env) => {
+  await spec("viewer-dock-geometry", { height, init: [viewerProbe, listLayout] }, async (env) => {
     const { page } = env
     const c = checker(env)
     await go(page, VDIR, 1200)
@@ -2276,7 +2322,7 @@ await spec("viewer-doc", { init: viewerProbe, video: true }, async (env) => {
   c("and closes into it: 240ms, emphasized-accelerate", a.some((x) => Math.abs(x.duration - 240) <= 2 && x.easing === ACCEL), a)
   await openRow(page, PDF)
   c("a PDF opens in the document viewer", await seen(page, '[data-testid="doc-viewer"]'))
-  c("and shows the document", await page.locator('[data-testid="doc-viewer"]').locator("iframe, canvas, embed, object").first().waitFor({ timeout: 15000 }).then(() => true, () => false))
+  c("and shows the document", await page.locator('[data-testid="doc-viewer"]').locator("img, canvas, iframe, embed, object").first().waitFor({ timeout: 15000 }).then(() => true, () => false))
   c.done()
 })
 
@@ -2309,7 +2355,7 @@ await spec("viewer-deep-link", { chrome: true, init: viewerProbe }, async (env) 
   c("refresh opens it again", (await seen(page, DOCK_OPEN, 15000)) && ((await page.locator('[data-testid="dock-title"]').textContent().catch(() => "")) ?? "").trim() === V2)
   const h = await histLen(page)
   await page.locator('[data-testid="dock-close"]').click()
-  c("closing it replaces the address with the folder's", (await seen(page, DOCK_CLOSED)) && pathOf(page) === VDIR && (await histLen(page)) === h, `${pathOf(page)} history ${h}→${await histLen(page)}`)
+  c("closing it replaces the address with the folder's", (await closedDock(page)) && pathOf(page) === VDIR && (await histLen(page)) === h, `${pathOf(page)} history ${h}→${await histLen(page)}`)
   await page.goto(OL + encodeURI(`${VDIR}/${IMG1}`), { waitUntil: "domcontentloaded" })
   c("a link to an image opens the image viewer over its folder", (await seen(page, '[data-testid="viewer-image"]', 15000)) && (await page.locator(".viselect-item").count()) > 10)
   c.done()
@@ -2328,6 +2374,8 @@ await spec("viewer-downloads", { init: viewerProbe }, async (env) => {
   d = await downloadOf(page, () => page.locator('[role="menu"] [data-action="download"]').first().click({ timeout: 3000 }))
   c("the right-click menu", d.name === TEXT && !d.newTab, d)
   await page.keyboard.press("Escape")
+  // the right-click selected the text file: the selection bar starts from nothing
+  await page.locator('[data-action="cancel_select"]').click({ timeout: 2000 }).catch(() => {})
   await selectRows(page, PDF, false)
   d = await downloadOf(page, () => page.locator('[data-selection-bar] [data-action="download"]').click({ timeout: 3000 }))
   c("the selection bar, one file", d.name === PDF && !d.newTab, d)
@@ -2394,7 +2442,7 @@ await spec("viewer-more-menu", { init: viewerProbe }, async (env) => {
   for (const a of ["copy_link", "qr_code", "open_with", "players", "mpv_command", "info", "share"]) c(`the player's More has ${a}`, actions.includes(a), actions)
   await page.keyboard.press("Escape")
   await page.locator('[data-testid="dock-close"]').click()
-  await seen(page, DOCK_CLOSED)
+  await closedDock(page)
   await openRow(page, TEXT)
   await seen(page, '[data-testid="doc-viewer"]')
   await page.locator('[data-testid="viewer-more"]').click()
@@ -2415,11 +2463,29 @@ await spec("viewer-single-file-share", { init: viewerProbe }, async (env) => {
   }).then((r) => r.json())
   const id = created?.data?.id
   if (!id) throw new Error(`could not create a share: ${JSON.stringify(created)}`)
+  // shares preview only when the site lets them (share_preview, off by
+  // default): on for this spec, then back as it was
+  const setting = async (key, value) => {
+    const got = await fetch(OL + `/api/admin/setting/get?key=${key}`, { headers: { Authorization: token } }).then((r) => r.json())
+    const before = got?.data?.value
+    await fetch(OL + "/api/admin/setting/save", { method: "POST", headers: { Authorization: token, "Content-Type": "application/json" }, body: JSON.stringify([{ ...got.data, value }]) })
+    return before
+  }
+  const was = await setting("share_preview", "true")
+  try {
+    await page.goto(OL + `/@s/${id}`, { waitUntil: "domcontentloaded" })
+    c("the shared file opens in the document viewer", await seen(page, '[data-testid="doc-viewer"]', 15000))
+    c("with its text", await page.getByText("第 1 行").first().waitFor({ timeout: 10000 }).then(() => true, () => false))
+    const d = await downloadOf(page, () => page.locator('[data-testid="viewer-download"]').click())
+    c("and downloads under its name", d.name === TEXT && !d.newTab, d)
+  } finally {
+    await setting("share_preview", was ?? "false")
+  }
+  // with previews off, the same share offers the file in the small dialog
   await page.goto(OL + `/@s/${id}`, { waitUntil: "domcontentloaded" })
-  c("the shared file opens in the document viewer", await seen(page, '[data-testid="doc-viewer"]', 15000))
-  c("with its text", await page.getByText("第 1 行").first().waitFor({ timeout: 10000 }).then(() => true, () => false))
-  const d = await downloadOf(page, () => page.locator('[data-testid="viewer-download"]').click())
-  c("and downloads under its name", d.name === TEXT && !d.newTab, d)
+  c("previews off: the small dialog", await seen(page, '[data-testid="unknown-dialog"]', 15000))
+  const d2 = await downloadOf(page, () => page.locator('[data-testid="unknown-download"]').click())
+  c("which downloads under its name", d2.name === TEXT && !d2.newTab, d2)
   c.done()
 })
 
@@ -2440,7 +2506,7 @@ await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, asy
   c("the dock opens", await seen(page, DOCK_OPEN))
   await settle(page)
   await page.locator('[data-testid="dock-close"]').click()
-  await seen(page, DOCK_CLOSED)
+  await closedDock(page)
   await settle(page)
   const ours = (await anims(page)).filter((a) => a.iterations !== Infinity && /^(viewer-|doc-|dock|unknown|dialog|scrim)/.test(a.motion))
   const heights = await page.evaluate(() => window.__viewer.heights)
@@ -2451,7 +2517,8 @@ await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, asy
   const moving = ours.filter((a) => a.props.some((p) => p !== "opacity"))
   c("none moves or clips", moving.length === 0, moving)
   // the dock's height jumps: no frame between closed and open
-  const between = heights.filter((h, i) => i > 0 && h[1] > 0 && i < heights.length - 1 && heights[i + 1][1] !== h[1] && heights[i - 1][1] !== h[1])
+  const full = Math.max(0, ...heights.map((h) => h[1]))
+  const between = heights.filter((h) => h[1] > 0 && h[1] < full)
   c("the dock's height does not run", between.length === 0, heights)
   c.done()
 })
