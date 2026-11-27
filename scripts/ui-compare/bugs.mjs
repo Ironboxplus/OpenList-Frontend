@@ -2862,11 +2862,29 @@ for (const phone of [false, true]) await spec("p4-toast-stack", phone ? { width:
   await go(page, `${MOUNT}/文档`, 1200)
   // four notices through the UI: a link copied from the batch menu, four times
   await selectRows(page, "笔记.txt", phone)
+  // on a phone the submenu comes up where the earlier toasts are: the menu,
+  // just opened, is drawn over them and takes the tap (run 46014711932: a
+  // toast behind the front one took it and the menu closed)
+  const under = []
   for (let i = 0; i < 4; i++) {
     await page.locator(phone ? '[data-batch="more"]' : '[data-selection-bar] [data-action="batch-more"]').click()
     await page.getByRole("menuitem", { name: tr("home.toolbar.copy_link") }).click()
-    await page.getByRole("menuitem", { name: tr("home.toolbar.down_link") }).click()
+    const item = page.getByRole("menuitem", { name: tr("home.toolbar.down_link") })
+    await item.waitFor()
+    await settle(page)
+    const ib = await item.boundingBox()
+    const top = await page.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y)
+      return el?.closest('[role="menuitem"]') ? "" : (el?.closest("[data-motion]")?.getAttribute("data-motion") ?? el?.tagName ?? "none")
+    }, [ib.x + ib.width / 2, ib.y + ib.height / 2])
+    if (top) {
+      under.push(`${i}:${top}`)
+      break
+    }
+    await item.click()
   }
+  c("the open menu is over the toasts", under.length === 0, under)
+  if (under.length) return c.done()
   const items = page.locator('[data-motion="toast"]')
   // each copy says so once the clipboard has it: the last may come a moment later
   await page.waitForFunction(() => document.querySelectorAll('[data-motion="toast"]').length >= 4, null, { timeout: 3000 }).catch(() => {})
