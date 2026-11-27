@@ -121,6 +121,9 @@ for v in "testsrc2=size=1280x720:rate=24" "smptehdbars=size=1280x720:rate=24" "m
   i=$((i+1))
   ffmpeg -loglevel error -f lavfi -i "$v" -f lavfi -i "sine=frequency=$((220*i))" -t 12 -c:v libx264 -pix_fmt yuv420p -g 48 -c:a aac -shortest "$V/0${i} 示例视频.mp4"
 done
+# a sidecar subtitle for the first video only: switching to the second must
+# take its <track> away (P2: old tracks go before new ones come)
+printf '1\n00:00:00,500 --> 00:00:10,000\n第一个视频的字幕\n' > "$V/01 示例视频.srt"
 for spec in "1:1600x1000" "2:1000x1500" "3:1200x1200" "4:1920x1080" "5:900x1350" "6:1600x900"; do
   ffmpeg -loglevel error -f lavfi -i "gradients=s=${spec#*:}:seed=$((${spec%%:*}+20)):n=5" -frames:v 1 "$V/照片_0${spec%%:*}.jpg"
 done

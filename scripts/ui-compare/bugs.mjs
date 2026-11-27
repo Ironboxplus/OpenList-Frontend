@@ -15,6 +15,15 @@ const out = process.argv[2]
 fs.mkdirSync(out, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const browser = await chromium.launch()
+// Video plays in the system Chrome: movi decodes H.264 through WebCodecs, which
+// the bundled Chromium builds without (no proprietary codecs)
+const AUTOPLAY = ["--autoplay-policy=no-user-gesture-required"]
+let chromeBrowser
+const systemChrome = async () =>
+  (chromeBrowser ??= await chromium.launch({ channel: "chrome", args: AUTOPLAY }).catch((e) => {
+    log("no system Chrome, using the bundled Chromium:", String(e?.message || e).split("\n")[0])
+    return chromium.launch({ args: AUTOPLAY })
+  }))
 const { token, ids, shares } = await seed(out)
 
 const results = []
@@ -24,10 +33,12 @@ const only = process.env.BUGS_FILTER ? new RegExp(process.env.BUGS_FILTER) : nul
 async function spec(name, opts, fn) {
   if (only && !only.test(name)) return
   const { width = 1440, height = 900, theme = "light", reducedMotion = "no-preference" } = opts
-  const id = `${name}.${width}.${theme}${reducedMotion === "reduce" ? ".reduced" : ""}`
+  const id = `${name}.${width}${height !== 900 && width === 1440 ? `x${height}` : ""}.${theme}${reducedMotion === "reduce" ? ".reduced" : ""}`
   // a recording for the user to watch (P1 gate: dialog, sheet, menu, dropdown, collapsible)
   const video = opts.video ? { recordVideo: { dir: path.join(out, "video-tmp"), size: { width, height } } } : {}
-  const ctx = await browser.newContext({ viewport: { width, height }, locale: "zh-CN", colorScheme: theme, reducedMotion, ...video })
+  const touch = opts.touch ? { hasTouch: true, isMobile: true } : {}
+  const b = opts.chrome ? await systemChrome() : browser
+  const ctx = await b.newContext({ viewport: { width, height }, locale: "zh-CN", colorScheme: theme, reducedMotion, ...touch, ...video })
   await ctx.addInitScript((t) => localStorage.setItem("token", t), token)
   for (const init of [].concat(opts.init ?? [])) await ctx.addInitScript(init)
   // every focus() call is counted with its target: two focus handlers pulling
@@ -1892,8 +1903,562 @@ await spec("texts-share-form", {}, async (env) => {
   if (bad.length) throw new Error(bad.join("; "))
 })
 
+// ---- P2 the viewer and downloads (docs/PLAN_FE_SYSTEM_UX_1127.md P2). The
+// prototype's 41 checks (scripts/ui-compare/viewer-proto.mjs, run 45866187867)
+// on the product's own file pages: a file opens over its folder (the docked
+// player for video, viewers for the rest), the address follows, and every file
+// downloads from where it is listed.
+const VDIR = `${MOUNT}/查看器`
+const SEASON = `${MOUNT}/媒体库/剧集乙 (2021)/Season 1`
+const V1 = "01 示例视频.mp4"
+const V2 = "02 示例视频.mp4"
+const V3 = "03 示例视频.mp4"
+const IMG1 = "照片_01.jpg"
+const IMG2 = "照片_02.jpg"
+const TEXT = "长文本.txt"
+const PDF = "报告.pdf"
+const UNKNOWN = "数据.bin"
+const DOCK = '[data-testid="dock"]'
+const DOCK_OPEN = `${DOCK}[data-open="true"]`
+const DOCK_CLOSED = `${DOCK}[data-open="false"]`
+const DOCK_MINI = `${DOCK}[data-mini="true"]`
+
+// Counts every <movi-player> put into and taken out of the page, every Web
+// Animation that starts (with the data-motion of the element it moves) and the
+// docked player's height per frame (its height runs on Motion's JS clock).
+const viewerProbe = () => {
+  const v = (window.__viewer = { added: 0, removed: 0, anims: [], heights: [] })
+  const movi = (n) => n.nodeType === 1 && (n.localName === "movi-player" || !!n.querySelector?.("movi-player"))
+  new MutationObserver((ms) => {
+    for (const m of ms) {
+      for (const n of m.addedNodes) if (movi(n)) v.added++
+      for (const n of m.removedNodes) if (movi(n)) v.removed++
+    }
+  }).observe(document, { childList: true, subtree: true })
+  const seen = new WeakSet()
+  const t0 = performance.now()
+  const frame = () => {
+    for (const a of document.getAnimations()) {
+      if (seen.has(a)) continue
+      seen.add(a)
+      const el = a.effect?.target
+      const kf = a.effect?.getKeyframes?.() ?? []
+      const tm = a.effect?.getTiming?.() ?? {}
+      v.anims.push({
+        at: Math.round(performance.now() - t0),
+        motion: el?.closest?.("[data-motion]")?.getAttribute("data-motion") ?? el?.localName ?? "",
+        duration: Number(tm.duration),
+        iterations: Number(tm.iterations),
+        easing: String(tm.easing).replace(/\s+/g, ""),
+        props: [...new Set(kf.flatMap((f) => Object.keys(f)))].filter((p) => !["offset", "easing", "composite", "computedOffset"].includes(p)),
+      })
+    }
+    const d = document.querySelector('[data-testid="dock"]')
+    if (d) {
+      const h = Math.round(d.getBoundingClientRect().height)
+      const last = v.heights[v.heights.length - 1]
+      if (!last || last[1] !== h) v.heights.push([Math.round(performance.now() - t0), h])
+    }
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+}
+/** Checks of one spec, all run; the spec fails with the list of those that did not hold. */
+const checker = (env) => {
+  const list = []
+  const c = (name, ok, detail) => {
+    list.push({ name, ok: !!ok, ...(detail === undefined ? {} : { detail: typeof detail === "string" ? detail : JSON.stringify(detail) }) })
+    log(ok ? "  ok" : "  NO", name, detail === undefined ? "" : typeof detail === "string" ? detail : JSON.stringify(detail))
+  }
+  c.done = () => {
+    env.report = { ...(env.report ?? {}), checks: list }
+    const bad = list.filter((x) => !x.ok)
+    if (bad.length) throw new Error(`${bad.length}/${list.length} checks failed: ${bad.map((x) => `${x.name}${x.detail ? ` (${x.detail.slice(0, 160)})` : ""}`).join("; ")}`)
+  }
+  return c
+}
+const pathOf = (page) => decodeURI(new URL(page.url()).pathname)
+const histLen = (page) => page.evaluate(() => history.length)
+const seen = (page, sel, timeout = 5000) => page.waitForSelector(sel, { timeout }).then(() => true, () => false)
+const gone = (page, sel, timeout = 5000) => page.waitForSelector(sel, { state: "detached", timeout }).then(() => true, () => false)
+/** Finite animations have ended (movi's spinners run forever). */
+const settle = (page) =>
+  page
+    .waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity), undefined, { timeout: 15000 })
+    .catch(() => log("animations still running after 15s"))
+const scrollY = (page, y) =>
+  page.evaluate((y) => new Promise((done) => {
+    window.scrollTo(0, y)
+    // the IntersectionObserver reports in the frames after the scroll
+    requestAnimationFrame(() => requestAnimationFrame(() => done()))
+  }), y)
+const movi = (page) =>
+  page.evaluate(() => {
+    const all = document.querySelectorAll("movi-player")
+    const el = all[0]
+    return {
+      count: all.length,
+      added: window.__viewer?.added ?? -1,
+      removed: window.__viewer?.removed ?? -1,
+      src: el ? el.getAttribute("src") || [...el.querySelectorAll("source")].map((s) => s.getAttribute("src")).join("|") : "",
+      tracks: el ? el.querySelectorAll("track").length : 0,
+      fullscreen: !!el && document.fullscreenElement === el,
+      t: el?.currentTime ?? 0,
+    }
+  })
+const playing = (page) =>
+  page.waitForFunction(() => (document.querySelector("movi-player")?.currentTime ?? 0) > 0.3, undefined, { timeout: 60000 }).then(() => true, () => false)
+const srcChanged = (page, from, timeout = 10000) =>
+  page
+    .waitForFunction((from) => {
+      const el = document.querySelector("movi-player")
+      const now = el ? el.getAttribute("src") || [...el.querySelectorAll("source")].map((s) => s.getAttribute("src")).join("|") : ""
+      return now && now !== from
+    }, from, { timeout })
+    .then(() => true, () => false)
+async function fullscreenOn(page) {
+  await page.locator("movi-player").hover()
+  try {
+    await page.locator("movi-player .movi-fullscreen-btn").click({ force: true, timeout: 5000 })
+  } catch {
+    await page.evaluate(() => document.querySelector("movi-player")?.focus())
+    await page.keyboard.press("f")
+  }
+  return page.waitForFunction(() => !!document.fullscreenElement && document.fullscreenElement === document.querySelector("movi-player"), undefined, { timeout: 10000 }).then(() => true, () => false)
+}
+const leaveFullscreen = async (page) => {
+  await page.evaluate(() => document.fullscreenElement && document.exitFullscreen())
+  await page.waitForFunction(() => !document.fullscreenElement).catch(() => {})
+}
+/** The download one action starts: its file name, and whether a tab opened for it. */
+const downloadOf = async (page, act) => {
+  const before = page.context().pages().length
+  try {
+    const [d] = await Promise.all([page.waitForEvent("download", { timeout: 15000 }), act()])
+    return { name: d.suggestedFilename(), newTab: page.context().pages().length !== before }
+  } catch (e) {
+    return { error: String(e?.message || e).split("\n")[0], newTab: page.context().pages().length !== before }
+  }
+}
+const anims = (page) => page.evaluate(() => window.__viewer?.anims ?? [])
+/** The run of the docked player's height between two times: from its last resting height to where it settled. */
+const dockRun = (heights, from, to) => {
+  // heights holds changes only: the one before the window is where it rested
+  const before = heights.filter((h) => h[0] < from).pop()
+  const span = heights.filter((h) => h[0] >= from && h[0] <= to)
+  if (span.length < 3) return null
+  const end = span[span.length - 1]
+  // the first change shows a frame after the run began
+  return { ran: end[0] - span[0][0] + 16, from: before ? before[1] : null, to: end[1], frames: span.length }
+}
+/** Clicks a row of the list by the file's name (the row itself, not its thumbnail). */
+const openRow = async (page, name) => {
+  const r = item(page, name)
+  await r.scrollIntoViewIfNeeded()
+  const box = await r.boundingBox()
+  if (!box) throw new Error(`no row ${name}`)
+  // the right part of the name column: away from the thumbnail and the checkbox
+  await page.mouse.click(box.x + box.width * 0.45, box.y + box.height / 2)
+}
+
+await spec("viewer-dock", { chrome: true, init: viewerProbe, video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  // scrolled a little: Back must bring the list back to this position
+  await scrollY(page, 100)
+  const h0 = await histLen(page)
+  const t0 = await page.evaluate(() => performance.now())
+  await openRow(page, V3)
+  c("a video opens the docked player", await seen(page, DOCK_OPEN))
+  c("opening pushes /<dir>/<file>", pathOf(page) === `${VDIR}/${V3}` && (await histLen(page)) === h0 + 1, `${pathOf(page)} history ${h0}→${await histLen(page)}`)
+  c("the folder stays listed below the player", (await page.locator(".viselect-item").count()) > 10)
+  c("the video plays", await playing(page))
+  let m = await movi(page)
+  c("one movi-player made", m.added === 1 && m.count === 1, m)
+  c("the playing row is marked", (await item(page, V3).getAttribute("aria-current")) === "true")
+  await settle(page)
+  const t1 = await page.evaluate(() => performance.now())
+  const opened = dockRun(await page.evaluate(() => window.__viewer.heights), t0, t1)
+  await scrollY(page, 1200)
+  c("scrolled away: the dock shrinks to the mini window", await seen(page, DOCK_MINI))
+  m = await movi(page)
+  c("shrinking does not remount the player", m.added === 1 && m.removed === 0 && m.count === 1, m)
+  c("fullscreen from the mini window", await fullscreenOn(page))
+  await leaveFullscreen(page)
+  await scrollY(page, 0)
+  await settle(page)
+  c("scrolled back: the dock grows back", await seen(page, `${DOCK}[data-mini="false"]`))
+  const h1 = await histLen(page)
+  const src1 = (await movi(page)).src
+  await page.locator('[data-testid="dock-prev"]').click()
+  const switched = await srcChanged(page, src1)
+  m = await movi(page)
+  c("previous switches the source on the same element", switched && m.added === 1 && m.removed === 0, m)
+  c("previous replaces the address", pathOf(page) === `${VDIR}/${V2}` && (await histLen(page)) === h1, pathOf(page))
+  c("the mark follows", (await item(page, V2).getAttribute("aria-current")) === "true" && (await item(page, V3).getAttribute("aria-current")) === null)
+  await openRow(page, V1)
+  const toV1 = await page.waitForFunction(() => decodeURI(location.pathname).endsWith("01 示例视频.mp4"), undefined, { timeout: 5000 }).then(() => true, () => false)
+  c("a click on another video switches, replacing the address", toV1 && (await histLen(page)) === h1)
+  await page.locator("body").press("Shift+N")
+  c("Shift+N goes to the next video", await page.waitForFunction(() => decodeURI(location.pathname).endsWith("02 示例视频.mp4"), undefined, { timeout: 5000 }).then(() => true, () => false))
+  c("fullscreen from the dock", await fullscreenOn(page))
+  const srcFs = (await movi(page)).src
+  await page.evaluate(() => document.querySelector("movi-player")?.focus())
+  await page.keyboard.press("Shift+N")
+  const fsSwitched = await srcChanged(page, srcFs)
+  m = await movi(page)
+  c("Shift+N in fullscreen switches the video and stays fullscreen", fsSwitched && m.fullscreen && m.added === 1, m)
+  await leaveFullscreen(page)
+  const t2 = await page.evaluate(() => performance.now())
+  await page.goBack()
+  c("one Back closes the player", await seen(page, DOCK_CLOSED))
+  await settle(page)
+  const y = await page.evaluate(() => window.scrollY)
+  c("Back returns to the folder's address at the scroll it had", pathOf(page) === VDIR && Math.abs(y - 100) < 4, `${pathOf(page)} scrollY=${y}`)
+  m = await movi(page)
+  c("closing keeps the same player element", m.added === 1 && m.removed === 0 && m.count === 1, m)
+  const heights = await page.evaluate(() => window.__viewer.heights)
+  const closed = dockRun(heights, t2, Infinity)
+  env.report = { ...(env.report ?? {}), dockOpen: opened, dockClose: closed }
+  // the height runs on Motion's JS clock: measured by frame, within two frames
+  c("the dock opens in 500ms", opened && opened.from === 0 && Math.abs(opened.ran - 500) <= 50, opened)
+  c("the dock closes in 200ms", closed && closed.to === 0 && Math.abs(closed.ran - 200) <= 50, closed)
+  c.done()
+})
+
+// desktop: at most about 60% of the screen high, 16:9, and five rows of the list in sight under it
+for (const height of [900, 720]) {
+  await spec("viewer-dock-geometry", { height, init: viewerProbe }, async (env) => {
+    const { page } = env
+    const c = checker(env)
+    await go(page, VDIR, 1200)
+    await openRow(page, V1)
+    c("the dock opens", await seen(page, DOCK_OPEN))
+    await settle(page)
+    const g = await page.evaluate(() => {
+      const f = document.querySelector('[data-testid="dock-frame"]')?.getBoundingClientRect()
+      if (!f) return null
+      const rows = [...document.querySelectorAll(".viselect-item")].map((r) => r.getBoundingClientRect()).filter((r) => r.height > 0 && r.top >= f.bottom && r.bottom <= innerHeight)
+      return { w: Math.round(f.width), h: Math.round(f.height), vh: innerHeight, rows: rows.length }
+    })
+    c("the player is at most 60% of the window high", g && g.h <= Math.ceil(g.vh * 0.6) + 1, g)
+    c("the player is 16:9", g && Math.abs(g.w / g.h - 16 / 9) < 0.02, g)
+    c("five rows of the list show under it", g && g.rows >= 5, g)
+    c.done()
+  })
+}
+
+// a video deep in the list opens where the list is, as the mini window; the
+// window floats top right and can be dragged; "back to the player" grows it
+const reverseByName = () => localStorage.setItem("dir_sort_/审计/查看器", JSON.stringify({ orderBy: "name", reverse: true }))
+await spec("viewer-dock-deep", { chrome: true, init: [viewerProbe, reverseByName], video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await page.waitForTimeout(300)
+  const top0 = (await item(page, V2).boundingBox())?.y
+  const h0 = await histLen(page)
+  await openRow(page, V2)
+  c("a click deep in the list opens the mini window", await seen(page, DOCK_MINI))
+  c("and pushes the file's address", pathOf(page) === `${VDIR}/${V2}` && (await histLen(page)) === h0 + 1, pathOf(page))
+  await settle(page)
+  const top1 = (await item(page, V2).boundingBox())?.y
+  c("the list stays where it was", top0 !== undefined && top1 !== undefined && Math.abs(top1 - top0) < 4, { top0, top1 })
+  const box = await page.locator('[data-testid="dock-frame"]').boundingBox()
+  const vw = await page.evaluate(() => innerWidth)
+  c("the mini window floats in the top right corner", box && box.x + box.width > vw - 80 && box.y < 200 && box.width <= 420, box)
+  const bar = await page.locator('[data-testid="mini-bar"] [data-drag]').boundingBox()
+  if (bar && box) {
+    await page.mouse.move(bar.x + 10, bar.y + bar.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(bar.x - 290, bar.y + 210, { steps: 8 })
+    await page.mouse.up()
+  }
+  const moved = await page.locator('[data-testid="dock-frame"]').boundingBox()
+  c("the mini window can be dragged", box && moved && Math.abs(moved.x - (box.x - 300)) < 20 && Math.abs(moved.y - (box.y + 210)) < 20, { box, moved })
+  await page.locator('[data-testid="mini-expand"]').click()
+  await settle(page)
+  c("back to the player grows it at the top", (await seen(page, `${DOCK}[data-mini="false"]`)) && (await page.evaluate(() => window.scrollY)) < 200)
+  const m = await movi(page)
+  c("the same player throughout", m.added === 1 && m.removed === 0, m)
+  c.done()
+})
+
+// phone: the mini window is a 72px bar under the top bar
+await spec("viewer-dock-phone", { ...PHONE, touch: true, init: viewerProbe, video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await openRow(page, V1)
+  c("the dock opens", await seen(page, DOCK_OPEN))
+  await settle(page)
+  await scrollY(page, 1400)
+  c("scrolled away: the mini bar", await seen(page, DOCK_MINI))
+  await settle(page)
+  const g = await page.evaluate(() => {
+    const f = document.querySelector('[data-testid="dock-frame"]')?.getBoundingClientRect()
+    const top = parseFloat(getComputedStyle(document.querySelector("[data-shell-frame]")).getPropertyValue("--shell-top")) || 0
+    return f ? { top: Math.round(f.top), h: Math.round(f.height), w: Math.round(f.width), vw: innerWidth, shellTop: top } : null
+  })
+  c("72px high, full width, under the top bar", g && g.h === 72 && g.w >= g.vw - 1 && Math.abs(g.top - g.shellTop) <= 2, g)
+  c.done()
+})
+
+// images: a FLIP out of the row, 320ms open / 240ms close on the emphasized
+// curves, a 95% black scrim; → switches and replaces the address; closing is Back
+await spec("viewer-image", { init: viewerProbe, video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  const h0 = await histLen(page)
+  await openRow(page, IMG1)
+  c("an image opens the image viewer", await seen(page, '[data-testid="viewer-image"]'))
+  c("opening pushes the image's address", pathOf(page) === `${VDIR}/${IMG1}` && (await histLen(page)) === h0 + 1, pathOf(page))
+  await settle(page)
+  const scrim = await page.locator('[data-motion="viewer-scrim"]').evaluate((e) => getComputedStyle(e).backgroundColor).catch(() => null)
+  c("the scrim is 95% black", scrim === "rgba(0, 0, 0, 0.95)", scrim)
+  await page.keyboard.press("ArrowRight")
+  c("→ shows the next image", await page.waitForFunction(() => document.querySelector('[data-testid="image-index"]')?.textContent?.trim().startsWith("2 /"), undefined, { timeout: 5000 }).then(() => true, () => false))
+  c("→ replaces the address", pathOf(page) === `${VDIR}/${IMG2}` && (await histLen(page)) === h0 + 1, pathOf(page))
+  await settle(page)
+  const d = await downloadOf(page, () => page.locator('[data-testid="viewer-download"]').click())
+  c("the viewer's download saves the image in this tab", d.name === IMG2 && !d.newTab, d)
+  await page.keyboard.press("Escape")
+  c("the first Escape closes it", await gone(page, '[data-testid="image-viewer"]'))
+  c("closing goes back to the folder's address (Back, not a new entry)", pathOf(page) === VDIR && (await page.evaluate(() => !history.state?.opened)), pathOf(page))
+  const a = (await anims(page)).filter((x) => x.motion === "viewer-image" && x.props.includes("transform"))
+  env.report = { ...(env.report ?? {}), image: a }
+  const open = a.find((x) => Math.abs(x.duration - 320) <= 2)
+  const close = a.find((x) => Math.abs(x.duration - 240) <= 2)
+  c("it opens out of its row: a transform for 320ms, emphasized-decelerate", open && open.easing === DECEL, a)
+  c("and closes into it: 240ms, emphasized-accelerate", close && close.easing === ACCEL, a)
+  c.done()
+})
+await spec("viewer-image-swipe", { ...PHONE, touch: true, init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await openRow(page, IMG1)
+  c("the image viewer opens", await seen(page, '[data-testid="viewer-image"]'))
+  await settle(page)
+  await page.evaluate(() => {
+    const st = document.querySelector('[data-testid="image-stage"]')
+    const r = st.getBoundingClientRect()
+    const y = r.top + r.height / 2
+    const ev = (type, x) => st.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 7, pointerType: "touch", clientX: x, clientY: y, isPrimary: true }))
+    ev("pointerdown", r.right - 40)
+    for (let x = r.right - 60; x > r.left + 60; x -= 40) ev("pointermove", x)
+    ev("pointerup", r.left + 60)
+  })
+  c("a swipe goes to the next image", await page.waitForFunction(() => document.querySelector('[data-testid="image-index"]')?.textContent?.trim().startsWith("2 /"), undefined, { timeout: 5000 }).then(() => true, () => false))
+  c.done()
+})
+
+// text and PDF: a window that opens out of the row (clip-path, 320ms); the
+// window has the focus, so the first Escape closes it
+await spec("viewer-doc", { init: viewerProbe, video: true }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await openRow(page, TEXT)
+  c("text opens in the document viewer", await seen(page, '[data-testid="doc-viewer"]'))
+  c("with the text in it", await page.getByText("第 1 行").first().waitFor({ timeout: 10000 }).then(() => true, () => false))
+  c("at the file's address", pathOf(page) === `${VDIR}/${TEXT}`, pathOf(page))
+  await settle(page)
+  await page.keyboard.press("Escape")
+  c("the first Escape closes it", await gone(page, '[data-testid="doc-viewer"]'))
+  c("back at the folder's address", pathOf(page) === VDIR, pathOf(page))
+  const a = (await anims(page)).filter((x) => x.motion === "doc-panel" && x.props.includes("clipPath"))
+  env.report = { ...(env.report ?? {}), doc: a }
+  c("it opens out of its row: clip-path for 320ms, emphasized-decelerate", a.some((x) => Math.abs(x.duration - 320) <= 2 && x.easing === DECEL), a)
+  c("and closes into it: 240ms, emphasized-accelerate", a.some((x) => Math.abs(x.duration - 240) <= 2 && x.easing === ACCEL), a)
+  await openRow(page, PDF)
+  c("a PDF opens in the document viewer", await seen(page, '[data-testid="doc-viewer"]'))
+  c("and shows the document", await page.locator('[data-testid="doc-viewer"]').locator("iframe, canvas, embed, object").first().waitFor({ timeout: 15000 }).then(() => true, () => false))
+  c.done()
+})
+
+// a type nothing shows: a small dialog with download, external players and the link
+await spec("viewer-unknown", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await openRow(page, UNKNOWN)
+  c("a file nothing previews opens the small dialog", await seen(page, '[data-testid="unknown-dialog"]'))
+  c("no download page", (await page.locator(".fileinfo").count()) === 0)
+  const d = await downloadOf(page, () => page.locator('[data-testid="unknown-download"]').click())
+  c("its download saves the file in this tab", d.name === UNKNOWN && !d.newTab, d)
+  c("it offers external players and the link", (await page.locator('[data-testid="unknown-dialog"] [data-action="players"]').count()) === 1 && (await page.locator('[data-testid="unknown-dialog"] [data-action="copy_link"]').count()) === 1)
+  await page.keyboard.press("Escape")
+  c("the first Escape closes it", await gone(page, '[data-testid="unknown-dialog"]'))
+  c.done()
+})
+
+// refresh and links to a file: the folder first, then the file over it; closing
+// a file that was linked to replaces its address with the folder's
+await spec("viewer-deep-link", { chrome: true, init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await page.goto(OL + encodeURI(`${VDIR}/${V2}`), { waitUntil: "domcontentloaded" })
+  const opened = await seen(page, DOCK_OPEN, 15000)
+  c("a link to a video opens the dock over its folder", opened && (await page.locator(".viselect-item").count()) > 10)
+  c("on that video", ((await page.locator('[data-testid="dock-title"]').textContent().catch(() => "")) ?? "").trim() === V2)
+  await page.reload({ waitUntil: "domcontentloaded" })
+  c("refresh opens it again", (await seen(page, DOCK_OPEN, 15000)) && ((await page.locator('[data-testid="dock-title"]').textContent().catch(() => "")) ?? "").trim() === V2)
+  const h = await histLen(page)
+  await page.locator('[data-testid="dock-close"]').click()
+  c("closing it replaces the address with the folder's", (await seen(page, DOCK_CLOSED)) && pathOf(page) === VDIR && (await histLen(page)) === h, `${pathOf(page)} history ${h}→${await histLen(page)}`)
+  await page.goto(OL + encodeURI(`${VDIR}/${IMG1}`), { waitUntil: "domcontentloaded" })
+  c("a link to an image opens the image viewer over its folder", (await seen(page, '[data-testid="viewer-image"]', 15000)) && (await page.locator(".viselect-item").count()) > 10)
+  c.done()
+})
+
+// downloads from the list: the row's button, the right-click menu and the
+// selection bar save one file in this tab; two files go as one package
+await spec("viewer-downloads", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await item(page, TEXT).hover()
+  let d = await downloadOf(page, () => item(page, TEXT).locator('[data-testid="row-download"]').click({ timeout: 3000 }))
+  c("the row's download button", d.name === TEXT && !d.newTab, d)
+  await item(page, TEXT).click({ button: "right" })
+  d = await downloadOf(page, () => page.locator('[role="menu"] [data-action="download"]').first().click({ timeout: 3000 }))
+  c("the right-click menu", d.name === TEXT && !d.newTab, d)
+  await page.keyboard.press("Escape")
+  await selectRows(page, PDF, false)
+  d = await downloadOf(page, () => page.locator('[data-selection-bar] [data-action="download"]').click({ timeout: 3000 }))
+  c("the selection bar, one file", d.name === PDF && !d.newTab, d)
+  await selectRows(page, TEXT, false)
+  await page.locator('[data-selection-bar] [data-action="download"]').click({ timeout: 3000 }).catch(() => {})
+  c("two files go as one package", await page.getByText(tr("home.package_download.current_status")).first().waitFor({ timeout: 5000 }).then(() => true, () => false))
+  // Known gap (§0.3-1, awaiting the user): a storage whose /d answers with a
+  // 302 to another origin (115 and the like) cannot be saved under its name
+  // from the page; a[download] is ignored across origins, so the browser opens
+  // the file in a new tab as before. CI has no such storage.
+  env.report = { ...(env.report ?? {}), knownGap: "cross-origin 302 downloads keep the CDN's name and open a tab (plan §0.3-1, backend change not approved)" }
+  c.done()
+})
+
+// a sidecar subtitle comes with its video and goes with it
+await spec("viewer-subtitles", { chrome: true, init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await openRow(page, V1)
+  c("the dock opens", await seen(page, DOCK_OPEN))
+  const withSub = await page.waitForFunction(() => (document.querySelector("movi-player")?.querySelectorAll("track").length ?? 0) > 0, undefined, { timeout: 20000 }).then(() => true, () => false)
+  c("the first video's subtitle is declared", withSub, await movi(page))
+  const src = (await movi(page)).src
+  await page.locator('[data-testid="dock-next"]').click()
+  await srcChanged(page, src)
+  await page.waitForTimeout(1500)
+  let m = await movi(page)
+  c("switching to the second video takes the old subtitle away", m.tracks === 0 && m.added === 1, m)
+  await page.locator('[data-testid="dock-prev"]').click()
+  const back = await page.waitForFunction(() => (document.querySelector("movi-player")?.querySelectorAll("track").length ?? 0) === 1, undefined, { timeout: 20000 }).then(() => true, () => false)
+  m = await movi(page)
+  c("and back on the first it is there once", back && m.added === 1, m)
+  c.done()
+})
+
+// episodes only in a media library's work
+await spec("viewer-episode-bar", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, SEASON, 1500)
+  await openRow(page, "剧集乙 S01E01.mp4")
+  c("the dock opens", await seen(page, DOCK_OPEN))
+  c("a work of a media library has the episode bar", await seen(page, '[data-testid="episode-bar"]', 8000))
+  await go(page, VDIR, 1200)
+  await openRow(page, V1)
+  await seen(page, DOCK_OPEN)
+  await page.waitForTimeout(1500)
+  c("a plain folder does not", (await page.locator('[data-testid="episode-bar"]').count()) === 0)
+  c.done()
+})
+
+// the viewer's More menu carries what the download page and the player page had
+await spec("viewer-more-menu", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  await openRow(page, V1)
+  await seen(page, DOCK_OPEN)
+  await page.locator('[data-testid="dock-more"]').click()
+  const menu = page.locator('[role="menu"]').first()
+  await menu.waitFor({ timeout: 3000 }).catch(() => {})
+  const actions = await menu.locator("[data-action]").evaluateAll((els) => els.map((e) => e.getAttribute("data-action")))
+  for (const a of ["copy_link", "qr_code", "open_with", "players", "mpv_command", "info", "share"]) c(`the player's More has ${a}`, actions.includes(a), actions)
+  await page.keyboard.press("Escape")
+  await page.locator('[data-testid="dock-close"]').click()
+  await seen(page, DOCK_CLOSED)
+  await openRow(page, TEXT)
+  await seen(page, '[data-testid="doc-viewer"]')
+  await page.locator('[data-testid="viewer-more"]').click()
+  await page.locator('[role="menu"]').first().waitFor({ timeout: 3000 }).catch(() => {})
+  const docActions = await page.locator('[role="menu"]').first().locator("[data-action]").evaluateAll((els) => els.map((e) => e.getAttribute("data-action")))
+  for (const a of ["copy_link", "qr_code", "open_with", "info"]) c(`the document viewer's More has ${a}`, docActions.includes(a), docActions)
+  c.done()
+})
+
+// a share of one file opens that file in the viewer
+await spec("viewer-single-file-share", { init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  const created = await fetch(OL + "/api/share/create", {
+    method: "POST",
+    headers: { Authorization: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ files: [`${VDIR}/${TEXT}`], pwd: "", expires: null, max_accessed: 0, burn_after_read: false, order_by: "", order_direction: "", extract_folder: "", remark: "single file", readme: "", header: "" }),
+  }).then((r) => r.json())
+  const id = created?.data?.id
+  if (!id) throw new Error(`could not create a share: ${JSON.stringify(created)}`)
+  await page.goto(OL + `/@s/${id}`, { waitUntil: "domcontentloaded" })
+  c("the shared file opens in the document viewer", await seen(page, '[data-testid="doc-viewer"]', 15000))
+  c("with its text", await page.getByText("第 1 行").first().waitFor({ timeout: 10000 }).then(() => true, () => false))
+  const d = await downloadOf(page, () => page.locator('[data-testid="viewer-download"]').click())
+  c("and downloads under its name", d.name === TEXT && !d.newTab, d)
+  c.done()
+})
+
+// reduced motion: every viewer animation is a fade of at most 100ms
+await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, async (env) => {
+  const { page } = env
+  const c = checker(env)
+  await go(page, VDIR, 1200)
+  for (const [name, sel] of [[IMG1, '[data-testid="image-viewer"]'], [TEXT, '[data-testid="doc-viewer"]']]) {
+    await openRow(page, name)
+    c(`${name} opens`, await seen(page, sel))
+    await settle(page)
+    await page.keyboard.press("Escape")
+    c(`${name} closes`, await gone(page, sel))
+    await settle(page)
+  }
+  await openRow(page, V1)
+  c("the dock opens", await seen(page, DOCK_OPEN))
+  await settle(page)
+  await page.locator('[data-testid="dock-close"]').click()
+  await seen(page, DOCK_CLOSED)
+  await settle(page)
+  const ours = (await anims(page)).filter((a) => a.iterations !== Infinity && /^(viewer-|doc-|dock|unknown|dialog|scrim)/.test(a.motion))
+  const heights = await page.evaluate(() => window.__viewer.heights)
+  env.report = { ...(env.report ?? {}), anims: ours, heights }
+  c("viewer animations ran", ours.length > 0, ours)
+  const long = ours.filter((a) => a.duration > 100)
+  c("none longer than 100ms", long.length === 0, long)
+  const moving = ours.filter((a) => a.props.some((p) => p !== "opacity"))
+  c("none moves or clips", moving.length === 0, moving)
+  // the dock's height jumps: no frame between closed and open
+  const between = heights.filter((h, i) => i > 0 && h[1] > 0 && i < heights.length - 1 && heights[i + 1][1] !== h[1] && heights[i - 1][1] !== h[1])
+  c("the dock's height does not run", between.length === 0, heights)
+  c.done()
+})
+
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
 await browser.close()
+await chromeBrowser?.close()
 const failed = results.filter((r) => !r.ok)
 log(`${results.length - failed.length}/${results.length} specs passed`)
 process.exit(failed.length ? 1 : 0)
