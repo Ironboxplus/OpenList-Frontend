@@ -189,8 +189,10 @@ export const ResourceList = <T,>(props: ResourceListProps<T>) => {
     onCleanup(() => ro.disconnect())
   })
   // a card that scrolls sideways is the headers' scroll box: stuck at the
-  // top bar's offset inside it they slid over the first rows (820px audit)
-  const sticky = () => (tableScrolls() ? "bg-card" : STICKY)
+  // top bar's offset inside it they slid over the first rows (820px audit).
+  // Still positioned, so the sr-only "Operations" stays inside the card
+  // instead of widening the page (audit 45956655215: page-hscroll)
+  const sticky = () => (tableScrolls() ? "relative bg-card" : STICKY)
 
   return (
     <div class={cn("flex w-full flex-col gap-3", props.class)}>
