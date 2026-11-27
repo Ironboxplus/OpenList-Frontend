@@ -40,6 +40,10 @@ on:
         required: false
         type: boolean
         default: true
+      bugs_filter:
+        description: "Run only the bug specs whose name matches this regular expression (empty: all)"
+        required: false
+        default: ""
       frontend_src:
         description: "Old-code run: build src/ of this commit, with the specs of the checked-out ref"
         required: false
@@ -184,6 +188,8 @@ jobs:
       - name: Bug specs
         if: env.BUGS == 'true'
         working-directory: scripts/ui-compare
+        env:
+          BUGS_FILTER: ${{ inputs.bugs_filter }}
         run: node bugs.mjs "$RUNNER_TEMP/bugs"
 
       - name: Audit

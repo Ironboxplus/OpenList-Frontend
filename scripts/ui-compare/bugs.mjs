@@ -9,6 +9,7 @@ import { SourceMapConsumer } from "source-map"
 import fs from "node:fs"
 import path from "node:path"
 import { alive, log, MOUNT, OL, row, seed, selectRows, tr } from "./lib.mjs"
+import { layoutChecks } from "./checks.mjs"
 
 const out = process.argv[2]
 fs.mkdirSync(out, { recursive: true })
@@ -17,12 +18,18 @@ const browser = await chromium.launch()
 const { token, ids, shares } = await seed(out)
 
 const results = []
+// BUGS_FILTER (a regular expression on the spec name) runs only the specs of
+// the change at hand; the gate runs all of them
+const only = process.env.BUGS_FILTER ? new RegExp(process.env.BUGS_FILTER) : null
 async function spec(name, opts, fn) {
-  const { width = 1440, height = 900, theme = "light" } = opts
-  const id = `${name}.${width}.${theme}`
-  const ctx = await browser.newContext({ viewport: { width, height }, locale: "zh-CN", colorScheme: theme })
+  if (only && !only.test(name)) return
+  const { width = 1440, height = 900, theme = "light", reducedMotion = "no-preference" } = opts
+  const id = `${name}.${width}.${theme}${reducedMotion === "reduce" ? ".reduced" : ""}`
+  // a recording for the user to watch (P1 gate: dialog, sheet, menu, dropdown, collapsible)
+  const video = opts.video ? { recordVideo: { dir: path.join(out, "video-tmp"), size: { width, height } } } : {}
+  const ctx = await browser.newContext({ viewport: { width, height }, locale: "zh-CN", colorScheme: theme, reducedMotion, ...video })
   await ctx.addInitScript((t) => localStorage.setItem("token", t), token)
-  if (opts.init) await ctx.addInitScript(opts.init)
+  for (const init of [].concat(opts.init ?? [])) await ctx.addInitScript(init)
   // every focus() call is counted with its target: two focus handlers pulling
   // against each other show up as thousands of calls on two elements
   await ctx.addInitScript(() => {
@@ -57,10 +64,16 @@ async function spec(name, opts, fn) {
   } else {
     await page.screenshot({ path: path.join(out, `${id}.png`) }).catch(() => {})
   }
-  results.push({ id, ok: !message, message })
+  results.push({ id, ok: !message, message, ...(env.report ? { report: env.report } : {}) })
   log(message ? "FAIL" : "PASS", id, message.split("\n")[0])
   if (message) console.log(message)
+  const rec = opts.video ? page.video() : null
   await Promise.race([ctx.close().catch(() => {}), sleep(5000)])
+  if (rec) {
+    fs.mkdirSync(path.join(out, "video"), { recursive: true })
+    await rec.saveAs(path.join(out, "video", `${id}.webm`)).catch((e) => log("video not saved", id, String(e?.message || e)))
+    await rec.delete().catch(() => {})
+  }
 }
 
 const go = async (page, p, wait = 900) => {
@@ -1302,6 +1315,461 @@ for (const theme of ["light", "dark"]) {
     if (changed.length) throw new Error(`after two toggles the header differs in ${changed.join(", ")}: ${JSON.stringify(first)} -> ${JSON.stringify(again)}`)
   })
 }
+
+// ======== P1 of docs/PLAN_FE_SYSTEM_UX_1127.md ========
+
+// ---- P1.1 motion of the overlays (research 02 §三, 05 §二.3): every overlay
+// that appears is followed from the frame it is inserted until it leaves the
+// DOM: the animations the browser runs on it (duration, curve, which
+// properties), its opacity and transform per frame, when it is told to close
+// (data-closed) and when it is removed. The element that moves carries
+// data-motion; before that existed the overlay is found by its role.
+const overlayProbe = () => {
+  const SEL = '[data-motion], [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+  const recs = (window.__overlayMotion = [])
+  const track = (el) => {
+    if (el.__om) return
+    // a role element inside a data-motion element is the same overlay
+    if (!el.hasAttribute("data-motion") && el.parentElement?.closest("[data-motion]")) return
+    const r = { kind: el.getAttribute("data-motion") || el.getAttribute("role"), t0: performance.now(), closedAt: null, removedAt: null, anims: [], frames: [] }
+    el.__om = r
+    recs.push(r)
+    const grab = () => {
+      for (const a of el.getAnimations()) {
+        if (a.__om) continue
+        a.__om = true
+        const kf = a.effect?.getKeyframes?.() ?? []
+        const tm = a.effect?.getTiming?.() ?? {}
+        const props = [...new Set(kf.flatMap((f) => Object.keys(f)))].filter((p) => !["offset", "easing", "composite", "computedOffset"].includes(p))
+        r.anims.push({ at: Math.round(performance.now() - r.t0), phase: r.closedAt === null ? "enter" : "exit", duration: Number(tm.duration), easing: String(tm.easing).replace(/\s+/g, ""), kfEasing: kf.map((f) => String(f.easing).replace(/\s+/g, "")), props, css: a.animationName || "" })
+      }
+    }
+    const frame = () => {
+      if (!el.isConnected) {
+        if (r.removedAt === null) r.removedAt = performance.now()
+        return
+      }
+      const cs = getComputedStyle(el)
+      r.frames.push([Math.round(performance.now() - r.t0), +(+cs.opacity).toFixed(3), cs.transform, Math.round(el.getBoundingClientRect().height)])
+      grab()
+      if (r.frames.length < 400) requestAnimationFrame(frame)
+    }
+    frame()
+    new MutationObserver(() => {
+      if (el.hasAttribute("data-closed") && r.closedAt === null) {
+        r.closedAt = performance.now()
+        grab()
+      }
+    }).observe(el, { attributes: true, attributeFilter: ["data-closed", "data-expanded"] })
+  }
+  new MutationObserver((ms) => {
+    for (const m of ms) {
+      for (const n of m.addedNodes) if (n.nodeType === 1) [n, ...n.querySelectorAll(SEL)].filter((e) => e.matches(SEL)).forEach(track)
+      for (const n of m.removedNodes)
+        if (n.nodeType === 1) for (const e of [n, ...n.querySelectorAll(SEL)]) if (e.__om && e.__om.removedAt === null) e.__om.removedAt = performance.now()
+    }
+  }).observe(document.documentElement, { childList: true, subtree: true })
+}
+const DECEL = "cubic-bezier(0.05,0.7,0.1,1)"
+const ACCEL = "cubic-bezier(0.3,0,0.8,0.15)"
+/** The probe's record of the last overlay of `kind`, durations relative to its insertion. */
+const overlayRecord = async (page, kind) => {
+  const recs = await page.evaluate(() =>
+    window.__overlayMotion.map((r) => ({ ...r, closedAt: r.closedAt === null ? null : Math.round(r.closedAt - r.t0), removedAt: r.removedAt === null ? null : Math.round(r.removedAt - r.t0), frames: r.frames.slice(0, 40) })),
+  )
+  const mine = recs.filter((r) => r.kind === kind)
+  return { rec: mine[mine.length - 1], kinds: recs.map((r) => r.kind) }
+}
+/** Enter and exit of one overlay against the plan's duration and curve. */
+const expectOverlayMotion = (env, kind, { rec, kinds }, enter, exit, moves) => {
+  log(`motion ${kind}`, JSON.stringify(rec ?? { missing: kind, seen: kinds }))
+  if (!rec) throw new Error(`no ${kind} overlay appeared (seen: ${kinds.join(", ")})`)
+  const show = (a) => `${a.phase} ${a.duration}ms ${a.easing}${a.css ? ` css:${a.css} keyframes:${a.kfEasing.join("/")}` : ""} [${a.props.join(",")}]`
+  const fail = []
+  const inA = rec.anims.find((a) => a.phase === "enter" && a.props.includes("opacity"))
+  const outA = rec.anims.find((a) => a.phase === "exit" && a.props.includes("opacity"))
+  if (!inA || Math.abs(inA.duration - enter) > 2 || inA.easing !== DECEL) fail.push(`enter should be ${enter}ms ${DECEL}`)
+  if (inA && moves && !inA.props.includes(moves)) fail.push(`enter should move (${moves})`)
+  if (!outA || Math.abs(outA.duration - exit) > 2 || outA.easing !== ACCEL) fail.push(`exit should be ${exit}ms ${ACCEL}`)
+  if (rec.closedAt === null || rec.removedAt === null) fail.push(`closed at ${rec.closedAt}, removed at ${rec.removedAt}`)
+  else if (rec.removedAt - rec.closedAt < exit - 10) fail.push(`removed ${rec.removedAt - rec.closedAt}ms after it was told to close, before its ${exit}ms exit ran`)
+  env.report = { ...(env.report ?? {}), [kind]: { enter: inA?.duration ?? null, exit: outA?.duration ?? null, closeToRemoved: rec.removedAt !== null && rec.closedAt !== null ? rec.removedAt - rec.closedAt : null } }
+  if (fail.length) throw new Error(`${kind}: ${fail.join("; ")}. Recorded: ${rec.anims.map(show).join(" | ") || "no animation"}`)
+}
+const openNewMenu = async (page) => {
+  await go(page, `${MOUNT}/文档`)
+  await page.locator("[data-files-new]").click()
+  await page.locator('[role="menuitem"][data-action="mkdir"]').waitFor()
+  await page.waitForTimeout(400)
+}
+// dialog 200/150 (MD3 emphasized), menu 120/90; the menu closes as its item opens the dialog
+await spec("motion-dialog-and-menu", { init: overlayProbe, video: true }, async (env) => {
+  const { page } = env
+  await openNewMenu(page)
+  await page.locator('[role="menuitem"][data-action="mkdir"]').click()
+  await page.locator('[role="dialog"]').first().waitFor()
+  await page.waitForTimeout(600)
+  await page.keyboard.press("Escape")
+  await page.waitForTimeout(800)
+  const menu = await overlayRecord(page, "menu")
+  const dialog = await overlayRecord(page, "dialog")
+  const errs = []
+  for (const [k, r, a, b, m] of [["menu", menu, 120, 90, "transform"], ["dialog", dialog, 200, 150, "transform"]]) {
+    try {
+      expectOverlayMotion(env, k, r, a, b, m)
+    } catch (e) {
+      errs.push(e.message)
+    }
+  }
+  if (errs.length) throw new Error(errs.join("\n"))
+})
+await spec("motion-context-menu", { init: overlayProbe }, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  await item(page, "笔记").click({ button: "right" })
+  await page.locator('[role="menu"]').first().waitFor()
+  await page.waitForTimeout(400)
+  await page.keyboard.press("Escape")
+  await page.waitForTimeout(500)
+  expectOverlayMotion(env, "menu", await overlayRecord(page, "menu"), 120, 90, "transform")
+})
+// the phone's Me sheet: 250/200, sliding up from the bottom edge
+await spec("motion-sheet", { ...PHONE, init: overlayProbe, video: true }, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  await page.getByRole("button", { name: /^(Me|我的?)$/ }).click()
+  await page.locator('[role="dialog"]').first().waitFor()
+  await page.waitForTimeout(700)
+  await page.keyboard.press("Escape")
+  await page.waitForTimeout(800)
+  expectOverlayMotion(env, "sheet", await overlayRecord(page, "sheet"), 250, 200, "transform")
+})
+// a dropdown (Select) of a settings form: 120/90 like a menu
+await spec("motion-select", { init: overlayProbe, video: true }, async (env) => {
+  const { page } = env
+  await go(page, "/@manage/shares/add", 1500)
+  await page.locator("#order_by").click()
+  await page.locator('[role="listbox"]').first().waitFor()
+  await page.waitForTimeout(500)
+  await page.keyboard.press("Escape")
+  await page.waitForTimeout(600)
+  expectOverlayMotion(env, "select", await overlayRecord(page, "select"), 120, 90, "transform")
+})
+await spec("motion-tooltip", { init: overlayProbe }, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  await page.getByRole("button", { name: tr("shell.task_center.title") }).first().hover()
+  await page.locator('[role="tooltip"]').first().waitFor({ timeout: 3000 })
+  await page.waitForTimeout(400)
+  await page.mouse.move(1, 1)
+  await page.waitForTimeout(800)
+  expectOverlayMotion(env, "tooltip", await overlayRecord(page, "tooltip"), 120, 90, "transform")
+})
+await spec("motion-palette", { init: overlayProbe }, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  await page.keyboard.press("Control+k")
+  await page.locator('[role="dialog"]').first().waitFor()
+  await page.waitForTimeout(500)
+  await page.keyboard.press("Escape")
+  await page.waitForTimeout(600)
+  expectOverlayMotion(env, "dialog", await overlayRecord(page, "dialog"), 200, 150, "transform")
+})
+// reduced motion (system setting): what moves becomes a fade of at most 100ms,
+// nothing translates or scales; CSS transitions stop
+for (const size of [{}, PHONE]) {
+  await spec("motion-reduced", { ...size, reducedMotion: "reduce", init: overlayProbe }, async (env) => {
+    const { page } = env
+    const phone = size === PHONE
+    await go(page, `${MOUNT}/文档`)
+    if (phone) await page.getByRole("button", { name: /^(Me|我的?)$/ }).click()
+    else {
+      await page.locator("[data-files-new]").click()
+      await page.locator('[role="menuitem"][data-action="mkdir"]').click()
+    }
+    await page.locator('[role="dialog"]').first().waitFor()
+    await page.waitForTimeout(500)
+    await page.keyboard.press("Escape")
+    await page.waitForTimeout(500)
+    const recs = await page.evaluate(() => window.__overlayMotion.map((r) => ({ kind: r.kind, anims: r.anims, moved: r.frames.filter((f) => f[2] !== "none" && f[2] !== "matrix(1, 0, 0, 1, 0, 0)").slice(0, 3) })))
+    const transition = await page.evaluate(() => {
+      const b = document.querySelector("[data-palette-trigger], [data-files-new]")
+      return b ? getComputedStyle(b).transitionDuration : "none"
+    })
+    log("reduced motion", JSON.stringify({ recs, transition }))
+    const bad = []
+    for (const r of recs) {
+      for (const a of r.anims) {
+        if (a.duration > 100) bad.push(`${r.kind} ${a.phase} runs ${a.duration}ms`)
+        const moving = a.props.filter((p) => p !== "opacity")
+        if (moving.length) bad.push(`${r.kind} ${a.phase} animates ${moving.join(",")}`)
+      }
+      if (r.moved.length) bad.push(`${r.kind} is transformed: ${r.moved.map((f) => f[2]).join(" ")}`)
+    }
+    if (!recs.some((r) => r.anims.length)) bad.push("no overlay faded at all")
+    if (transition !== "none" && transition.split(",").some((s) => parseFloat(s) > 0.0001)) bad.push(`CSS transitions still run (${transition})`)
+    if (bad.length) throw new Error(bad.join("; "))
+  })
+}
+
+// ---- P1.4 the rest of the 6575087 audit
+// error center on a phone: the Me tab shows the unread errors, and the center
+// is two taps away (Me, then Errors)
+const unreadError = () =>
+  localStorage.setItem(
+    "error-center:admin",
+    JSON.stringify([{ id: "probe-1", at: Date.now(), category: "network", source: "probe", message: "示例错误", read: false, count: 1 }]),
+  )
+await spec("error-center-phone", { ...PHONE, init: unreadError }, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/文档`)
+  const me = page.getByRole("button", { name: /^(Me|我的?)/ }).last()
+  const tab = await me.evaluate((b) => ({ text: b.textContent.trim(), badge: [...b.querySelectorAll("[aria-label], span")].map((s) => s.getAttribute("aria-label") || "").filter(Boolean) }))
+  log("me tab", JSON.stringify(tab))
+  if (!/1/.test(tab.text) && !tab.badge.some((l) => /1/.test(l))) throw new Error(`the Me tab does not show the unread error: "${tab.text}"`)
+  await me.click()
+  await page.locator("[data-error-center-trigger]").filter({ visible: true }).first().click()
+  await page.getByText(tr("shell.error_center.mark_all_read")).first().waitFor({ timeout: 3000 }).catch(() => {
+    throw new Error("Me, then Errors, did not open the error center")
+  })
+})
+
+// dashboard: no fractional bytes on the chart axes, the figures in the body
+// font, and the favorites card is whole once the page is scrolled to its end
+const canvasText = () => {
+  window.__canvasText = []
+  const orig = CanvasRenderingContext2D.prototype.fillText
+  CanvasRenderingContext2D.prototype.fillText = function (t, ...a) {
+    window.__canvasText.push(String(t))
+    return orig.call(this, t, ...a)
+  }
+}
+for (const width of [1440, 820]) {
+  await spec("dashboard-figures", { width, height: width === 820 ? 1100 : 900, init: canvasText }, async (env) => {
+    const { page } = env
+    await go(page, "/@dashboard", 2500)
+    const m = await page.evaluate(() => {
+      const fig = document.querySelector('[data-testid="dashboard-traffic"] [data-period] .font-semibold, [data-testid="dashboard-traffic"] [data-period] [data-figure]')
+      const title = document.querySelector('[data-testid="dashboard-traffic"]')
+      const texts = [...new Set(window.__canvasText)]
+      return {
+        axis: texts.filter((s) => /^\d*\.\d+\s*B(\/s)?$/.test(s)),
+        sample: texts.slice(0, 30),
+        figFont: fig ? getComputedStyle(fig).fontFamily : null,
+        bodyFont: title ? getComputedStyle(title).fontFamily : null,
+        note: document.body.innerText.includes("Relayed by"),
+      }
+    })
+    // the end of the page: every card's bottom and the unread-errors line in view
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    await page.waitForTimeout(500)
+    const fav = await page.evaluate(() => {
+      const card = document.querySelector('[data-testid="dashboard-favorites"]')
+      const mask = document.querySelector("[data-shell-mask]")
+      const unread = document.querySelector('[data-testid="dashboard-unread-errors"]')
+      const c = card.getBoundingClientRect()
+      const bottom = mask ? mask.getBoundingClientRect().bottom : innerHeight
+      const u = unread?.getBoundingClientRect()
+      return { card: `${Math.round(c.top)}..${Math.round(c.bottom)}`, cardCut: c.bottom > bottom + 1, viewBottom: Math.round(bottom), unread: u ? `${Math.round(u.top)}..${Math.round(u.bottom)} h${Math.round(u.height)}` : null, unreadOut: !!u && (u.bottom > c.bottom + 1 || u.bottom > bottom + 1), unreadSmall: !!u && u.height < 32 }
+    })
+    log(`dashboard ${width}`, JSON.stringify({ ...m, fav }))
+    const bad = []
+    if (m.axis.length) bad.push(`chart axis shows fractional bytes: ${m.axis.join(", ")}`)
+    if (!m.figFont || /mono/i.test(m.figFont) || m.figFont !== m.bodyFont) bad.push(`traffic figures are in "${m.figFont}", the card in "${m.bodyFont}"`)
+    if (m.note) bad.push('the "Relayed by this node…" note is still there')
+    if (fav.cardCut) bad.push(`the favorites card (${fav.card}) is cut at ${fav.viewBottom} with the page scrolled to its end`)
+    if (fav.unreadOut) bad.push(`the unread-errors line (${fav.unread}) is outside the card (${fav.card})`)
+    if (fav.unreadSmall) bad.push(`the unread-errors line is ${fav.unread} tall, under 32px to click`)
+    if (bad.length) throw new Error(bad.join("; "))
+  })
+}
+
+// media manage at 820: the table header sits above the rows, never over them
+await spec("manage-media-table-820", { width: 820, height: 1100 }, async (env) => {
+  const { page } = env
+  await go(page, "/@manage/media/video", 2000)
+  const card = page.locator('[data-layout="table"]').first()
+  await card.waitFor({ timeout: 6000 })
+  const m = await card.evaluate((c) => {
+    const head = c.querySelector("thead").getBoundingClientRect()
+    const row = c.querySelector("tbody tr").getBoundingClientRect()
+    const over = []
+    for (const th of c.querySelectorAll("th"))
+      for (const td of c.querySelectorAll("td")) {
+        const a = th.getBoundingClientRect()
+        const b = td.getBoundingClientRect()
+        if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) over.push(`"${th.textContent.trim()}" over "${td.textContent.trim().slice(0, 16)}"`)
+      }
+    return { head: `${Math.round(head.top)}..${Math.round(head.bottom)}`, row: `${Math.round(row.top)}..${Math.round(row.bottom)}`, below: row.top >= head.bottom - 1, over: over.slice(0, 5), scrolls: c.hasAttribute("data-scrolls") }
+  })
+  log("media table 820", JSON.stringify(m))
+  if (!m.below || m.over.length) throw new Error(`the header (${m.head}) overlaps the first row (${m.row}): ${m.over.join("; ")}`)
+})
+
+// long names in the list: the name's visible box ends before the size and
+// date columns, and the audit's text-overlap check agrees
+for (const width of [820, 1440]) {
+  await spec("files-longnames-list", { width, height: width === 820 ? 1100 : 900 }, async (env) => {
+    const { page } = env
+    await go(page, `${MOUNT}/长文件名`)
+    await page.locator("[data-files-view]").click()
+    await page.getByRole("menuitem", { name: tr("home.layouts.list") }).first().click()
+    await page.waitForTimeout(900)
+    const m = await page.evaluate(() =>
+      [...document.querySelectorAll(".list-item")].map((rowEl) => {
+        const name = rowEl.querySelector(".name")
+        let [l, r] = [name.getBoundingClientRect().left, name.getBoundingClientRect().right]
+        for (let a = name.parentElement; a && a !== rowEl; a = a.parentElement) {
+          if (getComputedStyle(a).overflowX === "visible") continue
+          const b = a.getBoundingClientRect()
+          ;[l, r] = [Math.max(l, b.left), Math.min(r, b.right)]
+        }
+        const cols = [rowEl.querySelector(".size"), rowEl.querySelector(".modified")].filter(Boolean).map((e) => e.getBoundingClientRect().left)
+        return { name: name.textContent.slice(0, 12), right: Math.round(r), cols: cols.map(Math.round), over: cols.some((c) => r > c + 1) }
+      }),
+    )
+    const checks = await page.evaluate(layoutChecks)
+    const overlaps = checks.findings.filter((f) => f.type === "text-overlap")
+    log(`long names ${width}`, JSON.stringify({ rows: m, textOverlap: checks.counts["text-overlap"] ?? 0, overlaps }))
+    if (!m.length) throw new Error("no rows")
+    const bad = m.filter((r) => r.over)
+    if (bad.length) throw new Error("names run into the size/date columns: " + bad.map((r) => `${r.name} to ${r.right}, columns at ${r.cols}`).join("; "))
+    if (overlaps.length) throw new Error(`the audit reports ${checks.counts["text-overlap"]} text overlaps: ${overlaps.map((f) => f.detail).join("; ")}`)
+  })
+}
+
+// 390: the current folder's name in the path strip is whole next to the library badge
+await spec("phone-crumb-library-name", PHONE, async (env) => {
+  const { page } = env
+  await go(page, `${MOUNT}/媒体库`, 2000)
+  const m = await page.evaluate(() => {
+    const btn = document.querySelector("[data-files-current]")
+    const label = [...btn.querySelectorAll("span")].pop()
+    const badge = document.querySelector("[data-library-badge]")
+    const a = label.getBoundingClientRect()
+    const b = badge?.getBoundingClientRect()
+    let cut = label.scrollWidth > label.clientWidth + 1
+    for (let e = label; e && e !== btn.parentElement; e = e.parentElement) if (e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflowX !== "visible") cut = true
+    return { text: label.textContent, label: `${Math.round(a.left)}..${Math.round(a.right)}`, badge: b ? `${Math.round(b.left)}..${Math.round(b.right)}` : null, cut, under: !!b && a.right > b.left + 1 && a.left < b.right }
+  })
+  log("phone crumb", JSON.stringify(m))
+  if (m.cut || m.under) throw new Error(`"${m.text}" is ${m.cut ? "cut" : ""}${m.under ? ` under the badge (${m.label} vs ${m.badge})` : ""}`)
+})
+
+// grid cards: the border is told from both the card and what is around it by
+// more than the audit's border-faint threshold (24 in a channel)
+for (const theme of ["light", "dark"]) {
+  await spec("grid-card-edge", { theme }, async (env) => {
+    const { page } = env
+    await go(page, MOUNT, 1200)
+    await page.locator("[data-files-view]").click()
+    await page.getByRole("menuitem", { name: tr("home.layouts.grid") }).first().click()
+    await page.waitForTimeout(900)
+    const checks = await page.evaluate(layoutChecks)
+    const cards = checks.findings.filter((f) => /^(border-faint|border-invisible)$/.test(f.type) && /grid-card/.test(f.el))
+    log(`grid card edge ${theme}`, JSON.stringify(cards))
+    if (!(await page.locator(".grid-item.grid-card").count())) throw new Error("no grid cards")
+    if (cards.length) throw new Error(`${cards.length} grid cards with a faint edge: ${cards[0].detail}`)
+  })
+}
+
+// filter chips, the media section nav, the favourite stars and row checks: no
+// border that cannot be seen; and every control there at least 32px
+const AUDIT_PAGES = ["/@media", "/@media/video", "/@media/music", "/@manage/media/video", "/@transfers"]
+for (const theme of ["light", "dark"]) {
+  await spec("border-invisible", { theme }, async (env) => {
+    const { page } = env
+    const bad = []
+    for (const p of AUDIT_PAGES) {
+      await go(page, p, 1500)
+      const c = await page.evaluate(layoutChecks)
+      const f = c.findings.filter((x) => x.type === "border-invisible")
+      if (f.length) bad.push(`${p}: ${c.counts["border-invisible"]} (${[...new Set(f.map((x) => x.el.replace(/ @.*$/, "")))].slice(0, 3).join("; ")})`)
+    }
+    await go(page, `${MOUNT}/文档`)
+    await selectRows(page, "笔记", false)
+    const c = await page.evaluate(layoutChecks)
+    if (c.counts["border-invisible"]) bad.push(`selected row: ${c.counts["border-invisible"]} (${c.findings.filter((x) => x.type === "border-invisible").map((x) => x.el.replace(/ @.*$/, ""))[0]})`)
+    log(`border-invisible ${theme}`, JSON.stringify(bad))
+    if (bad.length) throw new Error(bad.join(" | "))
+  })
+}
+const smallControls = (page) =>
+  page.evaluate(() => {
+    const root = document.querySelector("[data-shell-content]") || document.body
+    const sel = 'button, a[href], [role="button"], [role="tab"], [role="switch"], [role="checkbox"], select, input:not([type="hidden"])'
+    const out = []
+    for (const el of root.querySelectorAll(sel)) {
+      const r = el.getBoundingClientRect()
+      const cs = getComputedStyle(el)
+      if (r.width < 1 || r.height < 1 || cs.visibility !== "visible" || r.bottom < 0 || r.top > innerHeight) continue
+      if (el.tagName === "A" && cs.display === "inline" && el.closest("p")) continue
+      if (r.width < 32 || r.height < 32) out.push(`${(el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 20)} ${Math.round(r.width)}x${Math.round(r.height)}`)
+    }
+    return out
+  })
+for (const size of [{}, PHONE]) {
+  await spec("click-targets-media", size, async (env) => {
+    const { page } = env
+    const bad = []
+    for (const p of ["/@media", "/@media/video", "/@transfers"]) {
+      await go(page, p, 1500)
+      const s = await smallControls(page)
+      if (s.length) bad.push(`${p}: ${s.length} (${[...new Set(s)].slice(0, 6).join("; ")})`)
+    }
+    log("small controls", JSON.stringify(bad))
+    if (bad.length) throw new Error(bad.join(" | "))
+  })
+}
+await spec("click-targets-login", {}, async (env) => {
+  const { page, ctx } = env
+  await ctx.clearCookies()
+  await page.goto(OL + "/@login", { waitUntil: "domcontentloaded" })
+  await page.evaluate(() => localStorage.removeItem("token"))
+  await page.goto(OL + "/@login", { waitUntil: "domcontentloaded" })
+  await page.waitForTimeout(1500)
+  const link = page.getByText(tr("login.forget")).first()
+  const b = await link.evaluate((e) => {
+    const a = e.closest("a") ?? e
+    const r = a.getBoundingClientRect()
+    return { w: Math.round(r.width), h: Math.round(r.height) }
+  })
+  log("forget password link", JSON.stringify(b))
+  if (b.w < 32 || b.h < 32) throw new Error(`"Forget password?" is ${b.w}x${b.h}`)
+})
+
+// ---- P1.3 texts: dropdowns show what an empty choice does; 0 reads as its meaning
+const triggerTexts = (scope) =>
+  scope.evaluate((d) => [...d.querySelectorAll('button[aria-haspopup="listbox"]')].map((b) => b.innerText.trim()))
+await spec("texts-share-dialog", {}, async (env) => {
+  const { page } = env
+  fire(await ctxEntry(page, MOUNT, "文档", "share"))
+  await expectDialog(env, "share")
+  const dialog = page.locator('[role="dialog"]').first()
+  const texts = await triggerTexts(dialog)
+  const want = ["shares.extract_folder_default", "shares.order_by_default", "shares.order_direction_default"].map(tr)
+  const max = await dialog.locator('input[type="number"]').first().evaluate((i) => ({ value: i.value, placeholder: i.placeholder })).catch(() => null)
+  log("share dialog selects", JSON.stringify({ texts, max }))
+  const bad = []
+  if (texts.some((s) => tr("global.choose").test(s) && s.length < 10)) bad.push(`a dropdown says "${texts.find((s) => tr("global.choose").test(s))}"`)
+  want.forEach((re, i) => !texts.some((s) => re.test(s)) && bad.push(`no dropdown shows ${re}`))
+  if (!max || max.value !== "" || !tr("shares.max_accessed_unlimited").test(max.placeholder)) bad.push(`max visits shows "${max?.value}" / placeholder "${max?.placeholder}", not "Unlimited"`)
+  if (bad.length) throw new Error(bad.join("; "))
+})
+await spec("texts-share-form", {}, async (env) => {
+  const { page } = env
+  await go(page, "/@manage/shares/add", 1500)
+  const texts = await triggerTexts(page.locator("body"))
+  const max = await page.locator("#max_accessed").evaluate((i) => ({ value: i.value, placeholder: i.placeholder }))
+  const expires = await page.locator("#expires").getAttribute("placeholder")
+  log("share form", JSON.stringify({ texts, max, expires }))
+  const bad = []
+  for (const k of ["shares.extract_folder_default", "shares.order_by_default", "shares.order_direction_default"]) if (!texts.some((s) => tr(k).test(s))) bad.push(`no dropdown shows ${tr(k)}`)
+  if (texts.some((s) => tr("global.choose").test(s) && s.length < 10)) bad.push("a dropdown says Choose")
+  if (max.value !== "" || !tr("shares.max_accessed_unlimited").test(max.placeholder)) bad.push(`max visits "${max.value}" / "${max.placeholder}"`)
+  if (!tr("shares.expires_never").test(expires ?? "")) bad.push(`expires placeholder "${expires}"`)
+  if (bad.length) throw new Error(bad.join("; "))
+})
 
 fs.writeFileSync(path.join(out, "bugs.json"), JSON.stringify(results, null, 1))
 await browser.close()
