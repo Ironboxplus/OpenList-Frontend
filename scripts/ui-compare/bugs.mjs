@@ -2158,12 +2158,25 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
   m = await movi(page)
   c("Shift+N in fullscreen switches the video and stays fullscreen", fsSwitched && m.fullscreen && m.added === 1, m)
   await leaveFullscreen(page)
-  const t2 = await page.evaluate(() => performance.now())
+  const t2 = await page.evaluate(() => {
+    // what moves the scroll from here on, for the report
+    const log = (window.__scrolls = [])
+    const to = window.scrollTo.bind(window)
+    window.scrollTo = (...a) => {
+      log.push(["to", JSON.stringify(a), Math.round(performance.now())])
+      return to(...a)
+    }
+    addEventListener("scroll", () => log.push(["at", window.scrollY, Math.round(performance.now())]), { passive: true })
+    addEventListener("popstate", () => log.push(["pop", JSON.stringify(history.state)]), true)
+    log.push(["before", JSON.stringify(history.state), window.scrollY])
+    return performance.now()
+  })
   await page.goBack()
   c("one Back closes the player", await closedDock(page))
   await settle(page)
   const y = await page.evaluate(() => window.scrollY)
-  c("Back returns to the folder's address at the scroll it had", pathOf(page) === VDIR && y0 > 50 && Math.abs(y - y0) < 4, `${pathOf(page)} scrollY=${y}, was ${y0}`)
+  const moves = await page.evaluate(() => window.__scrolls.slice(0, 40))
+  c("Back returns to the folder's address at the scroll it had", pathOf(page) === VDIR && y0 > 50 && Math.abs(y - y0) < 4, `${pathOf(page)} scrollY=${y}, was ${y0}; ${JSON.stringify(moves)}`)
   m = await movi(page)
   c("closing keeps the same player element", m.added === 1 && m.removed === 0 && m.count === 1, m)
   const heights = await page.evaluate(() => window.__viewer.heights)
@@ -2247,7 +2260,13 @@ await spec("viewer-dock-phone", { ...PHONE, touch: true, init: viewerProbe, vide
   await settle(page)
   const g = await page.evaluate(() => {
     const f = document.querySelector('[data-testid="dock-frame"]')?.getBoundingClientRect()
-    const top = parseFloat(getComputedStyle(document.querySelector("[data-shell-frame]")).getPropertyValue("--shell-top")) || 0
+    // --shell-top is in rem: a fixed probe at that top gives it in pixels
+    const probe = document.createElement("div")
+    probe.style.cssText = "position:fixed;left:0;width:0;height:0;visibility:hidden"
+    probe.style.top = getComputedStyle(document.querySelector("[data-shell-frame]")).getPropertyValue("--shell-top").trim() || "0px"
+    document.body.append(probe)
+    const top = probe.getBoundingClientRect().top
+    probe.remove()
     return f ? { top: Math.round(f.top), h: Math.round(f.height), w: Math.round(f.width), vw: innerWidth, shellTop: top } : null
   })
   c("72px high, full width, under the top bar", g && g.h === 72 && g.w >= g.vw - 1 && Math.abs(g.top - g.shellTop) <= 2, g)
