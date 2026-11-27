@@ -1,5 +1,6 @@
 import { TbArrowsUpDown } from "solid-icons/tb"
 import { createMemo, For, Show, onCleanup } from "solid-js"
+import { AnimatedNumber } from "~/components/ui/animated-number"
 import { DataState } from "~/components/ui/data-state"
 import { useRouter, useT } from "~/hooks"
 import { transfers } from "../transfers/service"
@@ -8,9 +9,10 @@ import { transferDay } from "./stats-model"
 
 const Stat = (props: { label: string; value: number; tone?: string }) => (
   <div class="flex flex-col">
-    <span class={`text-2xl font-semibold tabular-nums ${props.tone ?? ""}`}>
-      {props.value}
-    </span>
+    <AnimatedNumber
+      value={props.value}
+      class={`text-2xl font-semibold ${props.tone ?? ""}`}
+    />
     <span class="text-xs text-muted-foreground">{props.label}</span>
   </div>
 )

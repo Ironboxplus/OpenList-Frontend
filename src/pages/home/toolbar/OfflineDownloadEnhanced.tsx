@@ -7,7 +7,6 @@ import {
   Text,
   Badge,
   Heading,
-  notificationService,
   Checkbox,
   Input,
   SimpleGrid,
@@ -964,18 +963,14 @@ export const OfflineDownloadEnhanced = () => {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      notificationService.show({
-        status: "success",
-        title: t("home.toolbar.offline_download_enhanced.cas_file_generated"),
-      })
+      notify.success(
+        t("home.toolbar.offline_download_enhanced.cas_file_generated"),
+      )
     } catch (err) {
-      notificationService.show({
-        status: "danger",
-        title: t(
-          "home.toolbar.offline_download_enhanced.cas_file_generate_failed",
-        ),
-        description: String(err),
-      })
+      notify.error(
+        t("home.toolbar.offline_download_enhanced.cas_file_generate_failed"),
+        { description: String(err) },
+      )
     }
   }
 
@@ -1004,10 +999,9 @@ export const OfflineDownloadEnhanced = () => {
   // 处理 torrent 文件拖拽/选择
   const handleTorrentFile = async (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
-      notificationService.show({
-        status: "danger",
-        title: t("home.toolbar.offline_download_enhanced.torrent_too_large"),
-      })
+      notify.error(
+        t("home.toolbar.offline_download_enhanced.torrent_too_large"),
+      )
       return
     }
 
@@ -1023,9 +1017,7 @@ export const OfflineDownloadEnhanced = () => {
         setSelectedFiles(data.files.map((_, i) => i))
       })
     } catch (err) {
-      notificationService.show({
-        status: "danger",
-        title: t("home.toolbar.offline_download_enhanced.parse_failed"),
+      notify.error(t("home.toolbar.offline_download_enhanced.parse_failed"), {
         description: String(err),
       })
     } finally {
@@ -1112,36 +1104,29 @@ export const OfflineDownloadEnhanced = () => {
           const resp = await torrentRapidUpload(torrentData(), savePath())
           if (resp.code === 200) {
             setRapidUploadResult("success")
-            notificationService.show({
-              status: "success",
-              title: t(
-                "home.toolbar.offline_download_enhanced.rapid_upload_success",
-              ),
-              description: resp.data.file_name,
-            })
+            notify.success(
+              t("home.toolbar.offline_download_enhanced.rapid_upload_success"),
+              { description: resp.data.file_name },
+            )
             handleClose()
             return
           } else {
             // 秒传失败，标记允许回退到普通离线下载
             setCasRapidUploadFailed(true)
-            notificationService.show({
-              status: "warning",
-              title: t(
+            notify.warning(
+              t(
                 "home.toolbar.offline_download_enhanced.cas_rapid_upload_failed",
               ),
-              description: resp.message,
-            })
+              { description: resp.message },
+            )
           }
         } catch (err) {
           // 秒传异常，标记允许回退到普通离线下载
           setCasRapidUploadFailed(true)
-          notificationService.show({
-            status: "danger",
-            title: t(
-              "home.toolbar.offline_download_enhanced.cas_rapid_upload_failed",
-            ),
-            description: String(err),
-          })
+          notify.error(
+            t("home.toolbar.offline_download_enhanced.cas_rapid_upload_failed"),
+            { description: String(err) },
+          )
         } finally {
           setRapidUploading(false)
         }
@@ -1152,12 +1137,9 @@ export const OfflineDownloadEnhanced = () => {
       // 无 CAS 信息或秒传失败后，走正常离线下载流程
       // SimpleHttp 不支持磁力链/BT 下载
       if (tool() === "SimpleHttp") {
-        notificationService.show({
-          status: "warning",
-          title: t(
-            "home.toolbar.offline_download_enhanced.simplehttp_not_supported",
-          ),
-        })
+        notify.warning(
+          t("home.toolbar.offline_download_enhanced.simplehttp_not_supported"),
+        )
         return
       }
 

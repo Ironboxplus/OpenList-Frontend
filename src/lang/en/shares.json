@@ -5,6 +5,7 @@
   "accessed": "Access count",
   "max_accessed": "Maximum access count",
   "pwd": "Share code",
+  "pwd_empty": "None: anyone with the link can open it",
   "files": "Share Paths",
   "files_etc": " and {{more}} more",
   "files_placeholder": "Enter file or folder paths, one per line",

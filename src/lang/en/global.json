@@ -44,5 +44,6 @@
   "unlimited": "Unlimited",
   "never_expires": "Never expires",
   "advanced_count": "({{count}})",
-  "advanced_changed": "{{count}} changed"
+  "advanced_changed": "{{count}} changed",
+  "notifications": "Notifications"
 }

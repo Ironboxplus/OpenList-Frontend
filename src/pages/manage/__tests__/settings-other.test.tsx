@@ -118,7 +118,8 @@ describe("other settings payloads", () => {
     renderPage(() => <OtherSettings />)
     await settle()
     await clickButton("Copy Token")
-    expect(clipboard.copy).toHaveBeenCalledWith("TOKEN123")
+    // a copy button: the check says copied, not a toast (P4)
+    expect(clipboard.copy).toHaveBeenCalledWith("TOKEN123", { quiet: true })
     await clickButton("Reset Token")
     expectGolden(
       "settings-other-reset-token",

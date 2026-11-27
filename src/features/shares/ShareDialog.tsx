@@ -5,7 +5,7 @@
 // items changed. A search finds folded items and opens their group. The order
 // of the files is one control (VisitorOrder). Opened by the "share" tool with
 // the selection; replaces the hope dialog of pages/home/toolbar/Share.tsx.
-import { TbCopy, TbRefresh, TbSearch } from "solid-icons/tb"
+import { TbRefresh, TbSearch } from "solid-icons/tb"
 import {
   batch,
   createMemo,
@@ -31,7 +31,7 @@ import {
   SwitchLabel,
   SwitchThumb,
 } from "~/components/ui/switch"
-import { useFetch, useRouter, useT, useUtil } from "~/hooks"
+import { useFetch, useRouter, useT } from "~/hooks"
 import { getSetting, me, selectedObjs } from "~/store"
 import type { PResp, Share, ShareInfo } from "~/types"
 import {
@@ -45,6 +45,7 @@ import {
 } from "~/utils"
 import { cn } from "~/utils/cn"
 import { orderChanges, VisitorOrder } from "./VisitorOrder"
+import { CopyButton } from "~/components/ui/copy-button"
 
 interface Form {
   pwd: string
@@ -175,7 +176,6 @@ const changesOf = (form: Form, key: FieldKey) =>
 export const ShareDialog = () => {
   const t = useT()
   const { pathname } = useRouter()
-  const { copy } = useUtil()
   const [open, setOpen] = createSignal(false)
   const [files, setFiles] = createSignal<string[]>([])
   const [names, setNames] = createSignal<string[]>([])
@@ -305,6 +305,8 @@ export const ShareDialog = () => {
           <div class="flex gap-1">
             <Input
               value={form.pwd}
+              // empty: no code (OP internal/model/sharing.go:55, :72)
+              placeholder={t("shares.pwd_empty")}
               onInput={(e) => setForm("pwd", e.currentTarget.value)}
             />
             <Button
@@ -494,14 +496,9 @@ export const ShareDialog = () => {
               </>
             }
           >
-            <Button
-              variant="outline"
-              class="gap-2"
-              onClick={() => copy(link())}
-            >
-              <TbCopy class="size-4" />
+            <CopyButton variant="outline" text={link}>
               {t("shares.copy_msg")}
-            </Button>
+            </CopyButton>
             <Button onClick={() => setOpen(false)}>{t("shares.done")}</Button>
           </Show>
         </div>

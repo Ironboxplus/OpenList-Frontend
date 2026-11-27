@@ -34,8 +34,11 @@ export const Progress = <T extends ValidComponent = "div">(
       {local.children}
       <ProgressPrimitive.Track class="h-2 overflow-hidden rounded-full bg-primary/20 data-[indeterminate]:bg-muted">
         <ProgressPrimitive.Fill
+          // runs to each new value (plan §P4: 200ms, standard); a progress
+          // bar is information, so reduced motion only shortens it (tokens.css)
+          data-motion="progress-fill"
           class={cn(
-            "h-full w-(--kb-progress-fill-width) bg-primary transition-all duration-500 ease-linear data-[progress=complete]:bg-primary " +
+            "h-full w-(--kb-progress-fill-width) bg-primary transition-[width] duration-(--motion-progress) ease-standard data-[progress=complete]:bg-primary " +
               // Unknown progress: a block sliding across a gray track, so it can
               // never read as "almost done". Reduced motion gets a static,
               // semi-transparent full-width bar instead.

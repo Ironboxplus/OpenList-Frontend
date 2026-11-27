@@ -118,7 +118,14 @@ export const FieldRenderer = (props: FieldRendererProps) => {
         value={zero() ? "" : display(props.value)}
         readOnly={f().readonly}
         required={f().required}
-        placeholder={f().zeroLabelKey ? t(f().zeroLabelKey!) : f().placeholder}
+        // what 0 or an empty box means, in words
+        placeholder={
+          f().zeroLabelKey
+            ? t(f().zeroLabelKey!)
+            : f().emptyLabelKey
+              ? t(f().emptyLabelKey!)
+              : f().placeholder
+        }
         aria-invalid={invalid()}
         onInput={(e) => {
           const v = e.currentTarget.value

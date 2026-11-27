@@ -8,9 +8,10 @@ import {
   SettingsSection,
   type FieldSpec,
 } from "~/features/settings/form"
-import { useFetch, useManageTitle, useT, useUtil } from "~/hooks"
+import { useFetch, useManageTitle, useT } from "~/hooks"
 import { Group, PResp, SettingItem, Type } from "~/types"
 import { handleResp, notify, r } from "~/utils"
+import { CopyButton } from "~/components/ui/copy-button"
 
 /** One input of a save endpoint: where it is stored, what it is sent as. */
 interface OtherField {
@@ -149,7 +150,6 @@ const specOf = (f: OtherField): FieldSpec => ({
 const OtherSettings = () => {
   const t = useT()
   useManageTitle("manage.sidemenu.other")
-  const { copy } = useUtil()
   const [values, setValues] = createStore<Record<string, string>>({})
   const [token, setToken] = createSignal("")
   const [error, setError] = createSignal<string>()
@@ -232,13 +232,9 @@ const OtherSettings = () => {
           <div class="flex flex-col gap-3 py-3">
             <Input value={token()} readOnly aria-label={t("settings.token")} />
             <div class="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => copy(token())}
-              >
+              <CopyButton variant="outline" text={token}>
                 {t("settings_other.copy_token")}
-              </Button>
+              </CopyButton>
               <Button
                 type="button"
                 variant="destructive"

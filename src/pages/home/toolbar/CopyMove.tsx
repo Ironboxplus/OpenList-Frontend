@@ -4,7 +4,16 @@ import { ModalFolderChoose, FolderTreeHandler } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { selectedObjs, userCan } from "~/store"
 import { announceTasks } from "~/features/transfers/service"
-import { bus, fsCopy, fsMove, handleRespWithNotifySuccess } from "~/utils"
+import { createdTaskIds } from "~/features/transfers/adapter"
+import { canUndoMove, offerUndo } from "~/features/files/undo"
+import {
+  bus,
+  fsCopy,
+  fsMove,
+  handleResp,
+  handleRespWithNotifySuccess,
+  notify,
+} from "~/utils"
 import { CgFolderAdd } from "solid-icons/cg"
 import { createDisclosure } from "~/components/overlay"
 
@@ -184,18 +193,36 @@ export const Move = () => {
         </VStack>
       }
       onSubmit={async (dst) => {
+        const src = pathname()
+        const names = selectedObjs().map((obj) => obj.name)
+        const how = {
+          overwrite: overwrite(),
+          skipExisting: skipExisting(),
+          seed: followSeed(),
+        }
         const resp = await ok(
-          pathname(),
+          src,
           dst,
-          selectedObjs().map((obj) => obj.name),
-          overwrite(),
-          skipExisting(),
-          followSeed(),
+          names,
+          how.overwrite,
+          how.skipExisting,
+          how.seed,
         )
-        handleRespWithNotifySuccess(resp, (data) => {
+        handleResp(resp, (data) => {
           announceTasks("move", data)
           refresh()
           onClose()
+          const undoable = canUndoMove({
+            ...how,
+            taskIds: createdTaskIds("move", data),
+          })
+          if (!undoable || src === dst) notify.success(resp.message)
+          else
+            offerUndo({
+              message: t("files.moved_to", { count: names.length, dir: dst }),
+              undo: () => fsMove(dst, src, names, false, false, how.seed),
+              refresh: () => void refresh(),
+            })
         })
       }}
     />

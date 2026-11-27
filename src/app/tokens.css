@@ -182,6 +182,18 @@ html.shell-phone body {
   --motion-pane: 220ms;
   --motion-section: 160ms;
   --motion-attention: 900ms;
+  --motion-through-out: 90ms;
+  --motion-through-in: 150ms;
+  --motion-crossfade: 150ms;
+  --motion-item-in: 200ms;
+  --motion-item-out: 150ms;
+  --motion-item-move: 250ms;
+  --motion-highlight: 1200ms;
+  --motion-icon-swap: 100ms;
+  --motion-progress: 200ms;
+  --motion-drag-hint: 100ms;
+  --motion-theme: 200ms;
+  --motion-count: 300ms;
   --motion-reduced: 100ms;
   --motion-watchdog: 2000ms;
 }
@@ -224,6 +236,15 @@ html.shell-phone body {
     --motion-pane: 100ms;
     --motion-section: 100ms;
     --motion-attention: 100ms;
+    --motion-through-in: 100ms;
+    --motion-crossfade: 100ms;
+    --motion-item-in: 100ms;
+    --motion-item-out: 100ms;
+    --motion-item-move: 100ms;
+    --motion-highlight: 100ms;
+    --motion-progress: 100ms;
+    --motion-theme: 100ms;
+    --motion-count: 100ms;
   }
   *:not([role="progressbar"], [role="progressbar"] *),
   *::before,

@@ -46,6 +46,7 @@ import {
 import { UserMethods } from "~/types"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
+import { barMotion, MotionShow } from "~/platform/motion"
 import { fileCrumbs, parentCrumb, type FileCrumb } from "./crumbs"
 import {
   chooseView,
@@ -272,9 +273,15 @@ const PhoneCrumbs = () => {
 export const FilesTopLeft = () => (
   <>
     <NewMenu />
-    <Show when={haveSelected()}>
+    <MotionShow
+      when={haveSelected()}
+      motion={barMotion("top")}
+      name="selection-bar"
+      float
+      class="flex min-w-0 flex-1"
+    >
       <SelectionBar />
-    </Show>
+    </MotionShow>
   </>
 )
 
@@ -363,23 +370,29 @@ const useRefreshFolder = () => {
   const { pathname } = useRouter()
   return () => {
     invalidateMedia(pathname())
-    void refresh(undefined, true)
+    return refresh(undefined, true)
   }
 }
 
 const RefreshButton = () => {
   const t = useT()
   const refreshFolder = useRefreshFolder()
+  // the folder stays in sight while it is listed again: the icon turns meanwhile
+  const [busy, setBusy] = createSignal(false)
   return (
     <button
       type="button"
       data-action="refresh"
       aria-label={t("home.toolbar.refresh")}
       title={t("home.toolbar.refresh")}
-      onClick={refreshFolder}
+      aria-busy={busy()}
+      onClick={() => {
+        setBusy(true)
+        void refreshFolder().finally(() => setBusy(false))
+      }}
       class={groupButton}
     >
-      <TbRefresh class="size-4" />
+      <TbRefresh class={busy() ? "size-4 animate-spin" : "size-4"} />
     </button>
   )
 }

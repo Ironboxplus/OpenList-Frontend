@@ -144,14 +144,6 @@ const theme: HopeThemeConfig = {
         },
       },
     },
-    Notification: {
-      baseStyle: {
-        root: {
-          rounded: "$lg",
-          border: "unset",
-        },
-      },
-    },
     Alert: {
       baseStyle: {
         root: {

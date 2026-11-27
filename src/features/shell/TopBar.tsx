@@ -288,7 +288,9 @@ const WideBar = (props: {
           </button>
         </Show>
       </div>
-      <div class="flex min-w-0 flex-1 items-center gap-3 pl-[var(--shell-gap)]">
+      {/* relative: a bar leaving the left slot floats here while the search
+          box comes back in its place (MotionShow float) */}
+      <div class="relative flex min-w-0 flex-1 items-center gap-3 pl-[var(--shell-gap)]">
         <Show
           when={topBarSlots()?.left}
           fallback={

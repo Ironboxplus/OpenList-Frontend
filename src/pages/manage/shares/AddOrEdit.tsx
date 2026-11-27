@@ -185,6 +185,9 @@ const AddOrEdit = () => {
               id: "pwd",
               type: Type.String,
               labelKey: "shares.pwd",
+              // empty: no code (OP internal/model/sharing.go:55 SetPassword
+              // clears it, :72 VerifyPassword then lets anyone in)
+              emptyLabelKey: "shares.pwd_empty",
               generate: randomPwd,
             }}
             value={share.pwd}

@@ -14,6 +14,10 @@ import { motion } from "./runtime"
 export interface PartMotion {
   enter: readonly [MotionKeyframes, MotionOptions]
   exit: readonly [MotionKeyframes, MotionOptions]
+  /** Called as the exit starts (to take the part out of the flow, say). */
+  leaving?: (el: HTMLElement) => void
+  /** Called as an enter starts, also turning round mid-exit. */
+  entering?: (el: HTMLElement) => void
 }
 
 export interface Presence {
@@ -59,6 +63,7 @@ export function createPresence(open: Accessor<boolean>): Presence {
     p.run?.cancel()
     p.leaving = false
     el.style.removeProperty("pointer-events")
+    p.m.entering?.(el)
     const [k, o] = p.m.enter
     const run = motion.animate(el, turning ? fromHere(k) : k, o)
     p.run = run
@@ -74,6 +79,7 @@ export function createPresence(open: Accessor<boolean>): Presence {
       p.leaving = true
       // a closing overlay takes no clicks
       el.style.setProperty("pointer-events", "none")
+      p.m.leaving?.(el)
       p.run = motion.animate(el, p.m.exit[0], p.m.exit[1])
       return p.run.finished
     })

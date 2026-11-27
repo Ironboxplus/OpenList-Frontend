@@ -11,6 +11,7 @@ import {
   onCleanup,
   onMount,
   splitProps,
+  type Accessor,
   type JSX,
   type ValidComponent,
 } from "solid-js"
@@ -33,6 +34,90 @@ type CollapsibleContentProps = CollapsiblePrimitive.CollapsibleContentProps & {
   ref?: unknown
 }
 
+/**
+ * The height of `el` following `open`, its `body` fading ahead of it; folded,
+ * `el` is hidden and inert (it stays mounted).
+ */
+const createFold = (
+  el: () => HTMLElement,
+  body: () => HTMLElement,
+  open: Accessor<boolean>,
+) => {
+  let runs: MotionControl[] = []
+  const stop = () => {
+    runs.forEach((r) => r.cancel())
+    runs = []
+  }
+
+  onMount(() => {
+    el().hidden = !open()
+    el().inert = !open()
+  })
+  createEffect(
+    on(
+      open,
+      (open) => {
+        const box = el()
+        // from where it is: folding back mid-way turns round there
+        const from = box.hidden ? 0 : box.getBoundingClientRect().height
+        stop()
+        box.inert = !open
+        box.hidden = false
+        const to = open ? box.scrollHeight : 0
+        const o = open
+          ? MotionTokens.options.collapseEnter
+          : MotionTokens.options.collapseExit
+        const height = motion.animate(
+          box,
+          { height: [from, to] },
+          { ...o, delay: MotionTokens.duration.collapseLead / 1000 },
+        )
+        const fade = motion.animate(
+          body(),
+          { opacity: [open && from === 0 ? 0 : null, open ? 1 : 0] },
+          { duration: o.duration, ease: MotionTokens.ease.standard },
+        )
+        const mine = [height, fade]
+        runs = mine
+        void Promise.all(mine.map((r) => r.finished)).then(() => {
+          if (runs !== mine || height.state !== "finished") return
+          // open, it follows its content again; folded, it leaves the layout
+          box.style.removeProperty("height")
+          box.hidden = !open
+        })
+      },
+      { defer: true },
+    ),
+  )
+  onCleanup(stop)
+}
+
+/**
+ * The same fold without Kobalte's trigger and state: the children of a tree
+ * row (FolderTree), open when `open` is.
+ */
+export const Fold = (props: {
+  open: boolean
+  class?: string
+  bodyClass?: string
+  children?: JSX.Element
+}) => {
+  let el!: HTMLDivElement
+  let body!: HTMLDivElement
+  createFold(
+    () => el,
+    () => body,
+    () => props.open,
+  )
+  return (
+    <div ref={el} data-motion="fold" class={cn("overflow-hidden", props.class)}>
+      <div ref={body} class={props.bodyClass}>
+        {props.children}
+      </div>
+    </div>
+  )
+}
+
 export const CollapsibleContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, CollapsibleContentProps>,
 ) => {
@@ -45,52 +130,11 @@ export const CollapsibleContent = <T extends ValidComponent = "div">(
   const ctx = CollapsiblePrimitive.useCollapsibleContext()
   let el!: HTMLElement
   let body!: HTMLDivElement
-  let runs: MotionControl[] = []
-  const stop = () => {
-    runs.forEach((r) => r.cancel())
-    runs = []
-  }
-
-  onMount(() => {
-    el.hidden = !ctx.isOpen()
-    el.inert = !ctx.isOpen()
-  })
-  createEffect(
-    on(
-      ctx.isOpen,
-      (open) => {
-        // from where it is: folding back mid-way turns round there
-        const from = el.hidden ? 0 : el.getBoundingClientRect().height
-        stop()
-        el.inert = !open
-        el.hidden = false
-        const to = open ? el.scrollHeight : 0
-        const o = open
-          ? MotionTokens.options.collapseEnter
-          : MotionTokens.options.collapseExit
-        const height = motion.animate(
-          el,
-          { height: [from, to] },
-          { ...o, delay: MotionTokens.duration.collapseLead / 1000 },
-        )
-        const fade = motion.animate(
-          body,
-          { opacity: [open && from === 0 ? 0 : null, open ? 1 : 0] },
-          { duration: o.duration, ease: MotionTokens.ease.standard },
-        )
-        const mine = [height, fade]
-        runs = mine
-        void Promise.all(mine.map((r) => r.finished)).then(() => {
-          if (runs !== mine || height.state !== "finished") return
-          // open, it follows its content again; folded, it leaves the layout
-          el.style.removeProperty("height")
-          el.hidden = !open
-        })
-      },
-      { defer: true },
-    ),
+  createFold(
+    () => el,
+    () => body,
+    ctx.isOpen,
   )
-  onCleanup(stop)
 
   return (
     <CollapsiblePrimitive.Content

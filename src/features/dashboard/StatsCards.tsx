@@ -7,6 +7,7 @@ import {
   TbRefresh,
 } from "solid-icons/tb"
 import { createMemo, For, lazy, Show, Suspense, type JSX } from "solid-js"
+import { AnimatedNumber } from "~/components/ui/animated-number"
 import { DataState } from "~/components/ui/data-state"
 import { Skeleton } from "~/components/ui/skeleton"
 import { useRouter, useT } from "~/hooks"
@@ -76,11 +77,10 @@ const Rate = (props: { value: string; kind: "down" | "up"; big?: boolean }) => (
         style={{ color: UPLOAD_COLOR }}
       />
     )}
-    <span
+    <AnimatedNumber
+      value={props.value}
       class={cn("font-semibold", props.big ? "text-xl xl:text-2xl" : "text-lg")}
-    >
-      {props.value}
-    </span>
+    />
   </span>
 )
 
@@ -195,14 +195,13 @@ export const MediaStatsCard = (props: {
           <For each={rows()}>
             {(row) => (
               <div class="flex flex-col" data-media={row.key}>
-                <span
+                <AnimatedNumber
+                  value={row.value}
                   class={cn(
-                    "text-2xl font-semibold tabular-nums",
+                    "text-2xl font-semibold",
                     row.attention && "text-warning",
                   )}
-                >
-                  {row.value}
-                </span>
+                />
                 <span class="text-xs text-muted-foreground">
                   {t(`dashboard.media.${row.key}`)}
                 </span>

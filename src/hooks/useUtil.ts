@@ -23,7 +23,11 @@ export const useUtil = () => {
   const t = useT()
   const { pathname } = useRouter()
   return {
-    copy: async (text: string) => {
+    /**
+     * Copies `text`; says so in a toast, or only when it failed (`quiet`: a
+     * copy button shows a check instead). Whether it was copied.
+     */
+    copy: async (text: string, o?: { quiet?: boolean }) => {
       let copied = false
       try {
         if (!(await checkClipboardPermission("clipboard-write"))) {
@@ -47,11 +51,9 @@ export const useUtil = () => {
           ta.remove()
         }
       }
-      if (copied) {
-        notify.success(t("global.copied"))
-      } else {
-        notify.error(t("global.clipboard_denied"))
-      }
+      if (!copied) notify.error(t("global.clipboard_denied"))
+      else if (!o?.quiet) notify.success(t("global.copied"))
+      return copied
     },
     paste: async (): Promise<string> => {
       try {

@@ -11,7 +11,12 @@ import {
 import { FullLoading } from "~/components"
 import { useRouter } from "~/hooks"
 import { me } from "~/store"
-import { MotionTokens, playOnce } from "~/platform/motion"
+import {
+  barMotion,
+  MotionShow,
+  MotionTokens,
+  playOnce,
+} from "~/platform/motion"
 import { UserMethods } from "~/types"
 import { isPaletteHotkey, paletteOpen, setPaletteOpen } from "../palette/state"
 import { transfers } from "../transfers/service"
@@ -115,6 +120,14 @@ const AppShell = (props: ParentProps) => {
   const [paletteUsed, setPaletteUsed] = createSignal(false)
   createEffect(() => {
     if (paletteOpen()) setPaletteUsed(true)
+  })
+  // The page's bottom bar as last given: it keeps rendering while it slides
+  // away, also after the page that gave it has gone.
+  const [lastBottomBar, setLastBottomBar] =
+    createSignal<ReturnType<typeof bottomBarOverride>>()
+  createEffect(() => {
+    const bar = bottomBarOverride()
+    if (bar) setLastBottomBar(() => bar)
   })
 
   // Once signed in, fetch the section chunks while the browser is idle so the
@@ -278,12 +291,21 @@ const AppShell = (props: ParentProps) => {
       <div style={{ display: "contents" }}>
         <Suspense>
           <Show when={phone()}>
-            <Show
-              when={bottomBarOverride()?.when()}
-              fallback={<BottomTabs pathname={pathname()} />}
-            >
-              {bottomBarOverride()!.render()}
+            <Show when={!bottomBarOverride()?.when()}>
+              <BottomTabs pathname={pathname()} />
             </Show>
+            {/* a page's bar over the tab bar (the selection's batch actions):
+                up from the bottom edge and back down (research 02 §三) */}
+            <MotionShow
+              when={!!bottomBarOverride()?.when()}
+              motion={barMotion("bottom")}
+              name="batch-bar"
+              class="fixed inset-x-0 bottom-0 z-[1200]"
+            >
+              <Show when={lastBottomBar()} keyed>
+                {(bar) => bar.render()}
+              </Show>
+            </MotionShow>
           </Show>
         </Suspense>
       </div>

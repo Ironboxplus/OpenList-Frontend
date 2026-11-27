@@ -31,12 +31,18 @@ export interface ViewAnimationRuntimeControl {
   cancel(): void
   finish(): void
 }
+/** Keyframes of the root's two pictures in a view transition (a reveal). */
+export interface ViewLayers {
+  new?: MotionKeyframes
+  old?: MotionKeyframes
+}
 export interface ViewAnimationRuntime {
   start(
     update: () => void | Promise<void>,
     request: {
       options?: MotionOptions
       shared?: readonly [Element | string, Element | string]
+      layers?: ViewLayers
     },
   ): Promise<ViewAnimationRuntimeControl>
 }
@@ -142,10 +148,14 @@ class BrowserRuntime implements ViewAnimationRuntime {
     r: {
       options?: MotionOptions
       shared?: readonly [Element | string, Element | string]
+      layers?: ViewLayers
     },
   ) {
     const b = animateView(update, r.options as AnimationOptions)
     if (r.shared) b.add(r.shared[0], r.shared[1])
+    const o = r.options as AnimationOptions
+    if (r.layers?.new) b.new(r.layers.new as DOMKeyframesDefinition, o)
+    if (r.layers?.old) b.old(r.layers.old as DOMKeyframesDefinition, o)
     const p: any = await b
     return createViewAnimationRuntimeControl(p)
   }
@@ -153,6 +163,8 @@ class BrowserRuntime implements ViewAnimationRuntime {
 export interface ViewAnimationSpec {
   intentId?: number
   options?: MotionOptions
+  /** Expressive only: subtle keeps the plain cross-fade. */
+  layers?: ViewLayers
   shared?: readonly [
     Element | string | (() => Element | string | undefined),
     Element | string | (() => Element | string | undefined),
@@ -285,6 +297,7 @@ export class MotionDriver {
               ? MotionTokens.options.reduced
               : s.options,
           shared,
+          layers: this.level() === "expressive" ? s.layers : undefined,
         }),
       )
       return c

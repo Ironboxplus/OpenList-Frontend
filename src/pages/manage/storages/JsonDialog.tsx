@@ -9,7 +9,8 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog"
 import { Textarea } from "~/components/ui/input"
-import { useT, useUtil } from "~/hooks"
+import { useT } from "~/hooks"
+import { CopyButton } from "~/components/ui/copy-button"
 
 export interface JsonDialogProps {
   open: boolean
@@ -24,7 +25,6 @@ export interface JsonDialogProps {
 /** Shows JSON to copy (export) or takes pasted JSON (import). */
 export const JsonDialog = (props: JsonDialogProps) => {
   const t = useT()
-  const { copy } = useUtil()
   const [text, setText] = createSignal("")
   // A fresh open starts from the given value (or empty for an import).
   createEffect(() => {
@@ -57,11 +57,7 @@ export const JsonDialog = (props: JsonDialogProps) => {
           </Button>
           <Show
             when={props.onSubmit}
-            fallback={
-              <Button type="button" onClick={() => copy(text())}>
-                {t("common.copy")}
-              </Button>
-            }
+            fallback={<CopyButton text={text}>{t("common.copy")}</CopyButton>}
           >
             <Button type="button" onClick={() => props.onSubmit!(text())}>
               {t("global.ok")}

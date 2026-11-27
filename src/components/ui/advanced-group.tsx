@@ -12,8 +12,16 @@ import {
   CollapsibleTrigger,
 } from "./collapsible"
 
-export const AdvancedGroup = (props: {
+/**
+ * Fewer items than this are not folded (the lead, 11-27: an "Advanced (1)"
+ * only costs a click): they show in line, under the group's title when the
+ * group has nothing else. The rule for every group, here and in P3.
+ */
+export const ADVANCED_MIN_ITEMS = 2
+
+interface AdvancedGroupProps {
   title: string
+  /** How many settings it holds: under ADVANCED_MIN_ITEMS they show in line. */
   count: number
   changed: number
   open: boolean
@@ -22,7 +30,25 @@ export const AdvancedGroup = (props: {
   heading?: boolean
   testid?: string
   children: JSX.Element
-}) => {
+}
+
+export const AdvancedGroup = (props: AdvancedGroupProps) => (
+  <Show
+    when={props.count >= ADVANCED_MIN_ITEMS}
+    fallback={
+      <div class="grid gap-3">
+        <Show when={props.heading}>
+          <h3 class="px-1 text-sm font-semibold">{props.title}</h3>
+        </Show>
+        {props.children}
+      </div>
+    }
+  >
+    <Folded {...props} />
+  </Show>
+)
+
+const Folded = (props: AdvancedGroupProps) => {
   const t = useT()
   return (
     <Collapsible open={props.open} onOpenChange={props.onOpenChange}>

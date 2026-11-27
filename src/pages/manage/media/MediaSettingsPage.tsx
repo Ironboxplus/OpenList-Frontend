@@ -24,6 +24,7 @@ import {
 } from "~/utils/media_api"
 import { mediaStatus, setMediaStatus } from "~/store/media"
 import { SubtitlePrefetchProgress } from "./SubtitlePrefetchProgress"
+import { CopyButton } from "~/components/ui/copy-button"
 
 /** 基础开关（刮削与 STRM 已拆到独立页面） */
 const BASE_KEYS = [
@@ -61,15 +62,6 @@ const MediaSettingsPage = () => {
     loadStatus()
     loadKeys()
   })
-
-  const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      notify.success(t("manage.media_lib.copied"))
-    } catch {
-      notify.error(t("manage.media_lib.copy_failed"))
-    }
-  }
 
   const createKey = async () => {
     const resp = await adminCreateAppKey(keyName().trim() || "Media Key")
@@ -109,9 +101,9 @@ const MediaSettingsPage = () => {
         </div>
       </div>
       <Show when={p.enabled}>
-        <Button variant="ghost" size="sm" onClick={() => copy(p.url)}>
+        <CopyButton variant="ghost" size="sm" text={() => p.url}>
           {t("manage.media_lib.copy_url")}
-        </Button>
+        </CopyButton>
       </Show>
     </div>
   )
@@ -171,9 +163,9 @@ const MediaSettingsPage = () => {
                 <div class="font-medium">{t("manage.media_lib.key_once")}</div>
                 <div class="mt-1 flex flex-wrap items-center gap-2">
                   <span class="break-all font-mono">{plainKey()}</span>
-                  <Button size="sm" onClick={() => copy(plainKey())}>
+                  <CopyButton size="sm" text={() => plainKey() ?? ""}>
                     {t("manage.media_lib.copy")}
-                  </Button>
+                  </CopyButton>
                 </div>
               </AlertDescription>
             </Alert>

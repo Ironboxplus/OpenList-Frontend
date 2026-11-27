@@ -8,11 +8,12 @@ import { TbDownload, TbLink } from "solid-icons/tb"
 import { Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { Button } from "~/components/ui/button"
-import { useT, useUtil } from "~/hooks"
+import { useT } from "~/hooks"
 import { downloadDenied, getMainColor, objStore, previewDenied } from "~/store"
 import { formatDate, getFileSize } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { saveFile } from "~/hooks/useDownload"
+import { CopyButton } from "~/components/ui/copy-button"
 
 export const FileFacts = () => {
   const t = useT()
@@ -31,7 +32,6 @@ export const FileFacts = () => {
 
 const FileSummary = () => {
   const t = useT()
-  const { copy } = useUtil()
   return (
     <div class="flex w-full flex-col items-center gap-4 py-6 text-center">
       <Dynamic
@@ -57,14 +57,13 @@ const FileSummary = () => {
         }
       >
         <div class="flex gap-2">
-          <Button
+          <CopyButton
             variant="outline"
-            class="gap-2"
-            onClick={() => copy(objStore.raw_url)}
+            icon={TbLink}
+            text={() => objStore.raw_url}
           >
-            <TbLink class="size-4" />
             {t("home.viewer.copy_link")}
-          </Button>
+          </CopyButton>
           <Button
             class="gap-2"
             onClick={() => saveFile(objStore.raw_url, objStore.obj.name)}

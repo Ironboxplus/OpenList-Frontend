@@ -3,8 +3,9 @@ import { createSignal, onCleanup, Show } from "solid-js"
 import { ModalInput } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { oneChecked, selectedObjs } from "~/store"
-import { bus, fsRename, handleRespWithNotifySuccess, pathJoin } from "~/utils"
+import { bus, fsRename, handleResp, notify, pathJoin } from "~/utils"
 import { createDisclosure } from "~/components/overlay"
+import { offerUndo } from "~/features/files/undo"
 
 export const Rename = () => {
   const t = useT()
@@ -57,15 +58,22 @@ export const Rename = () => {
         defaultValue={selectedObjs()[0]?.name ?? ""}
         loading={loading()}
         onSubmit={async (name) => {
-          const resp = await ok(
-            pathJoin(pathname(), selectedObjs()[0].name),
-            name,
-            overwrite(),
-            followSeed(),
-          )
-          handleRespWithNotifySuccess(resp, () => {
+          const dir = pathname()
+          const old = selectedObjs()[0].name
+          const replaced = overwrite()
+          const seed = followSeed()
+          const resp = await ok(pathJoin(dir, old), name, replaced, seed)
+          handleResp(resp, () => {
             refresh()
             onClose()
+            // a rename that replaced a file cannot be taken back: that file is gone
+            if (replaced) notify.success(resp.message)
+            else
+              offerUndo({
+                message: t("files.renamed_to", { name }),
+                undo: () => fsRename(pathJoin(dir, name), old, false, seed),
+                refresh: () => void refresh(),
+              })
           })
         }}
       />

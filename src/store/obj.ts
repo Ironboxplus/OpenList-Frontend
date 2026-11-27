@@ -53,6 +53,7 @@ const [objStore, setObjStore] = createStore<
 const setObjs = (objs: Obj[]) => {
   lastChecked.start = -1
   lastChecked.end = -1
+  bus.emit("files:before", "rows")
   setObjStore("objs", withoutNulls(objs))
 }
 
@@ -108,6 +109,7 @@ export type OrderBy = "name" | "size" | "modified"
 
 export const sortObjs = (orderBy: OrderBy, reverse?: boolean) => {
   log("sort:", orderBy, reverse)
+  bus.emit("files:before", "rows")
   setObjStore(
     "objs",
     produce((objs) =>
@@ -223,6 +225,7 @@ export const layout = () => {
   return _layout()
 }
 export const setLayout = (layout: LayoutType) => {
+  if (layout !== _layout()) bus.emit("files:before", "layout")
   layoutRecord[pathname()] = layout
   localStorage.setItem("layoutRecord", JSON.stringify(layoutRecord))
   _setLayout(layout)

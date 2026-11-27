@@ -1,9 +1,63 @@
 // Solid's side of the motion foundation: lifecycles only. What moves, how long
 // and on which curve comes from the caller's tokens.
-import { createEffect, on, onCleanup, splitProps, type JSX } from "solid-js"
+import {
+  createEffect,
+  on,
+  onCleanup,
+  Show,
+  splitProps,
+  type JSX,
+} from "solid-js"
 import type { MotionControl, MotionKeyframes } from "./MotionDriver"
 import type { MotionOptions } from "./MotionTokens"
+import { createPresence, type PartMotion } from "./presence"
 import { motion } from "./runtime"
+
+const FLOAT = ["position", "left", "top", "width", "height", "margin"]
+/** Out of the flow where it is, so what takes its place does not wait for it. */
+const floatOut = (el: HTMLElement) => {
+  const s = el.style
+  s.setProperty("position", "absolute")
+  s.setProperty("left", `${el.offsetLeft}px`)
+  s.setProperty("top", `${el.offsetTop}px`)
+  s.setProperty("width", `${el.offsetWidth}px`)
+  s.setProperty("height", `${el.offsetHeight}px`)
+  s.setProperty("margin", "0")
+}
+const floatIn = (el: HTMLElement) =>
+  FLOAT.forEach((p) => el.style.removeProperty(p))
+
+/**
+ * Children that come into sight and leave it with `motion`: kept mounted
+ * through the exit (createPresence). `float`: leaving, the box is taken out of
+ * the flow at once (its parent must be positioned), for something that gives
+ * its place to another. `name` is its data-motion.
+ */
+export const MotionShow = (props: {
+  when: boolean
+  motion: Pick<PartMotion, "enter" | "exit">
+  name: string
+  float?: boolean
+  class?: string
+  children: JSX.Element
+}) => {
+  const p = createPresence(() => props.when)
+  return (
+    <Show when={p.present()}>
+      <div
+        ref={p.part({
+          ...props.motion,
+          leaving: props.float ? floatOut : undefined,
+          entering: props.float ? floatIn : undefined,
+        })}
+        data-motion={props.name}
+        class={props.class}
+      >
+        {props.children}
+      </div>
+    </Show>
+  )
+}
 
 /** Plays `keyframes` once on `el` (a ring, an entrance); cancelled with its owner. */
 export const playOnce = (

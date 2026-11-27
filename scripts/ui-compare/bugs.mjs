@@ -898,7 +898,8 @@ await spec("click-targets-32", {}, async (env) => {
   list.push(await hitBox(page.locator('[role="dialog"] button:has(.sr-only)').last(), "sheet close"))
   await page.keyboard.press("Escape")
   await go(page, "/@manage/messenger", 1500)
-  const toastClose = page.locator(".hope-close-button").first()
+  // the app's own toast since P4 (components/ui/toast.tsx), not hope's
+  const toastClose = page.locator('[data-motion="toast"] [data-testid="toast-close"]').first()
   await toastClose.waitFor({ timeout: 4000 })
   list.push(await hitBox(toastClose, "notification close"))
   expectTargets(list)
@@ -1995,6 +1996,8 @@ const viewerProbe = () => {
       v.anims.push({
         at: Math.round(performance.now() - t0),
         motion: el?.closest?.("[data-motion]")?.getAttribute("data-motion") ?? el?.localName ?? "",
+        // the marked element itself, not something inside it (a hover there)
+        own: !!el?.hasAttribute?.("data-motion"),
         pseudo: a.effect?.pseudoElement ?? "",
         duration: Number(tm.duration),
         delay: Number(tm.delay) || 0,
@@ -2567,7 +2570,9 @@ await spec("viewer-reduced", { reducedMotion: "reduce", init: viewerProbe }, asy
 // for what Motion runs on its own clock (heights), the box frame by frame.
 const P4DIR = `${MOUNT}/动效`
 const near = (a, ms, tol = 2) => typeof a === "number" && Math.abs(a - ms) <= tol
-const named = (list, motion, prop) => list.filter((a) => a.motion === motion && (!prop || a.props.includes(prop)))
+// what the marked layer itself ran; the controls inside a layer (rows under
+// files-live) keep their own hover transitions
+const named = (list, motion, prop) => list.filter((a) => a.own && a.motion === motion && (!prop || a.props.includes(prop)))
 const freshAnims = (page) => page.evaluate(() => (window.__viewer.anims = []).length)
 const putFile = (p, text) =>
   fetch(OL + "/api/fs/put", { method: "PUT", headers: { Authorization: token, "File-Path": encodeURIComponent(p), "Content-Type": "application/octet-stream" }, body: text }).then((r) => r.json())
@@ -2872,7 +2877,7 @@ await spec("p4-reduced", { reducedMotion: "reduce", init: viewerProbe }, async (
   const dark0 = await page.evaluate(() => document.documentElement.classList.contains("dark"))
   await themeButton(page).click()
   await sleep(400)
-  const ours = (await anims(page)).filter((a) => a.iterations !== Infinity && /^(files-|selection-bar|row|toast|copy-icon|progress|drop-overlay)/.test(a.motion))
+  const ours = (await anims(page)).filter((a) => a.own && a.iterations !== Infinity && /^(files-|selection-bar|row|toast|copy-icon|progress|drop-overlay)/.test(a.motion))
   env.report = { ...(env.report ?? {}), anims: ours }
   c("folder and selection animations ran", ours.length > 0, ours)
   c("none longer than 100ms", ours.every((a) => a.duration <= 100), ours)
@@ -2942,10 +2947,11 @@ await spec("p4-advanced-flat", {}, async (env) => {
   c("a group of more still folds", (await dialog.locator('[data-testid="advanced-page"]').count()) === 1)
   // an empty share code says what it means (OP internal/model/sharing.go:55, :72)
   const ph = await dialog.locator('[data-field="pwd"] input').getAttribute("placeholder")
-  c("an empty share code says anyone with the link can open it", tr("shares.pwd_empty").test(ph ?? ""), ph)
+  // (a key not yet written reads as /^$/: an empty placeholder must not pass)
+  c("an empty share code says anyone with the link can open it", !!ph && tr("shares.pwd_empty").test(ph), ph)
   await page.goto(OL + "/@manage/shares/add", { waitUntil: "domcontentloaded" })
   const ph2 = await page.locator("input#pwd").getAttribute("placeholder", { timeout: 8000 }).catch(() => null)
-  c("so does the share form", tr("shares.pwd_empty").test(ph2 ?? ""), ph2)
+  c("so does the share form", !!ph2 && tr("shares.pwd_empty").test(ph2), ph2)
   c.done()
 })
 

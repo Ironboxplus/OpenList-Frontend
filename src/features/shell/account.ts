@@ -1,5 +1,6 @@
 import { useColorMode } from "@hope-ui/solid"
 import { useRouter, useT } from "~/hooks"
+import { revealFrom } from "~/platform/motion"
 import type { Resp } from "~/types"
 import { changeToken, handleResp, loginUrlFor, notify, r } from "~/utils"
 
@@ -18,6 +19,8 @@ export const useAccountActions = () => {
   return {
     profile: () => to("/@manage/profile"),
     logout,
-    toggleTheme: toggleColorMode,
+    // the new colors spread from the button pressed (P4)
+    toggleTheme: (e?: Event) =>
+      revealFrom(toggleColorMode, e?.currentTarget as Element | undefined),
   }
 }

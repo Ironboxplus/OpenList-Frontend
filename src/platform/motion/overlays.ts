@@ -50,6 +50,32 @@ export const overlayMotion = (
   }
 }
 
+/**
+ * A bar that takes the place of another (the selection's actions over the
+ * search box, the batch bar over the tab bar): it slides in from its edge and
+ * fades, 200ms, and leaves the same way in 150ms (research 02 §三 选择条).
+ */
+export const barMotion = (from: "top" | "bottom"): OverlayMotion => {
+  const off = from === "top" ? "translateY(-6px)" : "translateY(100%)"
+  const at = from === "top" ? "translateY(0px)" : "translateY(0%)"
+  return {
+    enter: [{ opacity: [0, 1], transform: [off, at] }, o.barEnter],
+    exit: [{ opacity: [null, 0], transform: [null, off] }, o.barExit],
+  }
+}
+
+/** A toast: up from below and fading, 200ms in, 150ms out (as a bar). */
+export const toastMotion: OverlayMotion = {
+  enter: [
+    { opacity: [0, 1], transform: ["translateY(8px)", "translateY(0px)"] },
+    o.barEnter,
+  ],
+  exit: [
+    { opacity: [null, 0], transform: [null, "translateY(8px)"] },
+    o.barExit,
+  ],
+}
+
 /** The scrim of a dialog or sheet: a fade on the same clock as its panel. */
 export const scrimMotion = (kind: "dialog" | "sheet"): OverlayMotion => {
   const m = overlayMotion(kind)

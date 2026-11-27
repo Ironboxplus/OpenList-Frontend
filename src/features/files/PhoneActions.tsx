@@ -177,7 +177,8 @@ export const PhoneBatchBar = () => {
     <nav
       aria-label="batch"
       data-batch-bar
-      class="fixed inset-x-0 bottom-0 z-[1200] flex border-t bg-card text-card-foreground"
+      // placed by the shell, which slides it over the tab bar (AppShell)
+      class="flex w-full border-t bg-card text-card-foreground"
       style={{
         height: `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom))`,
         "padding-bottom": "env(safe-area-inset-bottom)",

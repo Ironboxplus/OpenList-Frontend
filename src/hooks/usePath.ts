@@ -114,6 +114,7 @@ export const usePath = () => {
     index?: number,
     rp?: boolean,
     force?: boolean,
+    quiet = false,
   ) => {
     cancelObj?.()
     cancelList?.()
@@ -124,16 +125,24 @@ export const usePath = () => {
       return recoverHistory(path, index)
     } else if (IsDirRecord[path]) {
       log(`handle [${getHistoryKey(path, index)}] as folder`)
-      return handleFolder(path, index, undefined, undefined, force)
+      return handleFolder(
+        path,
+        index,
+        undefined,
+        undefined,
+        force,
+        false,
+        quiet,
+      )
     } else {
       log(`handle [${getHistoryKey(path, index)}] as obj`)
-      return handleObj(path, index)
+      return handleObj(path, index, quiet)
     }
   }
 
   // handle enter obj that don't know if it is dir or file
-  const handleObj = async (path: string, index?: number) => {
-    shouldKeepState() || ObjStore.setState(State.FetchingObj)
+  const handleObj = async (path: string, index?: number, quiet = false) => {
+    shouldKeepState() || quiet || ObjStore.setState(State.FetchingObj)
     const resp = await getObj(path)
     handleRespWithoutNotify(
       resp,
@@ -144,7 +153,7 @@ export const usePath = () => {
         if (data.is_dir) {
           ObjStore.setObj(data)
           setPathAs(path)
-          handleFolder(path, index)
+          handleFolder(path, index, undefined, false, false, false, quiet)
           return
         }
         // A file opens over its folder (store/viewer.ts): the folder is
@@ -169,6 +178,8 @@ export const usePath = () => {
   }
 
   // change enter a folder or turn page or load more
+  // quiet: the folder stays in sight while it is listed again (a refresh), so
+  // its rows change in place (features/files/files-motion.ts)
   const handleFolder = async (
     path: string,
     index?: number,
@@ -176,6 +187,7 @@ export const usePath = () => {
     append = false,
     force?: boolean,
     onlyList = false,
+    quiet = false,
   ) => {
     if (!size) {
       size = pagination.size
@@ -183,7 +195,7 @@ export const usePath = () => {
     if (size !== undefined && pagination.type === "all") {
       size = undefined
     }
-    if (!onlyList && !shouldKeepState())
+    if (!onlyList && !quiet && !shouldKeepState())
       ObjStore.setState(append ? State.FetchingMore : State.FetchingObjs)
     const resp = await getObjs({ path, index, size, force })
     handleRespWithoutNotify(
@@ -274,18 +286,28 @@ export const usePath = () => {
       const path = pathname()
       const scroll = window.scrollY
       clearHistory(path, globalPage)
+      // the same listing in sight: list it again without the skeleton
+      const quiet = objStore.state === State.Folder && objStore.listed === path
       if (
         pagination.type === "load_more" ||
         pagination.type === "auto_load_more"
       ) {
         const page = globalPage
         resetGlobalPage()
-        await handlePathChange(path, globalPage, retry_pass, force)
+        // more than one page shown: the first one alone would drop the rest
+        // for a moment, so this one is not quiet
+        await handlePathChange(
+          path,
+          globalPage,
+          retry_pass,
+          force,
+          quiet && page <= 1,
+        )
         while (globalPage < page) {
           await loadMore()
         }
       } else {
-        await handlePathChange(path, globalPage, retry_pass, force)
+        await handlePathChange(path, globalPage, retry_pass, force, quiet)
       }
       window.scroll({ top: scroll, behavior: "smooth" })
     },

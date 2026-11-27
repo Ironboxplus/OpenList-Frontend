@@ -54,6 +54,7 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "~/components/overlay"
+import { Fold } from "~/components/ui/collapsible"
 
 export type FolderTreeHandler = {
   setPath: Setter<string>
@@ -241,9 +242,13 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
             when={!loading()}
             fallback={<Spinner size="sm" color={getMainColor()} />}
           >
+            {/* turns on the clock of the fold below (220ms in, 180ms out) */}
             <TbChevronRight
-              class="size-3.5 transition-transform"
-              classList={{ "rotate-90": isOpen() }}
+              class={
+                isOpen()
+                  ? "size-3.5 rotate-90 transition-transform duration-(--motion-collapse-open) ease-emph-decel"
+                  : "size-3.5 transition-transform duration-(--motion-collapse-close) ease-emph-accel"
+              }
             />
           </Show>
         </button>
@@ -259,7 +264,8 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
           {isRoot() ? (rootLabel ?? "root") : pathBase(props.path)}
         </span>
       </div>
-      <Show when={isOpen()}>
+      {/* opens by height once its folders are there; folded, they stay */}
+      <Fold open={isOpen() && children() !== undefined}>
         <div role="group">
           <For each={children()}>
             {(item) => (
@@ -270,7 +276,7 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
             )}
           </For>
         </div>
-      </Show>
+      </Fold>
     </div>
   )
   return (

@@ -6,9 +6,13 @@ export type { MotionControl, MotionKeyframes } from "./MotionDriver"
 export type { MotionLevel } from "./ReducedMotion"
 export { createPresence, type Presence, type PartMotion } from "./presence"
 export {
+  barMotion,
   overlayMotion,
   scrimMotion,
+  toastMotion,
   type OverlayKind,
   type SheetSide,
 } from "./overlays"
-export { MotionDiv, animateTo, playOnce } from "./solid"
+export { MotionDiv, MotionShow, animateTo, playOnce } from "./solid"
+export { revealFrom } from "./reveal"
+export { countTo } from "./count"

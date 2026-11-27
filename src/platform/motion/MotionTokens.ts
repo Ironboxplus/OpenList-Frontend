@@ -44,6 +44,29 @@ const duration = {
   section: 160,
   /** A one-off ring that draws the eye to a button. */
   attention: 900,
+  // P4 (research 02 §三): entering a folder fades through (the old content
+  // out in 90ms, then the new in in 150ms, nothing moves); two layouts of one
+  // folder cross-fade in 150ms
+  throughOut: 90,
+  throughIn: 150,
+  crossfade: 150,
+  /** A row that came: it fades in, and is lit for `highlight`. */
+  itemIn: 200,
+  /** A row that went: it fades out where it was. */
+  itemOut: 150,
+  /** Rows sliding to their new places (a removal above, a new order). */
+  itemMove: 250,
+  highlight: 1200,
+  /** An icon turning into another (copy -> check). */
+  iconSwap: 100,
+  /** A progress bar running to its new value. */
+  progress: 200,
+  /** The layer that says where dragged-in files will go. */
+  dragHint: 100,
+  /** The new theme spreading over the page. */
+  theme: 200,
+  /** A figure counting to its new value (my choice: MD3 "medium" is 250-400). */
+  count: 300,
   /** The longest any animation runs while reduced motion is asked for. */
   reduced: 100,
   /** An intent nobody finished is cleaned up after this. */
@@ -87,6 +110,22 @@ export const MotionTokens = {
     pane: tween(duration.pane, curves.standard),
     section: tween(duration.section, curves.standard),
     attention: tween(duration.attention, curves.standard),
+    throughOut: tween(duration.throughOut, curves.emphasizedAccel),
+    throughIn: {
+      ...tween(duration.throughIn, curves.emphasizedDecel),
+      delay: duration.throughOut / 1000,
+    },
+    crossfadeOut: tween(duration.crossfade, curves.emphasizedAccel),
+    crossfadeIn: tween(duration.crossfade, curves.emphasizedDecel),
+    itemIn: tween(duration.itemIn, curves.emphasizedDecel),
+    itemOut: tween(duration.itemOut, curves.emphasizedAccel),
+    itemMove: tween(duration.itemMove, curves.standard),
+    highlight: tween(duration.highlight, curves.standard),
+    iconSwap: tween(duration.iconSwap, curves.standard),
+    progress: tween(duration.progress, curves.standard),
+    dragHint: tween(duration.dragHint, curves.standard),
+    theme: tween(duration.theme, curves.standard),
+    count: tween(duration.count, curves.standard),
     reduced: tween(duration.reduced, "linear"),
   },
   spring: {

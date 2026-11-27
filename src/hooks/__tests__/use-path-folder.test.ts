@@ -73,3 +73,26 @@ describe("is_dir of the current object", () => {
     expect(objStore.obj.is_dir).toBe(false)
   })
 })
+
+// P4: a refresh keeps the folder in sight, so its rows change in place
+describe("refresh", () => {
+  const stateWhileListing = async (listed: string) => {
+    ObjStore.setState(State.Folder)
+    ObjStore.set({ listed })
+    let during: State | undefined
+    fsList.mockImplementation(async () => {
+      during = objStore.state
+      return listing
+    })
+    const { refresh, setPathAs } = usePath()
+    setPathAs("/a/dir")
+    await refresh()
+    return during
+  }
+  it("lists the folder in sight again without taking it away", async () => {
+    expect(await stateWhileListing("/a/dir")).toBe(State.Folder)
+  })
+  it("a folder not in sight yet still shows the skeleton", async () => {
+    expect(await stateWhileListing("/b")).toBe(State.FetchingObjs)
+  })
+})

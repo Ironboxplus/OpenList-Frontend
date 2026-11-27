@@ -12,10 +12,14 @@ on:
     branches: ["ui-compare"]
   workflow_dispatch:
     inputs:
+      # the -ffmpeg image of the same build (OP test_docker.yml push_image):
+      # the local driver makes video thumbnails with ffmpeg/ffprobe
+      # (OP drivers/local/util.go GetSnapshot); without them every video
+      # card's thumbnail answered 500
       openlist_image:
         description: "OpenList image to shoot"
         required: false
-        default: "ghcr.io/ironboxplus/openlist:front-rolling"
+        default: "ghcr.io/ironboxplus/openlist-ffmpeg:front-rolling"
       cloudreve_image:
         description: "Cloudreve image to shoot"
         required: false
@@ -149,7 +153,7 @@ jobs:
           fi
           AUDIT_MOUNT=""
           [ -n "$SAMPLES_AUDIT" ] && AUDIT_MOUNT="-v $SAMPLES_AUDIT:/samples-audit"
-          docker run -d --name openlist -p 5244:5244 -e FRONTEND_SOURCE=embedded -v "$RUNNER_TEMP/oldata:/opt/openlist/data" -v "$SAMPLES:/samples" $AUDIT_MOUNT $DIST_MOUNT "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist:front-rolling' }}"
+          docker run -d --name openlist -p 5244:5244 -e FRONTEND_SOURCE=embedded -v "$RUNNER_TEMP/oldata:/opt/openlist/data" -v "$SAMPLES:/samples" $AUDIT_MOUNT $DIST_MOUNT "${{ inputs.openlist_image || 'ghcr.io/ironboxplus/openlist-ffmpeg:front-rolling' }}"
           PORTS=5244; [ "$COMPARE" = true ] && PORTS="5212 5244"
           for p in $PORTS; do
             for i in $(seq 1 90); do curl -fsS -o /dev/null "http://127.0.0.1:$p/" && break; sleep 2; done

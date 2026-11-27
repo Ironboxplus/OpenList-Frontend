@@ -30,7 +30,9 @@ import {
   setShareToken,
   shareIdOf,
 } from "~/utils"
+import { FilesArea } from "~/features/files/FilesArea"
 import { FilesError, SlowLoadNotice } from "~/features/files/FilesState"
+import { fadeThrough } from "~/features/files/files-motion"
 import { shellActive } from "~/features/shell/topbar-slot"
 import { Dock } from "~/features/viewer/Dock"
 import { ViewerHost } from "~/features/viewer/ViewerHost"
@@ -83,6 +85,8 @@ export const Obj = () => {
       if (oldPwd && !isShare()) setPassword(oldPwd)
       if (lastPathname) {
         recordHistory(lastPathname, lastPage)
+        // another folder or page: what is there fades out before it changes
+        fadeThrough("through")
       }
       lastPathname = pathname
       lastPage = page
@@ -134,74 +138,78 @@ export const Obj = () => {
           across folders, so the player element is never made twice. */}
       <Dock />
       <ViewerHost />
-      <Suspense fallback={<FullLoading />}>
-        <Switch>
-          <Match when={objStore.err}>
-            <Show
-              when={shellActive()}
-              fallback={
-                <Error
+      <FilesArea>
+        <Suspense fallback={<FullLoading />}>
+          <Switch>
+            <Match when={objStore.err}>
+              <Show
+                when={shellActive()}
+                fallback={
+                  <Error
+                    msg={objStore.err}
+                    disableColor
+                    actions={
+                      shouldShowStorageButton()
+                        ? storageErrorActions()
+                        : undefined
+                    }
+                  />
+                }
+              >
+                <FilesError
                   msg={objStore.err}
-                  disableColor
+                  onRetry={() => refresh(undefined, true)}
                   actions={
                     shouldShowStorageButton()
                       ? storageErrorActions()
                       : undefined
                   }
                 />
-              }
-            >
-              <FilesError
-                msg={objStore.err}
-                onRetry={() => refresh(undefined, true)}
-                actions={
-                  shouldShowStorageButton() ? storageErrorActions() : undefined
-                }
-              />
-            </Show>
-          </Match>
-          <Match
-            when={[State.FetchingObj, State.FetchingObjs].includes(
-              objStore.state,
-            )}
-          >
-            <SlowLoadNotice onRetry={() => refresh(undefined, true)} />
-            <Show when={layout() === "list"} fallback={<GridSkeleton />}>
-              <ListSkeleton />
-            </Show>
-          </Match>
-          <Match when={objStore.state === State.NeedPassword}>
-            <Password
-              title={
-                isShare()
-                  ? t("shares.input_password")
-                  : t("home.input_password")
-              }
-              password={isShare() ? sharePwd : password}
-              setPassword={isShare() ? setSharePwd : setPassword}
-              enterCallback={() =>
-                isShare() ? enterSharePassword() : refresh(true)
-              }
-            >
-              <Show when={!isShare()}>
-                <Text>{t("global.have_account")}</Text>
-                <Text
-                  color="$info9"
-                  as={LinkWithBase}
-                  href={loginUrlFor(location)}
-                >
-                  {t("global.go_login")}
-                </Text>
               </Show>
-            </Password>
-          </Match>
-          <Match
-            when={[State.Folder, State.FetchingMore].includes(objStore.state)}
-          >
-            <Folder />
-          </Match>
-        </Switch>
-      </Suspense>
+            </Match>
+            <Match
+              when={[State.FetchingObj, State.FetchingObjs].includes(
+                objStore.state,
+              )}
+            >
+              <SlowLoadNotice onRetry={() => refresh(undefined, true)} />
+              <Show when={layout() === "list"} fallback={<GridSkeleton />}>
+                <ListSkeleton />
+              </Show>
+            </Match>
+            <Match when={objStore.state === State.NeedPassword}>
+              <Password
+                title={
+                  isShare()
+                    ? t("shares.input_password")
+                    : t("home.input_password")
+                }
+                password={isShare() ? sharePwd : password}
+                setPassword={isShare() ? setSharePwd : setPassword}
+                enterCallback={() =>
+                  isShare() ? enterSharePassword() : refresh(true)
+                }
+              >
+                <Show when={!isShare()}>
+                  <Text>{t("global.have_account")}</Text>
+                  <Text
+                    color="$info9"
+                    as={LinkWithBase}
+                    href={loginUrlFor(location)}
+                  >
+                    {t("global.go_login")}
+                  </Text>
+                </Show>
+              </Password>
+            </Match>
+            <Match
+              when={[State.Folder, State.FetchingMore].includes(objStore.state)}
+            >
+              <Folder />
+            </Match>
+          </Switch>
+        </Suspense>
+      </FilesArea>
     </VStack>
   )
 }

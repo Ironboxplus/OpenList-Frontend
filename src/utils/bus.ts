@@ -12,6 +12,12 @@ type Events = {
   "tasks:refresh": void
   /** Ids (UnifiedTask.id) of tasks an action just created. */
   "tasks:created": string[]
+  /**
+   * The listing is about to change in place: another layout of the folder, or
+   * its rows (a new listing of the same folder, a new order). Sent before the
+   * change, so the file browser can take a picture of what is there.
+   */
+  "files:before": "layout" | "rows"
   torrent_parsed: { torrentData: string; info: TorrentInfo }
   seed_parsed: { seedData: string; fileName: string; info: SeedInfo }
   generate_transfer_seed: { paths: string[] }

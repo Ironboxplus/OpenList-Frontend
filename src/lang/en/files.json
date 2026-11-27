@@ -37,5 +37,10 @@
   "folders": "Folders",
   "files": "Files",
   "view_label": "View",
-  "more_actions": "More actions"
+  "more_actions": "More actions",
+  "renamed_to": "Renamed to {{name}}",
+  "moved_to": "Moved {{count}} item(s) to {{dir}}",
+  "undone": "Undone",
+  "undo_failed": "Could not undo",
+  "drop_to_upload": "Drop to upload to {{dir}}"
 }

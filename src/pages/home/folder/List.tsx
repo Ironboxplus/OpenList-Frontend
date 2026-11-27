@@ -26,7 +26,6 @@ import { Col, cols, ListItem } from "./ListItem"
 import { MediaListItem } from "./MediaListItem"
 import { shouldUseMediaRows } from "./row-layout"
 import { ItemCheckbox, useSelectWithMouse } from "./helper"
-import { bus } from "~/utils"
 import { VirtualRows } from "~/features/files/VirtualRows"
 import { rowEstimate, shouldVirtualize } from "~/features/files/virtualize"
 import { phoneShell } from "~/features/shell/topbar-slot"
@@ -236,25 +235,9 @@ const ListLayout = () => {
     </Show>
   )
 
-  const onDragOver = (e: DragEvent) => {
-    const items = Array.from(e.dataTransfer?.items ?? [])
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      if (item.kind === "file") {
-        bus.emit("tool", "upload")
-        e.preventDefault()
-        break
-      }
-    }
-  }
-
+  // files dragged in: the folder's drop layer, in every layout (FilesArea)
   return (
-    <VStack
-      onDragOver={onDragOver}
-      class="list viselect-container"
-      w="$full"
-      spacing="$1"
-    >
+    <VStack class="list viselect-container" w="$full" spacing="$1">
       <ListTitle
         sortCallback={sortObjs}
         initialOrder={saved()?.orderBy as OrderBy | undefined}

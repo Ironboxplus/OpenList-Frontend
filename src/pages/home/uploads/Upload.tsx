@@ -7,15 +7,16 @@ import {
   Checkbox,
   Text,
   Badge,
-  Progress,
-  ProgressIndicator,
   Button,
   Box,
   Stack,
   SimpleGrid,
   Divider,
 } from "@hope-ui/solid"
-import { createSignal, For, onMount, Show } from "solid-js"
+import { createSignal, For, onCleanup, onMount, Show } from "solid-js"
+import { TbCircleCheck } from "solid-icons/tb"
+import { Progress } from "~/components/ui/progress"
+import { MotionTokens, playOnce } from "~/platform/motion"
 import { usePath, useRouter, useT } from "~/hooks"
 import { getMainColor, uploadConfig, setUploadConfig } from "~/store"
 import {
@@ -29,10 +30,11 @@ import {
   localUploads,
 } from "~/features/transfers/local-uploads"
 import { UploadFileProps, StatusBadge } from "./types"
-import { File2Upload, traverseFileTree } from "./util"
+import { File2Upload } from "./util"
+import { filesOfDrop } from "./drop"
 import { SelectWrapper } from "~/components"
 import { getUploads } from "./uploads"
-import { takeUploadIntent } from "./upload-intent"
+import { acceptUploads, takeUploadIntent } from "./upload-intent"
 import { SeedFormat, SeedHashAlgorithm, SeedHashMatrix } from "~/types"
 
 const UploadFile = (props: UploadFileProps & { onRetry?: () => void }) => {
@@ -77,16 +79,30 @@ const UploadFile = (props: UploadFileProps & { onRetry?: () => void }) => {
           <Text color="$neutral11">{getFileSize(props.size)}</Text>
         </HStack>
       </HStack>
-      <Progress
-        w="$full"
-        trackColor="$info3"
-        rounded="$full"
-        value={props.progress}
-        size="sm"
-      >
-        <ProgressIndicator color={getMainColor()} rounded="$md" />
-        {/* <ProgressLabel /> */}
-      </Progress>
+      <HStack w="$full" spacing="$2">
+        <Progress
+          value={props.progress}
+          aria-label={props.path}
+          class="flex-1"
+        />
+        {/* done: a check turns up next to the full bar (plan §P4) */}
+        <Show when={props.status === "success"}>
+          <span
+            data-testid="progress-done"
+            data-motion="progress-done"
+            class="inline-flex text-success"
+            ref={(el) =>
+              playOnce(
+                el,
+                { opacity: [0, 1], transform: ["scale(0.6)", "scale(1)"] },
+                MotionTokens.options.iconSwap,
+              )
+            }
+          >
+            <TbCircleCheck class="size-4" aria-hidden="true" />
+          </span>
+        </Show>
+      </HStack>
       <Text color="$danger10">{props.msg}</Text>
     </VStack>
   )
@@ -113,8 +129,12 @@ const Upload = () => {
   let folderInput!: HTMLInputElement
   onMount(() => {
     const kind = takeUploadIntent()
-    if (kind) (kind === "folder" ? folderInput : fileInput)?.click()
+    // files dropped on the file list come with the panel
+    if (Array.isArray(kind)) void handleAddFiles(kind)
+    else if (kind) (kind === "folder" ? folderInput : fileInput)?.click()
+    acceptUploads((files) => void handleAddFiles(files))
   })
+  onCleanup(() => acceptUploads(undefined))
   const handleAddFiles = async (files: File[]) => {
     if (files.length === 0) return
     setUploading(true)
@@ -290,24 +310,7 @@ const Upload = () => {
             e.preventDefault()
             e.stopPropagation()
             setDrag(false)
-            const res: File[] = []
-            const items = Array.from(e.dataTransfer?.items ?? [])
-            const files = Array.from(e.dataTransfer?.files ?? [])
-            let itemLength = items.length
-            const folderEntries = []
-            for (let i = 0; i < itemLength; i++) {
-              const item = items[i]
-              const entry = item.webkitGetAsEntry()
-              if (entry?.isFile) {
-                res.push(files[i])
-              } else if (entry?.isDirectory) {
-                folderEntries.push(entry)
-              }
-            }
-            for (const entry of folderEntries) {
-              const innerFiles = await traverseFileTree(entry)
-              res.push(...innerFiles)
-            }
+            const res = await filesOfDrop(e.dataTransfer)
             if (res.length === 0) {
               notify.warning(t("home.upload.no_files_drag"))
             }

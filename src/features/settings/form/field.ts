@@ -28,8 +28,8 @@ export interface FieldSpec {
   /** Select: several values (the value is a string[]). */
   multiple?: boolean
   /**
-   * Select: text shown when nothing is chosen, which says what the backend
-   * does then (default "Not set").
+   * Select or text: shown when nothing is chosen or typed, saying what the
+   * backend does then (a select's default "Not set").
    */
   emptyLabelKey?: string
   /**

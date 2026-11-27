@@ -35,15 +35,6 @@
 @source not "../plugins/builtin/stats/__tests__";
 
 /*
- * hope-ui toasts are fixed to the top edge, over the TopBar's buttons. Inside
- * the shell they start below the bar (bar height plus a gap).
- */
-html.shell-wide .hope-notification__list,
-html.shell-phone .hope-notification__list {
-  top: calc(var(--shell-header) + 0.5rem) !important;
-}
-
-/*
  * Phone shell: the bottom tab bar is `position: fixed`, so Home's own fixed
  * toolbars (right-hand toggle, selection bar) must sit above it.
  */
@@ -69,7 +60,8 @@ html.shell-phone .center-toolbar {
   background: var(--files-card-bg);
   box-shadow: var(--files-card-shadow);
 }
-.files-card > * {
+.files-card > *,
+.files-card [data-motion="files-live"] > * {
   margin: 0 !important;
 }
 .files-card {
@@ -93,13 +85,17 @@ html.shell-phone .center-toolbar {
     background-color 0.12s ease,
     border-color 0.12s ease !important;
 }
+/* hope's hover scale is off; a row files-motion.ts is moving (data-motion)
+   keeps the transform it runs, one it lights (data-lit) its background */
 .files-card .list-item {
   min-height: 44px;
+}
+.files-card .list-item:not([data-motion]),
+.files-card .grid-item:hover:not([data-motion]) {
   transform: none !important;
 }
 .files-card .list-item:hover,
 .files-card .grid-item:hover {
-  transform: none !important;
   background: var(--muted) !important;
 }
 .files-card .list-item.selected,
@@ -189,9 +185,13 @@ html.shell-phone .files-cards {
   padding: 0.5rem !important;
   border: 1px solid var(--card-edge) !important;
   border-radius: var(--radius) !important;
-  background: var(--muted) !important;
-  transform: none !important;
   text-decoration: none;
+}
+.grid-item.grid-card:not([data-motion]) {
+  transform: none !important;
+}
+.grid-item.grid-card:not([data-lit]) {
+  background: var(--muted) !important;
 }
 .grid-item.grid-card:hover {
   background: var(--accent) !important;
