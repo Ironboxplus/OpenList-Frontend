@@ -2022,14 +2022,20 @@ const viewerProbe = () => {
       })
     }
     const d = document.querySelector('[data-testid="dock"]')
+    const now = Math.round(performance.now())
     if (d) {
-      const h = Math.round(d.getBoundingClientRect().height)
+      // to the hundredth (as overlayProbe): whole pixels hide the slow end of
+      // a decelerating run, and with it when the run ended
+      const h = +d.getBoundingClientRect().height.toFixed(2)
       const last = v.heights[v.heights.length - 1]
-      // on the page's clock, as the specs' marks around a run are
-      if (!last || last[1] !== h) v.heights.push([Math.round(performance.now()), h])
+      // on the page's clock, as the specs' marks around a run are; with the
+      // frame before, where it still rested (CI frames are 20-45ms apart)
+      if (!last || last[1] !== h) v.heights.push([now, h, prev])
     }
+    prev = now
     requestAnimationFrame(frame)
   }
+  let prev = Math.round(performance.now())
   requestAnimationFrame(frame)
 }
 /** Checks of one spec, all run; the spec fails with the list of those that did not hold. */
@@ -2110,15 +2116,28 @@ const downloadOf = async (page, act) => {
   }
 }
 const anims = (page) => page.evaluate(() => window.__viewer?.anims ?? [])
-/** The run of the docked player's height between two times: from its last resting height to where it settled. */
+/**
+ * The run of the docked player's height between two times, from its last
+ * resting height to where it settled, bracketed as heightRun does: at most
+ * from the frame before the first change to the settled one (`ran`), at least
+ * from the first change to the last moving one (`moved`). Until 11-28 it was
+ * the changes' span plus 16ms, a 60fps frame: CI 46033645422 drew the close's
+ * 7 frames over 265ms and read 281 for a 200ms run.
+ */
 const dockRun = (heights, from, to) => {
   // heights holds changes only: the one before the window is where it rested
   const before = heights.filter((h) => h[0] < from).pop()
   const span = heights.filter((h) => h[0] >= from && h[0] <= to)
   if (span.length < 3) return null
   const end = span[span.length - 1]
-  // the first change shows a frame after the run began
-  return { ran: end[0] - span[0][0] + 16, from: before ? before[1] : null, to: end[1], frames: span.length }
+  const t0 = span[0][2] ?? span[0][0] - 16
+  return {
+    ran: end[0] - t0,
+    moved: span[span.length - 2][0] - span[0][0],
+    from: before ? before[1] : null,
+    to: end[1],
+    frames: span.map((h) => [h[0] - t0, h[1]]),
+  }
 }
 /** Clicks a row of the list by the file's name (the row itself, not its thumbnail). */
 const openRow = async (page, name) => {
@@ -2207,9 +2226,10 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
   const heights = await page.evaluate(() => window.__viewer.heights)
   const closed = dockRun(heights, t2, Infinity)
   env.report = { ...(env.report ?? {}), dockOpen: opened, dockClose: closed }
-  // the height runs on Motion's JS clock: measured by frame, within two frames
-  c("the dock opens in 500ms", opened && opened.from === 0 && Math.abs(opened.ran - 500) <= 50, opened)
-  c("the dock closes in 200ms", closed && closed.to === 0 && Math.abs(closed.ran - 200) <= 50, closed)
+  // the height runs on Motion's JS clock: measured by frame, what the frames
+  // bracket (ranFor)
+  c("the dock opens in 500ms", opened && opened.from === 0 && ranFor(opened, 500), opened)
+  c("the dock closes in 200ms", closed && closed.to === 0 && ranFor(closed, 200), closed)
   c.done()
 })
 
@@ -3192,8 +3212,8 @@ await spec("p3-dialog-advanced", {}, async (env) => {
 // P3: the storage form shows the required items and the ones not at their
 // default; the rest of each section is folded under Advanced. The seed's
 // Local storage sets its mount path and thumbnails (lib.mjs addStorage); the
-// WebDAV policy is required (OP internal/op/driver.go getMainItems); Local has
-// no cache time (OP drivers/local/meta.go NoCache)
+// WebDAV policy is Required (OP internal/op/driver.go getMainItems:61-190);
+// Local has no cache time (OP drivers/local/meta.go NoCache)
 await spec("p3-storage-advanced", {}, async (env) => {
   const { page } = env
   const c = checker(env)
@@ -3204,7 +3224,9 @@ await spec("p3-storage-advanced", {}, async (env) => {
   const f = (key) => page.locator(`[data-field="${key}"]`)
   await f("mount_path").waitFor({ timeout: 8000 }).catch(() => {})
   for (const key of ["mount_path", "webdav_policy", "root_folder_path", "thumbnail"]) c(`${key} is in sight`, await f(key).isVisible())
-  for (const key of ["remark", "disable_index"]) c(`${key}, at its default, is folded`, await f(key).isHidden())
+  // (disable_index, enable_sign and seed_policy are Required with a default:
+  // in sight by the rule until the backend's Item says advanced)
+  for (const key of ["remark", "proxy_user_agent"]) c(`${key}, at its default, is folded`, await f(key).isHidden())
   const common = page.locator('[data-testid="advanced-storage-common"]')
   c("the common section has an Advanced title", await common.isVisible())
   await common.click().catch(() => {})
