@@ -227,7 +227,7 @@ describe("transfer settings", () => {
       /default/i,
     )
     expect(rows[0].querySelector("a")?.getAttribute("href")).toMatch(
-      /\/@manage\/storages\/edit\/2$/,
+      /\/@manage\/storages\/edit\/2\?focus=max_conns_per_file$/,
     )
     expect(card("connections")!.querySelector("input")).toBeNull()
   })

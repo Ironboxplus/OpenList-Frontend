@@ -86,6 +86,17 @@ describe("the storage form folds the items left at their default", () => {
     ).toMatch(/1/)
   })
 
+  it("opens the fold of the item a link asks for, and marks it", async () => {
+    // Transfer settings' connections per file links here so
+    router.params = { id: "7" }
+    router.searchParams = { focus: "enable_sign" }
+    renderPage(() => <AddOrEdit />)
+    await settle()
+    expect(folded("enable_sign")).toBe(true)
+    expect(trigger("common")!.getAttribute("aria-expanded")).toBe("true")
+    expect(field("enable_sign").hasAttribute("data-focused")).toBe(true)
+  })
+
   it("an imported storage shows what it sets", async () => {
     renderPage(() => <AddOrEdit />)
     await settle()
