@@ -1533,7 +1533,12 @@ await spec("motion-palette", { init: overlayProbe }, async (env) => {
 // opens in 220ms after a 40ms lead and folds in 180ms, the body fades
 // 220/180 on the standard curve; folded, it is hidden
 const STANDARD = "cubic-bezier(0.2,0,0,1)"
-/** How long the height moved after `from`: from its last resting frame to its first settled one. */
+/**
+ * How long the height moved after `from`, as frames can tell it: at most from
+ * its last resting frame to its first settled one (`ran`), at least from its
+ * first moving frame to its last (`moved`). A frame drawn late widens the
+ * first and not the second (CI 46019775151: ran 255 for a 220ms run).
+ */
 const heightRun = (frames, from, to) => {
   const span = frames.filter((f) => f[0] >= from && f[0] < to)
   const h = span.map((f) => f[3])
@@ -1541,8 +1546,18 @@ const heightRun = (frames, from, to) => {
   const startIdx = h.findIndex((v) => v !== h[0])
   const endIdx = h.findIndex((v, i) => i >= startIdx && v === end)
   if (startIdx < 1 || endIdx < 0) return null
-  return { lead: span[startIdx - 1][0] - from, ran: span[endIdx][0] - span[startIdx - 1][0], from: h[0], to: end }
+  const t = (i) => span[i][0]
+  return {
+    lead: t(startIdx - 1) - from,
+    ran: t(endIdx) - t(startIdx - 1),
+    moved: t(endIdx - 1) - t(startIdx),
+    frames: span.slice(Math.max(0, startIdx - 2), endIdx + 2).map((f) => [f[0] - from, f[3]]),
+    from: h[0],
+    to: end,
+  }
 }
+/** A run of `ms` fits what the frames saw (one frame's rounding either side). */
+const ranFor = (run, ms) => !!run && run.moved - 2 <= ms && ms <= run.ran + 2
 await spec("motion-collapsible", { init: overlayProbe, video: true }, async (env) => {
   const { page } = env
   await go(page, "/@manage/shares/add", 1500)
@@ -1564,9 +1579,9 @@ await spec("motion-collapsible", { init: overlayProbe, video: true }, async (env
   env.report = { ...(env.report ?? {}), collapsible: { enterHeight: enter, exitHeight: exit, fadeIn: fadeIn?.duration ?? null, fadeOut: fadeOut?.duration ?? null } }
   log("motion collapsible", JSON.stringify({ marks, enter, exit, anims: rec?.anims, hidden }))
   const bad = []
-  // the height runs on Motion's JS clock: measured by frame, within two frames
-  if (!enter || Math.abs(enter.ran - 220) > 34 || enter.lead < 24) bad.push(`height should open in 220ms after 40ms: ${JSON.stringify(enter)}`)
-  if (!exit || Math.abs(exit.ran - 180) > 34 || exit.to !== 0) bad.push(`height should fold in 180ms to 0: ${JSON.stringify(exit)}`)
+  // the height runs on Motion's JS clock: measured by frame (heightRun)
+  if (!ranFor(enter, 220) || enter.lead < 24) bad.push(`height should open in 220ms after 40ms: ${JSON.stringify(enter)}`)
+  if (!ranFor(exit, 180) || exit.to !== 0) bad.push(`height should fold in 180ms to 0: ${JSON.stringify(exit)}`)
   if (!fadeIn || Math.abs(fadeIn.duration - 220) > 2 || fadeIn.easing !== STANDARD) bad.push(`body should fade in 220ms ${STANDARD}`)
   if (!fadeOut || Math.abs(fadeOut.duration - 180) > 2 || fadeOut.easing !== STANDARD) bad.push(`body should fade out 180ms ${STANDARD}`)
   if (!hidden) bad.push("folded content is not hidden")
