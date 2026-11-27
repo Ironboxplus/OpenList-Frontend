@@ -32,6 +32,7 @@ import {
   password,
   objStore,
   ObjStore,
+  viewerPath,
 } from "~/store"
 import {
   Obj,
@@ -241,6 +242,8 @@ type List = {
 const Preview = () => {
   const t = useT()
   const { pathname } = useRouter()
+  // the archive in the viewer (the page is its folder)
+  const filePath = () => viewerPath() ?? pathname()
   const { previewLink } = useLink()
   const [metaLoading, fetchMeta] = useFetch(fsArchiveMeta)
   const [listLoading, fetchList] = useFetch(fsArchiveList)
@@ -299,7 +302,7 @@ const Preview = () => {
       return []
     }
     if (raw_url === "") {
-      const resp = await fetchMeta(pathname(), password(), archive_pass)
+      const resp = await fetchMeta(filePath(), password(), archive_pass)
       if (dealWithError(resp)) {
         getObjsMutex.release()
         return []
@@ -333,7 +336,7 @@ const Preview = () => {
       }
     }
     if (list === null) {
-      const resp = await fetchList(pathname(), password(), archive_pass, "/")
+      const resp = await fetchList(filePath(), password(), archive_pass, "/")
       if (dealWithError(resp)) {
         getObjsMutex.release()
         return []
@@ -344,7 +347,7 @@ const Preview = () => {
     for (let i = 0; i < innerPath.length; i++) {
       if (l[innerPath[i]].children === null) {
         const resp = await fetchList(
-          pathname(),
+          filePath(),
           password(),
           archive_pass,
           "/" + innerPath.slice(0, i + 1).join("/"),

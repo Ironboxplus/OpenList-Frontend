@@ -7,17 +7,10 @@ import {
   objStore,
   password,
   setShouldKeepState,
+  viewerPath,
 } from "~/store"
 import { ObjType, PResp } from "~/types"
-import {
-  ext,
-  handleResp,
-  notify,
-  r,
-  pathDir,
-  pathJoin,
-  safeJsonParse,
-} from "~/utils"
+import { ext, handleResp, notify, r, safeJsonParse } from "~/utils"
 import Artplayer from "artplayer"
 import { type Option } from "artplayer"
 import { type Setting } from "artplayer"
@@ -27,9 +20,9 @@ import { type Option as DanmukuOption } from "artplayer-plugin-danmuku"
 import artplayerPluginAss from "~/components/artplayer-plugin-ass"
 import Hls from "hls.js"
 import { currentLang } from "~/app/i18n"
-import { AutoHeightPlugin, VideoBox } from "./video_box"
+import { AutoHeightPlugin } from "./players"
+import { autoNext } from "~/features/viewer/auto-next"
 import { ArtPlayerIconsSubtitle } from "~/components/icons"
-import { useNavigate } from "@solidjs/router"
 import { TiWarning } from "solid-icons/ti"
 import "./artplayer.css"
 
@@ -62,35 +55,24 @@ export interface Meta {
 }
 
 const Preview = () => {
-  const { pathname, searchParams } = useRouter()
+  const { pathname, searchParams, replace } = useRouter()
   const { previewLink } = useLink()
-  const navigate = useNavigate()
+  // the file in the viewer; previous and next replace it there
+  const path = () => viewerPath() ?? pathname()
   const videos = createMemo(() =>
     objStore.objs.filter((obj) => obj.type === ObjType.VIDEO),
   )
   const next_video = () => {
     const index = videos().findIndex((f) => f.name === objStore.obj.name)
-    if (index < videos().length - 1) {
-      navigate(
-        pathJoin(pathDir(location.pathname), videos()[index + 1].name) +
-          "?auto_fullscreen=" +
-          player.fullscreen,
-      )
-    }
+    if (index < videos().length - 1) replace(videos()[index + 1].name)
   }
   const previous_video = () => {
     const index = videos().findIndex((f) => f.name === objStore.obj.name)
-    if (index > 0) {
-      navigate(
-        pathJoin(pathDir(location.pathname), videos()[index - 1].name) +
-          "?auto_fullscreen=" +
-          player.fullscreen,
-      )
-    }
+    if (index > 0) replace(videos()[index - 1].name)
   }
   let player: Artplayer
   let option: Option = {
-    id: pathname(),
+    id: path(),
     container: "#video-player",
     volume: 1.0,
     autoplay: getSettingBool("video_autoplay"),
@@ -319,7 +301,7 @@ const Preview = () => {
   }
   const [, post] = useFetch((): PResp<Data> =>
     r.post("/fs/other", {
-      path: pathname(),
+      path: path(),
       password: password(),
       method: "video_preview",
     }),
@@ -438,17 +420,16 @@ const Preview = () => {
     }
     window.clearInterval(interval)
   })
-  const [autoNext, setAutoNext] = createSignal()
   const [warnVisible, setWarnVisible] = createSignal(false)
   return (
-    <VideoBox onAutoNextChange={setAutoNext}>
+    <>
       <Box w="$full" h="60vh" id="video-player" />
       <Show when={warnVisible()}>
         <Center w="100%" h="60vh" bgColor="black">
           <TiWarning size="4rem" />
         </Center>
       </Show>
-    </VideoBox>
+    </>
   )
 }
 

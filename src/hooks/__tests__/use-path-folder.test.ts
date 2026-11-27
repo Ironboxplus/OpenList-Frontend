@@ -15,7 +15,7 @@ vi.mock("../useRouter", () => ({
   }),
 }))
 
-import { ObjStore, objStore, State } from "~/store"
+import { ObjStore, objStore, setFileShown, State } from "~/store"
 import { Obj, ObjType } from "~/types"
 import { usePath } from "../usePath"
 
@@ -53,6 +53,19 @@ describe("is_dir of the current object", () => {
     await handleFolder("/a/dir")
     expect(objStore.obj.is_dir).toBe(true)
     expect(objStore.state).toBe(State.Folder)
+  })
+
+  it("a listing under an open viewer leaves the viewer's file the current object", async () => {
+    setFileShown(true)
+    try {
+      const { handleFolder } = usePath()
+      await handleFolder("/a/dir")
+      expect(objStore.obj.is_dir).toBe(false)
+      expect(objStore.listed).toBe("/a/dir")
+      expect(objStore.state).toBe(State.Folder)
+    } finally {
+      setFileShown(false)
+    }
   })
 
   it("setObjs alone does not touch the current object", () => {

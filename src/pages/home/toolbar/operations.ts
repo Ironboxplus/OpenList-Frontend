@@ -22,10 +22,9 @@ import {
   useFileAbilities,
   type ToolName,
 } from "~/features/files/file-actions"
-import { useDownload, useRouter, useT } from "~/hooks"
-import { downloadDenied, getSettingBool, me, selectedObjs } from "~/store"
-import { UserMethods } from "~/types"
-import { notify } from "~/utils"
+import { useDownload } from "~/hooks"
+import { downloadDenied, selectedObjs } from "~/store"
+import { openListed } from "~/features/viewer/state"
 
 export interface Operations {
   [key: string]: {
@@ -70,10 +69,8 @@ export interface FileOperation {
  * `run` is the bus tool or hook the old toolbars used.
  */
 export const useFileOperations = () => {
-  const t = useT()
   const can = useFileAbilities()
-  const { to, pushHref } = useRouter()
-  const { batchDownloadSelected } = useDownload()
+  const { downloadObjs } = useDownload()
   const only = () =>
     selectedObjs().length === 1 ? selectedObjs()[0] : undefined
   const tool = (name: ToolName) => () => runTool(name)
@@ -84,27 +81,15 @@ export const useFileOperations = () => {
     visible: () => !!only(),
     run: () => {
       const obj = only()
-      if (obj) to(pushHref(obj.name))
+      if (obj) openListed(obj)
     },
   })
   const download = operation({
     name: "download",
     icon: TbDownload,
     visible: () => !downloadDenied(),
-    run: () => {
-      // folders go as a package; plain files open their links
-      if (selectedObjs().some((o) => o.is_dir)) {
-        if (!(
-          UserMethods.is_admin(me()) || getSettingBool("package_download")
-        )) {
-          notify.warning(t("home.toolbar.package_download_disabled"))
-          return
-        }
-        runTool("package_download")
-      } else {
-        batchDownloadSelected()
-      }
-    },
+    // one file saves in place; several, or folders, go as one package
+    run: () => downloadObjs(selectedObjs()),
   })
   const copy = operation({
     name: "copy",

@@ -14,6 +14,11 @@ import {
 } from "~/features/files/ItemMeta"
 import { PhoneRowBody } from "~/features/files/PhoneRowBody"
 import { RowThumb } from "~/features/files/RowThumb"
+import {
+  isPlaying,
+  PlayingBadge,
+  RowDownload,
+} from "~/features/files/RowExtras"
 import { phoneShell } from "~/features/shell/topbar-slot"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
 import {
@@ -110,8 +115,10 @@ export const ListItem = (props: {
       }}
     >
       <HStack
-        class={`list-item viselect-item${props.obj.selected ? " selected" : ""}`}
+        class={`list-item viselect-item group/row${props.obj.selected ? " selected" : ""}`}
         data-index={props.index}
+        data-row-name={props.obj.name}
+        aria-current={isPlaying(props.obj.name) ? "true" : undefined}
         w="$full"
         p="$2"
         rounded="$lg"
@@ -186,6 +193,9 @@ export const ListItem = (props: {
             </Text>
             <EpisodeText name={props.obj.name} />
             <ExtraBadges extra={props.obj.extra} />
+            <PlayingBadge name={props.obj.name} />
+            <span class="ml-auto" />
+            <RowDownload obj={props.obj} />
           </HStack>
           <Box w={cols[1].w} textAlign={cols[1].textAlign as any}>
             <SizeOrUsage obj={props.obj} />

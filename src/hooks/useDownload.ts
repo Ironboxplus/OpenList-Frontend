@@ -1,14 +1,40 @@
 import axios from "axios"
 import {
   downloadDenied,
+  getSettingBool,
   local,
+  me,
   password,
   selectedObjs as _selectedObjs,
 } from "~/store"
-import { fsList, notify, pathBase, pathJoin } from "~/utils"
-import { getLinkByDirAndObj, useRouter, useT } from "~/hooks"
+import { bus, fsList, notify, pathBase, pathJoin } from "~/utils"
+import { getLinkByDirAndObj, useLink, useRouter, useT } from "~/hooks"
 import { useSelectedLink } from "~/hooks"
-import { Obj } from "~/types"
+import { Obj, UserMethods } from "~/types"
+
+/**
+ * Saves one file from this tab. An <a download> to the page's own origin saves
+ * the response under the file's name, whatever its type, and opens nothing
+ * (the prototype's finding, research 03 §八.1). Across origins the browser
+ * ignores `download`: a /d that redirects to a storage's CDN (115 and the
+ * like) opens there in a new tab, as every download did before, under the
+ * name the CDN gives (plan §0.3-1, a backend change not yet approved).
+ */
+export const saveFile = (url: string, name: string) => {
+  const a = document.createElement("a")
+  a.href = url
+  a.download = name
+  a.target = "_blank"
+  a.rel = "noopener"
+  a.style.display = "none"
+  document.body.append(a)
+  a.click()
+  a.remove()
+}
+
+/** Whether this user may download folders and many files as one zip. */
+export const packageAllowed = () =>
+  UserMethods.is_admin(me()) || getSettingBool("package_download")
 
 interface File {
   path: string
@@ -52,13 +78,36 @@ export const useDownload = () => {
     return true
   }
   const { pathname, isShare } = useRouter()
+  const { rawLink } = useLink()
   return {
     batchDownloadSelected: () => {
       if (denied()) return
-      const urls = rawLinks(true)
-      urls.forEach((url) => {
-        window.open(url, "_blank")
-      })
+      _selectedObjs()
+        .filter((obj) => !obj.is_dir)
+        .forEach((obj) => saveFile(rawLink(obj, true), obj.name))
+    },
+    /**
+     * The download of the list, the menus and the viewers (plan §0.2 下载):
+     * one file saves where it is; several files or a folder go as one package
+     * (the selection is what the package takes). Without the package right,
+     * plain files still save one by one.
+     */
+    downloadObjs: (objs: Obj[]) => {
+      if (denied() || !objs.length) return
+      const files = objs.filter((obj) => !obj.is_dir)
+      if (objs.length === 1 && files.length === 1) {
+        saveFile(rawLink(files[0], true), files[0].name)
+        return
+      }
+      if (packageAllowed()) {
+        bus.emit("tool", "package_download")
+        return
+      }
+      if (files.length < objs.length) {
+        notify.warning(t("home.toolbar.package_download_disabled"))
+        return
+      }
+      files.forEach((obj) => saveFile(rawLink(obj, true), obj.name))
     },
     sendToAria2: async () => {
       if (denied()) return

@@ -12,6 +12,11 @@ import {
   clearHistory,
   me,
   shouldKeepState,
+  fileShown,
+  parentOf,
+  setAddressFile,
+  setSingleFileShare,
+  setViewerPath,
 } from "~/store"
 import {
   clearShareToken,
@@ -133,20 +138,31 @@ export const usePath = () => {
     handleRespWithoutNotify(
       resp,
       (data) => {
-        ObjStore.setObj(data)
         ObjStore.setProvider(data.provider)
         ObjStore.setMountDetails(data.mount_details)
         ObjStore.setShareLimits(data.allow_preview, data.allow_download)
         if (data.is_dir) {
+          ObjStore.setObj(data)
           setPathAs(path)
           handleFolder(path, index)
-        } else {
+          return
+        }
+        // A file opens over its folder (store/viewer.ts): the folder is
+        // listed first, then the viewer opens the file.
+        setAddressFile({ path, obj: data })
+        if (isShare() && parentOf(path) === "/@s") {
+          // a share of one file: its root is the file, a folder of one
+          setSingleFileShare(true)
+          ObjStore.setObjs([data])
+          ObjStore.set({ listed: path, total: 1, write: false })
           ObjStore.setReadme(data.readme)
           ObjStore.setHeader(data.header)
-          ObjStore.setRelated(data.related ?? [])
-          ObjStore.setRawUrl(data.raw_url)
-          shouldKeepState() || ObjStore.setState(State.File)
+          setViewerPath(path)
+          shouldKeepState() || ObjStore.setState(State.Folder)
+          return
         }
+        // the address now gives the folder as the page: Obj lists it
+        setViewerPath(path)
       },
       handleErr,
     )
@@ -179,11 +195,14 @@ export const usePath = () => {
         } else {
           ObjStore.setObjs(data.content ?? [])
           ObjStore.setTotal(data.total)
+          ObjStore.set({ listed: path })
+          setSingleFileShare(false)
         }
         if (onlyList) {
           return
         }
-        ObjStore.markFolder()
+        // the file of an open viewer stays the current object
+        if (!fileShown()) ObjStore.markFolder()
         ObjStore.setReadme(data.readme)
         ObjStore.setHeader(data.header)
         ObjStore.setWrite(data.write)

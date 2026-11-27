@@ -11,7 +11,8 @@ import {
   selectedObjs,
   selectIndex,
 } from "~/store"
-import { usePath, useRouter } from "~/hooks"
+import { usePath } from "~/hooks"
+import { openListed } from "~/features/viewer/state"
 import { isMobile } from "~/utils/compatibility"
 import { createLongPress } from "~/utils/touch"
 import { markMenuTarget } from "~/features/files/menu-target"
@@ -139,7 +140,6 @@ export function useFileRowInteraction(
   index: () => number,
 ) {
   const { setPathAs } = usePath()
-  const { pushHref, to } = useRouter()
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
 
@@ -147,10 +147,10 @@ export function useFileRowInteraction(
   const cursor = () =>
     openWithDoubleClick() || toggleWithClick() ? "default" : "pointer"
 
-  const onDblClick = () => {
+  const onDblClick = (e: MouseEvent) => {
     if (!openWithDoubleClick()) return
     selectIndex(index(), true, true)
-    to(pushHref(obj().name))
+    openListed(obj(), e.currentTarget as Element)
   }
 
   // Phone selection mode: a long press selects the row, after which taps
@@ -173,7 +173,8 @@ export function useFileRowInteraction(
     if (e.ctrlKey || e.metaKey || e.shiftKey) return
     if (!restoreSelectionCache()) return
     if (toggleWithClick()) return selectIndex(index(), !obj().selected)
-    to(pushHref(obj().name))
+    // a folder is entered; a file opens over the folder (features/viewer)
+    openListed(obj(), e.currentTarget as Element)
   }
 
   /** Warms the path store so the next view has its parent context already. */

@@ -9,6 +9,11 @@ import { getIconByObj } from "~/utils/icon"
 import { readExtra } from "./extra-meta"
 import { ItemCheckbox, useFileRowInteraction } from "./helper"
 import { episodeFor } from "~/features/media/state"
+import {
+  isPlaying,
+  PlayingBadge,
+  RowDownload,
+} from "~/features/files/RowExtras"
 
 /**
  * Two-line media row, used instead of {@link ListItem} inside storages whose
@@ -73,8 +78,10 @@ export const MediaListItem = (props: {
   return (
     <div style={{ width: "100%" }}>
       <HStack
-        class={`media-list-item viselect-item${props.obj.selected ? " selected" : ""}`}
+        class={`media-list-item viselect-item group/row${props.obj.selected ? " selected" : ""}`}
         data-index={props.index}
+        data-row-name={props.obj.name}
+        aria-current={isPlaying(props.obj.name) ? "true" : undefined}
         w="$full"
         p="$2"
         spacing="$3"
@@ -132,6 +139,7 @@ export const MediaListItem = (props: {
           >
             <Box
               as="img"
+              data-origin
               src={props.obj.thumb}
               loading="lazy"
               w="$full"
@@ -169,6 +177,7 @@ export const MediaListItem = (props: {
             >
               {props.obj.name}
             </Text>
+            <PlayingBadge name={props.obj.name} />
             <Show when={meta().starred}>
               <Box as={AiFillStar} color="$warning8" title="starred" />
             </Show>
@@ -229,6 +238,7 @@ export const MediaListItem = (props: {
             </Show>
           </HStack>
         </VStack>
+        <RowDownload obj={props.obj} />
       </HStack>
     </div>
   )

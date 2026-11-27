@@ -1,7 +1,8 @@
 import { Center, VStack, Icon, Text } from "@hope-ui/solid"
 import { Show } from "solid-js"
 import { CenterLoading, LinkWithPush, ImageWithError } from "~/components"
-import { usePath, useRouter, useUtil } from "~/hooks"
+import { usePath, useUtil } from "~/hooks"
+import { openListed } from "~/features/viewer/state"
 import { checkboxOpen, getMainColor, local, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
 import { bus, getFileSize, hoverColor } from "~/utils"
@@ -42,7 +43,6 @@ export const GridItem = (props: {
       as={getIconByObj(props.obj)}
     />
   )
-  const { pushHref, to } = useRouter()
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
     useSelectWithMouse()
   // The classic checkbox mode: a checkbox takes the card's icon place.
@@ -83,6 +83,7 @@ export const GridItem = (props: {
           .filter(Boolean)
           .join(" ")}
         data-index={props.index}
+        data-row-name={props.obj.name}
         w="$full"
         p="$1"
         spacing="$1"
@@ -98,10 +99,10 @@ export const GridItem = (props: {
           openWithDoubleClick() || toggleWithClick() ? "default" : "pointer"
         }
         bgColor={props.obj.selected ? hoverColor() : undefined}
-        on:dblclick={() => {
+        on:dblclick={(e: MouseEvent) => {
           if (!openWithDoubleClick()) return
           selectIndex(props.index, true, true)
-          to(pushHref(props.obj.name))
+          openListed(props.obj, e.currentTarget as Element)
         }}
         on:pointerdown={press.onPointerDown}
         on:pointermove={press.onPointerMove}
@@ -119,7 +120,7 @@ export const GridItem = (props: {
           if (!restoreSelectionCache()) return
           if (toggleWithClick())
             return selectIndex(props.index, !props.obj.selected)
-          to(pushHref(props.obj.name))
+          openListed(props.obj, e.currentTarget as Element)
         }}
         onMouseEnter={() => {
           setPathAs(props.obj.name, props.obj.is_dir, true)

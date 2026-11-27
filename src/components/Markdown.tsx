@@ -18,7 +18,6 @@ import {
   loadCSS,
   loadScriptIIFE,
   notify,
-  pathDir,
   pathJoin,
   pathResolve,
 } from "~/utils"
@@ -241,9 +240,11 @@ export function Markdown(props: {
         return match
       }
 
+      // the page is the folder, also while one of its files is open over it
+      // (store/viewer.ts): a file's images are relative to it as the readme's are
       const resolvedPath = rawUrl.startsWith("/")
         ? rawUrl
-        : pathResolve(props.readme ? pathname() : pathDir(pathname()), rawUrl)
+        : pathResolve(pathname(), rawUrl)
 
       const url = `${api}/d${pathJoin(me().base_path, resolvedPath)}`
       const ans = `![${name}](${url})`

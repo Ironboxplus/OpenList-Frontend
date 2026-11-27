@@ -14,6 +14,7 @@ export const RowThumb = (props: {
   return (
     <Show when={props.obj.thumb && !failed()} fallback={props.fallback}>
       <img
+        data-origin
         src={props.obj.thumb}
         alt=""
         loading="lazy"

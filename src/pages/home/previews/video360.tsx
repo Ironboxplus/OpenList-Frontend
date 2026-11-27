@@ -1,7 +1,6 @@
 import { asPreview } from "~/utils"
 import { Box } from "@hope-ui/solid"
-import { VideoBox } from "./video_box"
-import { createSignal, onCleanup, onMount } from "solid-js"
+import { onCleanup, onMount } from "solid-js"
 import { getSettingBool, objStore } from "~/store"
 import { ObjType } from "~/types"
 import View360, { ControlBar, EquirectProjection } from "@egjs/view360"
@@ -36,28 +35,24 @@ const Preview = () => {
 
   onCleanup(() => viewer?.destroy())
 
-  const [autoNext, setAutoNext] = createSignal(false)
-
   return (
-    <VideoBox onAutoNextChange={setAutoNext}>
-      <Box w="$full" h="60vh" id="video360-player">
-        <Box
-          w={"100%"}
-          h={"100%"}
-          id="view360-container"
-          className="view360-container"
-        >
-          <canvas class="view360-canvas" />
-          <video
-            src={asPreview(objStore.raw_url)}
-            id="view360-video"
-            playsinline
-            crossOrigin="anonymous"
-            style="display: none;"
-          />
-        </Box>
+    <Box w="$full" h="60vh" id="video360-player">
+      <Box
+        w={"100%"}
+        h={"100%"}
+        id="view360-container"
+        className="view360-container"
+      >
+        <canvas class="view360-canvas" />
+        <video
+          src={asPreview(objStore.raw_url)}
+          id="view360-video"
+          playsinline
+          crossOrigin="anonymous"
+          style="display: none;"
+        />
       </Box>
-    </VideoBox>
+    </Box>
   )
 }
 

@@ -25,7 +25,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "~/components/ui/context-menu"
-import { useCopyLink, useLink, useRouter, useT } from "~/hooks"
+import { useCopyLink, useDownload, useLink, useRouter, useT } from "~/hooks"
 import {
   haveSelected,
   me,
@@ -43,7 +43,8 @@ import {
   type FileOperation,
 } from "~/pages/home/toolbar/operations"
 import { getPreviews } from "~/pages/home/previews"
-import { players } from "~/pages/home/previews/video_box"
+import { players } from "~/pages/home/previews/players"
+import { openListed, rowOf } from "../viewer/state"
 import {
   isLibraryPath,
   mediaReady,
@@ -106,8 +107,9 @@ export const FileContextMenu = (props: ParentProps) => {
   const t = useT()
   const ops = useFileOperations()
   const { rawLink } = useLink()
-  const { isShare, pathname, pushHref, to } = useRouter()
+  const { isShare, pathname } = useRouter()
   const { copyMpvCommand } = useCopyLink()
+  const { downloadObjs } = useDownload()
   const only = () =>
     selectedObjs().length === 1 ? selectedObjs()[0] : undefined
   const tt = (key: string) => t(`home.toolbar.${key}`)
@@ -204,9 +206,9 @@ export const FileContextMenu = (props: ParentProps) => {
                     <ContextMenuItem
                       onSelect={() => {
                         const obj = only()
-                        if (obj) {
-                          to(`${pushHref(obj.name)}?preview=${preview.key}`)
-                        }
+                        if (!obj) return
+                        if (preview.key === "download") downloadObjs([obj])
+                        else openListed(obj, rowOf(obj.name), preview.key)
                       }}
                     >
                       {preview.name}

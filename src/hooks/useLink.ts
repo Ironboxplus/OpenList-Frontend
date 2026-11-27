@@ -3,7 +3,7 @@ import {
   objStore,
   password,
   selectedObjs,
-  State,
+  singleFileShare,
   me,
 } from "~/store"
 import { Obj, ArchiveObj } from "~/types"
@@ -14,7 +14,6 @@ import {
   encodePath,
   isMpvMedia,
   notify,
-  pathDir,
   pathJoin,
   standardizePath,
 } from "~/utils"
@@ -82,22 +81,18 @@ export const getLinkByDirAndObj = (
 }
 
 /**
- * Where obj lives, given the page: on a file page the path is the file itself; a
- * single-file share ("/@s/<id>") is the file with no name below the share root.
+ * Where obj lives, given the page. The page is always a folder, also while a
+ * file is open over it (store/viewer.ts); a single-file share ("/@s/<id>") is
+ * the file itself, with no name below the share root.
  */
 export const locateObj = (
-  isFilePage: boolean,
+  singleFileShare: boolean,
   pathname: string,
-  isShare: boolean,
   obj: Obj,
-): { dir: string; obj: Obj } => {
-  if (!isFilePage) return { dir: pathname, obj }
-  const dir = pathDir(pathname)
-  if (isShare && dir === "/@s") {
-    return { dir: pathname, obj: { ...obj, name: "" } }
-  }
-  return { dir, obj }
-}
+): { dir: string; obj: Obj } =>
+  singleFileShare
+    ? { dir: pathname, obj: { ...obj, name: "" } }
+    : { dir: pathname, obj }
 
 /**
  * The full path of an object as the fs endpoints expect it: the one the backend
@@ -110,8 +105,7 @@ export const objPathOf = (at: { dir: string; obj: Obj }) =>
 // get download link by current state and pathname
 export const useLink = () => {
   const { pathname, isShare } = useRouter()
-  const locate = (obj: Obj) =>
-    locateObj(objStore.state === State.File, pathname(), isShare(), obj)
+  const locate = (obj: Obj) => locateObj(singleFileShare(), pathname(), obj)
   const getLinkByObj = (
     obj: Obj,
     type?: URLType,

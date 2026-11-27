@@ -30,6 +30,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
         w="$full"
         class={`image-item viselect-item${props.obj.selected ? " selected" : ""}`}
         data-index={props.index}
+        data-row-name={props.obj.name}
         p="$1"
         spacing="$1"
         rounded="$lg"
@@ -73,6 +74,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
             fallback={<CenterLoading size="lg" />}
             fallbackErr={objIcon}
             src={previewLink(props.obj)}
+            data-origin
             loading="lazy"
             on:dblclick={() => {
               if (!openWithDoubleClick()) return

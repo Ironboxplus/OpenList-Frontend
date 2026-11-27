@@ -30,6 +30,8 @@ const initialObjStore = {
 
   objs: [] as StoreObj[],
   total: 0,
+  /** The folder `objs` lists. */
+  listed: "",
 
   readme: "",
   header: "",

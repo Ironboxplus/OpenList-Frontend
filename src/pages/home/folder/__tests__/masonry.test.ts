@@ -3,7 +3,6 @@ import { ObjType } from "~/types"
 import {
   clampPreview,
   masonryCardKind,
-  masonryClickAction,
   masonryNameAlwaysVisible,
 } from "../masonry-card"
 
@@ -33,24 +32,6 @@ describe("masonryCardKind", () => {
     expect(masonryCardKind({ type: ObjType.FOLDER })).toBe("icon")
     expect(masonryCardKind({ type: ObjType.AUDIO })).toBe("icon")
     expect(masonryCardKind({ type: ObjType.UNKNOWN })).toBe("icon")
-  })
-})
-
-describe("masonryClickAction", () => {
-  it("opens the gallery for images", () => {
-    expect(masonryClickAction({ type: ObjType.IMAGE })).toBe("gallery")
-  })
-
-  it("navigates for every other type", () => {
-    for (const type of [
-      ObjType.FOLDER,
-      ObjType.VIDEO,
-      ObjType.AUDIO,
-      ObjType.TEXT,
-      ObjType.UNKNOWN,
-    ]) {
-      expect(masonryClickAction({ type })).toBe("navigate")
-    }
   })
 })
 

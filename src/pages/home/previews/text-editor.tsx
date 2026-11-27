@@ -37,7 +37,7 @@ import { BoxWithFullScreen, EncodingSelect, MaybeLoading } from "~/components"
 import { monaco, MonacoEditorLoader } from "~/components/MonacoEditor"
 import { useFetchText, useParseText, useRouter, useT, useUtil } from "~/hooks"
 import { StreamUpload } from "~/pages/home/uploads/stream"
-import { local, objStore, setLocal, userCan } from "~/store"
+import { local, objStore, setLocal, userCan, viewerPath } from "~/store"
 import { notify } from "~/utils"
 import {
   Popover,
@@ -158,7 +158,14 @@ function Editor(props: { data?: string | ArrayBuffer; contentType?: string }) {
       const file = new File([value()], objStore.obj.name, {
         type: props.contentType || "text/plain",
       })
-      await StreamUpload(pathname(), file, () => {}, false, true, false)
+      await StreamUpload(
+        viewerPath() ?? pathname(),
+        file,
+        () => {},
+        false,
+        true,
+        false,
+      )
       savedVersionId = savedVersion
       setModified(
         (ed.getModel()?.getAlternativeVersionId() ?? 0) !== savedVersionId,

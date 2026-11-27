@@ -451,7 +451,8 @@ const TorrentPreview = () => {
   const [torrentData, setTorrentData] = createSignal("")
   const [selectedFiles, setSelectedFiles] = createSignal<number[]>([])
   const [destination, setDestination] = createSignal(
-    pathname().split("/").slice(0, -1).join("/") || "/",
+    // the folder the torrent is in (the page is the folder while it shows)
+    pathname() || "/",
   )
   const [destinationProvider, setDestinationProvider] = createSignal("")
   const [targetFormat, setTargetFormat] = createSignal<SeedFormat>("oss")

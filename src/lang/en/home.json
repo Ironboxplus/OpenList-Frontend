@@ -427,5 +427,33 @@
     "strm_generate": "Generate STRM now",
     "strm_generated": "Generated {{count}} .strm files in {{path}}",
     "enabled_tip": "Media library is disabled. Enable it to show the media entry."
+  },
+  "viewer": {
+    "player": "Video player",
+    "video_n": "Video {{index}} of {{total}}",
+    "previous_key": "Previous (Shift+P)",
+    "next_key": "Next (Shift+N)",
+    "previous_image": "Previous (←)",
+    "next_image": "Next (→)",
+    "close": "Close",
+    "close_player": "Close the player",
+    "back_to_player": "Back to the player",
+    "move": "Drag to move",
+    "play": "Play",
+    "pause": "Pause",
+    "more": "More",
+    "copy_link": "Copy link",
+    "copied": "Copied",
+    "qr_code": "QR code",
+    "open_with": "Open with",
+    "players": "External player",
+    "all_players": "All players",
+    "info": "File info",
+    "episodes": "Episodes",
+    "episode_n": "Episode {{n}}",
+    "no_preview": "Nothing here can show this type",
+    "no_extension": "No extension",
+    "playing": "Playing",
+    "loading": "Loading…"
   }
 }

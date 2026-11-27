@@ -1,9 +1,9 @@
 import { Box } from "@hope-ui/solid"
-import { createMemo, createSignal, onCleanup, onMount } from "solid-js"
+import { createMemo, onCleanup, onMount } from "solid-js"
 import { useRouter, useLink } from "~/hooks"
-import { getMainColor, getSettingBool, objStore } from "~/store"
+import { getMainColor, getSettingBool, objStore, viewerPath } from "~/store"
 import { ObjType } from "~/types"
-import { ext, pathDir, pathJoin, safeJsonParse, asPreview } from "~/utils"
+import { ext, safeJsonParse, asPreview } from "~/utils"
 import Artplayer from "artplayer"
 import { type Option } from "artplayer/types/option"
 import { type Setting } from "artplayer/types/setting"
@@ -37,9 +37,9 @@ import artplayerPluginAss from "~/components/artplayer-plugin-ass"
 import mpegts from "mpegts.js"
 import Hls from "hls.js"
 import { currentLang } from "~/app/i18n"
-import { AutoHeightPlugin, VideoBox } from "./video_box"
+import { AutoHeightPlugin } from "./players"
+import { autoNext } from "~/features/viewer/auto-next"
 import { ArtPlayerIconsSubtitle } from "~/components/icons"
-import { useNavigate } from "@solidjs/router"
 import "./artplayer.css"
 import { registerAc3Decoder } from "@mediabunny/ac3"
 import { requestTranscodePlay } from "~/utils/media_api"
@@ -54,31 +54,20 @@ function ensureAc3Decoder() {
 
 const Preview = () => {
   const t = useT()
-  const { pathname, searchParams } = useRouter()
+  const { pathname, searchParams, replace } = useRouter()
   const { previewLink } = useLink()
-  const navigate = useNavigate()
+  // the file in the viewer; previous and next replace it there
+  const path = () => viewerPath() ?? pathname()
   const videos = createMemo(() =>
     objStore.objs.filter((obj) => obj.type === ObjType.VIDEO),
   )
   const next_video = () => {
     const index = videos().findIndex((f) => f.name === objStore.obj.name)
-    if (index < videos().length - 1) {
-      navigate(
-        pathJoin(pathDir(location.pathname), videos()[index + 1].name) +
-          "?auto_fullscreen=" +
-          player.fullscreen,
-      )
-    }
+    if (index < videos().length - 1) replace(videos()[index + 1].name)
   }
   const previous_video = () => {
     const index = videos().findIndex((f) => f.name === objStore.obj.name)
-    if (index > 0) {
-      navigate(
-        pathJoin(pathDir(location.pathname), videos()[index - 1].name) +
-          "?auto_fullscreen=" +
-          player.fullscreen,
-      )
-    }
+    if (index > 0) replace(videos()[index - 1].name)
   }
   // 组件卸载标记：onMount 里的异步操作结束后据此决定是否继续初始化播放器
   let disposed = false
@@ -86,7 +75,7 @@ const Preview = () => {
   let flvPlayer: mpegts.Player
   let hlsPlayer: Hls
   let option: Option = {
-    id: pathname(),
+    id: path(),
     container: "#video-player",
     url: asPreview(objStore.raw_url),
     title: objStore.obj.name,
@@ -382,7 +371,7 @@ const Preview = () => {
     // 播放前先调用后端转码决策接口，如果需要转码则使用 HLS master_url 播放
     let useTranscode = false
     try {
-      const tcResp = await requestTranscodePlay(pathname())
+      const tcResp = await requestTranscodePlay(path())
       if (
         tcResp.code === 200 &&
         tcResp.data?.transcode &&
@@ -480,12 +469,7 @@ const Preview = () => {
     flvPlayer?.destroy()
     hlsPlayer?.destroy()
   })
-  const [autoNext, setAutoNext] = createSignal()
-  return (
-    <VideoBox onAutoNextChange={setAutoNext}>
-      <Box w="$full" h="60vh" id="video-player" />
-    </VideoBox>
-  )
+  return <Box w="$full" h="60vh" id="video-player" />
 }
 
 export default Preview

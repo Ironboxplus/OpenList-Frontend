@@ -165,6 +165,61 @@ describe("MoviCore", () => {
     expect(URL.createObjectURL).not.toHaveBeenCalled()
   })
 
+  it("plays the next video on the same element, the old video's tracks gone before its own come", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })),
+    )
+    let release!: (v: any) => void
+    let n = 0
+    subtitleGate.hold = () =>
+      n++ === 1 ? new Promise((res) => (release = res)) : undefined
+    const [raw, setRaw] = createSignal("http://x/a.mkv")
+    const [path, setPath] = createSignal("/m/a.mkv")
+    const r = render(() => (
+      <MoviCore path={path()} rawUrl={raw()} provider="Local" />
+    ))
+    await settle()
+    const el = r.container.querySelector("movi-player") as HTMLElement
+    expect(el.querySelectorAll("track").length).toBe(3)
+    setPath("/m/b.mkv")
+    setRaw("http://x/b.mkv")
+    await settle()
+    // b's subtitle list is still out: a's tracks have already left
+    expect(r.container.querySelector("movi-player")).toBe(el)
+    expect(el.getAttribute("src")).toBe("http://x/b.mkv")
+    expect(el.querySelectorAll("track").length).toBe(0)
+    release({
+      code: 200,
+      data: [
+        { language: "", title: "b.srt", url: "https://h/p/b", type: "srt" },
+      ],
+    })
+    await settle()
+    expect(
+      Array.from(el.querySelectorAll("track")).map((t) =>
+        t.getAttribute("src"),
+      ),
+    ).toEqual(["https://h/p/b"])
+  })
+
+  it("starts at startAt on the first video only", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })),
+    )
+    const [raw, setRaw] = createSignal("http://x/a.mkv")
+    const r = render(() => (
+      <MoviCore path="/m/a.mkv" rawUrl={raw()} provider="Local" startAt={42} />
+    ))
+    await settle()
+    const el = r.container.querySelector("movi-player") as HTMLElement
+    expect(el.getAttribute("startat")).toBe("42")
+    setRaw("http://x/b.mkv")
+    await settle()
+    expect(el.hasAttribute("startat")).toBe(false)
+  })
+
   describe("late subtitle list", () => {
     const list = (title: string) => ({
       code: 200,

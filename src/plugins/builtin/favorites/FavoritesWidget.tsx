@@ -10,7 +10,6 @@ import {
 import { For, Show, createSignal } from "solid-js"
 import { TbBookmark, TbBookmarkFilled, TbFolder, TbFile } from "solid-icons/tb"
 import { useRouter, useT } from "~/hooks"
-import { objStore } from "~/store"
 import { handleResp, notify, r } from "~/utils"
 import type { PResp } from "~/types"
 import type { Plugin } from "../../registry"
@@ -52,7 +51,8 @@ export const FavoritesWidget = () => {
     const resp: PResp<Favorite> = r.post("/me/favorites/add", {
       path,
       name,
-      is_dir: objStore.obj?.is_dir ?? true,
+      // the page is always a folder, also with a file open over it
+      is_dir: true,
       tag: "",
     })
     handleResp(await resp, () => {

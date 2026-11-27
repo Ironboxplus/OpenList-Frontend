@@ -11,31 +11,34 @@ import {
   encodePath,
   joinBase,
   log,
-  pathDir,
   pathJoin,
   trimBase,
   trimUserBase,
 } from "~/utils"
-import { clearHistory, me } from "~/store"
+import { clearHistory, me, pageOf } from "~/store"
+
+/** The path the address names, in the user's base-relative terms. */
+export const addressPath = (raw: string) => {
+  const path = trimBase(decodeURIComponent(raw))
+  // Special @-routes (/@login, /@manage, /@s shares, ...) are not file paths
+  // and must not be confined to the user's base_path.
+  if (path.startsWith("/@")) {
+    return path
+  }
+  // Confine to the user's base_path: keep every consumer (fetch, breadcrumb,
+  // navigation, links) working in base-relative terms. This prevents an
+  // absolute path (e.g. a login-redirect landing on the full URL) from being
+  // double-prefixed by the backend's user.JoinPath and 404-ing outside the
+  // user's root.
+  return trimUserBase(path, me().base_path)
+}
 
 const useRouter = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams()
-  const pathname = createMemo(() => {
-    const path = trimBase(decodeURIComponent(location.pathname))
-    // Special @-routes (/@login, /@manage, /@s shares, ...) are not file paths
-    // and must not be confined to the user's base_path.
-    if (path.startsWith("/@")) {
-      return path
-    }
-    // Confine to the user's base_path: keep every consumer (fetch, breadcrumb,
-    // navigation, links) working in base-relative terms. This prevents an
-    // absolute path (e.g. a login-redirect landing on the full URL) from being
-    // double-prefixed by the backend's user.JoinPath and 404-ing outside the
-    // user's root.
-    return trimUserBase(path, me().base_path)
-  })
+  // A file open over its folder: the page is still the folder (store/viewer.ts).
+  const pathname = createMemo(() => pageOf(addressPath(location.pathname)))
   const isShare = createMemo(() => {
     return pathname().startsWith("/@s")
   })
@@ -52,10 +55,14 @@ const useRouter = () => {
       clearHistory(decodeURIComponent(path))
       navigate(path, options)
     },
+    /** Another file of the folder in the open viewer, in place of this one. */
     replace: (to: string) => {
-      const path = joinBase(encodePath(pathJoin(pathDir(pathname()), to), true))
-      clearHistory(decodeURIComponent(path))
-      navigate(path)
+      const path = joinBase(encodePath(pathJoin(pathname(), to), true))
+      navigate(path + location.search, {
+        replace: true,
+        scroll: false,
+        state: history.state,
+      })
     },
     pushHref: (to: string): string => {
       return encodePath(pathJoin(pathname(), to))

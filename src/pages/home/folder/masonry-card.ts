@@ -25,15 +25,6 @@ export const masonryCardKind = (obj: {
   }
 }
 
-/**
- * Pure decision: what a click does. Images open the shared gallery (keyboard
- * arrows + swipe + zoom); everything else navigates to its own page.
- */
-export const masonryClickAction = (obj: {
-  type: ObjType
-}): "gallery" | "navigate" =>
-  obj.type === ObjType.IMAGE ? "gallery" : "navigate"
-
 /** Whether the filename bar should stay visible (true) or only show on hover. */
 export const masonryNameAlwaysVisible = (obj: {
   type: ObjType

@@ -32,9 +32,10 @@ import {
 } from "~/utils"
 import { FilesError, SlowLoadNotice } from "~/features/files/FilesState"
 import { shellActive } from "~/features/shell/topbar-slot"
+import { Dock } from "~/features/viewer/Dock"
+import { ViewerHost } from "~/features/viewer/ViewerHost"
 
 const Folder = lazy(() => import("./folder/Folder"))
-const File = lazy(() => import("./file/File"))
 const Password = lazy(() => import("./Password"))
 const ListSkeleton = lazy(() => import("./folder/ListSkeleton"))
 const GridSkeleton = lazy(() => import("./folder/GridSkeleton"))
@@ -128,6 +129,11 @@ export const Obj = () => {
       shadow="$lg"
       spacing="$2"
     >
+      {/* A file opens over its folder (features/viewer): the docked player
+          above the list, the other viewers over the page. Both stay mounted
+          across folders, so the player element is never made twice. */}
+      <Dock />
+      <ViewerHost />
       <Suspense fallback={<FullLoading />}>
         <Switch>
           <Match when={objStore.err}>
@@ -193,9 +199,6 @@ export const Obj = () => {
             when={[State.Folder, State.FetchingMore].includes(objStore.state)}
           >
             <Folder />
-          </Match>
-          <Match when={objStore.state === State.File}>
-            <File />
           </Match>
         </Switch>
       </Suspense>

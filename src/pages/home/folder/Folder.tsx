@@ -16,19 +16,12 @@ import { selectionMode } from "~/features/files/selection-mode"
 import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
 import { layout } from "~/store"
 import { Pager } from "./Pager"
-import { useLink, useRouter, useT } from "~/hooks"
+import { useRouter } from "~/hooks"
 import { loadSortState } from "./sort-state"
-import { objStore, local, sortObjs, type OrderBy } from "~/store"
+import { objStore, sortObjs, type OrderBy } from "~/store"
 import { ObjType } from "~/types"
 import { bus } from "~/utils"
-import lightGallery from "lightgallery"
-import lgThumbnail from "lightgallery/plugins/thumbnail"
-import lgZoom from "lightgallery/plugins/zoom"
-import lgRotate from "lightgallery/plugins/rotate"
-import lgAutoplay from "lightgallery/plugins/autoplay"
-import lgFullscreen from "lightgallery/plugins/fullscreen"
-import "lightgallery/css/lightgallery-bundle.css"
-import { LightGallery } from "lightgallery/lightgallery"
+import { openListed, rowOf } from "~/features/viewer/state"
 import { Search } from "./Search"
 
 const ListLayout = lazy(() => import("./List"))
@@ -38,7 +31,6 @@ const MasonryLayout = lazy(() => import("./Masonry"))
 const PosterWall = lazy(() => import("./PosterWall"))
 
 const Folder = () => {
-  const { previewLink } = useLink()
   const { pathname } = useRouter()
   // Only the list's header used to apply the remembered sort; every view shares
   // the toolbar's sort menu now, so the folder applies it for all of them each
@@ -56,40 +48,13 @@ const Folder = () => {
     objStore.objs.filter((obj) => obj.type === ObjType.IMAGE),
   )
 
-  let dynamicGallery: LightGallery | undefined
-  const initGallery = () => {
-    dynamicGallery = lightGallery(document.createElement("div"), {
-      addClass: "lightgallery-container",
-      dynamic: true,
-      thumbnail: local["show_gallery_thumbnails"] === "visible",
-      plugins: [lgZoom, lgThumbnail, lgRotate, lgAutoplay, lgFullscreen],
-      dynamicEl: images().map((obj) => {
-        const raw = previewLink(obj, true)
-        return {
-          src: raw,
-          thumb: obj.thumb === "" ? raw : obj.thumb,
-          subHtml: `<h4>${obj.name}</h4>`,
-        }
-      }),
-    })
-  }
-  createEffect(
-    on([images, () => local["show_gallery_thumbnails"]], () => {
-      dynamicGallery?.destroy()
-      dynamicGallery = undefined
-    }),
-  )
+  // A picture clicked in any layout opens the image viewer, out of its row
+  // (it was lightGallery's: one image viewer now, features/viewer).
   bus.on("gallery", (name) => {
-    if (!dynamicGallery) {
-      initGallery()
-    }
-    dynamicGallery?.openGallery(images().findIndex((obj) => obj.name === name))
+    const obj = objStore.objs.find((o) => o.name === name)
+    if (obj) openListed(obj, rowOf(name))
   })
-  onCleanup(() => {
-    bus.off("gallery")
-    dynamicGallery?.destroy()
-  })
-  const t = useT()
+  onCleanup(() => bus.off("gallery"))
   return (
     <>
       <Show when={shellActive() && phoneShell() && !selectionMode()}>

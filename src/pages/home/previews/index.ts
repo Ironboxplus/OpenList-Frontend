@@ -271,11 +271,12 @@ export const getPreviews = (
     res.push(...matchedIframePreviews)
   }
 
-  // download page
+  // no preview: the file's summary and its download (the viewers read this
+  // entry as "opens in the small dialog", features/viewer/state.ts whereOf)
   const downloadComponent: PreviewComponent = {
     key: "download",
     name: t("home.preview.names.download"),
-    component: lazy(() => import("./download")),
+    component: lazy(() => import("~/features/viewer/FileSummary")),
   }
 
   // Condition for the new requirement: a large text file.

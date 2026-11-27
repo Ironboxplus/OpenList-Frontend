@@ -10,7 +10,8 @@ import {
   onMount,
 } from "solid-js"
 import { CenterLoading, ImageWithError, LinkWithPush } from "~/components"
-import { useLink, useRouter, useT, useUtil } from "~/hooks"
+import { useLink, useT, useUtil } from "~/hooks"
+import { openListed } from "~/features/viewer/state"
 import {
   getMainColor,
   local,
@@ -19,14 +20,12 @@ import {
   smartCountMsg,
 } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
 import { BsPlayCircleFill } from "solid-icons/bs"
 import { selectForMenu } from "./helper"
 import {
   clampPreview,
   masonryCardKind,
-  masonryClickAction,
   masonryNameAlwaysVisible,
 } from "./masonry-card"
 
@@ -124,7 +123,6 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
   const kind = masonryCardKind(obj)
   const isImage = kind === "image"
   const { previewLink } = useLink()
-  const { pushHref, to } = useRouter()
   const typeIcon = (size: string) => (
     <Box as={getIconByObj(obj) as any} color={getMainColor()} fontSize={size} />
   )
@@ -133,6 +131,7 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
       <Box
         as={LinkWithPush}
         href={obj.name}
+        data-row-name={obj.name}
         pos="relative"
         display="block"
         w="$full"
@@ -154,13 +153,8 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
         on:click={(e: MouseEvent) => {
           e.preventDefault()
           if (e.ctrlKey || e.metaKey || e.shiftKey) return
-          // images open in the shared gallery (keyboard arrows + swipe + zoom);
-          // everything else navigates to its own preview / folder page.
-          if (masonryClickAction(obj) === "gallery") {
-            bus.emit("gallery", obj.name)
-          } else {
-            to(pushHref(obj.name))
-          }
+          // a folder is entered; a file (an image too) opens over the folder
+          openListed(obj, e.currentTarget as Element)
         }}
       >
         <Switch>
