@@ -1687,6 +1687,22 @@ for (const width of [1440, 820]) {
 }
 
 // media manage at 820: the table header sits above the rows, never over them
+// a list whose table scrolls inside its card does not widen the page
+// (audit 45956655215: page-hscroll on the shares, storages and media lists)
+for (const width of [820, 1440]) {
+  await spec("manage-lists-page-width", { width }, async (env) => {
+    const { page } = env
+    const bad = []
+    for (const p of ["/@manage/shares", "/@manage/storages", "/@manage/media/video"]) {
+      await go(page, p, 1500)
+      await page.locator('[data-layout="table"]').first().waitFor({ timeout: 6000 })
+      const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: innerWidth, scrolls: !!document.querySelector("[data-layout=table][data-scrolls]") }))
+      log("page width", p, JSON.stringify(m))
+      if (m.sw > m.w + 1) bad.push(`${p}: scrollWidth ${m.sw} > ${m.w}${m.scrolls ? " (its table scrolls in the card)" : ""}`)
+    }
+    if (bad.length) throw new Error(bad.join("; "))
+  })
+}
 await spec("manage-media-table-820", { width: 820, height: 1100 }, async (env) => {
   const { page } = env
   await go(page, "/@manage/media/video", 2000)
