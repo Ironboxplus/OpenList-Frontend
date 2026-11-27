@@ -15,9 +15,6 @@ const h = vi.hoisted(() => ({
 for (const k of ["task", "palette"] as const)
   h.gate[k] = new Promise<void>((r) => (h.release[k] = r))
 
-vi.mock("@hope-ui/solid", () => ({
-  useColorMode: () => ({ colorMode: () => "light" }),
-}))
 vi.mock("~/components", () => ({ FullLoading: () => <span /> }))
 vi.mock("~/hooks", () => ({
   useRouter: () => ({ pathname: () => "/@manage" }),

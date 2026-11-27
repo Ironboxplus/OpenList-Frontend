@@ -1,9 +1,10 @@
-import { Box, useColorModeValue } from "@hope-ui/solid"
+import { Box } from "@hope-ui/solid"
 import CornerBottom from "./CornerBottom"
 import CornerTop from "./CornerTop"
+import { colorModeValue } from "~/store/color-mode"
 
 const LoginBg = () => {
-  const bgColor = useColorModeValue("#a9c6ff", "#062b74")
+  const bgColor = colorModeValue("#a9c6ff", "#062b74")
   return (
     <Box
       bgColor={bgColor()}

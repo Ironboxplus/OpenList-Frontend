@@ -1,12 +1,4 @@
-import {
-  Box,
-  Center,
-  Flex,
-  Heading,
-  useColorModeValue,
-  IconButton,
-  VStack,
-} from "@hope-ui/solid"
+import { Box, Center, Flex, Heading, IconButton, VStack } from "@hope-ui/solid"
 import { SwitchColorMode } from "./SwitchColorMode"
 import {
   Select,
@@ -27,6 +19,7 @@ import { AiOutlineFullscreen, AiOutlineFullscreenExit } from "solid-icons/ai"
 import { BsFullscreen, BsFullscreenExit } from "solid-icons/bs"
 import { useT } from "~/hooks"
 import { createDisclosure, Tooltip } from "~/components/overlay"
+import { colorModeValue } from "~/store/color-mode"
 
 export const Error = (props: {
   msg: string
@@ -46,7 +39,7 @@ export const Error = (props: {
         rounded="$lg"
         px="$4"
         py="$6"
-        bgColor={useColorModeValue("white", "$neutral3")()}
+        bgColor={colorModeValue("white", "$neutral3")()}
         css={{
           display: "flex",
           flexDirection: "column",

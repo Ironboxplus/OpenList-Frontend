@@ -6,7 +6,6 @@ import {
   Td,
   Text,
   Tr,
-  useColorModeValue,
   VStack,
 } from "@hope-ui/solid"
 import { Show } from "solid-js"
@@ -14,6 +13,7 @@ import { useRouter, useT } from "~/hooks"
 import { PluginItem } from "~/types"
 import { DeletePopover } from "../common/DeletePopover"
 import { FaSolidPuzzlePiece } from "solid-icons/fa"
+import { colorModeValue } from "~/store/color-mode"
 
 export interface PluginItemProps {
   plugin: PluginItem
@@ -124,9 +124,9 @@ export function PluginListItem(props: PluginItemProps) {
 
 export function PluginGridItem(props: PluginItemProps) {
   const t = useT()
-  const shadow = useColorModeValue("$sm", "$none")
-  const bg = useColorModeValue("$white", "$neutral3")
-  const borderColor = useColorModeValue("$neutral4", "$neutral5")
+  const shadow = colorModeValue("$sm", "$none")
+  const bg = colorModeValue("$white", "$neutral3")
+  const borderColor = colorModeValue("$neutral4", "$neutral5")
 
   return (
     <VStack

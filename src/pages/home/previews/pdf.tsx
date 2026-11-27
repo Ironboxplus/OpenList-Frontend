@@ -1,14 +1,14 @@
 import EmbedPDF from "@embedpdf/snippet"
 import pdfiumWasmUrl from "@embedpdf/snippet/dist/pdfium.wasm?url"
-import { Box, useColorMode } from "@hope-ui/solid"
+import { Box } from "@hope-ui/solid"
 import { onMount } from "solid-js"
 import { currentLang } from "~/app/i18n"
 import { BoxWithFullScreen } from "~/components"
 import { objStore } from "~/store"
 import { base_path, asPreview } from "~/utils"
+import { colorMode } from "~/store/color-mode"
 
 const PDFViewer = () => {
-  const { colorMode } = useColorMode()
   let ref: HTMLDivElement | undefined
   onMount(() => {
     const src = asPreview(objStore.raw_url)

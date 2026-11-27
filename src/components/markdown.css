@@ -1028,176 +1028,176 @@
 
 /* dark */
 
-.hope-ui-dark .markdown-body {
+.dark .markdown-body {
   /* color: #c9d1d9; */
   /* background-color: #0d1117; */
   color: #f3f4f6;
   /* background-color: #18181b; */
 }
-.hope-ui-dark .markdown-body a {
+.dark .markdown-body a {
   color: rgba(2, 132, 199);
 }
-.hope-ui-dark .markdown-body hr {
+.dark .markdown-body hr {
   border-bottom: 1px solid #21262d;
   border-bottom-color: #21262d;
   background-color: #30363d;
 }
-.hope-ui-dark .markdown-body kbd {
+.dark .markdown-body kbd {
   color: #b1bac4;
   background-color: #0d1117;
   border: 1px solid #6e7681;
   box-shadow: inset 0 -1px 0 #6e7681;
 }
-.hope-ui-dark .markdown-body :checked + .radio-label {
+.dark .markdown-body :checked + .radio-label {
   border-color: rgba(56, 139, 253, 0.4);
 }
-.hope-ui-dark .markdown-body .border {
+.dark .markdown-body .border {
   border: 1px solid #30363d !important;
 }
-.hope-ui-dark .markdown-body .border-bottom {
+.dark .markdown-body .border-bottom {
   border-bottom: 1px solid #30363d !important;
 }
-.hope-ui-dark .markdown-body .bg-white {
+.dark .markdown-body .bg-white {
   background-color: #0d1117 !important;
 }
-.hope-ui-dark .markdown-body .bg-gray-light {
+.dark .markdown-body .bg-gray-light {
   background-color: #0d1117 !important;
 }
-.hope-ui-dark .markdown-body .text-gray-light {
+.dark .markdown-body .text-gray-light {
   color: #8b949e !important;
 }
-.hope-ui-dark .markdown-body .pl-c {
+.dark .markdown-body .pl-c {
   color: #8b949e;
 }
-.hope-ui-dark .markdown-body .pl-c1,
-.hope-ui-dark .markdown-body .pl-s .pl-v {
+.dark .markdown-body .pl-c1,
+.dark .markdown-body .pl-s .pl-v {
   color: #79c0ff;
 }
-.hope-ui-dark .markdown-body .pl-e,
-.hope-ui-dark .markdown-body .pl-en {
+.dark .markdown-body .pl-e,
+.dark .markdown-body .pl-en {
   color: #d2a8ff;
 }
-.hope-ui-dark .markdown-body .pl-s .pl-s1,
-.hope-ui-dark .markdown-body .pl-smi {
+.dark .markdown-body .pl-s .pl-s1,
+.dark .markdown-body .pl-smi {
   color: #c9d1d9;
 }
-.hope-ui-dark .markdown-body .pl-ent {
+.dark .markdown-body .pl-ent {
   color: #7ee787;
 }
-.hope-ui-dark .markdown-body .pl-k {
+.dark .markdown-body .pl-k {
   color: #ff7b72;
 }
-.hope-ui-dark .markdown-body .pl-pds,
-.hope-ui-dark .markdown-body .pl-s,
-.hope-ui-dark .markdown-body .pl-s .pl-pse .pl-s1,
-.hope-ui-dark .markdown-body .pl-sr,
-.hope-ui-dark .markdown-body .pl-sr .pl-cce,
-.hope-ui-dark .markdown-body .pl-sr .pl-sra,
-.hope-ui-dark .markdown-body .pl-sr .pl-sre {
+.dark .markdown-body .pl-pds,
+.dark .markdown-body .pl-s,
+.dark .markdown-body .pl-s .pl-pse .pl-s1,
+.dark .markdown-body .pl-sr,
+.dark .markdown-body .pl-sr .pl-cce,
+.dark .markdown-body .pl-sr .pl-sra,
+.dark .markdown-body .pl-sr .pl-sre {
   color: #a5d6ff;
 }
-.hope-ui-dark .markdown-body .pl-smw,
-.hope-ui-dark .markdown-body .pl-v {
+.dark .markdown-body .pl-smw,
+.dark .markdown-body .pl-v {
   color: #ffa657;
 }
-.hope-ui-dark .markdown-body .pl-bu {
+.dark .markdown-body .pl-bu {
   color: #f85149;
 }
-.hope-ui-dark .markdown-body .pl-ii {
+.dark .markdown-body .pl-ii {
   color: #f0f6fc;
   background-color: #8e1519;
 }
-.hope-ui-dark .markdown-body .pl-c2 {
+.dark .markdown-body .pl-c2 {
   color: #f0f6fc;
   background-color: #b62324;
 }
-.hope-ui-dark .markdown-body .pl-sr .pl-cce {
+.dark .markdown-body .pl-sr .pl-cce {
   color: #7ee787;
 }
-.hope-ui-dark .markdown-body .pl-ml {
+.dark .markdown-body .pl-ml {
   color: #f2cc60;
 }
-.hope-ui-dark .markdown-body .pl-mh,
-.hope-ui-dark .markdown-body .pl-mh .pl-en,
-.hope-ui-dark .markdown-body .pl-ms {
+.dark .markdown-body .pl-mh,
+.dark .markdown-body .pl-mh .pl-en,
+.dark .markdown-body .pl-ms {
   color: #1f6feb;
 }
-.hope-ui-dark .markdown-body .pl-mi {
+.dark .markdown-body .pl-mi {
   color: #c9d1d9;
 }
-.hope-ui-dark .markdown-body .pl-mb {
+.dark .markdown-body .pl-mb {
   color: #c9d1d9;
 }
-.hope-ui-dark .markdown-body .pl-md {
+.dark .markdown-body .pl-md {
   color: #ffdcd7;
   background-color: #67060c;
 }
-.hope-ui-dark .markdown-body .pl-mi1 {
+.dark .markdown-body .pl-mi1 {
   color: #aff5b4;
   background-color: #033a16;
 }
-.hope-ui-dark .markdown-body .pl-mc {
+.dark .markdown-body .pl-mc {
   color: #ffdfb6;
   background-color: #5a1e02;
 }
-.hope-ui-dark .markdown-body .pl-mi2 {
+.dark .markdown-body .pl-mi2 {
   color: #c9d1d9;
   background-color: #1158c7;
 }
-.hope-ui-dark .markdown-body .pl-mdr {
+.dark .markdown-body .pl-mdr {
   color: #d2a8ff;
 }
-.hope-ui-dark .markdown-body .pl-ba {
+.dark .markdown-body .pl-ba {
   color: #8b949e;
 }
-.hope-ui-dark .markdown-body .pl-sg {
+.dark .markdown-body .pl-sg {
   color: #484f58;
 }
-.hope-ui-dark .markdown-body .pl-corl {
+.dark .markdown-body .pl-corl {
   color: #a5d6ff;
 }
-.hope-ui-dark .markdown-body blockquote {
+.dark .markdown-body blockquote {
   color: #8b949e;
   border-left: 0.25em solid #3b434b;
 }
-.hope-ui-dark .markdown-body h1,
-.hope-ui-dark .markdown-body h2 {
+.dark .markdown-body h1,
+.dark .markdown-body h2 {
   border-bottom: 1px solid var(--border);
 }
-.hope-ui-dark .markdown-body h6 {
+.dark .markdown-body h6 {
   color: #8b949e;
 }
-.hope-ui-dark .markdown-body table td,
-.hope-ui-dark .markdown-body table th {
+.dark .markdown-body table td,
+.dark .markdown-body table th {
   border: 1px solid #3b434b;
 }
-.hope-ui-dark .markdown-body table tr {
+.dark .markdown-body table tr {
   background-color: #0d1117;
   border-top: 1px solid #272c32;
 }
-.hope-ui-dark .markdown-body table tr:nth-child(2n) {
+.dark .markdown-body table tr:nth-child(2n) {
   background-color: #161b22;
 }
-/* .hope-ui-dark .markdown-body img {
+/* .dark .markdown-body img {
   background-color: #0d1117;
 }
-.hope-ui-dark .markdown-body code {
+.dark .markdown-body code {
   background-color: rgba(240, 246, 252, 0.15);
 } */
-.hope-ui-dark .markdown-body .highlight pre,
-.hope-ui-dark .markdown-body pre {
+.dark .markdown-body .highlight pre,
+.dark .markdown-body pre {
   background-color: #1f1f22;
 }
-.hope-ui-dark .markdown-body .commit-tease-sha {
+.dark .markdown-body .commit-tease-sha {
   color: #b1bac4;
 }
-.hope-ui-dark .markdown-body .blob-num {
+.dark .markdown-body .blob-num {
   color: rgba(240, 246, 252, 0.3);
 }
-.hope-ui-dark .markdown-body .blob-num:hover {
+.dark .markdown-body .blob-num:hover {
   color: rgba(240, 246, 252, 0.6);
 }
-.hope-ui-dark .markdown-body .blob-code-inner {
+.dark .markdown-body .blob-code-inner {
   color: #c9d1d9;
 }
 
@@ -1208,7 +1208,7 @@
   color: #333;
   background: #f8f8f8;
 }
-.hope-ui-dark .hljs {
+.dark .hljs {
   color: rgba(255, 255, 255, 0.92);
 }
 .hljs-comment,
@@ -1222,9 +1222,9 @@
   color: #333;
   font-weight: 700;
 }
-.hope-ui-dark .hljs-keyword,
-.hope-ui-dark .hljs-selector-tag,
-.hope-ui-dark .hljs-subst {
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-subst {
   color: rgba(255, 255, 255, 0.92);
 }
 .hljs-literal,
@@ -1238,8 +1238,8 @@
 .hljs-string {
   color: #d14;
 }
-.hope-ui-dark .hljs-doctag,
-.hope-ui-dark .hljs-string {
+.dark .hljs-doctag,
+.dark .hljs-string {
   color: #fc8181;
 }
 .hljs-section,
@@ -1248,9 +1248,9 @@
   color: #900;
   font-weight: 700;
 }
-.hope-ui-dark .hljs-section,
-.hope-ui-dark .hljs-selector-id,
-.hope-ui-dark .hljs-title {
+.dark .hljs-section,
+.dark .hljs-selector-id,
+.dark .hljs-title {
   color: #f56565;
 }
 .hljs-subst {
@@ -1261,8 +1261,8 @@
   color: #458;
   font-weight: 700;
 }
-.hope-ui-dark .hljs-class .hljs-title,
-.hope-ui-dark .hljs-type {
+.dark .hljs-class .hljs-title,
+.dark .hljs-type {
   color: #9f7aea;
 }
 .hljs-attribute,
@@ -1271,9 +1271,9 @@
   color: navy;
   font-weight: 400;
 }
-.hope-ui-dark .hljs-attribute,
-.hope-ui-dark .hljs-name,
-.hope-ui-dark .hljs-tag {
+.dark .hljs-attribute,
+.dark .hljs-name,
+.dark .hljs-tag {
   color: #63b3ed;
 }
 .hljs-link,
@@ -1288,8 +1288,8 @@
 .hljs-builtin-name {
   color: #0086b3;
 }
-.hope-ui-dark .hljs-built_in,
-.hope-ui-dark .hljs-builtin-name {
+.dark .hljs-built_in,
+.dark .hljs-builtin-name {
   color: #00c5ff;
 }
 .hljs-meta {
@@ -1302,11 +1302,11 @@
 .hljs-addition {
   background: #dfd;
 }
-.hope-ui-dark .hljs-deletion {
+.dark .hljs-deletion {
   background: rgba(248, 81, 73, 0.15);
   color: #ffa198;
 }
-.hope-ui-dark .hljs-addition {
+.dark .hljs-addition {
   background: rgba(63, 185, 80, 0.15);
   color: #7ee787;
 }

@@ -1,4 +1,4 @@
-import { Anchor, Box, List, ListItem, useColorModeValue } from "@hope-ui/solid"
+import { Anchor, Box, List, ListItem } from "@hope-ui/solid"
 import { createStorageSignal } from "@solid-primitives/storage"
 import { clsx } from "clsx"
 import rehypeRaw from "rehype-raw"
@@ -25,6 +25,7 @@ import { isMobile } from "~/utils/compatibility.js"
 import hljs from "highlight.js"
 import { EncodingSelect } from "."
 import "./markdown.css"
+import { colorModeValue } from "~/store/color-mode"
 
 type TocItem = { indent: number; text: string; tagName: string; key: string }
 
@@ -216,7 +217,7 @@ export function Markdown(props: {
   const [encoding, setEncoding] = createSignal<string>("utf-8")
   const [show, setShow] = createSignal(true)
   const [markdownHTML, setMarkdownHTML] = createSignal<string>("")
-  const mermaidTheme = useColorModeValue("default", "dark")
+  const mermaidTheme = colorModeValue("default", "dark")
   const { isString, text } = useParseText(props.children)
   const { pathname } = useRouter()
 

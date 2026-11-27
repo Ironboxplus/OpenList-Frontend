@@ -1,7 +1,6 @@
 import EmbedPDF from "@embedpdf/snippet"
 import pdfiumWasmUrl from "@embedpdf/snippet/dist/pdfium.wasm?url"
 import { Show, createSignal, onCleanup, onMount } from "solid-js"
-import { useColorMode } from "@hope-ui/solid"
 import { base_path } from "~/utils"
 import { useT } from "~/hooks"
 import { currentLang } from "~/app/i18n"
@@ -14,6 +13,7 @@ import {
   type MediaAnnotationRow,
 } from "~/utils/media_api"
 import { createAnnotationQueue } from "~/utils/annotation_queue"
+import { colorMode } from "~/store/color-mode"
 
 /**
  * 查看器原生的批注对象。只有 id 需要被类型化（做去重和同步主键），
@@ -77,7 +77,6 @@ export const PdfReader = (props: {
   itemId?: number
 }) => {
   const t = useT()
-  const { colorMode } = useColorMode()
   const [error, setError] = createSignal("")
   let container: HTMLDivElement | undefined
 

@@ -1,7 +1,6 @@
 // The media area inside the app shell: a secondary nav (the shell's own
 // sidebar is the primary one), the page of the chosen library and the music
 // player that stays above all of them. Mounted by the `/@media` layout route.
-import { useColorMode } from "@hope-ui/solid"
 import { Navigate, Outlet } from "@solidjs/router"
 import {
   Component,
@@ -30,6 +29,7 @@ import { MediaType, UserMethods } from "~/types"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
 import { MediaAccentPicker } from "./MediaAccentPicker"
+import { colorMode } from "~/store/color-mode"
 
 // The player is only needed inside the library: lazy, so it stays out of the
 // entry chunk and costs nothing while the media library is off.
@@ -134,7 +134,6 @@ const MediaNav = () => {
  * is written again when the colour mode changes.
  */
 const useMediaAccent = () => {
-  const { colorMode } = useColorMode()
   createEffect(() => {
     if (mediaAccentEnabled()) {
       applyAccentPalette(accent(), colorMode() === "dark")

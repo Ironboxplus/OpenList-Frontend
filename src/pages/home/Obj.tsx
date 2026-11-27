@@ -1,4 +1,4 @@
-import { Text, useColorModeValue, VStack, Button } from "@hope-ui/solid"
+import { Text, VStack, Button } from "@hope-ui/solid"
 import {
   createEffect,
   createMemo,
@@ -36,6 +36,7 @@ import { fadeThrough } from "~/features/files/files-motion"
 import { shellActive } from "~/features/shell/topbar-slot"
 import { Dock } from "~/features/viewer/Dock"
 import { ViewerHost } from "~/features/viewer/ViewerHost"
+import { colorModeValue } from "~/store/color-mode"
 
 const Folder = lazy(() => import("./folder/Folder"))
 const Password = lazy(() => import("./Password"))
@@ -47,7 +48,7 @@ export { objBoxRef }
 
 export const Obj = () => {
   const t = useT()
-  const cardBg = useColorModeValue("white", "$neutral3")
+  const cardBg = colorModeValue("white", "$neutral3")
   const { pathname, searchParams, setSearchParams, isShare, to } = useRouter()
   // The share prompt keeps what is typed here only: a share password is traded
   // for a token and never stored (the folder prompt's cookie is not used).

@@ -1,4 +1,3 @@
-import { useColorModeValue } from "@hope-ui/solid"
 import { createMemo, createSignal, Show, onMount, onCleanup } from "solid-js"
 import { SwitchColorMode, SwitchLanguageWhite } from "~/components"
 import { useFetch, useLoading, useT, useTitle, useRouter } from "~/hooks"
@@ -15,6 +14,7 @@ import {
 import { PResp, Resp } from "~/types"
 import { createStorageSignal } from "@solid-primitives/storage"
 import { getSetting, getSettingBool } from "~/store"
+import { colorModeValue } from "~/store/color-mode"
 import { SSOLogin } from "./SSOLogin"
 import { IoFingerPrint } from "solid-icons/io"
 import { Button } from "~/components/ui/button"
@@ -30,7 +30,7 @@ const supported = () =>
 
 const Login = () => {
   const logos = getSetting("logo").split("\n")
-  const logo = useColorModeValue(logos[0], logos.pop())
+  const logo = colorModeValue(logos[0], logos.pop())
   const t = useT()
   const title = createMemo(() => {
     return `${t("login.login_to")} ${getSetting("site_title")}`

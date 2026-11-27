@@ -14,7 +14,6 @@ import {
   Switch,
   Match,
 } from "solid-js"
-import { useColorMode } from "@hope-ui/solid"
 import {
   TbArrowLeft,
   TbLock,
@@ -81,6 +80,7 @@ import { attachMediabunnyAudio } from "~/components/artplayer-proxy-mediabunny/A
 import Hls from "hls.js"
 import mpegts from "mpegts.js"
 import { registerAc3Decoder } from "@mediabunny/ac3"
+import { colorMode } from "~/store/color-mode"
 
 // MediaBunny 播放器模式：三档选择
 //   "disabled"   - 禁用（使用原生 <video>，默认）
@@ -121,7 +121,6 @@ function ensureAc3Decoder(force = false) {
 // ==================== 视频卡片 ====================
 const VideoCard = (props: { item: MediaItem }) => {
   const t = useT()
-  const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
   const coverBg = createMemo(() => (isDark() ? "#1e293b" : "#e2e8f0"))
   const titleColor = createMemo(() => (isDark() ? "#e2e8f0" : "#1e293b"))
@@ -1059,7 +1058,6 @@ const VideoDetail = (props: {
   onOpen: (id: number) => void
 }) => {
   const t = useT()
-  const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
   const [item, { refetch }] = createResource(
     () => parseInt(props.id),
@@ -1804,7 +1802,7 @@ const VideoLibrary = () => {
             onItemClick={(item) => setSelectedId(String(item.id))}
             renderCard={(item) => <VideoCard item={item} />}
             renderListRow={(item) => {
-              const { colorMode: cm } = useColorMode()
+              const cm = colorMode
               const dark = createMemo(() => cm() === "dark")
               return (
                 <>

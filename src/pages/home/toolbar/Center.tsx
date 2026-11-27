@@ -1,4 +1,4 @@
-import { Box, HStack, Text, useColorModeValue } from "@hope-ui/solid"
+import { Box, HStack, Text } from "@hope-ui/solid"
 import { createMemo, For, Show } from "solid-js"
 import {
   checkboxOpen,
@@ -16,6 +16,7 @@ import { bus, isTouchDevice } from "~/utils"
 import { Download } from "./Download"
 import { createPresence, MotionTokens } from "~/platform/motion"
 import { useRouter } from "~/hooks"
+import { colorModeValue } from "~/store/color-mode"
 
 export const Center = () => {
   const show = createMemo(
@@ -59,7 +60,7 @@ export const Center = () => {
         <div ref={bar}>
           <Box
             p="$2"
-            bgColor={useColorModeValue("white", "#000000d0")()}
+            bgColor={colorModeValue("white", "#000000d0")()}
             shadow="0px 10px 30px -5px rgba(0, 0, 0, 0.3)"
             rounded="$lg"
             css={{

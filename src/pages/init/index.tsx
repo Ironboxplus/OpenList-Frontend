@@ -11,7 +11,6 @@ import {
   Badge,
   HStack,
   Spacer,
-  useColorModeValue,
   VStack,
 } from "@hope-ui/solid"
 import {
@@ -35,6 +34,7 @@ import {
 } from "~/types"
 import LoginBg from "../login/LoginBg"
 import EnvCheck, { useEnvCheck } from "./EnvCheck"
+import { colorModeValue } from "~/store/color-mode"
 
 /**
  * 初始化阶段：
@@ -84,7 +84,7 @@ const Init = () => {
   // 用户已配置 logo 时优先用配置值（多行时首行为亮色、末行为暗色）；
   // 初始化阶段 settings 为空 -> 回退到绝对地址，避免空 src。
   const logos = resolveLogos()
-  const logo = useColorModeValue(
+  const logo = colorModeValue(
     logos[0] ?? INIT_LOGO_FALLBACK,
     logos[logos.length - 1] ?? INIT_LOGO_FALLBACK,
   )
@@ -93,7 +93,7 @@ const Init = () => {
     () => `${t("init.setup_to")} ${getSetting("site_title")}`,
   )
   useTitle(title)
-  const bgColor = useColorModeValue("white", "$neutral1")
+  const bgColor = colorModeValue("white", "$neutral1")
 
   const [username, setUsername] = createSignal("admin")
   const [password, setPassword] = createSignal("")

@@ -1,6 +1,6 @@
-import { useColorMode } from "@hope-ui/solid"
 import { useRouter, useT } from "~/hooks"
 import { revealFrom } from "~/platform/motion"
+import { toggleColorMode } from "~/store/color-mode"
 import type { Resp } from "~/types"
 import { changeToken, handleResp, loginUrlFor, notify, r } from "~/utils"
 
@@ -8,7 +8,6 @@ import { changeToken, handleResp, loginUrlFor, notify, r } from "~/utils"
 export const useAccountActions = () => {
   const t = useT()
   const { to } = useRouter()
-  const { toggleColorMode } = useColorMode()
   const logout = async () => {
     handleResp((await r.get("/auth/logout")) as Resp<unknown>, () => {
       changeToken()

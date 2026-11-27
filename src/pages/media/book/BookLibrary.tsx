@@ -2,7 +2,6 @@ import { Portal } from "solid-js/web"
 import { resolveMediaCover } from "~/utils/media_cover"
 import { accentGradient } from "~/utils/accent"
 import { createSignal, createResource, createMemo, Show, For } from "solid-js"
-import { useColorMode } from "@hope-ui/solid"
 import { useT } from "~/hooks"
 import { MediaLayout } from "../MediaLayout"
 import { MediaBrowser } from "../MediaBrowser"
@@ -21,6 +20,7 @@ import { api } from "~/utils"
 import { encodePath } from "~/utils/path"
 import { TbArrowLeft, TbBook, TbStarFilled, TbX } from "solid-icons/tb"
 import { Button } from "~/components/ui/button"
+import { colorMode } from "~/store/color-mode"
 
 // ==================== 书籍阅读器（外层容器） ====================
 const BookReader = (props: {
@@ -174,7 +174,6 @@ const BookReader = (props: {
 // ==================== 书籍卡片 ====================
 const BookCard = (props: { item: MediaItem }) => {
   const t = useT()
-  const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
   const coverBg = createMemo(() => (isDark() ? "#1e293b" : "#e2e8f0"))
   const coverFallbackBg = createMemo(() =>
@@ -377,7 +376,6 @@ const BookCard = (props: { item: MediaItem }) => {
 // ==================== 书籍详情 ====================
 const BookDetail = (props: { id: string; onBack: () => void }) => {
   const t = useT()
-  const { colorMode } = useColorMode()
   const isDark = createMemo(() => colorMode() === "dark")
   const titleColor = createMemo(() => (isDark() ? "#f1f5f9" : "#0f172a"))
   const metaColor = createMemo(() => (isDark() ? "#94a3b8" : "#475569"))
@@ -731,7 +729,7 @@ const BookLibrary = () => {
             onItemClick={(item) => setSelectedId(String(item.id))}
             renderCard={(item) => <BookCard item={item} />}
             renderListRow={(item) => {
-              const { colorMode: cm } = useColorMode()
+              const cm = colorMode
               const dark = createMemo(() => cm() === "dark")
               return (
                 <>

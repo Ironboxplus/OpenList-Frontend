@@ -1,16 +1,17 @@
-import { Box, useColorModeValue } from "@hope-ui/solid"
+import { Box } from "@hope-ui/solid"
 import { createMemo, Show, on } from "solid-js"
 import { Markdown, MaybeLoading } from "~/components"
 import { useLink, useRouter } from "~/hooks"
 import { getSettingBool, objStore, State } from "~/store"
 import { fetchText } from "~/utils"
 import { createLoad } from "~/utils/load"
+import { colorModeValue } from "~/store/color-mode"
 
 export function Readme(props: {
   files: string[]
   fromMeta: keyof typeof objStore
 }) {
-  const cardBg = useColorModeValue("white", "$neutral3")
+  const cardBg = colorModeValue("white", "$neutral3")
   const { previewLink } = useLink()
   const { pathname } = useRouter()
   const readme = createMemo(

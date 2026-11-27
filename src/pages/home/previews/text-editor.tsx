@@ -5,7 +5,6 @@ import {
   HStack,
   IconButton,
   Input,
-  useColorMode,
   VStack,
 } from "@hope-ui/solid"
 import { createShortcut } from "@solid-primitives/keyboard"
@@ -46,6 +45,7 @@ import {
   PopoverTrigger,
   Tooltip,
 } from "~/components/overlay"
+import { colorMode } from "~/store/color-mode"
 
 interface LanguageOption {
   id: string
@@ -53,7 +53,6 @@ interface LanguageOption {
 }
 
 function Editor(props: { data?: string | ArrayBuffer; contentType?: string }) {
-  const { colorMode } = useColorMode()
   const theme = createMemo(() => (colorMode() === "light" ? "vs" : "vs-dark"))
   const { pathname } = useRouter()
   const { isString, text } = useParseText(props.data)

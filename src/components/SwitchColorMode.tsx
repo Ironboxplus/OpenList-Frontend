@@ -1,13 +1,12 @@
-import { useColorMode } from "@hope-ui/solid"
 import { TbMoon, TbSun } from "solid-icons/tb"
 import { Show } from "solid-js"
 import { useT } from "~/hooks"
 import { Button } from "~/components/ui/button"
 import { revealFrom } from "~/platform/motion"
+import { colorMode, toggleColorMode } from "~/store/color-mode"
 
 const SwitchColorMode = () => {
   const t = useT()
-  const { colorMode, toggleColorMode } = useColorMode()
   const label = () => t("common.switch_color_mode")
   return (
     <Button

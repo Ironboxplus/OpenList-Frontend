@@ -1,4 +1,3 @@
-import { Progress, ProgressIndicator } from "@hope-ui/solid"
 import {
   Navigate,
   Outlet,
@@ -19,6 +18,7 @@ import {
 } from "solid-js"
 import { Portal } from "solid-js/web"
 import { FullScreenLoading } from "~/components"
+import { Progress } from "~/components/ui/progress"
 import { useRouter } from "~/hooks"
 import { api } from "~/platform/api/client"
 import type { InitStatus } from "~/types"
@@ -162,16 +162,11 @@ const App: Component = () => {
       <Portal>
         <Progress
           indeterminate
-          size="xs"
-          position="fixed"
-          top="0"
-          left="0"
-          right="0"
-          zIndex="$banner"
-          d={isRouting() ? "block" : "none"}
-        >
-          <ProgressIndicator />
-        </Progress>
+          // the route bar: 4px at the very top, over the pages and under the
+          // dialogs (z 1500) like hope's $banner (1200) was
+          class="fixed inset-x-0 top-0 z-[1200] gap-0 [&>div]:h-1 [&>div]:rounded-none"
+          classList={{ "hidden!": !isRouting() }}
+        />
       </Portal>
       <Switch
         fallback={

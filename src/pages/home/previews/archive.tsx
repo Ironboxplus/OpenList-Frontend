@@ -8,7 +8,6 @@ import {
   Divider,
   HStack,
   Icon,
-  useColorMode,
 } from "@hope-ui/solid"
 import { MotionDiv, MotionTokens } from "~/platform/motion"
 import {
@@ -68,6 +67,7 @@ import { TbCopy, TbLink } from "solid-icons/tb"
 import { AiOutlineCloudDownload } from "solid-icons/ai"
 import { Operations } from "~/pages/home/toolbar/operations"
 import "solid-contextmenu/dist/style.css"
+import { colorMode } from "~/store/color-mode"
 
 const download = (url: string) => {
   window.open(url, "_blank")
@@ -171,7 +171,6 @@ const operations: Operations = {
 
 const ContextMenu = () => {
   const { copy } = useUtil()
-  const { colorMode } = useColorMode()
   const { isShare } = useRouter()
   return (
     <Menu

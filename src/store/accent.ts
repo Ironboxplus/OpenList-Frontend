@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js"
+import { colorMode } from "./color-mode"
 import { getMainColor } from "./settings"
 
 export interface AccentPreset {
@@ -137,7 +138,7 @@ export const shiftLightness = (hex: string, delta: number): string => {
  */
 /**
  * 按明暗模式生成 12 级色板。
- * hope-ui 的暗色变量挂在 body.hope-ui-dark 上，会覆盖 html 上的内联变量，
+ * hope-ui 的暗色变量挂在 body 的 hope 暗色类上，会覆盖 html 上的内联变量，
  * 因此暗色模式需要单独生成一套方向相反（深→亮）的色阶，否则配色看起来「没生效」。
  */
 const buildPalette = (base: string, dark: boolean): Record<string, string> => {
@@ -181,9 +182,7 @@ const buildPalette = (base: string, dark: boolean): Record<string, string> => {
   return entries
 }
 
-const isDarkMode = () =>
-  typeof document !== "undefined" &&
-  document.body.classList.contains("hope-ui-dark")
+const isDarkMode = () => colorMode() === "dark"
 
 /**
  * 把色板转换成 CSS 变量表，便于只作用在指定容器上。

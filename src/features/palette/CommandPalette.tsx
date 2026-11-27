@@ -1,10 +1,10 @@
-import { useColorMode } from "@hope-ui/solid"
 import { TbFileSearch } from "solid-icons/tb"
 import { createMemo, createSignal } from "solid-js"
 import { currentLang, languages, setCurrentLang, type Lang } from "~/app/i18n"
 import { useRouter, useT } from "~/hooks"
 import { revealFrom } from "~/platform/motion"
 import { me } from "~/store"
+import { toggleColorMode } from "~/store/color-mode"
 import { fileSearchAvailable, openFileSearch } from "../files/search-entry"
 import { goingTo } from "../shell/files-memory"
 import { activeNavId } from "../shell/nav-items"
@@ -27,7 +27,6 @@ const nextLang = (): Lang => {
 const CommandPalette = () => {
   const t = useT()
   const { to, pathname } = useRouter()
-  const { toggleColorMode } = useColorMode()
   const viewport = createViewport()
   const [recentIds, setRecentIds] = createSignal(readRecent(localStorage))
 

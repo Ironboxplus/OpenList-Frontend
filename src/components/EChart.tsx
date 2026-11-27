@@ -8,7 +8,7 @@ import {
   GridComponent,
 } from "echarts/components"
 import { CanvasRenderer } from "echarts/renderers"
-import { useColorMode } from "@hope-ui/solid"
+import { colorMode } from "~/store/color-mode"
 
 echarts.use([
   PieChart,
@@ -39,7 +39,6 @@ export const EChart = (props: {
 }) => {
   let el!: HTMLDivElement
   let chart: echarts.ECharts | undefined
-  const { colorMode } = useColorMode()
 
   const resize = () => chart?.resize()
   let observer: ResizeObserver | undefined

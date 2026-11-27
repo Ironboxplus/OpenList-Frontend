@@ -1,4 +1,3 @@
-import { useColorMode } from "@hope-ui/solid"
 import {
   TbBell,
   TbLayoutSidebarLeftCollapse,
@@ -27,6 +26,7 @@ import {
 } from "~/components/ui/tooltip"
 import { useT } from "~/hooks"
 import { getSetting, me } from "~/store"
+import { colorMode } from "~/store/color-mode"
 import { cn } from "~/utils/cn"
 import { motionLevel, MotionTokens, playOnce } from "~/platform/motion"
 import { errorCenter } from "../notifications/service"
@@ -46,7 +46,6 @@ const iconButton = cn(
 
 /** The site logo (the first line of the setting is the light one, the last the dark one). */
 const SiteLogo = () => {
-  const { colorMode } = useColorMode()
   const src = () => {
     const logos = getSetting("logo").split("\n")
     return (colorMode() === "dark" ? logos[logos.length - 1] : logos[0])?.trim()
@@ -99,7 +98,6 @@ const PhoneSearchButton = () => {
 const ShellButtons = () => {
   const t = useT()
   const account = useAccountActions()
-  const { colorMode } = useColorMode()
   // Reduced motion: no ring; the badge count still changes.
   const rings = () =>
     nudge() > 0 && motionLevel() === "expressive" ? [nudge()] : []

@@ -1,12 +1,4 @@
-import {
-  HStack,
-  useColorModeValue,
-  Image,
-  Center,
-  Icon,
-  Kbd,
-  CenterProps,
-} from "@hope-ui/solid"
+import { HStack, Image, Center, Icon, Kbd, CenterProps } from "@hope-ui/solid"
 import { changeColor } from "seemly"
 import { Show, createMemo } from "solid-js"
 import { getMainColor, getSetting, local, objStore, State } from "~/store"
@@ -18,10 +10,11 @@ import { Layout } from "./layout"
 import { UserMenu } from "./UserMenu"
 import { PluginSlot } from "~/plugins"
 import { isMac } from "~/utils/compatibility"
+import { colorModeValue } from "~/store/color-mode"
 
 export const Header = () => {
   const logos = getSetting("logo").split("\n")
-  const logo = useColorModeValue(logos[0], logos.pop())
+  const logo = colorModeValue(logos[0], logos.pop())
 
   const stickyProps = createMemo<CenterProps>(() => {
     switch (local["position_of_header_navbar"]) {

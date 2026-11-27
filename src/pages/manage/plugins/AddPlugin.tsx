@@ -20,7 +20,6 @@ import {
   SelectValue,
   Switch as HopeSwitch,
   Text,
-  useColorModeValue,
   VStack,
 } from "@hope-ui/solid"
 import { createSignal, Show } from "solid-js"
@@ -29,6 +28,7 @@ import { FaSolidPuzzlePiece } from "solid-icons/fa"
 import { useManageTitle, useRouter, useT } from "~/hooks"
 import { PluginItem, Resp } from "~/types"
 import { handleResp, notify, parsePluginZip, pluginEngine, r } from "~/utils"
+import { colorModeValue } from "~/store/color-mode"
 
 const AddPlugin = () => {
   const t = useT()
@@ -50,8 +50,8 @@ const AddPlugin = () => {
   // High privilege state
   const [highPrivilege, setHighPrivilege] = createSignal(false)
 
-  const borderColor = useColorModeValue("$neutral4", "$neutral5")
-  const dropBg = useColorModeValue("$neutral1", "$neutral2")
+  const borderColor = colorModeValue("$neutral4", "$neutral5")
+  const dropBg = colorModeValue("$neutral1", "$neutral2")
 
   const handleFileChange = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".zip")) {

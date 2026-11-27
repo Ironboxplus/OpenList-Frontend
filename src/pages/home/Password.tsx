@@ -5,11 +5,11 @@ import {
   HStack,
   Input,
   Text,
-  useColorModeValue,
   VStack,
 } from "@hope-ui/solid"
 import { useRouter, useT } from "~/hooks"
 import { JSXElement } from "solid-js"
+import { colorModeValue } from "~/store/color-mode"
 
 type PasswordProps = {
   title: string
@@ -37,7 +37,7 @@ const Password = (props: PasswordProps) => {
         autofocus={true}
         type="password"
         value={props.password()}
-        background={useColorModeValue("$neutral3", "$neutral2")()}
+        background={colorModeValue("$neutral3", "$neutral2")()}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             props.enterCallback()

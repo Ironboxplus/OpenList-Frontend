@@ -2,26 +2,26 @@
   border-radius: 8px;
 }
 .aplayer {
-  background: var(--hope-colors-neutral2);
-  color: var(--hope-colors-neutral12) !important;
+  background: var(--muted);
+  color: var(--foreground) !important;
 }
 .aplayer-body .aplayer-pic {
   background-color: unset !important;
 }
 .aplayer .aplayer-info .aplayer-music .aplayer-author {
-  color: var(--hope-colors-neutral11);
+  color: var(--muted-foreground);
 }
 .aplayer .aplayer-list ol li:hover {
-  background: var(--hope-colors-neutral4);
+  background: var(--accent);
 }
 .aplayer .aplayer-list ol li.aplayer-list-light {
-  background: var(--hope-colors-neutral4);
+  background: var(--accent);
 }
 .aplayer .aplayer-list ol li .aplayer-list-author {
-  color: var(--hope-colors-neutral9);
+  color: var(--muted-foreground);
 }
 .aplayer .aplayer-list ol li .aplayer-list-index {
-  color: var(--hope-colors-neutral10);
+  color: var(--muted-foreground);
 }
 .aplayer .aplayer-lrc:after {
   background: none;
@@ -41,14 +41,14 @@
   margin: -10.5px 0 -6.5px 0;
 }
 .aplayer .aplayer-info .aplayer-controller .aplayer-time .aplayer-icon path {
-  fill: var(--hope-colors-neutral12);
+  fill: var(--foreground);
 }
 .aplayer .aplayer-lrc p {
-  color: var(--hope-colors-neutral12);
+  color: var(--foreground);
 }
 .aplayer .aplayer-list ol li {
-  border-top: 1px solid var(--hope-colors-neutral6);
+  border-top: 1px solid var(--border);
 }
 .aplayer.aplayer-withlist .aplayer-info {
-  border-bottom: 1px solid var(--hope-colors-neutral7);
+  border-bottom: 1px solid var(--border);
 }

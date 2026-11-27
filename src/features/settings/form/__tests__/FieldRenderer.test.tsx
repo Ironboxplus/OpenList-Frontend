@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from "@solidjs/testing-library"
-import { HopeProvider } from "@hope-ui/solid"
 import { createSignal } from "solid-js"
 import { describe, expect, it, vi } from "vitest"
 
@@ -16,7 +15,7 @@ vi.mock("~/hooks", async () => {
   }
 })
 
-// The folder choosers are hope-ui widgets with their own tests; stand in plain inputs.
+// The folder choosers have their own tests; stand in plain inputs.
 vi.mock("~/components/FolderTree", () => ({
   FolderChooseInput: (p: {
     id?: string
@@ -65,17 +64,15 @@ const mount = (spec: FieldSpec, initial: FieldValue, extra = {}) => {
   render(() => {
     const [value, setValue] = createSignal<FieldValue>(initial)
     return (
-      <HopeProvider>
-        <FieldRenderer
-          field={spec}
-          value={value()}
-          onChange={(raw) => {
-            emitted.push(raw)
-            setValue(Array.isArray(raw) ? raw : (raw as FieldValue))
-          }}
-          {...extra}
-        />
-      </HopeProvider>
+      <FieldRenderer
+        field={spec}
+        value={value()}
+        onChange={(raw) => {
+          emitted.push(raw)
+          setValue(Array.isArray(raw) ? raw : (raw as FieldValue))
+        }}
+        {...extra}
+      />
     )
   })
   return emitted
