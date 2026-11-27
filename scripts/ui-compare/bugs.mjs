@@ -2840,6 +2840,14 @@ await spec("menu-submenu-still-390", { width: 390, height: 844 }, async (env) =>
     const [x, y, w, h] = last[1].split(",").map(Number)
     return x >= 0 && y >= 0 && x + w <= 390 && y + h <= 844
   })(), last)
+  // it opens to the left here (no room on the right); a pointer that lands in
+  // it in one move, as a fast hand does, must not close it (Kobalte judged
+  // the way by moves inside the parent menu only: FWLJS4DZ.jsx:265, :905-915)
+  const item = page.getByRole("menuitem", { name: tr("home.toolbar.down_link") })
+  const ib = await item.boundingBox()
+  await page.mouse.move(ib.x + ib.width / 2, ib.y + ib.height / 2)
+  await sleep(400)
+  c("a pointer that jumps into it keeps it open", (await page.locator('[data-motion="menu"]').count()) === 2 && (await item.isVisible()))
   c.done()
 })
 
