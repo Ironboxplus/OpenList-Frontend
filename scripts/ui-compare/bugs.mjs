@@ -2794,11 +2794,55 @@ await spec("p4-toast-undo", { init: [viewerProbe, layoutOf(P4UNDO, "list")], vid
     await freshAnims(page)
     await err.locator('[data-testid="toast-close"]').click()
     c("a toast closes on its button", await gone(page, '[data-motion="toast"][data-toast-kind="error"]'))
-    a = named(await anims(page), "toast", "opacity")
-    c("leaving in 150ms", a[0] && near(a[0].duration, 150) && a[0].easing === ACCEL, a)
+    // the exit, not an entrance still on the list (the error toast's own)
+    a = named(await anims(page), "toast", "opacity").filter((x) => x.easing === ACCEL)
+    c("leaving in 150ms", a[0] && near(a[0].duration, 150), a)
   } finally {
     await removeAll(MOUNT, ["撤销"])
   }
+  c.done()
+})
+
+// the toasts' stack, as sonner (src/index.tsx) and Kobalte's toast keep it:
+// the newest in front and three in sight; alt+T takes the focus there; on a
+// phone a toast is swiped away (right or down), a short drag lets it go back
+await spec("p4-toast-stack", { width: 390, height: 844 }, async (env) => {
+  const { page, ctx } = env
+  const c = checker(env)
+  await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: OL })
+  await go(page, `${MOUNT}/文档`, 1200)
+  // four notices through the UI: a link copied from the batch menu, four times
+  await selectRows(page, "笔记.txt", true)
+  for (let i = 0; i < 4; i++) {
+    await page.locator('[data-batch="more"]').click()
+    await page.getByRole("menuitem", { name: tr("home.toolbar.copy_link") }).click()
+    await page.getByRole("menuitem", { name: tr("home.toolbar.down_link") }).click()
+  }
+  const items = page.locator('[data-motion="toast"]')
+  c("the notices stack", (await items.count()) >= 4, await items.count())
+  const vis = await items.evaluateAll((l) => l.map((t) => t.getAttribute("data-visible")))
+  c("three are in sight, the newest in front", vis.slice(0, 3).every((v) => v === "true") && vis.slice(3).every((v) => v === "false"), vis)
+  await page.keyboard.press("Alt+KeyT")
+  c("alt+T takes the focus to them", await page.evaluate(() => !!document.activeElement?.closest("[data-toast-region]")))
+  // the focus stays there: their timers wait (Kobalte toast-list.tsx) while they are dragged
+  const front = items.first()
+  const box = await front.boundingBox()
+  const before = await items.count()
+  // a short drag: it goes back
+  await page.mouse.move(box.x + 40, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 60, box.y + box.height / 2, { steps: 4 })
+  await sleep(300)
+  await page.mouse.up()
+  await sleep(500)
+  c("a short drag lets it go back", (await items.count()) === before)
+  // a swipe to the right: it goes
+  await page.mouse.move(box.x + 40, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 200, box.y + box.height / 2, { steps: 6 })
+  await page.mouse.up()
+  await sleep(600)
+  c("a swipe takes it away", (await items.count()) === before - 1, await items.count())
   c.done()
 })
 
@@ -2816,6 +2860,8 @@ await spec("p4-copy-check", { init: viewerProbe }, async (env) => {
   await freshAnims(page)
   await btn.click()
   c("it shows a check", await seen(page, '[data-testid="share-dialog"] [data-testid="copy-button"][data-copied]', 2000))
+  // the check starts on the frame after it is in the page, the probe reads it on the next
+  await settle(page)
   const a = named(await anims(page), "copy-icon")
   c("turning in 100ms", a.length > 0 && a.every((x) => near(x.duration, 100)), a)
   await sleep(1700)

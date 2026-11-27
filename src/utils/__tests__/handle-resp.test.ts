@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi, type MockInstance } from "vitest"
 import { bus } from "../bus"
 
 // The utils barrel drags in hope-ui; handle_resp only needs bus and notify.
@@ -26,7 +26,8 @@ const fail = (over: Partial<Resp<null>>): Resp<null> => ({
   ...over,
 })
 
-let toast: ReturnType<typeof vi.spyOn>
+// notify.error returns the toast id since P4 (components/ui/toast.tsx)
+let toast: MockInstance<typeof notify.error>
 let emitted: string[]
 beforeEach(() => {
   toast = vi.spyOn(notify, "error").mockImplementation((() => {}) as any)
