@@ -37,7 +37,7 @@ export const UnknownDialog = () => {
   const { downloadObjs } = useDownload()
   const [shown, setShown] = createSignal<string>()
   const [copied, setCopied] = createSignal(false)
-  let box: HTMLDivElement | undefined
+  let box: HTMLElement | undefined
   // keep the last file while the dialog animates out
   createEffect(
     on(dialogPath, (p) => {
@@ -73,7 +73,9 @@ export const UnknownDialog = () => {
       <DialogContent
         data-testid="unknown-dialog"
         class="max-w-sm gap-4 p-5"
-        ref={(el: HTMLDivElement) => (box = el)}
+        ref={(el: HTMLElement) => {
+          box = el
+        }}
         onOpenAutoFocus={(e: Event) => {
           // the dialog takes the focus, so the first Escape closes it
           e.preventDefault()
