@@ -1437,7 +1437,9 @@ const expectOverlayMotion = (env, kind, { rec, kinds }, enter, exit, moves) => {
   if (moves && (!inMove || Math.abs(inMove.duration - enter) > 2 || inMove.easing !== DECEL)) fail.push(`enter should move (${moves}) for ${enter}ms ${DECEL}`)
   if (!outA || Math.abs(outA.duration - exit) > 2 || outA.easing !== ACCEL) fail.push(`exit should be ${exit}ms ${ACCEL}`)
   // at rest it is whole: opaque and at full size (CI 45952006402: menus came to rest at scale(0))
-  if (!rec.rest || rec.rest[1] < 0.99 || !["none", "matrix(1, 0, 0, 1, 0, 0)"].includes(rec.rest[2])) fail.push(`at rest it is ${JSON.stringify(rec.rest)}, not opaque at full size`)
+  // (full size within a thousandth: an enter sampled on its last frame reads matrix(0.999995, …), CI 45977107041)
+  const whole = (t) => t === "none" || (/^matrix\(/.test(t) && t.slice(7, -1).split(",").map(Number).every((x, i) => Math.abs(x - [1, 0, 0, 1, 0, 0][i]) < 0.001))
+  if (!rec.rest || rec.rest[1] < 0.99 || !whole(rec.rest[2])) fail.push(`at rest it is ${JSON.stringify(rec.rest)}, not opaque at full size`)
   if (rec.closedAt === null || rec.removedAt === null) fail.push(`closed at ${rec.closedAt}, removed at ${rec.removedAt}`)
   else if (rec.removedAt - rec.closedAt < exit - 10) fail.push(`removed ${rec.removedAt - rec.closedAt}ms after it was told to close, before its ${exit}ms exit ran`)
   env.report = { ...(env.report ?? {}), [kind]: { enter: inA?.duration ?? null, exit: outA?.duration ?? null, closeToRemoved: rec.removedAt !== null && rec.closedAt !== null ? rec.removedAt - rec.closedAt : null } }
