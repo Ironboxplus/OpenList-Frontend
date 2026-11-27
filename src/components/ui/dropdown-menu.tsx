@@ -194,10 +194,30 @@ export const DropdownMenuSubTrigger = <T extends ValidComponent = "div">(
   const [local, rest] = splitProps(props as DropdownMenuSubTriggerProps, [
     "class",
     "children",
+    "onPointerLeave",
   ])
+  const menu = useMenuContext()
+  // Leaving the trigger, Kobalte keeps the submenu open if the pointer heads
+  // for it, the way being that of the last move inside the parent menu,
+  // "right" until there is one (@kobalte/core 0.13.14 chunk/FWLJS4DZ.jsx:200,
+  // :265, :905-915). With no room on the right (a phone) the submenu opens on
+  // the left, and a pointer that crosses into it in one move read as heading
+  // away: the parent took the focus back and the submenu closed (:273-278,
+  // :1331). The side the pointer left the trigger by is its way.
+  const onPointerLeave = (e: PointerEvent) => {
+    if (e.pointerType === "mouse") {
+      const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      const parent = menu.parentMenuContext()
+      if (e.clientX <= r.left) parent?.setPointerDir("left")
+      else if (e.clientX >= r.right) parent?.setPointerDir("right")
+    }
+    const theirs = local.onPointerLeave as unknown
+    if (typeof theirs === "function") (theirs as (e: PointerEvent) => void)(e)
+  }
 
   return (
     <DropdownMenuPrimitive.SubTrigger
+      onPointerLeave={onPointerLeave}
       class={cn(
         "flex cursor-default select-none items-center rounded-[6px] px-2 py-1.5 text-sm outline-none! focus:bg-accent data-[expanded]:bg-accent",
         local.class,
