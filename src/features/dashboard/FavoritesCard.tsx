@@ -86,7 +86,7 @@ export const FavoritesCard = (props: {
           onClick={() => setErrorCenterOpen(true)}
           class={cn(
             focusRing,
-            "flex items-center gap-2 rounded-md bg-transparent px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent",
+            "flex min-h-8 items-center gap-2 rounded-md bg-transparent px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent",
           )}
         >
           <TbBell class="size-4" />

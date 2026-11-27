@@ -37,6 +37,8 @@ export const speedOption = (
   },
   yAxis: {
     type: "value",
+    // bytes come whole: an idle chart shows 0 and 1B, not 0.2B steps
+    minInterval: 1,
     axisLabel: { formatter: axisSpeed },
     splitLine: { lineStyle: { opacity: 0.3 } },
   },
@@ -82,6 +84,8 @@ export const dailyOption = (
   },
   yAxis: {
     type: "value",
+    // bytes come whole: an idle chart shows 0 and 1B, not 0.2B steps
+    minInterval: 1,
     axisLabel: { formatter: axisBytes },
     splitLine: { lineStyle: { opacity: 0.3 } },
   },

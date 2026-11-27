@@ -77,10 +77,7 @@ const Rate = (props: { value: string; kind: "down" | "up"; big?: boolean }) => (
       />
     )}
     <span
-      class={cn(
-        "font-mono font-semibold",
-        props.big ? "text-xl xl:text-2xl" : "text-lg",
-      )}
+      class={cn("font-semibold", props.big ? "text-xl xl:text-2xl" : "text-lg")}
     >
       {props.value}
     </span>
@@ -118,11 +115,6 @@ export const TrafficOverviewCard = (props: {
             )}
           </For>
         </div>
-        <p class="m-0 text-xs text-muted-foreground">
-          {t("dashboard.traffic.note", {
-            node: props.stats.data()?.node || t("dashboard.traffic.this_node"),
-          })}
-        </p>
       </Fetched>
     </DashboardCard>
   )

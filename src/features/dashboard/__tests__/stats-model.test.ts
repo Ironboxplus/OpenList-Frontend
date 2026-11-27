@@ -268,4 +268,8 @@ describe("chart options", () => {
     expect(o.series[0].color).toBe(s.series[0].color)
     expect(o.series[1].color).toBe(s.series[1].color)
   })
+  it("never ticks fractions of a byte, even with no traffic", () => {
+    expect((speedOption([], labels) as any).yAxis.minInterval).toBe(1)
+    expect((dailyOption([], labels) as any).yAxis.minInterval).toBe(1)
+  })
 })

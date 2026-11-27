@@ -27,9 +27,7 @@
     "total": "All time",
     "download": "Download",
     "upload": "Upload",
-    "client": "Clients",
-    "this_node": "this node",
-    "note": "Relayed by {{node}}; direct (302) links do not pass through it. Storage side."
+    "client": "Clients"
   },
   "speed": {
     "title": "Live speed"
