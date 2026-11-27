@@ -293,7 +293,12 @@ scr("task-center", async (h) => {
 }, { only: "wide" })
 scr("error-center", async (h) => {
   await h.go(`${MOUNT}/文档`)
-  await h.act("errors", () => h.page.locator("[data-error-center-trigger]").first().click())
+  // on a phone the error center is in the Me sheet
+  if (h.phone) {
+    await h.act("me", () => h.page.getByRole("button", { name: /^(Me|我的?)/ }).last().click())
+    await h.page.waitForTimeout(500)
+  }
+  await h.act("errors", () => h.page.locator("[data-error-center-trigger]").filter({ visible: true }).first().click())
   await h.page.waitForTimeout(600)
 })
 scr("phone-path-sheet", async (h) => {

@@ -76,8 +76,26 @@ export const BottomTabs = (props: { pathname: string }) => {
             </NavLink>
           )}
         </For>
-        <button type="button" class={tabClass} onClick={() => setMeOpen(true)}>
-          <TbUserCircle class="size-5" />
+        <button
+          type="button"
+          class={tabClass}
+          // named "Me" first, whatever the badge says
+          aria-label={
+            errorCenter.unreadCount() > 0
+              ? `${t("shell.nav.me")} (${t("dashboard.errors.unread", { count: errorCenter.unreadCount() })})`
+              : t("shell.nav.me")
+          }
+          onClick={() => setMeOpen(true)}
+        >
+          {/* the error center lives in the Me sheet: its unread count shows here */}
+          <span class="relative">
+            <TbUserCircle class="size-5" />
+            <CountBadge
+              testid="me-error-badge"
+              count={errorCenter.unreadCount()}
+              class="absolute -right-2 -top-1 bg-destructive text-destructive-foreground"
+            />
+          </span>
           {t("shell.nav.me")}
         </button>
       </nav>
