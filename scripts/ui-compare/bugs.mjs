@@ -1082,10 +1082,12 @@ for (const size of [PHONE, { width: 820, height: 1180 }]) {
 }
 
 // §3: a hope-API Tooltip shows beside its child after a hover, and adds no
-// element around the child (the image preview's toolbar buttons).
+// element around the child (the image preview's toolbar buttons). Images open
+// in the image viewer now; the image preview is its Open with, in the
+// document viewer, which the address can ask for.
 await spec("tooltip-beside-child", {}, async (env) => {
   const { page } = env
-  await go(page, `${MOUNT}/预览/图片.jpg`, 2500)
+  await go(page, `${MOUNT}/预览/图片.jpg?preview=image`, 2500)
   const button = page.getByRole("button", { name: "Zoom in", exact: true }).first()
   await button.waitFor()
   const parentBefore = await button.evaluate((el) => {
