@@ -9,30 +9,16 @@
 @import "./tokens.css";
 @import "tailwindcss/utilities" source(none);
 
-@source "../features";
-@source "../components/ui";
-/* hope-ui's overlay API on the kit (modal sizes are looked up there). */
-@source "../components/overlay";
+/*
+ * Every source under src/ is styled with utilities now (hope-ui's style props
+ * are gone): the whole tree is scanned, but for the translations (their words
+ * are not class names) and the tests that assert on class names.
+ */
+@source "..";
+@source not "../lang";
 @source not "../components/overlay/__tests__";
-/* The settings area is built on the same components and styled with utilities. */
-@source "../pages/manage";
 @source not "../pages/manage/__tests__";
-/* The media library pages (section nav, wall toolbar, detail buttons). */
-@source "../pages/media";
 @source not "../pages/media/__tests__";
-@source "../components/MediaPlayButton.tsx";
-/* Pieces of the Files page that are on the kit (preview picker, auto-next switch) and the login card. */
-@source "../pages/home/file/File.tsx";
-@source "../pages/home/previews/video_box.tsx";
-@source "../pages/login";
-@source "../components/SwitchColorMode.tsx";
-@source "../components/SwitchLanguage.tsx";
-@source "../pages/home/file/open-with.tsx";
-/* The folder tree of the side nav. */
-@source "../components/FolderTree.tsx";
-@source "../pages/home/folder/Search.tsx";
-/* The built-in stats plugin renders a dashboard card with utilities. */
-@source "../plugins/builtin/stats";
 @source not "../plugins/builtin/stats/__tests__";
 
 /*
