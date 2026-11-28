@@ -30,7 +30,7 @@ import {
 
 afterEach(cleanup)
 
-const mount = (ui: () => JSX.Element) => render(ui)
+const show = (ui: () => JSX.Element) => render(ui)
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]')
 const closeButtons = () =>
@@ -140,7 +140,7 @@ const TestModal = (p: {
 
 describe("Modal", () => {
   it("is a labelled dialog with hope's parts and no X unless asked for", async () => {
-    mount(() => <TestModal onClose={() => {}} />)
+    show(() => <TestModal onClose={() => {}} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     const title = [...dialog()!.querySelectorAll("[id]")].find(
       (e) => e.textContent === "Title",
@@ -150,13 +150,13 @@ describe("Modal", () => {
     expect(dialog()!.textContent).toContain("ok")
     expect(dialog()!.className).toContain("max-w-[28rem]")
     cleanup()
-    mount(() => <TestModal onClose={() => {}} close />)
+    show(() => <TestModal onClose={() => {}} close />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     expect(closeButtons()).toHaveLength(1)
   })
 
   it("focuses initialFocus on opening", async () => {
-    mount(() => (
+    show(() => (
       <TestModal onClose={() => {}} extra={{ initialFocus: "#modal-input" }} />
     ))
     await waitFor(() => expect(document.activeElement?.id).toBe("modal-input"))
@@ -164,13 +164,13 @@ describe("Modal", () => {
 
   it("Escape closes; closeOnEsc={false} keeps it open", async () => {
     const onClose = vi.fn()
-    mount(() => <TestModal onClose={onClose} />)
+    show(() => <TestModal onClose={onClose} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     fireEvent.keyDown(dialog()!, { key: "Escape" })
     expect(onClose).toHaveBeenCalledTimes(1)
     cleanup()
     const kept = vi.fn()
-    mount(() => <TestModal onClose={kept} extra={{ closeOnEsc: false }} />)
+    show(() => <TestModal onClose={kept} extra={{ closeOnEsc: false }} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     fireEvent.keyDown(dialog()!, { key: "Escape" })
     expect(kept).not.toHaveBeenCalled()
@@ -180,14 +180,14 @@ describe("Modal", () => {
     const outside = document.createElement("div")
     document.body.append(outside)
     const onClose = vi.fn()
-    mount(() => <TestModal onClose={onClose} />)
+    show(() => <TestModal onClose={onClose} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     await sleep(20)
     fireEvent.pointerDown(outside)
     await waitFor(() => expect(onClose).toHaveBeenCalled())
     cleanup()
     const kept = vi.fn()
-    mount(() => (
+    show(() => (
       <TestModal onClose={kept} extra={{ closeOnOverlayClick: false }} />
     ))
     await waitFor(() => expect(dialog()).not.toBeNull())
@@ -200,7 +200,7 @@ describe("Modal", () => {
 
   it("passes DOM handlers of ModalContent through (drop)", async () => {
     const onDrop = vi.fn()
-    mount(() => <TestModal onClose={() => {}} onDrop={onDrop} />)
+    show(() => <TestModal onClose={() => {}} onDrop={onDrop} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     fireEvent.drop(dialog()!)
     expect(onDrop).toHaveBeenCalledTimes(1)
@@ -210,7 +210,7 @@ describe("Modal", () => {
 describe("Menu", () => {
   it("runs a MenuItem's onClick after the menu has closed, as onSelect", async () => {
     const seen: boolean[] = []
-    mount(() => (
+    show(() => (
       <Menu>
         <MenuTrigger>open</MenuTrigger>
         <MenuContent>
@@ -254,7 +254,7 @@ const hopeClasses = (root: ParentNode) =>
 
 describe("the layout parts", () => {
   it("are plain elements: a labelled title, and the callers' classes", async () => {
-    mount(() => <TestModal onClose={() => {}} />)
+    show(() => <TestModal onClose={() => {}} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     expect(hopeClasses(dialog()!)).toEqual([])
     const title = [...dialog()!.querySelectorAll("[id]")].find(
@@ -268,7 +268,7 @@ describe("the layout parts", () => {
   })
 
   it("keep the same shape on a drawer and a popover", async () => {
-    mount(() => (
+    show(() => (
       <Drawer opened onClose={() => {}}>
         <DrawerContent>
           <DrawerHeader class="text-primary">Head</DrawerHeader>
@@ -284,7 +284,7 @@ describe("the layout parts", () => {
     )!
     expect(head.className).toContain("text-primary")
     cleanup()
-    mount(() => (
+    show(() => (
       <Popover opened motionPreset="none">
         <PopoverTrigger>t</PopoverTrigger>
         <PopoverContent class="w-96">
@@ -310,7 +310,7 @@ describe("the layout parts", () => {
 
 describe("Popover", () => {
   it("hands a render function onClose, which closes it", async () => {
-    mount(() => (
+    show(() => (
       <Popover>
         {({ onClose }: { onClose: () => void }) => (
           <>
@@ -345,7 +345,7 @@ describe("Popover", () => {
 
   it("follows `opened` when controlled", async () => {
     const [opened, setOpened] = createSignal(false)
-    mount(() => (
+    show(() => (
       <Popover opened={opened()} motionPreset="none">
         <PopoverTrigger>t</PopoverTrigger>
         <PopoverContent>
@@ -361,7 +361,7 @@ describe("Popover", () => {
 
 describe("Tooltip (no wrapper element)", () => {
   const mount = (disabled = false) =>
-    mount(() => (
+    show(() => (
       <div id="parent">
         <Tooltip label="the tip" disabled={disabled} withArrow>
           <button id="child">x</button>
@@ -403,7 +403,7 @@ describe("Tooltip (no wrapper element)", () => {
         </button>
       </Tooltip>
     )
-    mount(() => (
+    show(() => (
       <Menu>
         <MenuTrigger as={TipButton} />
         <MenuContent>
