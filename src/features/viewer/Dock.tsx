@@ -225,7 +225,9 @@ export const Dock = () => {
     anchoring(false)
     setOpen(true)
     host.style.height = "auto"
-    const h = host.offsetHeight
+    // fractional, as the box is: offsetHeight rounds, and the run then ended
+    // up to half a pixel off the natural height it hands over to
+    const h = host.getBoundingClientRect().height
     const top = host.getBoundingClientRect().top
     const bar = shellTop()
     if (top + h / 2 < bar) {
@@ -274,7 +276,7 @@ export const Dock = () => {
       setDrag([0, 0])
       setPlayerControls(true)
     }
-    const h = host.offsetHeight
+    const h = host.getBoundingClientRect().height
     // back to where the list was: the dock folds above it, out of sight
     if (y !== undefined && y > 0) window.scrollTo(0, y + h)
     await run(
