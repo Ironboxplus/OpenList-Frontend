@@ -1,4 +1,3 @@
-import { Button } from "@hope-ui/solid"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import {
   bus,
@@ -15,6 +14,7 @@ import {
   ModalOverlay,
   createDisclosure,
 } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
 
 export const RemoveEmptyDirectory = () => {
   const { isOpen, onOpen, onClose } = createDisclosure()
@@ -48,11 +48,11 @@ export const RemoveEmptyDirectory = () => {
           <p>{t("home.toolbar.remove_empty_directory-tips")}</p>
         </ModalBody>
         <ModalFooter display="flex" gap="$2">
-          <Button onClick={onClose} colorScheme="neutral">
+          <Button variant="secondary" onClick={onClose}>
             {t("global.cancel")}
           </Button>
           <Button
-            colorScheme="danger"
+            variant="destructive"
             loading={loading()}
             onClick={async () => {
               const resp = await ok(pathname())

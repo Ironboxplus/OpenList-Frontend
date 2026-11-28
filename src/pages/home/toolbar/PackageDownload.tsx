@@ -4,9 +4,9 @@ import { getLinkByDirAndObj, useRouter, useT } from "~/hooks"
 import { fsList, joinBase, pathBase, pathJoin } from "~/utils"
 import { password, selectedObjs as _selectedObjs } from "~/store"
 import { createSignal, For, Show } from "solid-js"
-import { Button, Heading, Text, VStack } from "@hope-ui/solid"
 import { Obj } from "~/types"
 import { ModalBody, ModalFooter } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
 
 streamSaver.mitm = joinBase("streamer", "mitm.html")
 const trimSlash = (str: string) => {
@@ -141,26 +141,18 @@ const PackageDownload = (props: { onClose: () => void }) => {
   return (
     <>
       <ModalBody>
-        <VStack w="$full" alignItems="start" spacing="$2">
-          <Heading>
+        <div class="flex flex-col w-full items-start gap-y-2">
+          <h2 class="font-semibold">
             {t(`home.package_download.current_status`)}: {cur()}
-          </Heading>
+          </h2>
           <For each={fetchings()}>
-            {(name) => (
-              <Text
-                css={{
-                  wordBreak: "break-all",
-                }}
-              >
-                Fetching: {name}
-              </Text>
-            )}
+            {(name) => <p class="break-all">Fetching: {name}</p>}
           </For>
-        </VStack>
+        </div>
       </ModalBody>
       <Show when={[1, 4].includes(status())}>
         <ModalFooter>
-          <Button colorScheme="info" onClick={props.onClose}>
+          <Button variant="subtle" onClick={props.onClose}>
             {t("global.close")}
           </Button>
         </ModalFooter>

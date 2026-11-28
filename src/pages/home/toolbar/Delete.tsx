@@ -1,4 +1,3 @@
-import { Button, Checkbox } from "@hope-ui/solid"
 import { createSignal, onCleanup } from "solid-js"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { selectedObjs } from "~/store"
@@ -12,6 +11,8 @@ import {
   ModalFooter,
   createDisclosure,
 } from "~/components/overlay"
+import { CheckboxField } from "~/components/ui/toggle-field"
+import { Button } from "~/components/ui/button"
 
 export const Delete = () => {
   const t = useT()
@@ -45,21 +46,21 @@ export const Delete = () => {
         <ModalHeader>{t("home.toolbar.delete")}</ModalHeader>
         <ModalBody>
           <p>{t("home.toolbar.delete-tips")}</p>
-          <Checkbox
-            mt="$2"
+          <CheckboxField
+            class="mt-2"
             checked={followSeed()}
             disabled={selectedObjs().some((obj) => obj.is_dir)}
             onChange={() => setFollowSeed(!followSeed())}
           >
             {t("home.toolbar.follow_seed")}
-          </Checkbox>
+          </CheckboxField>
         </ModalBody>
         <ModalFooter display="flex" gap="$2">
-          <Button onClick={onClose} colorScheme="neutral">
+          <Button variant="secondary" onClick={onClose}>
             {t("global.cancel")}
           </Button>
           <Button
-            colorScheme="danger"
+            variant="destructive"
             loading={loading()}
             onClick={async () => {
               const resp = await ok(

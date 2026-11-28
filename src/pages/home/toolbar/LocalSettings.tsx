@@ -1,14 +1,3 @@
-import {
-  Center,
-  FormControl,
-  FormLabel,
-  HStack,
-  Input,
-  VStack,
-  Switch as HopeSwitch,
-  IconButton,
-  ButtonGroup,
-} from "@hope-ui/solid"
 import { For, Match, onCleanup, Switch } from "solid-js"
 import { FaSolidMinus, FaSolidPlus } from "solid-icons/fa"
 import {
@@ -28,12 +17,17 @@ import {
   DrawerHeader,
   DrawerOverlay,
 } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
+import { Input } from "~/components/ui/input"
+import { SwitchField } from "~/components/ui/toggle-field"
 
 function LocalSettingEdit(props: LocalSetting) {
   const t = useT()
   return (
-    <FormControl>
-      <FormLabel>{t(`home.local_settings.${props.key}`)}</FormLabel>
+    <div class="w-full relative">
+      <label class="inline-block mb-1 text-sm leading-5 font-medium text-foreground">
+        {t(`home.local_settings.${props.key}`)}
+      </label>
       <Switch
         fallback={
           <Input
@@ -57,54 +51,54 @@ function LocalSettingEdit(props: LocalSetting) {
           />
         </Match>
         <Match when={props.type === "boolean"}>
-          <HopeSwitch
-            defaultChecked={local[props.key] === "true"}
-            onChange={(e: { currentTarget: HTMLInputElement }) => {
-              setLocal(props.key, e.currentTarget.checked.toString())
+          <SwitchField
+            aria-label={t(`home.local_settings.${props.key}`)}
+            checked={local[props.key] === "true"}
+            onChange={(on) => {
+              setLocal(props.key, on.toString())
             }}
           />
         </Match>
         <Match when={props.type === "number"}>
-          <ButtonGroup attached>
+          <div class="flex items-stretch">
             {/* 40px wide, as high: hope's IconButton was 31px (the audit's small-target) */}
-            <IconButton
+            <Button
+              variant="subtle"
               aria-label="decrease"
-              minW="$10"
-              icon={<FaSolidMinus />}
+              size="icon-lg"
+              class="rounded-r-none"
               onClick={() => {
                 setLocal(
                   props.key,
                   Math.max(1, parseInt(local[props.key]) - 1).toString(),
                 )
               }}
-            />
+            >
+              <FaSolidMinus />
+            </Button>
             <Input
+              class="rounded-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               type="number"
               value={local[props.key]}
               onInput={(e) => {
                 setLocal(props.key, e.currentTarget.value)
               }}
-              borderRadius="$none"
-              style={{
-                "-moz-appearance": "textfield",
-                // @ts-ignore
-                "::-webkit-inner-spin-button": { display: "none" },
-                "::-webkit-outer-spin-button": { display: "none" },
-              }}
-              class="hide-spin"
             />
-            <IconButton
+            <Button
+              variant="subtle"
               aria-label="increase"
-              minW="$10"
-              icon={<FaSolidPlus />}
+              size="icon-lg"
+              class="rounded-l-none"
               onClick={() => {
                 setLocal(props.key, (parseInt(local[props.key]) + 1).toString())
               }}
-            />
-          </ButtonGroup>
+            >
+              <FaSolidPlus />
+            </Button>
+          </div>
         </Match>
       </Switch>
-    </FormControl>
+    </div>
   )
 }
 
@@ -129,17 +123,17 @@ export const LocalSettings = () => {
           {t("home.toolbar.local_settings")}
         </DrawerHeader>
         <DrawerBody>
-          <VStack spacing="$2">
+          <div class="flex flex-col items-center gap-y-2">
             <For each={initialLocalSettings.filter((s) => !s.hidden)}>
               {(setting) => <LocalSettingEdit {...setting} />}
             </For>
-          </VStack>
-          <Center mt="$4">
-            <HStack spacing="$4" p="$2" color="$neutral11">
+          </div>
+          <div class="flex justify-center items-center mt-4">
+            <div class="flex flex-row items-center p-2 text-muted-foreground gap-x-4">
               <SwitchLanguageWhite />
               <SwitchColorMode />
-            </HStack>
-          </Center>
+            </div>
+          </div>
         </DrawerBody>
       </DrawerContent>
     </Drawer>

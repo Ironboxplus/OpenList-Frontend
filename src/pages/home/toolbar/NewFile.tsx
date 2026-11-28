@@ -1,10 +1,10 @@
-import { Checkbox } from "@hope-ui/solid"
 import { createSignal, onCleanup } from "solid-js"
 import { ModalInput } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { password } from "~/store"
 import { bus, fsNewFile, handleRespWithNotifySuccess, pathJoin } from "~/utils"
 import { createDisclosure } from "~/components/overlay"
+import { CheckboxField } from "~/components/ui/toggle-field"
 
 export const NewFile = () => {
   const t = useT()
@@ -28,15 +28,15 @@ export const NewFile = () => {
       title="home.toolbar.input_filename"
       validateFilename={true}
       footerSlot={
-        <Checkbox
-          mr="auto"
+        <CheckboxField
+          class="mr-auto"
           checked={overwrite()}
           onChange={() => {
             setOverwrite(!overwrite())
           }}
         >
           {t("home.conflict_policy.overwrite_existing")}
-        </Checkbox>
+        </CheckboxField>
       }
       opened={isOpen()}
       onClose={onClose}

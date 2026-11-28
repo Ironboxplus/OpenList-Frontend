@@ -1,4 +1,3 @@
-import { Button, HStack, SimpleOption, SimpleSelect } from "@hope-ui/solid"
 import { ModalFolderChoose } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { bus, fsRecursiveMove, handleRespWithNotifySuccess } from "~/utils"
@@ -13,6 +12,8 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
+import { SimpleSelect } from "~/components/ui/simple-select"
 
 export const RecursiveMove = () => {
   const {
@@ -53,16 +54,16 @@ export const RecursiveMove = () => {
           <ModalBody>
             <p>{t("home.toolbar.recursive_move_directory-tips")}</p>
           </ModalBody>
-          <ModalFooter display="flex" gap="$2">
-            <Button onClick={() => closeConfirmModal()} colorScheme="neutral">
+          <ModalFooter class="flex gap-2">
+            <Button variant="secondary" onClick={() => closeConfirmModal()}>
               {t("global.cancel")}
             </Button>
             <Button
+              variant="destructive"
               onClick={() => {
                 closeConfirmModal()
                 onOpen()
               }}
-              colorScheme="danger"
             >
               {t("global.confirm")}
             </Button>
@@ -77,22 +78,26 @@ export const RecursiveMove = () => {
         loading={loading()}
         headerSlot={(handler) => <CreateFolderButton handler={handler} />}
         footerSlot={
-          <HStack mr="auto" flex="0.8" spacing="$1">
+          <div class="mr-auto flex flex-[0.8] items-center gap-x-1">
             <SimpleSelect
               value={conflictPolicy()}
-              onChange={(value) => setConflictPolicy(value)}
-            >
-              <SimpleOption value="cancel">
-                {t("home.conflict_policy.cancel_if_exists")}
-              </SimpleOption>
-              <SimpleOption value="overwrite">
-                {t("home.conflict_policy.overwrite_existing")}
-              </SimpleOption>
-              <SimpleOption value="skip">
-                {t("home.conflict_policy.skip_existing")}
-              </SimpleOption>
-            </SimpleSelect>
-          </HStack>
+              onChange={setConflictPolicy}
+              options={[
+                {
+                  value: "cancel",
+                  label: t("home.conflict_policy.cancel_if_exists"),
+                },
+                {
+                  value: "overwrite",
+                  label: t("home.conflict_policy.overwrite_existing"),
+                },
+                {
+                  value: "skip",
+                  label: t("home.conflict_policy.skip_existing"),
+                },
+              ]}
+            />
+          </div>
         }
         onSubmit={async (dst) => {
           const resp = await ok(pathname(), dst, conflictPolicy())

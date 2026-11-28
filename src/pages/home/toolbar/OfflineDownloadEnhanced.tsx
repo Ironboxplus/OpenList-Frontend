@@ -1,16 +1,3 @@
-import {
-  Button,
-  Textarea,
-  Box,
-  HStack,
-  VStack,
-  Text,
-  Badge,
-  Heading,
-  Checkbox,
-  Input,
-  SimpleGrid,
-} from "@hope-ui/solid"
 import { SelectWrapper, FolderChooseInput } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import {
@@ -58,6 +45,10 @@ import {
   createDisclosure,
 } from "~/components/overlay"
 import { AdvancedGroup } from "~/components/ui/advanced-group"
+import { Input, Textarea } from "~/components/ui/input"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { CheckboxField } from "~/components/ui/toggle-field"
 
 const deletePolicies = [
   "upload_download_stream",
@@ -408,56 +399,52 @@ export const TransferSeedGenerator = () => {
       <ModalContent>
         <ModalHeader>{t("home.transfer_seed.generate_title")}</ModalHeader>
         <ModalBody>
-          <VStack spacing="$4" alignItems="stretch">
-            <Box>
-              <Text fontSize="$sm" fontWeight="$semibold" mb="$2">
+          <div class="flex flex-col items-stretch gap-y-4">
+            <div>
+              <p class="text-sm font-semibold mb-2">
                 {t("home.transfer_seed.formats")}
-              </Text>
-              <HStack spacing="$4" flexWrap="wrap">
+              </p>
+              <div class="flex flex-row items-center flex-wrap gap-x-4">
                 <For each={["torrent", "cas", "oss"] as SeedFormat[]}>
                   {(format) => (
-                    <Checkbox
+                    <CheckboxField
                       checked={formats().includes(format)}
                       disabled={
                         capabilities()?.formats?.[format] === false &&
                         !formats().includes(format)
                       }
-                      onChange={(event) =>
-                        toggleFormat(format, event.currentTarget.checked)
-                      }
+                      onChange={(on) => toggleFormat(format, on)}
                     >
                       {format.toUpperCase()}
-                    </Checkbox>
+                    </CheckboxField>
                   )}
                 </For>
-              </HStack>
-            </Box>
+              </div>
+            </div>
 
-            <SimpleGrid columns={{ "@initial": 1, "@md": 2 }} gap="$3">
-              <Box>
-                <Text fontSize="$sm" mb="$1">
-                  {t("home.transfer_seed.seed_name")}
-                </Text>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <p class="text-sm mb-1">{t("home.transfer_seed.seed_name")}</p>
                 <Input
                   id="transfer-seed-name"
                   placeholder={t("home.transfer_seed.seed_name_placeholder")}
                   value={seedName()}
                   onInput={(e) => setSeedName(e.currentTarget.value)}
                 />
-              </Box>
-              <Box>
-                <Text fontSize="$sm" mb="$1">
+              </div>
+              <div>
+                <p class="text-sm mb-1">
                   {t("home.transfer_seed.output_path")}
-                </Text>
+                </p>
                 <FolderChooseInput
                   id="transfer-seed-output"
                   value={outputPath()}
                   onChange={setOutputPath}
                 />
-              </Box>
-            </SimpleGrid>
+              </div>
+            </div>
 
-            <Box w="$full">
+            <div class="w-full">
               <AdvancedGroup
                 title={t("global.advanced")}
                 count={advancedCount()}
@@ -466,11 +453,11 @@ export const TransferSeedGenerator = () => {
                 onOpenChange={setAdvanced}
                 testid="advanced-seed"
               >
-                <Box>
-                  <Text fontSize="$sm" fontWeight="$semibold" mb="$2">
+                <div>
+                  <p class="text-sm font-semibold mb-2">
                     {t("home.transfer_seed.hash_matrix")}
-                  </Text>
-                  <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$3">
+                  </p>
+                  <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <For
                       each={["md5", "sha1", "sha256"] as SeedHashAlgorithm[]}
                     >
@@ -480,66 +467,52 @@ export const TransferSeedGenerator = () => {
                             formats().includes("torrent")) ||
                           (algorithm === "md5" && formats().includes("cas"))
                         return (
-                          <VStack
-                            alignItems="flex-start"
-                            spacing="$1"
-                            border="1px solid $neutral7"
-                            borderRadius="$md"
-                            p="$2"
-                          >
-                            <Text fontWeight="$semibold">
+                          <div class="flex flex-col items-start border border-border rounded-md p-2 gap-y-1">
+                            <p class="font-semibold">
                               {algorithm.toUpperCase()}
-                            </Text>
-                            <Checkbox
+                            </p>
+                            <CheckboxField
                               checked={effectiveMatrix()[algorithm].whole}
                               disabled={
                                 forced() ||
                                 (reuseOnly() &&
                                   !availableWholeHashes().has(algorithm))
                               }
-                              onChange={(event) =>
-                                setHashScope(
-                                  algorithm,
-                                  "whole",
-                                  event.currentTarget.checked,
-                                )
+                              onChange={(on) =>
+                                setHashScope(algorithm, "whole", on)
                               }
                             >
                               {t("home.transfer_seed.whole")}
-                            </Checkbox>
-                            <Checkbox
+                            </CheckboxField>
+                            <CheckboxField
                               checked={effectiveMatrix()[algorithm].pieces}
                               disabled={
                                 forced() ||
                                 (reuseOnly() &&
                                   !availablePieceHashes().has(algorithm))
                               }
-                              onChange={(event) =>
-                                setHashScope(
-                                  algorithm,
-                                  "pieces",
-                                  event.currentTarget.checked,
-                                )
+                              onChange={(on) =>
+                                setHashScope(algorithm, "pieces", on)
                               }
                             >
                               {t("home.transfer_seed.pieces")}
-                            </Checkbox>
+                            </CheckboxField>
                             <Show when={forced()}>
-                              <Text fontSize="$xs" color="$neutral10">
+                              <p class="text-xs text-muted-foreground">
                                 {t("home.transfer_seed.required_by_format")}
-                              </Text>
+                              </p>
                             </Show>
-                          </VStack>
+                          </div>
                         )
                       }}
                     </For>
-                  </SimpleGrid>
-                </Box>
+                  </div>
+                </div>
 
-                <Box maxW="$48">
-                  <Text fontSize="$sm" mb="$1">
+                <div class="max-w-48">
+                  <p class="text-sm mb-1">
                     {t("home.transfer_seed.piece_size")}
-                  </Text>
+                  </p>
                   <SelectWrapper
                     value={pieceSize().toString()}
                     onChange={(value) => setPieceSize(Number(value))}
@@ -551,65 +524,47 @@ export const TransferSeedGenerator = () => {
                       label: `${size} MiB`,
                     }))}
                   />
-                </Box>
+                </div>
 
-                <Box>
-                  <Text fontSize="$sm" mb="$1">
-                    {t("home.transfer_seed.comment")}
-                  </Text>
+                <div>
+                  <p class="text-sm mb-1">{t("home.transfer_seed.comment")}</p>
                   <Input
                     value={comment()}
                     onInput={(e) => setComment(e.currentTarget.value)}
                   />
-                </Box>
+                </div>
                 <Show when={availableTrackers().length > 0}>
-                  <Box>
-                    <Text fontSize="$sm" fontWeight="$semibold" mb="$2">
+                  <div>
+                    <p class="text-sm font-semibold mb-2">
                       {t("home.transfer_seed.trackers")}
-                    </Text>
-                    <HStack spacing="$4" flexWrap="wrap">
+                    </p>
+                    <div class="flex flex-row items-center flex-wrap gap-x-4">
                       <For each={availableTrackers()}>
                         {(tracker) => (
-                          <Checkbox
+                          <CheckboxField
                             checked={trackers().includes(tracker)}
-                            onChange={(event) =>
-                              toggleTracker(
-                                tracker,
-                                event.currentTarget.checked,
-                              )
-                            }
+                            onChange={(on) => toggleTracker(tracker, on)}
                           >
-                            <Text
-                              fontSize="$xs"
-                              css={{ wordBreak: "break-all" }}
-                            >
-                              {tracker}
-                            </Text>
-                          </Checkbox>
+                            <span class="text-xs break-all">{tracker}</span>
+                          </CheckboxField>
                         )}
                       </For>
-                    </HStack>
-                  </Box>
+                    </div>
+                  </div>
                 </Show>
               </AdvancedGroup>
-            </Box>
+            </div>
 
-            <Box
-              border="1px solid $neutral7"
-              borderRadius="$md"
-              p="$3"
-              maxH="360px"
-              overflowY="auto"
-            >
+            <div class="border border-border rounded-md p-3 max-h-[360px] overflow-y-auto">
               <Show
                 when={!checking()}
-                fallback={<Text>{t("home.transfer_seed.checking")}</Text>}
+                fallback={<p>{t("home.transfer_seed.checking")}</p>}
               >
-                <HStack justifyContent="space-between" mb="$2" flexWrap="wrap">
-                  <Text fontWeight="$semibold">
+                <div class="flex flex-row items-center justify-between mb-2 flex-wrap">
+                  <p class="font-semibold">
                     {t("home.transfer_seed.capability_summary")}
-                  </Text>
-                  <Badge colorScheme="info">
+                  </p>
+                  <Badge variant="info">
                     {t("home.transfer_seed.estimated_traffic")}:{" "}
                     {formatFileSize(
                       capabilities()?.estimated_traffic ??
@@ -619,30 +574,23 @@ export const TransferSeedGenerator = () => {
                         ),
                     )}
                   </Badge>
-                </HStack>
+                </div>
                 <For each={capabilityFiles()}>
                   {(file) => {
                     const directAvailable = () =>
                       file.direct_source_available !== false
                     const shareAvailable = () => file.share_available !== false
                     return (
-                      <VStack
-                        alignItems="stretch"
-                        spacing="$2"
-                        mb="$3"
-                        p="$2"
-                        border="1px solid $neutral6"
-                        borderRadius="$md"
-                      >
-                        <HStack justifyContent="space-between" flexWrap="wrap">
-                          <Text fontSize="$sm" css={{ wordBreak: "break-all" }}>
+                      <div class="flex flex-col items-stretch mb-3 p-2 border border-border rounded-md gap-y-2">
+                        <div class="flex flex-row items-center justify-between flex-wrap">
+                          <p class="text-sm break-all">
                             {file.source_path || file.path}
-                          </Text>
-                          <Text fontSize="$xs" color="$neutral10">
+                          </p>
+                          <p class="text-xs text-muted-foreground">
                             {formatFileSize(file.size || 0)}
-                          </Text>
-                        </HStack>
-                        <HStack spacing="$1" flexWrap="wrap">
+                          </p>
+                        </div>
+                        <div class="flex flex-row items-center flex-wrap gap-x-1">
                           <For
                             each={
                               file.available_hashes ||
@@ -651,7 +599,7 @@ export const TransferSeedGenerator = () => {
                             }
                           >
                             {(hash) => (
-                              <Badge colorScheme="success">
+                              <Badge variant="success">
                                 {hash.toUpperCase()}
                               </Badge>
                             )}
@@ -659,14 +607,14 @@ export const TransferSeedGenerator = () => {
                           <Show
                             when={reuseOnly() && missingHashes(file).length > 0}
                           >
-                            <Badge colorScheme="danger">
+                            <Badge variant="danger">
                               {t("home.transfer_seed.missing_hashes", {
                                 hashes: missingHashes(file).join(", "),
                               })}
                             </Badge>
                           </Show>
                           <Show when={!reuseOnly() && requiresDownload(file)}>
-                            <Badge colorScheme="warning">
+                            <Badge variant="warning">
                               {t("home.transfer_seed.requires_fetch")}
                             </Badge>
                           </Show>
@@ -676,7 +624,7 @@ export const TransferSeedGenerator = () => {
                               !(reuseOnly() && missingHashes(file).length > 0)
                             }
                           >
-                            <Badge colorScheme="success">
+                            <Badge variant="success">
                               {t("home.transfer_seed.direct_generate")}
                             </Badge>
                           </Show>
@@ -687,50 +635,45 @@ export const TransferSeedGenerator = () => {
                               file.streamable === false
                             }
                           >
-                            <Badge colorScheme="danger">
+                            <Badge variant="danger">
                               {t("home.transfer_seed.cannot_stream")}
                             </Badge>
                           </Show>
                           <For each={file.missing_reasons || []}>
                             {(reason) => (
-                              <Badge colorScheme="danger">{reason}</Badge>
+                              <Badge variant="danger">{reason}</Badge>
                             )}
                           </For>
-                        </HStack>
-                        <HStack spacing="$4" flexWrap="wrap">
-                          <Checkbox
-                            size="sm"
+                        </div>
+                        <div class="flex flex-row items-center flex-wrap gap-x-4">
+                          <CheckboxField
                             checked={shareFiles().includes(
                               file.source_path || file.path,
                             )}
                             disabled={!shareAvailable()}
-                            onChange={(event) =>
-                              toggleShareFile(
-                                file.source_path || file.path,
-                                event.currentTarget.checked,
-                              )
+                            onChange={(on) =>
+                              toggleShareFile(file.source_path || file.path, on)
                             }
                           >
                             {t("home.transfer_seed.include_share")}
-                          </Checkbox>
-                          <Checkbox
-                            size="sm"
+                          </CheckboxField>
+                          <CheckboxField
                             checked={directFiles().includes(
                               file.source_path || file.path,
                             )}
                             disabled={!directAvailable()}
-                            onChange={(event) =>
+                            onChange={(on) =>
                               toggleDirectFile(
                                 file.source_path || file.path,
-                                event.currentTarget.checked,
+                                on,
                               )
                             }
                           >
                             {t("home.transfer_seed.include_direct_source")}
-                          </Checkbox>
-                        </HStack>
+                          </CheckboxField>
+                        </div>
                         <Input
-                          size="sm"
+                          class="h-8"
                           placeholder={t("home.transfer_seed.file_comment")}
                           value={fileComments()[file.path] || ""}
                           onInput={(event) =>
@@ -740,44 +683,35 @@ export const TransferSeedGenerator = () => {
                             }))
                           }
                         />
-                      </VStack>
+                      </div>
                     )
                   }}
                 </For>
                 <Show when={!capabilityFiles().length && paths().length}>
                   <For each={paths()}>
-                    {(path) => <Text fontSize="$sm">{path}</Text>}
+                    {(path) => <p class="text-sm">{path}</p>}
                   </For>
                 </Show>
               </Show>
-            </Box>
-          </VStack>
+            </div>
+          </div>
         </ModalBody>
-        <ModalFooter display="flex" gap="$2" alignItems="center">
+        <ModalFooter class="flex items-center gap-2">
           <Show when={hasUnsupportedHashes()}>
-            <Text
-              fontSize="$xs"
-              color="$danger9"
-              flex={1}
-              css={{ wordBreak: "break-all" }}
-            >
+            <p class="flex-1 text-xs break-all text-destructive">
               {t("home.transfer_seed.hash_reuse_only_hint")}
-            </Text>
+            </p>
           </Show>
           <Show when={!hasUnsupportedHashes() && hasUnstreamableDownload()}>
-            <Text
-              fontSize="$xs"
-              color="$danger9"
-              flex={1}
-              css={{ wordBreak: "break-all" }}
-            >
+            <p class="flex-1 text-xs break-all text-destructive">
               {t("home.transfer_seed.cannot_stream_hint")}
-            </Text>
+            </p>
           </Show>
-          <Button colorScheme="neutral" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {t("global.cancel")}
           </Button>
           <Button
+            variant="subtle"
             loading={generating()}
             disabled={
               !formats().length ||
@@ -1221,102 +1155,95 @@ export const OfflineDownloadEnhanced = () => {
         <ModalHeader>{t("home.toolbar.offline_download")}</ModalHeader>
         <ModalBody>
           {/* Tab 切换 */}
-          <HStack spacing="$2" mb="$3">
+          <div class="flex flex-row items-center mb-3 gap-x-2">
             <Button
               size="sm"
-              variant={activeTab() === "link" ? "solid" : "outline"}
+              variant={activeTab() === "link" ? "default" : "outline"}
               onClick={() => setActiveTab("link")}
             >
               {t("home.toolbar.offline_download_enhanced.tab_link")}
             </Button>
             <Button
               size="sm"
-              variant={activeTab() === "torrent" ? "solid" : "outline"}
+              variant={activeTab() === "torrent" ? "default" : "outline"}
               onClick={() => setActiveTab("torrent")}
             >
               {t("home.toolbar.offline_download_enhanced.tab_bt")}
             </Button>
-          </HStack>
+          </div>
 
           {/* 链接下载 Tab */}
           <Show when={activeTab() === "link"}>
-            <VStack spacing="$2" alignItems="stretch">
+            <div class="flex flex-col items-stretch gap-y-2">
               <Textarea
+                class="min-h-[120px]"
                 placeholder={t(
                   "home.toolbar.offline_download_enhanced.link_placeholder",
                 )}
                 value={linkValue()}
                 onInput={(e) => setLinkValue(e.currentTarget.value)}
-                minH="120px"
               />
-              <Text fontSize="$xs" color="$neutral10">
+              <p class="text-xs text-muted-foreground">
                 {t("home.toolbar.offline_download_enhanced.link_tips")}
-              </Text>
-            </VStack>
+              </p>
+            </div>
           </Show>
 
           {/* BT 下载 Tab */}
           <Show when={activeTab() === "torrent"}>
-            <VStack spacing="$3" alignItems="stretch">
+            <div class="flex flex-col items-stretch gap-y-3">
               {/* 未解析时显示上传区域 */}
               <Show when={!torrentInfo()}>
-                <Box
-                  border="2px dashed $neutral7"
-                  borderRadius="$md"
-                  p="$6"
-                  textAlign="center"
-                  cursor="pointer"
+                <div
+                  class="border-2 border-dashed border-border rounded-md p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/10"
                   onClick={handleFileSelect}
-                  _hover={{ borderColor: "$primary9", bg: "$primary3" }}
                 >
                   <Show
                     when={parsing()}
                     fallback={
-                      <VStack spacing="$2">
-                        <Text fontSize="$lg" fontWeight="$bold">
+                      <div class="flex flex-col items-center gap-y-2">
+                        <p class="text-lg font-bold">
                           {t(
                             "home.toolbar.offline_download_enhanced.drop_torrent",
                           )}
-                        </Text>
-                        <Text fontSize="$sm" color="$neutral10">
+                        </p>
+                        <p class="text-sm text-muted-foreground">
                           {t(
                             "home.toolbar.offline_download_enhanced.click_to_select",
                           )}
-                        </Text>
-                      </VStack>
+                        </p>
+                      </div>
                     }
                   >
-                    <Text>
-                      {t("home.toolbar.offline_download_enhanced.parsing")}
-                    </Text>
+                    <p>{t("home.toolbar.offline_download_enhanced.parsing")}</p>
                   </Show>
-                </Box>
+                </div>
               </Show>
 
               {/* 已解析时显示文件列表 */}
               <Show when={torrentInfo()}>
-                <VStack spacing="$2" alignItems="stretch">
+                <div class="flex flex-col items-stretch gap-y-2">
                   {/* 种子信息头部 */}
-                  <HStack justifyContent="space-between" alignItems="center">
-                    <VStack alignItems="flex-start" spacing="$1">
-                      <Heading size="sm" css={{ wordBreak: "break-all" }}>
+                  <div class="flex flex-row justify-between items-center">
+                    <div class="flex flex-col items-start gap-y-1">
+                      <h2 class="text-sm font-semibold break-all">
                         {torrentInfo()!.name}
-                      </Heading>
-                      <HStack spacing="$2">
-                        <Text fontSize="$xs" color="$neutral10">
+                      </h2>
+                      <div class="flex flex-row items-center gap-x-2">
+                        <p class="text-xs text-muted-foreground">
                           {formatFileSize(torrentInfo()!.total_size)}
-                        </Text>
-                        <Text fontSize="$xs" color="$neutral10">
+                        </p>
+                        <p class="text-xs text-muted-foreground">
                           {torrentInfo()!.files.length}{" "}
                           {t(
                             "home.toolbar.offline_download_enhanced.files_count",
                           )}
-                        </Text>
-                      </HStack>
-                    </VStack>
-                    <HStack spacing="$2">
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex flex-row items-center gap-x-2">
                       <Show when={torrentInfo()!.has_cas}>
-                        <Badge colorScheme="success">
+                        <Badge variant="success">
                           {t(
                             "home.toolbar.offline_download_enhanced.cas_supported",
                           )}
@@ -1333,8 +1260,8 @@ export const OfflineDownloadEnhanced = () => {
                       >
                         {t("home.toolbar.offline_download_enhanced.reselect")}
                       </Button>
-                    </HStack>
-                  </HStack>
+                    </div>
+                  </div>
 
                   {/* 文件列表 */}
                   <TorrentFileList
@@ -1342,36 +1269,36 @@ export const OfflineDownloadEnhanced = () => {
                     selectedFiles={selectedFiles()}
                     onSelectionChange={setSelectedFiles}
                   />
-                  <Text fontSize="$xs" color="$neutral9" mt="$1">
+                  <p class="text-xs text-muted-foreground mt-1">
                     {t(
                       "home.toolbar.offline_download_enhanced.file_selection_hint",
                     )}
-                  </Text>
-                </VStack>
+                  </p>
+                </div>
               </Show>
-            </VStack>
+            </div>
           </Show>
 
           {/* 公共选项区域 */}
-          <VStack spacing="$2" mt="$3" alignItems="stretch">
+          <div class="flex flex-col mt-3 items-stretch gap-y-2">
             {/* 保存路径 */}
-            <Box>
-              <Text fontSize="$sm" mb="$1" fontWeight="$medium">
+            <div>
+              <p class="text-sm mb-1 font-medium">
                 {t("home.toolbar.offline_download_enhanced.save_path")}
-              </Text>
+              </p>
               <FolderChooseInput
                 value={savePath()}
                 onChange={setSavePath}
                 id="offline-download-path"
               />
-            </Box>
+            </div>
 
             {/* 下载工具选择（CAS 秒传模式下隐藏） */}
             <Show when={!shouldUseCasRapidUpload()}>
-              <Box>
-                <Text fontSize="$sm" mb="$1" fontWeight="$medium">
+              <div>
+                <p class="text-sm mb-1 font-medium">
                   {t("home.toolbar.offline_download_enhanced.download_tool")}
-                </Text>
+                </p>
                 <SelectWrapper
                   value={
                     shouldDisableSimpleHttp() && tool() === "SimpleHttp"
@@ -1397,19 +1324,19 @@ export const OfflineDownloadEnhanced = () => {
                     shouldDisableSimpleHttp() && tools().includes("SimpleHttp")
                   }
                 >
-                  <Text fontSize="$xs" color="$neutral9" mt="$1">
+                  <p class="text-xs text-muted-foreground mt-1">
                     {t(
                       "home.toolbar.offline_download_enhanced.simplehttp_not_supported",
                     )}
-                  </Text>
+                  </p>
                 </Show>
-              </Box>
+              </div>
 
               {/* 删除策略 */}
-              <Box>
-                <Text fontSize="$sm" mb="$1" fontWeight="$medium">
+              <div>
+                <p class="text-sm mb-1 font-medium">
                   {t("home.toolbar.offline_download_enhanced.delete_policy")}
-                </Text>
+                </p>
                 <SelectWrapper
                   value={deletePolicy()}
                   onChange={(v) => setDeletePolicy(v as DeletePolicy)}
@@ -1424,23 +1351,18 @@ export const OfflineDownloadEnhanced = () => {
                       label: t(`home.toolbar.delete_policy.${policy}`),
                     }))}
                 />
-              </Box>
+              </div>
             </Show>
 
             {/* CAS 秒传提示 */}
             <Show when={shouldUseCasRapidUpload()}>
-              <Box
-                p="$2"
-                bg="$success3"
-                borderRadius="$sm"
-                border="1px solid $success7"
-              >
-                <Text fontSize="$sm" color="$success11">
+              <div class="rounded-sm border p-2 border-success/40 bg-success/10">
+                <p class="text-sm text-success">
                   {t(
                     "home.toolbar.offline_download_enhanced.cas_rapid_upload_mode",
                   )}
-                </Text>
-              </Box>
+                </p>
+              </div>
               {/* 生成 CAS 文件按钮 */}
               <Button
                 size="sm"
@@ -1459,18 +1381,13 @@ export const OfflineDownloadEnhanced = () => {
                 casRapidUploadFailed()
               }
             >
-              <Box
-                p="$2"
-                bg="$warning3"
-                borderRadius="$sm"
-                border="1px solid $warning7"
-              >
-                <Text fontSize="$sm" color="$warning11">
+              <div class="rounded-sm border p-2 border-warning/50 bg-warning/10">
+                <p class="text-sm text-warning">
                   {t(
                     "home.toolbar.offline_download_enhanced.cas_failed_fallback_hint",
                   )}
-                </Text>
-              </Box>
+                </p>
+              </div>
             </Show>
 
             <Show
@@ -1480,16 +1397,11 @@ export const OfflineDownloadEnhanced = () => {
                 !torrentInfo()!.has_cas
               }
             >
-              <Box
-                p="$2"
-                bg="$warning3"
-                borderRadius="$sm"
-                border="1px solid $warning7"
-              >
-                <Text fontSize="$sm" color="$warning11">
+              <div class="rounded-sm border p-2 border-warning/50 bg-warning/10">
+                <p class="text-sm text-warning">
                   {t("home.toolbar.offline_download_enhanced.no_cas_hint")}
-                </Text>
-              </Box>
+                </p>
+              </div>
             </Show>
 
             {/* ed2k 链接工具提示 */}
@@ -1502,26 +1414,22 @@ export const OfflineDownloadEnhanced = () => {
                   tool() === "qBittorrent")
               }
             >
-              <Box
-                p="$2"
-                bg="$warning3"
-                borderRadius="$sm"
-                border="1px solid $warning7"
-              >
-                <Text fontSize="$sm" color="$warning11">
+              <div class="rounded-sm border p-2 border-warning/50 bg-warning/10">
+                <p class="text-sm text-warning">
                   {t("home.toolbar.offline_download_enhanced.ed2k_tool_hint")}
-                </Text>
-              </Box>
+                </p>
+              </div>
             </Show>
-          </VStack>
+          </div>
         </ModalBody>
 
-        <ModalFooter display="flex" gap="$2">
-          <Button onClick={handleClose} colorScheme="neutral">
+        <ModalFooter class="flex gap-2">
+          <Button variant="secondary" onClick={handleClose}>
             {t("global.cancel")}
           </Button>
           <Show when={activeTab() === "link"}>
             <Button
+              variant="subtle"
               loading={linkLoading()}
               onClick={handleLinkSubmit}
               disabled={!linkValue().trim()}
@@ -1531,6 +1439,7 @@ export const OfflineDownloadEnhanced = () => {
           </Show>
           <Show when={activeTab() === "torrent"}>
             <Button
+              variant="subtle"
               loading={btLoading() || rapidUploading()}
               onClick={handleBtSubmit}
               disabled={!torrentInfo()}

@@ -1,4 +1,3 @@
-import { Button } from "@hope-ui/solid"
 import { createSignal, lazy, onCleanup, Show, Suspense } from "solid-js"
 import { FullLoading } from "~/components"
 import { useT, useDownload } from "~/hooks"
@@ -19,6 +18,7 @@ import {
   ModalOverlay,
   createDisclosure,
 } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
 
 export const Download = () => {
   const t = useT()
@@ -100,11 +100,11 @@ export const PackageDownloadModal = () => {
               <p>{t("home.toolbar.pre_package_download-tips")}</p>
             </ModalBody>
             <ModalFooter display="flex" gap="$2">
-              <Button onClick={onClose} colorScheme="neutral">
+              <Button variant="secondary" onClick={onClose}>
                 {t("global.cancel")}
               </Button>
               <Button
-                colorScheme="info"
+                variant="subtle"
                 onClick={() => {
                   setShow("package_download")
                 }}

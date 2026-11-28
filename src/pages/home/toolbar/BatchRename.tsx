@@ -1,12 +1,3 @@
-import {
-  Button,
-  HStack,
-  Text,
-  VStack,
-  Radio,
-  RadioGroup,
-  Input,
-} from "@hope-ui/solid"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import {
   bus,
@@ -28,6 +19,9 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "~/components/overlay"
+import { Input } from "~/components/ui/input"
+import { Button } from "~/components/ui/button"
+import { RadioGroupField } from "~/components/ui/radio-group"
 
 export const BatchRename = () => {
   const {
@@ -82,15 +76,6 @@ export const BatchRename = () => {
     }
   }
 
-  const itemProps = () => {
-    return {
-      fontWeight: "bold",
-      fontSize: "$sm",
-      color: "$neutral11",
-      textAlign: "left" as any,
-      cursor: "pointer",
-    }
-  }
   const handler = (name: string) => {
     if (name === "batchRename") {
       onOpen()
@@ -252,9 +237,9 @@ export const BatchRename = () => {
           {/* <ModalCloseButton /> */}
           <ModalHeader>{t("home.toolbar.batch_rename")}</ModalHeader>
           <ModalBody>
-            <RadioGroup
+            <RadioGroupField
               defaultValue="1"
-              onChange={(event: string) => {
+              onChange={(event) => {
                 setType(event)
                 if (event === "1" || event === "3") {
                   setNewNameType("string")
@@ -265,15 +250,14 @@ export const BatchRename = () => {
                 setValidationErrorSrc("")
                 setValidationErrorNew("")
               }}
-            >
-              <HStack spacing="$4">
-                <Radio value="1">{t("home.toolbar.regex_rename")}</Radio>
-                <Radio value="2">{t("home.toolbar.sequential_renaming")}</Radio>
-                <Radio value="3">{t("home.toolbar.find_replace")}</Radio>
-              </HStack>
-            </RadioGroup>
-            <VStack spacing="$2">
-              <p style={{ margin: "10px 0" }}>
+              options={[
+                { value: "1", label: t("home.toolbar.regex_rename") },
+                { value: "2", label: t("home.toolbar.sequential_renaming") },
+                { value: "3", label: t("home.toolbar.find_replace") },
+              ]}
+            />
+            <div class="flex flex-col items-center gap-y-2">
+              <p class="my-2.5">
                 <Show when={type() === "1"}>
                   {t("home.toolbar.regular_rename")}
                 </Show>
@@ -285,10 +269,10 @@ export const BatchRename = () => {
                 </Show>
               </p>
               <Input
-                id="modal-input1" // Update id to "modal-input1" for first input
+                id="modal-input1"
                 type={"string"}
-                value={srcName()} // Update value to value1 for first input
-                invalid={!!validationErrorSrc()}
+                value={srcName()}
+                aria-invalid={!!validationErrorSrc()}
                 onInput={(e) => {
                   handleInputSrc(e.currentTarget.value)
                 }}
@@ -299,15 +283,15 @@ export const BatchRename = () => {
                 }}
               />
               <Show when={validationErrorSrc()}>
-                <Text color="$danger9" fontSize="$sm">
+                <p class="text-destructive text-sm">
                   {t(`global.${validationErrorSrc()}`)}
-                </Text>
+                </p>
               </Show>
               <Input
-                id="modal-input2" // Add second input with id "modal-input2"
+                id="modal-input2"
                 type={newNameType()}
-                value={newName()} // Bind value to value2 for second input
-                invalid={!!validationErrorNew()}
+                value={newName()}
+                aria-invalid={!!validationErrorNew()}
                 onInput={(e) => {
                   handleInputNew(e.currentTarget.value)
                 }}
@@ -318,9 +302,9 @@ export const BatchRename = () => {
                 }}
               />
               <Show when={validationErrorNew()}>
-                <Text color="$danger9" fontSize="$sm">
+                <p class="text-destructive text-sm">
                   {t(`global.${validationErrorNew()}`)}
-                </Text>
+                </p>
               </Show>
               <Show when={type() === "2"}>
                 <Input
@@ -342,10 +326,11 @@ export const BatchRename = () => {
                   }}
                 />
               </Show>
-            </VStack>
+            </div>
           </ModalBody>
-          <ModalFooter display="flex" gap="$2">
+          <ModalFooter class="flex gap-2">
             <Button
+              variant="secondary"
               onClick={() => {
                 setType("1")
                 setNewNameType("string")
@@ -354,11 +339,11 @@ export const BatchRename = () => {
                 setValidationErrorNew("")
                 onClose()
               }}
-              colorScheme="neutral"
             >
               {t("global.cancel")}
             </Button>
             <Button
+              variant="subtle"
               onClick={() => submit()}
               disabled={
                 type() === "2" || type() === "3"
@@ -384,24 +369,25 @@ export const BatchRename = () => {
         <ModalContent>
           <ModalHeader>{t("home.toolbar.regex_rename_preview")}</ModalHeader>
           <ModalBody>
-            <VStack class="list" w="$full" spacing="$1">
-              <HStack class="title" w="$full" p="$2">
-                <Text w={{ "@initial": "50%", "@md": "50%" }} {...itemProps()}>
+            <div class="flex flex-col items-center w-full gap-y-1 list">
+              <div class="flex flex-row items-center w-full p-2 title">
+                <p class="w-1/2 cursor-pointer text-left text-sm font-bold text-muted-foreground">
                   {t("home.toolbar.regex_rename_preview_old_name")}
-                </Text>
-                <Text w={{ "@initial": "50%", "@md": "50%" }} {...itemProps()}>
+                </p>
+                <p class="w-1/2 cursor-pointer text-left text-sm font-bold text-muted-foreground">
                   {t("home.toolbar.regex_rename_preview_new_name")}
-                </Text>
-              </HStack>
+                </p>
+              </div>
               <For each={matchNames()}>
                 {(obj, i) => {
                   return <RenameItem obj={obj} index={i()} />
                 }}
               </For>
-            </VStack>
+            </div>
           </ModalBody>
-          <ModalFooter display="flex" gap="$2">
+          <ModalFooter class="flex gap-2">
             <Button
+              variant="secondary"
               onClick={() => {
                 setMatchNames([])
                 setType("1")
@@ -412,21 +398,21 @@ export const BatchRename = () => {
                 closePreviewModal()
                 onClose()
               }}
-              colorScheme="neutral"
             >
               {t("global.cancel")}
             </Button>
             <Button
+              variant="secondary"
               onClick={() => {
                 setMatchNames([])
                 closePreviewModal()
                 onOpen()
               }}
-              colorScheme="neutral"
             >
               {t("global.back")}
             </Button>
             <Button
+              variant="subtle"
               loading={loading()}
               onClick={async () => {
                 const resp = await ok(pathname(), matchNames())

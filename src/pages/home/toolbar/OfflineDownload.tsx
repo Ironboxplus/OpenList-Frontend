@@ -1,4 +1,3 @@
-import { Box } from "@hope-ui/solid"
 import { ModalInput, SelectWrapper } from "~/components"
 import { useFetch, useRouter, useT } from "~/hooks"
 import {
@@ -117,7 +116,7 @@ export const OfflineDownload = () => {
       tips={t("home.toolbar.offline_download-tips")}
       onDrop={handleTorrentFileDrop}
       topSlot={
-        <Box mb="$2">
+        <div class="mb-2">
           <SelectWrapper
             value={tool()}
             onChange={(v) => {
@@ -133,10 +132,10 @@ export const OfflineDownload = () => {
               return { value: tool, label: tool }
             })}
           />
-        </Box>
+        </div>
       }
       bottomSlot={
-        <Box mb="$2">
+        <div class="mb-2">
           <SelectWrapper
             value={deletePolicy()}
             onChange={(v) => setDeletePolicy(v as DeletePolicy)}
@@ -153,7 +152,7 @@ export const OfflineDownload = () => {
                 }
               })}
           />
-        </Box>
+        </div>
       }
       onSubmit={async (urls) => {
         const resp = await ok(

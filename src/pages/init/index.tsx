@@ -390,6 +390,7 @@ const Init = () => {
               {t("init.env_check_refresh")}
             </Button>
             <Button
+              variant="subtle"
               class="flex-[2]"
               disabled={!canProceed()}
               onClick={goNextFromEnv}
@@ -472,7 +473,7 @@ const Init = () => {
             >
               {t("init.back")}
             </Button>
-            <Button class="flex-[2]" onClick={submit}>
+            <Button variant="subtle" class="flex-[2]" onClick={submit}>
               {t("init.setup")}
             </Button>
           </div>
@@ -538,7 +539,11 @@ const Init = () => {
                   >
                     {t("init.done_go_home")}
                   </Button>
-                  <Button class="flex-1" onClick={() => goTo("/@login")}>
+                  <Button
+                    variant="subtle"
+                    class="flex-1"
+                    onClick={() => goTo("/@login")}
+                  >
                     {t("init.done_go_login")}
                   </Button>
                 </div>
@@ -560,7 +565,7 @@ const Init = () => {
                   >
                     {t("init.done_go_login")}
                   </Button>
-                  <Button class="flex-1" onClick={retryReady}>
+                  <Button variant="subtle" class="flex-1" onClick={retryReady}>
                     {t("init.env_check_refresh")}
                   </Button>
                 </div>

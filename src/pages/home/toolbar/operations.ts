@@ -29,28 +29,29 @@ import { openListed } from "~/features/viewer/state"
 export interface Operations {
   [key: string]: {
     icon: IconTypes
+    /** A Tailwind text colour class. */
     color?: string
     p?: boolean
   }
 }
 export const operations: Operations = {
-  open_with: { icon: FiExternalLink, color: "$info9" },
-  rename: { icon: CgRename, color: "$accent9" },
-  copy: { icon: TbCopy, color: "$success9" },
-  move: { icon: TbFileArrowRight, color: "$warning9" },
-  delete: { icon: AiTwotoneDelete, color: "$danger9" },
-  decompress: { icon: TbArchive, color: "$neutral9" },
-  copy_link: { icon: TbLink, color: "$info9" },
+  open_with: { icon: FiExternalLink, color: "text-primary" },
+  rename: { icon: CgRename, color: "text-primary" },
+  copy: { icon: TbCopy, color: "text-success" },
+  move: { icon: TbFileArrowRight, color: "text-warning" },
+  delete: { icon: AiTwotoneDelete, color: "text-destructive" },
+  decompress: { icon: TbArchive, color: "text-muted-foreground" },
+  copy_link: { icon: TbLink, color: "text-primary" },
   mkdir: { icon: CgFolderAdd, p: true },
   recursive_move: { icon: ImMoveUp, p: true },
   remove_empty_directory: { icon: CgFolderRemove, p: true },
   batch_rename: { icon: BiRegularRename, p: true },
   new_file: { icon: CgFileAdd, p: true },
   cancel_select: { icon: TiDeleteOutline },
-  download: { icon: AiOutlineCloudDownload, color: "$primary9" },
-  share: { icon: CgShare, color: "$primary9" },
-  offline_download_torrent: { icon: FaSolidMagnet, color: "$accent9" },
-  generate_transfer_seed: { icon: FaSolidSeedling, color: "$success9" },
+  download: { icon: AiOutlineCloudDownload, color: "text-primary" },
+  share: { icon: CgShare, color: "text-primary" },
+  offline_download_torrent: { icon: FaSolidMagnet, color: "text-primary" },
+  generate_transfer_seed: { icon: FaSolidSeedling, color: "text-success" },
 }
 /** One action on the current selection. */
 export interface FileOperation {

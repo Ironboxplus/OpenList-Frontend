@@ -1,4 +1,3 @@
-import { Box, HStack, Text } from "@hope-ui/solid"
 import { createMemo, For, Show } from "solid-js"
 import {
   checkboxOpen,
@@ -16,7 +15,7 @@ import { bus, isTouchDevice } from "~/utils"
 import { Download } from "./Download"
 import { createPresence, MotionTokens } from "~/platform/motion"
 import { useRouter } from "~/hooks"
-import { colorModeValue } from "~/store/color-mode"
+import { cn } from "~/utils/cn"
 
 export const Center = () => {
   const show = createMemo(
@@ -45,54 +44,36 @@ export const Center = () => {
   })
   return (
     <Show when={presence.present()}>
-      <Box
-        class="center-toolbar"
-        pos="fixed"
-        bottom="calc(var(--shell-gap, 0px) + 1rem)"
-        // Centred on the content panel, not on the window.
-        left="calc((var(--shell-content-left, 0px) + 100% - var(--shell-content-right, 0px)) / 2)"
-        w="max-content"
-        // On touch, cap width to viewport minus gutters so labels can wrap
-        maxW={isTouch ? "calc(100vw - 2rem)" : undefined}
-        color="$neutral11"
-        transform="translateX(-50%)"
+      <div
+        class={cn(
+          "center-toolbar fixed w-max -translate-x-1/2 text-muted-foreground",
+          isTouch && "max-w-[calc(100vw-2rem)]",
+        )}
+        style={{
+          bottom: "calc(var(--shell-gap, 0px) + 1rem)",
+          // Centred on the content panel, not on the window.
+          left: "calc((var(--shell-content-left, 0px) + 100% - var(--shell-content-right, 0px)) / 2)",
+        }}
       >
         <div ref={bar}>
-          <Box
-            p="$2"
-            bgColor={colorModeValue("white", "#000000d0")()}
-            shadow="0px 10px 30px -5px rgba(0, 0, 0, 0.3)"
-            rounded="$lg"
-            css={{
-              backdropFilter: "blur(8px)",
-            }}
-          >
+          <div class="rounded-lg bg-white p-2 shadow-[0px_10px_30px_-5px_rgba(0,0,0,0.3)] backdrop-blur-sm dark:bg-[#000000d0]">
             {/* Selection count indicator */}
-            <HStack spacing="$2" mb="$1_5" px="$1">
-              <Box
-                display="inline-flex"
-                alignItems="center"
-                justifyContent="center"
-                minW="$5"
-                h="$5"
-                px="$1"
-                rounded="$full"
-                bgColor="$primary9"
-                css={{ color: "white" }}
-              >
-                <Text fontSize="$xs" fontWeight="$semibold" lineHeight="1">
+            <div class="flex flex-row items-center mb-1.5 px-1 gap-x-2">
+              <div class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-primary-foreground">
+                <p class="text-xs leading-none font-semibold">
                   {selectedCount()}
-                </Text>
-              </Box>
-              <Text fontSize="$sm" color="$neutral10">
-                {selectedMsg()}
-              </Text>
-            </HStack>
+                </p>
+              </div>
+              <p class="text-sm text-muted-foreground">{selectedMsg()}</p>
+            </div>
             {/* Action buttons — wrappable on touch so labels don't overflow */}
-            <HStack
-              spacing="$1"
-              flexWrap={isTouch ? "wrap" : "nowrap"}
-              justifyContent={isTouch ? "center" : "flex-start"}
+            <div
+              class={cn(
+                "flex items-center gap-x-1",
+                isTouch
+                  ? "flex-wrap justify-center"
+                  : "flex-nowrap justify-start",
+              )}
             >
               <Show when={!isShare() && objStore.write}>
                 <For
@@ -128,10 +109,10 @@ export const Center = () => {
                   selectAll(false)
                 }}
               />
-            </HStack>
-          </Box>
+            </div>
+          </div>
         </div>
-      </Box>
+      </div>
     </Show>
   )
 }

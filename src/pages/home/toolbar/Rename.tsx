@@ -1,4 +1,3 @@
-import { Checkbox, VStack } from "@hope-ui/solid"
 import { createSignal, onCleanup, Show } from "solid-js"
 import { ModalInput } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
@@ -6,6 +5,7 @@ import { oneChecked, selectedObjs } from "~/store"
 import { bus, fsRename, handleResp, notify, pathJoin } from "~/utils"
 import { createDisclosure } from "~/components/overlay"
 import { offerUndo } from "~/features/files/undo"
+import { CheckboxField } from "~/components/ui/toggle-field"
 
 export const Rename = () => {
   const t = useT()
@@ -36,21 +36,21 @@ export const Rename = () => {
         title="home.toolbar.input_new_name"
         validateFilename={true}
         footerSlot={
-          <VStack mr="auto" spacing="$2" alignItems="start">
-            <Checkbox
+          <div class="flex flex-col mr-auto items-start gap-y-2">
+            <CheckboxField
               checked={overwrite()}
               onChange={() => setOverwrite(!overwrite())}
             >
               {t("home.conflict_policy.overwrite_existing")}
-            </Checkbox>
-            <Checkbox
+            </CheckboxField>
+            <CheckboxField
               checked={followSeed()}
               disabled={selectedObjs()[0]?.is_dir}
               onChange={() => setFollowSeed(!followSeed())}
             >
               {t("home.toolbar.follow_seed")}
-            </Checkbox>
-          </VStack>
+            </CheckboxField>
+          </div>
         }
         isRenamingFile={!selectedObjs()[0].is_dir}
         opened={isOpen()}

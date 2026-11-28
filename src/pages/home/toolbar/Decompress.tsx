@@ -1,4 +1,3 @@
-import { Checkbox, HStack, Input, Text, VStack } from "@hope-ui/solid"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
 import { bus, fsArchiveDecompress, handleRespWithNotifySuccess } from "~/utils"
 import { batch, createSignal, onCleanup } from "solid-js"
@@ -7,6 +6,8 @@ import { selectedObjs } from "~/store"
 import { CreateFolderButton } from "./CopyMove"
 import { createDisclosure } from "~/components/overlay"
 import { AdvancedGroup } from "~/components/ui/advanced-group"
+import { Input } from "~/components/ui/input"
+import { CheckboxField } from "~/components/ui/toggle-field"
 
 export const Decompress = () => {
   const t = useT()
@@ -79,15 +80,15 @@ export const Decompress = () => {
       defaultValue={srcPath}
       headerSlot={(handler) => <CreateFolderButton handler={handler} />}
       footerSlot={
-        <VStack w="$full" spacing="$2">
-          <Checkbox
-            mr="auto"
+        <div class="flex flex-col items-center w-full gap-y-2">
+          <CheckboxField
+            class="mr-auto"
             checked={overwrite()}
-            onChange={() => setOverwrite(!overwrite())}
+            onChange={setOverwrite}
           >
             {t("home.conflict_policy.overwrite_existing")}
-          </Checkbox>
-        </VStack>
+          </CheckboxField>
+        </div>
       }
       onSubmit={async (dst) => {
         const resp = await ok(
@@ -107,18 +108,17 @@ export const Decompress = () => {
         })
       }}
     >
-      <VStack spacing="$1" alignItems="flex-start">
-        <HStack width="100%" spacing="$1">
-          <Text size="sm" css={{ whiteSpace: "nowrap" }}>
+      <div class="flex flex-col items-start gap-y-1">
+        <div class="flex flex-row items-center w-full gap-x-1">
+          <p class="text-sm whitespace-nowrap">
             {t(`home.toolbar.decompress-pass`)}
-          </Text>
+          </p>
           <Input
+            class="h-8 grow"
             value={archivePass()}
             onInput={(e: any) => setArchivePass(e.target.value as string)}
-            size="sm"
-            flexGrow="1"
           />
-        </HStack>
+        </div>
         <div class="w-full">
           <AdvancedGroup
             title={t("global.advanced")}
@@ -128,23 +128,18 @@ export const Decompress = () => {
             onOpenChange={setAdvanced}
             testid="advanced-decompress"
           >
-            <Checkbox
-              checked={cacheFull()}
-              onChange={(e: any) => setCacheFull(e.target.checked as boolean)}
-            >
+            <CheckboxField checked={cacheFull()} onChange={setCacheFull}>
               {t(`home.toolbar.decompress-cache-full`)}
-            </Checkbox>
-            <Checkbox
+            </CheckboxField>
+            <CheckboxField
               checked={putIntoNewDir()}
-              onChange={(e: any) =>
-                setPutIntoNewDir(e.target.checked as boolean)
-              }
+              onChange={setPutIntoNewDir}
             >
               {t(`home.toolbar.decompress-put-into-new`)}
-            </Checkbox>
+            </CheckboxField>
           </AdvancedGroup>
         </div>
-      </VStack>
+      </div>
     </ModalFolderChoose>
   )
 }

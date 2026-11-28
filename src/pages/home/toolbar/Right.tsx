@@ -1,4 +1,3 @@
-import { Box, VStack } from "@hope-ui/solid"
 import { createMemo, Show } from "solid-js"
 import { RightIcon } from "./Icon"
 import { CgMoreO } from "solid-icons/cg"
@@ -27,40 +26,33 @@ export const Right = () => {
   const { refresh } = usePath()
   const { isShare } = useRouter()
   return (
-    <Box
-      class="left-toolbar-box"
-      pos="fixed"
-      right={`calc(var(--shell-content-right, 0px) + ${margin()})`}
-      bottom={`calc(var(--shell-gap, 0px) + ${margin()})`}
+    <div
+      class="left-toolbar-box fixed z-[1299]"
+      style={{
+        right: `calc(var(--shell-content-right, 0px) + ${margin()})`,
+        bottom: `calc(var(--shell-gap, 0px) + ${margin()})`,
+      }}
       // under every dialog (the kit's z-[1500]), above the sticky bars
-      zIndex="1299"
     >
       <Show
         when={isOpen()}
         fallback={
           <RightIcon
             class="toolbar-toggle"
-            as={CgMoreO}
+            icon={CgMoreO}
             onClick={() => {
               onToggle()
             }}
           />
         }
       >
-        <VStack
-          class="left-toolbar"
-          p="$1"
-          rounded="$lg"
-          spacing="$1"
-          // shadow="0px 10px 30px -5px rgba(0, 0, 0, 0.3)"
-          // bgColor={useColorModeValue("white", "$neutral4")()}
-          bgColor="$neutral1"
-          as={MotionDiv}
+        <MotionDiv
+          class="flex flex-col items-center p-1 rounded-lg bg-background gap-y-1 left-toolbar"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           timing={MotionTokens.options.barEnter}
         >
-          <VStack spacing="$1" class="left-toolbar-in">
+          <div class="flex flex-col items-center gap-y-1 left-toolbar-in">
             <Show
               when={
                 isFolder() &&
@@ -70,22 +62,22 @@ export const Right = () => {
               }
             >
               <RightIcon
-                as={RiSystemRefreshLine}
+                icon={RiSystemRefreshLine}
                 tips="refresh"
                 onClick={() => {
                   refresh(undefined, true)
                 }}
               />
               <RightIcon
-                as={operations.new_file.icon}
+                icon={operations.new_file.icon}
                 tips="new_file"
                 onClick={() => {
                   bus.emit("tool", "new_file")
                 }}
               />
               <RightIcon
-                as={operations.mkdir.icon}
-                p="$1_5"
+                icon={operations.mkdir.icon}
+                class="p-1.5"
                 tips="mkdir"
                 onClick={() => {
                   bus.emit("tool", "mkdir")
@@ -98,7 +90,7 @@ export const Right = () => {
               }
             >
               <RightIcon
-                as={operations.recursive_move.icon}
+                icon={operations.recursive_move.icon}
                 tips="recursive_move"
                 onClick={() => {
                   bus.emit("tool", "recursiveMove")
@@ -111,7 +103,7 @@ export const Right = () => {
               }
             >
               <RightIcon
-                as={operations.remove_empty_directory.icon}
+                icon={operations.remove_empty_directory.icon}
                 tips="remove_empty_directory"
                 onClick={() => {
                   bus.emit("tool", "removeEmptyDirectory")
@@ -124,7 +116,7 @@ export const Right = () => {
               }
             >
               <RightIcon
-                as={operations.batch_rename.icon}
+                icon={operations.batch_rename.icon}
                 tips="batch_rename"
                 onClick={() => {
                   selectAll(true)
@@ -141,7 +133,7 @@ export const Right = () => {
               }
             >
               <RightIcon
-                as={AiOutlineCloudUpload}
+                icon={AiOutlineCloudUpload}
                 tips="upload"
                 onClick={() => {
                   bus.emit("tool", "upload")
@@ -157,8 +149,8 @@ export const Right = () => {
               }
             >
               <RightIcon
-                as={IoMagnetOutline}
-                pl="0"
+                icon={IoMagnetOutline}
+                class="pl-0"
                 tips="offline_download"
                 onClick={() => {
                   bus.emit("tool", "offline_download")
@@ -167,7 +159,7 @@ export const Right = () => {
             </Show>
             <Show when={isTocVisible()}>
               <RightIcon
-                as={BiSolidBookContent}
+                icon={BiSolidBookContent}
                 tips="toggle_markdown_toc"
                 onClick={() => {
                   setTocDisabled((disabled) => !disabled)
@@ -176,20 +168,20 @@ export const Right = () => {
             </Show>
             <RightIcon
               tips="toggle_checkbox"
-              as={TbCheckbox}
+              icon={TbCheckbox}
               onClick={toggleCheckbox}
             />
             <RightIcon
-              as={AiOutlineSetting}
+              icon={AiOutlineSetting}
               tips="local_settings"
               onClick={() => {
                 bus.emit("tool", "local_settings")
               }}
             />
-          </VStack>
-          <RightIcon tips="more" as={CgMoreO} onClick={onToggle} />
-        </VStack>
+          </div>
+          <RightIcon tips="more" icon={CgMoreO} onClick={onToggle} />
+        </MotionDiv>
       </Show>
-    </Box>
+    </div>
   )
 }

@@ -1,7 +1,7 @@
-import { Box, Checkbox, HStack, Text, VStack, Button } from "@hope-ui/solid"
 import { createSignal, For, Show, createMemo } from "solid-js"
 import { TorrentFile } from "~/types"
 import { useT } from "~/hooks"
+import { CheckboxField } from "~/components/ui/toggle-field"
 
 // 树节点类型
 interface TreeNode {
@@ -144,37 +144,31 @@ export const TorrentFileList = (props: TorrentFileListProps) => {
   }
 
   return (
-    <VStack spacing="$1" alignItems="stretch">
+    <div class="flex flex-col items-stretch gap-y-1">
       {/* 全选/统计 */}
-      <HStack justifyContent="space-between" alignItems="center" p="$1">
-        <Checkbox
+      <div class="flex flex-row justify-between items-center p-1">
+        <CheckboxField
           checked={allSelected()}
           indeterminate={!allSelected() && !noneSelected()}
           onChange={toggleAll}
         >
-          <Text fontSize="$sm">
+          <p class="text-sm">
             {t("home.toolbar.offline_download_enhanced.select_all")} (
             {props.selectedFiles.length}/{props.files.length})
-          </Text>
-        </Checkbox>
-        <Text fontSize="$xs" color="$neutral10">
+          </p>
+        </CheckboxField>
+        <p class="text-xs text-muted-foreground">
           {formatFileSize(
             props.selectedFiles.reduce(
               (sum, i) => sum + (props.files[i]?.size || 0),
               0,
             ),
           )}
-        </Text>
-      </HStack>
+        </p>
+      </div>
 
       {/* 文件树 */}
-      <Box
-        maxH="300px"
-        overflowY="auto"
-        border="1px solid $neutral6"
-        borderRadius="$sm"
-        p="$1"
-      >
+      <div class="max-h-[300px] overflow-y-auto border border-border rounded-sm p-1">
         <For each={tree()}>
           {(node) => (
             <TreeNodeItem
@@ -186,8 +180,8 @@ export const TorrentFileList = (props: TorrentFileListProps) => {
             />
           )}
         </For>
-      </Box>
-    </VStack>
+      </div>
+    </div>
   )
 }
 
@@ -217,36 +211,23 @@ function TreeNodeItem(props: {
   })
 
   return (
-    <Box pl={`${props.depth * 16}px`}>
-      <HStack
-        spacing="$1"
-        py="$0_5"
-        alignItems="center"
-        _hover={{ bg: "$neutral3" }}
-        borderRadius="$xs"
-        px="$1"
-      >
+    <div style={{ "padding-left": `${props.depth * 16}px` }}>
+      <div class="flex items-center gap-x-1 rounded-xs px-1 py-0.5 hover:bg-muted">
         {/* 展开/折叠按钮 */}
         <Show when={props.node.isDir}>
-          <Box
-            cursor="pointer"
+          <div
+            class="cursor-pointer w-[16px] text-center text-xs text-muted-foreground shrink-0"
             onClick={() => setExpanded(!expanded())}
-            w="16px"
-            textAlign="center"
-            fontSize="$xs"
-            color="$neutral10"
-            flexShrink={0}
           >
             {expanded() ? "▼" : "▶"}
-          </Box>
+          </div>
         </Show>
         <Show when={!props.node.isDir}>
-          <Box w="16px" flexShrink={0} />
+          <div class="w-[16px] shrink-0" />
         </Show>
 
         {/* 复选框 */}
-        <Checkbox
-          size="sm"
+        <CheckboxField
           checked={isChecked()}
           indeterminate={isIndeterminate()}
           onChange={() => {
@@ -259,29 +240,18 @@ function TreeNodeItem(props: {
         />
 
         {/* 图标 */}
-        <Text fontSize="$sm" flexShrink={0}>
-          {props.node.isDir ? "📁" : "📄"}
-        </Text>
+        <p class="text-sm shrink-0">{props.node.isDir ? "📁" : "📄"}</p>
 
         {/* 文件名 */}
-        <Text
-          fontSize="$sm"
-          flex={1}
-          css={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-          title={props.node.name}
-        >
+        <p class="flex-1 truncate text-sm" title={props.node.name}>
           {props.node.name}
-        </Text>
+        </p>
 
         {/* 文件大小 */}
-        <Text fontSize="$xs" color="$neutral10" flexShrink={0}>
+        <p class="text-xs text-muted-foreground shrink-0">
           {formatFileSize(props.node.size)}
-        </Text>
-      </HStack>
+        </p>
+      </div>
 
       {/* 子节点 */}
       <Show when={props.node.isDir && expanded()}>
@@ -297,6 +267,6 @@ function TreeNodeItem(props: {
           )}
         </For>
       </Show>
-    </Box>
+    </div>
   )
 }

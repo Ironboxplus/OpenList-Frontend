@@ -22,7 +22,7 @@ export const seedUploadHeaders = (
 }
 
 export const StatusBadge = {
-  pending: "neutral",
+  pending: "secondary",
   hashing: "warning",
   uploading: "info",
   backending: "info",

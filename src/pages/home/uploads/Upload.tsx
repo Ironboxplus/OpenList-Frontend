@@ -1,17 +1,6 @@
-import {
-  VStack,
-  Input,
-  Heading,
-  HStack,
-  IconButton,
-  Checkbox,
-  Text,
-  Badge,
-  Button,
-  Box,
-  Stack,
-  SimpleGrid,
-} from "@hope-ui/solid"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { CheckboxField } from "~/components/ui/toggle-field"
 import { AdvancedGroup } from "~/components/ui/advanced-group"
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js"
 import { TbCircleCheck } from "solid-icons/tb"
@@ -40,46 +29,32 @@ import { SeedFormat, SeedHashAlgorithm, SeedHashMatrix } from "~/types"
 const UploadFile = (props: UploadFileProps & { onRetry?: () => void }) => {
   const t = useT()
   return (
-    <VStack
-      w="$full"
-      spacing="$1"
-      rounded="$lg"
-      border="1px solid $neutral7"
-      alignItems="start"
-      p="$2"
-      _hover={{
-        border: `1px solid ${getMainColor()}`,
-      }}
+    <div
+      class="flex w-full flex-col items-start gap-y-1 rounded-lg border border-border p-2 hover:border-(--main)"
+      style={{ "--main": getMainColor() }}
     >
-      <Text
-        css={{
-          wordBreak: "break-all",
-        }}
-      >
-        {props.path}
-      </Text>
-      <HStack spacing="$2" w="$full" justifyContent="space-between">
-        <HStack spacing="$2">
-          <Badge colorScheme={StatusBadge[props.status]}>
+      <p class="break-all">{props.path}</p>
+      <div class="flex flex-row items-center w-full justify-between gap-x-2">
+        <div class="flex flex-row items-center gap-x-2">
+          <Badge variant={StatusBadge[props.status]}>
             {t(`home.upload.${props.status}`)}
           </Badge>
-          <Text>{getFileSize(props.speed)}/s</Text>
-        </HStack>
-        <HStack spacing="$2">
+          <p>{getFileSize(props.speed)}/s</p>
+        </div>
+        <div class="flex flex-row items-center gap-x-2">
           <Show when={props.status === "error" && props.onRetry}>
             <Button
-              compact
+              variant="subtle"
               size="xs"
-              colorScheme="accent"
               onClick={() => props.onRetry?.()}
             >
               {t("home.upload.retry")}
             </Button>
           </Show>
-          <Text color="$neutral11">{getFileSize(props.size)}</Text>
-        </HStack>
-      </HStack>
-      <HStack w="$full" spacing="$2">
+          <p class="text-muted-foreground">{getFileSize(props.size)}</p>
+        </div>
+      </div>
+      <div class="flex flex-row items-center w-full gap-x-2">
         <Progress
           value={props.progress}
           aria-label={props.path}
@@ -102,9 +77,9 @@ const UploadFile = (props: UploadFileProps & { onRetry?: () => void }) => {
             <TbCircleCheck class="size-4" aria-hidden="true" />
           </span>
         </Show>
-      </HStack>
-      <Text color="$danger10">{props.msg}</Text>
-    </VStack>
+      </div>
+      <p class="text-destructive">{props.msg}</p>
+    </div>
   )
 }
 
@@ -241,14 +216,14 @@ const Upload = () => {
     }
   }
   return (
-    <VStack w="$full" pb="$2" spacing="$2">
+    <div class="flex flex-col items-center w-full pb-2 gap-y-2">
       <Show
         when={!uploading()}
         fallback={
           <>
-            <HStack spacing="$2">
+            <div class="flex flex-row items-center gap-x-2">
               <Button
-                colorScheme="accent"
+                variant="subtle"
                 onClick={() => {
                   localUploads.clearFinished(["success", "error"])
                 }}
@@ -257,6 +232,7 @@ const Upload = () => {
               </Button>
               <Show when={allDone()}>
                 <Button
+                  variant="subtle"
                   onClick={() => {
                     setUploading(false)
                   }}
@@ -264,7 +240,7 @@ const Upload = () => {
                   {t("home.upload.back")}
                 </Button>
               </Show>
-            </HStack>
+            </div>
             <For each={localUploads.list()}>
               {(upload) => (
                 <UploadFile
@@ -276,36 +252,33 @@ const Upload = () => {
           </>
         }
       >
-        <Input
+        <input
           type="file"
           multiple
           ref={fileInput}
-          display="none"
+          class="hidden"
           onChange={(e) => {
-            // @ts-ignore
-            handleAddFiles(Array.from(e.target.files ?? []))
+            handleAddFiles(Array.from(e.currentTarget.files ?? []))
           }}
         />
-        <Input
+        <input
           type="file"
           multiple
           // @ts-ignore
           webkitdirectory
           ref={folderInput}
-          display="none"
+          class="hidden"
           onChange={(e) => {
-            // @ts-ignore
-            handleAddFiles(Array.from(e.target.files ?? []))
+            handleAddFiles(Array.from(e.currentTarget.files ?? []))
           }}
         />
-        <VStack
-          w="$full"
-          justifyContent="center"
-          border={`2px dashed ${drag() ? getMainColor() : "$neutral8"}`}
-          rounded="$lg"
-          spacing="$4"
-          p="$6"
-          minH="$56"
+        <div
+          class="flex min-h-56 w-full flex-col items-center justify-center gap-y-4 rounded-lg border-2 border-dashed p-6"
+          classList={{
+            "border-(--main)": drag(),
+            "border-border": !drag(),
+          }}
+          style={{ "--main": getMainColor() }}
           onDragOver={(e: DragEvent) => {
             e.preventDefault()
             setDrag(true)
@@ -326,74 +299,66 @@ const Upload = () => {
         >
           <Show
             when={!drag()}
-            fallback={<Heading>{t("home.upload.release")}</Heading>}
+            fallback={<h2 class="font-semibold">{t("home.upload.release")}</h2>}
           >
-            <Heading size="lg" textAlign="center">
+            <h2 class="font-semibold text-center text-lg leading-7">
               {t("home.upload.upload-tips")}
-            </Heading>
-            <HStack spacing="$4">
-              <VStack spacing="$2" alignItems="center">
-                <IconButton
-                  compact
-                  size="xl"
+            </h2>
+            <div class="flex flex-row items-center gap-x-4">
+              <div class="flex flex-col items-center gap-y-2">
+                <Button
+                  variant="subtle"
+                  class="size-16"
                   aria-label={t("home.upload.upload_folder")}
-                  colorScheme="accent"
-                  icon={<RiDocumentFolderUploadFill size="1.2em" />}
                   onClick={() => {
                     folderInput.click()
                   }}
-                />
-                <Text fontSize="$sm" color="$neutral11" textAlign="center">
+                >
+                  <RiDocumentFolderUploadFill size="1.2em" />
+                </Button>
+                <p class="text-sm text-muted-foreground text-center">
                   {t("home.upload.upload_folder")}
-                </Text>
-              </VStack>
+                </p>
+              </div>
 
-              <VStack spacing="$2" alignItems="center">
-                <IconButton
-                  compact
-                  size="xl"
+              <div class="flex flex-col items-center gap-y-2">
+                <Button
+                  variant="subtle"
+                  class="size-16"
                   aria-label={t("home.upload.upload_files")}
-                  icon={<RiDocumentFileUploadFill size="1.2em" />}
                   onClick={() => {
                     fileInput.click()
                   }}
-                />
-                <Text fontSize="$sm" color="$neutral11" textAlign="center">
+                >
+                  <RiDocumentFileUploadFill size="1.2em" />
+                </Button>
+                <p class="text-sm text-muted-foreground text-center">
                   {t("home.upload.upload_files")}
-                </Text>
-              </VStack>
-            </HStack>
-            <Stack
-              spacing={{ "@initial": "$2", "@md": "$4" }}
-              direction={{ "@initial": "column", "@md": "row" }}
-            >
-              <Checkbox
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 md:flex-row md:gap-4">
+              <CheckboxField
                 checked={!asTaskUnsupported() && uploadConfig.asTask}
                 disabled={asTaskUnsupported()}
-                onChange={() => {
-                  setUploadConfig({ asTask: !uploadConfig.asTask })
-                }}
+                onChange={(on) => setUploadConfig({ asTask: on })}
               >
                 {t("home.upload.add_as_task")}
-              </Checkbox>
-              <Checkbox
+              </CheckboxField>
+              <CheckboxField
                 checked={uploadConfig.overwrite}
-                onChange={() => {
-                  setUploadConfig({ overwrite: !uploadConfig.overwrite })
-                }}
+                onChange={(on) => setUploadConfig({ overwrite: on })}
               >
                 {t("home.conflict_policy.overwrite_existing")}
-              </Checkbox>
-              <Checkbox
+              </CheckboxField>
+              <CheckboxField
                 checked={uploadConfig.rapid}
-                onChange={() => {
-                  setUploadConfig({ rapid: !uploadConfig.rapid })
-                }}
+                onChange={(on) => setUploadConfig({ rapid: on })}
               >
                 {t("home.upload.try_rapid")}
-              </Checkbox>
-            </Stack>
-            <Box w="$full">
+              </CheckboxField>
+            </div>
+            <div class="w-full">
               <AdvancedGroup
                 title={t("global.advanced")}
                 count={advancedCount()}
@@ -402,10 +367,8 @@ const Upload = () => {
                 onOpenChange={setAdvanced}
                 testid="advanced-upload"
               >
-                <Box maxW="$64">
-                  <Text fontSize="$sm" mb="$1">
-                    {t("home.upload.method")}
-                  </Text>
+                <div class="max-w-64">
+                  <p class="text-sm mb-1">{t("home.upload.method")}</p>
                   <SelectWrapper
                     value={curUploader()?.name}
                     onChange={(name) => {
@@ -420,30 +383,28 @@ const Upload = () => {
                       }
                     })}
                   />
-                </Box>
-                <VStack w="$full" alignItems="stretch" spacing="$2">
-                  <Text fontSize="$sm" fontWeight="$semibold">
+                </div>
+                <div class="flex flex-col w-full items-stretch gap-y-2">
+                  <p class="text-sm font-semibold">
                     {t("home.upload.sidecars")}
-                  </Text>
-                  <HStack spacing="$4" flexWrap="wrap">
+                  </p>
+                  <div class="flex flex-row items-center flex-wrap gap-x-4">
                     <For each={["torrent", "cas", "oss"] as SeedFormat[]}>
                       {(format) => (
-                        <Checkbox
+                        <CheckboxField
                           checked={sidecars().includes(format)}
-                          onChange={(event) =>
-                            toggleSidecar(format, event.currentTarget.checked)
-                          }
+                          onChange={(on) => toggleSidecar(format, on)}
                         >
                           {format.toUpperCase()}
-                        </Checkbox>
+                        </CheckboxField>
                       )}
                     </For>
-                  </HStack>
-                  <Text fontSize="$xs" color="$neutral10">
+                  </div>
+                  <p class="text-xs text-muted-foreground">
                     {t("home.upload.sidecars_hint")}
-                  </Text>
+                  </p>
                   <Show when={sidecars().length > 0}>
-                    <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$2">
+                    <div class="grid grid-cols-1 gap-2 md:grid-cols-3">
                       <For
                         each={["md5", "sha1", "sha256"] as SeedHashAlgorithm[]}
                       >
@@ -453,53 +414,39 @@ const Upload = () => {
                               sidecars().includes("torrent")) ||
                             (algorithm === "md5" && sidecars().includes("cas"))
                           return (
-                            <VStack
-                              alignItems="flex-start"
-                              spacing="$1"
-                              border="1px solid $neutral7"
-                              borderRadius="$md"
-                              p="$2"
-                            >
-                              <Text fontSize="$sm" fontWeight="$semibold">
+                            <div class="flex flex-col items-start border border-border rounded-md p-2 gap-y-1">
+                              <p class="text-sm font-semibold">
                                 {algorithm.toUpperCase()}
-                              </Text>
-                              <Checkbox
+                              </p>
+                              <CheckboxField
                                 checked={effectiveSeedMatrix()[algorithm].whole}
                                 disabled={forced()}
-                                onChange={(event) =>
-                                  setSeedHash(
-                                    algorithm,
-                                    "whole",
-                                    event.currentTarget.checked,
-                                  )
+                                onChange={(on) =>
+                                  setSeedHash(algorithm, "whole", on)
                                 }
                               >
                                 {t("home.transfer_seed.whole")}
-                              </Checkbox>
-                              <Checkbox
+                              </CheckboxField>
+                              <CheckboxField
                                 checked={
                                   effectiveSeedMatrix()[algorithm].pieces
                                 }
                                 disabled={forced()}
-                                onChange={(event) =>
-                                  setSeedHash(
-                                    algorithm,
-                                    "pieces",
-                                    event.currentTarget.checked,
-                                  )
+                                onChange={(on) =>
+                                  setSeedHash(algorithm, "pieces", on)
                                 }
                               >
                                 {t("home.transfer_seed.pieces")}
-                              </Checkbox>
-                            </VStack>
+                              </CheckboxField>
+                            </div>
                           )
                         }}
                       </For>
-                    </SimpleGrid>
-                    <Box maxW="$48">
-                      <Text fontSize="$sm" mb="$1">
+                    </div>
+                    <div class="max-w-48">
+                      <p class="text-sm mb-1">
                         {t("home.transfer_seed.piece_size")}
-                      </Text>
+                      </p>
                       <SelectWrapper
                         value={seedPieceSize().toString()}
                         onChange={(value) => setSeedPieceSize(Number(value))}
@@ -511,15 +458,15 @@ const Upload = () => {
                           label: `${size} MiB`,
                         }))}
                       />
-                    </Box>
+                    </div>
                   </Show>
-                </VStack>
+                </div>
               </AdvancedGroup>
-            </Box>
+            </div>
           </Show>
-        </VStack>
+        </div>
       </Show>
-    </VStack>
+    </div>
   )
 }
 

@@ -1,4 +1,3 @@
-import { Checkbox, VStack, Button } from "@hope-ui/solid"
 import { createSignal, onCleanup } from "solid-js"
 import { ModalFolderChoose, FolderTreeHandler } from "~/components"
 import { useFetch, usePath, useRouter, useT } from "~/hooks"
@@ -16,6 +15,8 @@ import {
 } from "~/utils"
 import { CgFolderAdd } from "solid-icons/cg"
 import { createDisclosure } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
+import { CheckboxField } from "~/components/ui/toggle-field"
 
 export const CreateFolderButton = (props: { handler?: FolderTreeHandler }) => {
   if (!userCan("write_content")) {
@@ -24,10 +25,12 @@ export const CreateFolderButton = (props: { handler?: FolderTreeHandler }) => {
   const t = useT()
   return (
     <Button
-      leftIcon={<CgFolderAdd />}
+      variant="subtle"
       size="sm"
+      class="gap-1.5"
       onClick={() => props.handler?.startCreateFolder()}
     >
+      {<CgFolderAdd />}
       {t("home.toolbar.mkdir")}
     </Button>
   )
@@ -64,9 +67,9 @@ export const Copy = () => {
       loading={loading()}
       headerSlot={(handler) => <CreateFolderButton handler={handler} />}
       footerSlot={
-        <VStack w="$full" spacing="$2">
-          <Checkbox
-            mr="auto"
+        <div class="flex flex-col items-center w-full gap-y-2">
+          <CheckboxField
+            class="mr-auto"
             checked={overwrite()}
             onChange={() => {
               const curOverwrite = !overwrite()
@@ -78,9 +81,9 @@ export const Copy = () => {
             }}
           >
             {t("home.conflict_policy.overwrite_existing")}
-          </Checkbox>
-          <Checkbox
-            mr="auto"
+          </CheckboxField>
+          <CheckboxField
+            class="mr-auto"
             checked={skipExisting()}
             onChange={() => {
               setSkipExisting(!skipExisting())
@@ -88,9 +91,9 @@ export const Copy = () => {
             disabled={overwrite() || merge()}
           >
             {t("home.conflict_policy.skip_existing")}
-          </Checkbox>
-          <Checkbox
-            mr="auto"
+          </CheckboxField>
+          <CheckboxField
+            class="mr-auto"
             checked={merge()}
             onChange={() => {
               setMerge(!merge())
@@ -98,16 +101,16 @@ export const Copy = () => {
             disabled={overwrite() || skipExisting()}
           >
             {t("home.conflict_policy.merge")}
-          </Checkbox>
-          <Checkbox
-            mr="auto"
+          </CheckboxField>
+          <CheckboxField
+            class="mr-auto"
             checked={followSeed()}
             disabled={selectedObjs().some((obj) => obj.is_dir)}
             onChange={() => setFollowSeed(!followSeed())}
           >
             {t("home.toolbar.follow_seed")}
-          </Checkbox>
-        </VStack>
+          </CheckboxField>
+        </div>
       }
       onSubmit={async (dst) => {
         const resp = await ok(
@@ -158,9 +161,9 @@ export const Move = () => {
       loading={loading()}
       headerSlot={(handler) => <CreateFolderButton handler={handler} />}
       footerSlot={
-        <VStack w="$full" spacing="$2">
-          <Checkbox
-            mr="auto"
+        <div class="flex flex-col items-center w-full gap-y-2">
+          <CheckboxField
+            class="mr-auto"
             checked={overwrite()}
             onChange={() => {
               const curOverwrite = !overwrite()
@@ -171,9 +174,9 @@ export const Move = () => {
             }}
           >
             {t("home.conflict_policy.overwrite_existing")}
-          </Checkbox>
-          <Checkbox
-            mr="auto"
+          </CheckboxField>
+          <CheckboxField
+            class="mr-auto"
             checked={skipExisting()}
             onChange={() => {
               setSkipExisting(!skipExisting())
@@ -181,16 +184,16 @@ export const Move = () => {
             disabled={overwrite()}
           >
             {t("home.conflict_policy.skip_existing")}
-          </Checkbox>
-          <Checkbox
-            mr="auto"
+          </CheckboxField>
+          <CheckboxField
+            class="mr-auto"
             checked={followSeed()}
             disabled={selectedObjs().some((obj) => obj.is_dir)}
             onChange={() => setFollowSeed(!followSeed())}
           >
             {t("home.toolbar.follow_seed")}
-          </Checkbox>
-        </VStack>
+          </CheckboxField>
+        </div>
       }
       onSubmit={async (dst) => {
         const src = pathname()
