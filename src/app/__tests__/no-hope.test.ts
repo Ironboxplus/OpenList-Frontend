@@ -11,6 +11,9 @@ const GONE: RegExp[] = [
   /^pages\/login\/index\.tsx$/,
   /^store\//,
   /^utils\//,
+  // B2: components/, but for the overlay compat layer (its parts take hope's
+  // style props until the pages that pass them are converted: end of B5)
+  /^components\/(?!overlay\/)/,
 ]
 
 // app/ColorSchemeSync.tsx hands the store's mode to hope's provider until B6
