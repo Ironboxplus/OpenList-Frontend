@@ -14,6 +14,8 @@ type ProgressProps = ParentProps<
     class?: string
     /** Extra classes for the filled part (e.g. a warning color). */
     fillClass?: string
+    /** Extra classes for the track (e.g. a thinner one: `h-1`). */
+    trackClass?: string
   }
 >
 
@@ -24,6 +26,7 @@ export const Progress = <T extends ValidComponent = "div">(
     "class",
     "children",
     "fillClass",
+    "trackClass",
   ])
 
   return (
@@ -32,7 +35,12 @@ export const Progress = <T extends ValidComponent = "div">(
       {...rest}
     >
       {local.children}
-      <ProgressPrimitive.Track class="h-2 overflow-hidden rounded-full bg-primary/20 data-[indeterminate]:bg-muted">
+      <ProgressPrimitive.Track
+        class={cn(
+          "h-2 overflow-hidden rounded-full bg-primary/20 data-[indeterminate]:bg-muted",
+          local.trackClass,
+        )}
+      >
         <ProgressPrimitive.Fill
           // runs to each new value (plan §P4: 200ms, standard); a progress
           // bar is information, so reduced motion only shortens it (tokens.css)

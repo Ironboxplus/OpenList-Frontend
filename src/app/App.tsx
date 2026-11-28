@@ -160,13 +160,15 @@ const App: Component = () => {
   return (
     <>
       <Portal>
-        <Progress
-          indeterminate
-          // the route bar: 4px at the very top, over the pages and under the
-          // dialogs (z 1500) like hope's $banner (1200) was
-          class="fixed inset-x-0 top-0 z-[1200] gap-0 [&>div]:h-1 [&>div]:rounded-none"
-          classList={{ "hidden!": !isRouting() }}
-        />
+        <Show when={isRouting()}>
+          {/* the route bar: 4px at the very top, over the pages and under the
+              dialogs (z 1500) like hope's $banner (1200) was */}
+          <Progress
+            indeterminate
+            class="fixed inset-x-0 top-0 z-[1200]"
+            trackClass="h-1 rounded-none"
+          />
+        </Show>
       </Portal>
       <Switch
         fallback={
