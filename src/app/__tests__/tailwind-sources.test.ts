@@ -48,3 +48,30 @@ describe("tailwind.css", () => {
     expect(unscanned).toEqual([])
   })
 })
+
+// An `animate-[name_...]` class names a keyframes rule that has to exist in a
+// stylesheet (hope's css prop carried its own; a class cannot).
+describe("animations by name", () => {
+  const read = (p: string) =>
+    fs.readFileSync(path.resolve(process.cwd(), p), "utf8")
+  const sheets = ["tailwind.css", "tokens.css", "base.css", "index.css"]
+    .map((f) => read(`src/app/${f}`))
+    .join("\n")
+  const sources = Object.keys(import.meta.glob("../../**/*.tsx"))
+    .map(rel)
+    .filter((f) => !f.includes("/__tests__/"))
+  it("have their @keyframes", () => {
+    const used = new Set<string>()
+    for (const f of sources) {
+      for (const m of read(`src/${f}`).matchAll(
+        /animate-\[([A-Za-z][\w-]*?)_/g,
+      ))
+        used.add(m[1])
+    }
+    expect([...used].length).toBeGreaterThan(0)
+    const missing = [...used].filter(
+      (name) => !new RegExp(`@keyframes\s+${name}\b`).test(sheets),
+    )
+    expect(missing).toEqual([])
+  })
+})

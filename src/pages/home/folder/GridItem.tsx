@@ -76,7 +76,7 @@ export const GridItem = (props: {
     >
       <LinkWithPush
         class={cn(
-          "grid-item viselect-item group/row flex w-full flex-col items-center gap-y-1 rounded-lg p-1 transition-all duration-300 hover:scale-[1.06] hover:bg-accent",
+          "grid-item viselect-item group/row flex w-full flex-col items-center gap-y-1 rounded-lg p-1 transition-all duration-300 hover:[transform:scale(1.06)] hover:bg-accent",
           props.obj.selected && "selected bg-accent",
           props.card && "grid-card",
           props.card && props.obj.is_dir && "folder",

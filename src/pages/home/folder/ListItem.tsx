@@ -116,7 +116,7 @@ export const ListItem = (props: {
     >
       <LinkWithPush
         class={`list-item ${cn(
-          "viselect-item group/row flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent",
+          "viselect-item group/row flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:[transform:scale(1.01)] hover:bg-accent",
           props.obj.selected && "selected bg-accent",
           ix.cursor() === "pointer" ? "cursor-pointer" : "cursor-default",
         )}`}

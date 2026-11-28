@@ -75,7 +75,8 @@ html.shell-phone .center-toolbar {
     background-color 0.12s ease,
     border-color 0.12s ease !important;
 }
-/* hope's hover scale is off; a row files-motion.ts is moving (data-motion)
+/* the rows' hover scale is `transform` (Tailwind's scale-* is the `scale` property,
+   which these rules would not switch off); hope's hover scale is off; a row files-motion.ts is moving (data-motion)
    keeps the transform it runs, one it lights (data-lit) its background */
 .files-card .list-item {
   min-height: 44px;
@@ -201,6 +202,18 @@ html.shell-phone .files-cards {
 }
 .grid-item.grid-card .name {
   color: var(--foreground);
+}
+
+/* The row's hover thumbnail (ListItem) fades in from a little smaller. */
+@keyframes mediaPreviewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
 }
 
 /* "Open destination" from the Task Center flashes the row for two seconds. */

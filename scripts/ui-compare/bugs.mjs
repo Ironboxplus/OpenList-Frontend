@@ -1382,7 +1382,7 @@ const overlayProbe = () => {
         return
       }
       const cs = getComputedStyle(el)
-      r.frames.push([Math.round(performance.now() - r.t0), +(+cs.opacity).toFixed(3), cs.transform, +el.getBoundingClientRect().height.toFixed(2)])
+      r.frames.push([Math.round(performance.now() - r.t0), +(+cs.opacity).toFixed(3), cs.transform, +el.getBoundingClientRect().height.toFixed(2), el.hasAttribute("data-closed")])
       grab()
       if (--budget > 0) requestAnimationFrame(frame)
       else running = false
@@ -1420,8 +1420,10 @@ const overlayRecord = async (page, kind) => {
   const recs = await page.evaluate(() =>
     window.__overlayMotion.map((r) => {
       const closed = r.closedAt === null ? Infinity : r.closedAt - r.t0
-      // how it looked at rest, just before it was told to close
-      const rest = r.frames.filter((f) => f[0] < closed).pop() ?? null
+      // how it looked at rest, just before it was told to close: not the frame sampled
+      // as it is told to (data-closed set), which already shows the exit's first tick
+      // (CI 46129586805: ty 0.0107px, the first step of a 200ms ACCEL exit)
+      const rest = r.frames.filter((f) => f[0] < closed && !f[4]).pop() ?? null
       return { ...r, closedAt: r.closedAt === null ? null : Math.round(r.closedAt - r.t0), removedAt: r.removedAt === null ? null : Math.round(r.removedAt - r.t0), rest, frames: r.frames.slice(0, 40) }
     }),
   )

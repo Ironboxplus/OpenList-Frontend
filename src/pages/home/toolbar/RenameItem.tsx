@@ -11,7 +11,7 @@ export const RenameItem = (props: { obj: RenameObj; index: number }) => {
         width: "100%",
       }}
     >
-      <div class="list-item flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent">
+      <div class="list-item flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:[transform:scale(1.01)] hover:bg-accent">
         <p class="name w-1/2 truncate" title={props.obj.src_name}>
           {props.obj.src_name}
         </p>
