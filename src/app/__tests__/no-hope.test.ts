@@ -1,36 +1,13 @@
 import { describe, expect, it } from "vitest"
 
-// hope-ui leaves src batch by batch (PLAN_FE_SYSTEM_UX_1127 P5). GONE lists
-// where it is gone; each batch adds its part and B6 makes it the whole of src.
-const GONE: RegExp[] = [
-  // B1: the colour mode is ours (store/color-mode.ts)
-  /^app\/App\.tsx$/,
-  /^components\/(EChart|SwitchColorMode)\.tsx$/,
-  /^features\//,
-  /^pages\/media\//,
-  /^pages\/login\/index\.tsx$/,
-  /^store\//,
-  /^utils\//,
-  // B2: components/ (the overlay compat layer's parts follow B5's callers)
-  /^components\//,
-  // B3: manage (the six upstream pages included: docs/FE_UPSTREAM_DIVERGENCE.md),
-  // init, the rest of login, the built-in plugins, the test page
-  /^pages\/manage\/(?!__tests__\/)/,
-  /^pages\/(init|login|test)\//,
-  /^plugins\//,
-  // B4: the toolbar and the upload dialogs
-  /^pages\/home\/(toolbar|uploads)\//,
-  // B5: the rest of the home page
-  /^pages\/home\//,
-]
-
-// app/ColorSchemeSync.tsx hands the store's mode to hope's provider until B6
-const BRIDGE = "app/ColorSchemeSync.tsx"
+// hope-ui is gone from the app (PLAN_FE_SYSTEM_UX_1127 P5, B6): no source
+// imports it, no style or script keys on its body class or colour variables,
+// the package is not a dependency, and the colour mode is the store's.
 const SELF = "app/__tests__/no-hope.test.ts"
 
 // The glob keys are relative to this file and Vite shortens them for the files
 // beside it ("../App.tsx" for app/App.tsx), so each is resolved to its path
-// under src/ before the lists above are matched against it.
+// under src/.
 const raw = (glob: Record<string, unknown>) =>
   Object.entries(glob as Record<string, string>).map(([key, src]) => ({
     path: new URL(key, import.meta.url).pathname.replace(/^.*\/src\//, ""),
@@ -50,39 +27,60 @@ const styles = raw(
     eager: true,
   }),
 )
+const manifest = (
+  Object.values(
+    import.meta.glob("../../../package.json", {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    }),
+  ) as string[]
+)[0]
+const vitestConfig = (
+  Object.values(
+    import.meta.glob("../../../vitest.config.ts", {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    }),
+  ) as string[]
+)[0]
 
 describe("hope-ui leaving src (P5)", () => {
-  it("scans the sources and the styles", () => {
+  it("scans the sources, the styles and the manifest", () => {
     expect(sources.length).toBeGreaterThan(400)
     expect(styles.length).toBeGreaterThan(5)
-    // the paths the lists name are the ones the scan has
     const paths = sources.map((f) => f.path)
     expect(paths).toContain("app/App.tsx")
-    expect(paths).toContain(BRIDGE)
+    expect(paths).toContain("app/ColorSchemeSync.tsx")
     expect(paths).toContain("store/color-mode.ts")
     expect(paths).not.toContain(SELF)
+    expect(JSON.parse(manifest).name).toBeTruthy()
+    expect(vitestConfig).toContain("defineConfig")
   })
 
-  it("is not imported where it is gone", () => {
+  it("is imported by no source", () => {
     const offenders = sources
-      .filter((f) => GONE.some((re) => re.test(f.path)))
-      .filter((f) => f.src.includes("@hope-ui/solid"))
+      .filter((f) => /["']@hope-ui\//.test(f.src))
       .map((f) => f.path)
     expect(offenders).toEqual([])
   })
 
-  it("takes the colour mode from the store only", () => {
-    const hook =
-      /import\s*\{[^}]*\buseColorMode(Value)?\b[^}]*\}\s*from\s*"@hope-ui\/solid"/
-    const offenders = sources
-      .filter((f) => f.path !== BRIDGE && hook.test(f.src))
-      .map((f) => f.path)
-    expect(offenders).toEqual([])
+  it("has no theme of its own any more", () => {
+    expect(sources.map((f) => f.path)).not.toContain("app/theme.ts")
   })
 
-  it("keys no style on hope's body class or colours", () => {
-    const offenders = styles
-      .filter((f) => /hope-ui-(dark|light)|--hope-colors-/.test(f.src))
+  it("is not a dependency, and tests do not inline it", () => {
+    const pkg = JSON.parse(manifest)
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies }
+    expect(Object.keys(deps).filter((n) => n.includes("hope-ui"))).toEqual([])
+    expect(vitestConfig).not.toContain("hope")
+  })
+
+  it("keys no style or script on hope's body class or colours", () => {
+    const key = /hope-ui-(dark|light)|--hope-colors-/
+    const offenders = [...sources, ...styles]
+      .filter((f) => key.test(f.src))
       .map((f) => f.path)
     expect(offenders).toEqual([])
   })

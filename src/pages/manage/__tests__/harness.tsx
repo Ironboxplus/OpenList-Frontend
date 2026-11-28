@@ -136,18 +136,13 @@ export const expectGolden = (name: string, actual: unknown) => {
 }
 
 // ---- rendering -------------------------------------------------------------
-import { HopeProvider } from "@hope-ui/solid"
 import { render } from "@solidjs/testing-library"
 import { Router } from "@solidjs/router"
 import type { JSX } from "solid-js"
 
-/** Render a page the way the app does: inside the provider hope-ui needs. */
+/** Render a page the way the app does: inside the router. */
 export const renderPage = (page: () => JSX.Element) =>
-  render(() => (
-    <Router>
-      <HopeProvider>{page()}</HopeProvider>
-    </Router>
-  ))
+  render(() => <Router>{page()}</Router>)
 
 /**
  * Pick an option in a select field by its element id and the option's visible

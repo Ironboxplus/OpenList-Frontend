@@ -1,5 +1,4 @@
 import { render, screen, waitFor } from "@solidjs/testing-library"
-import { HopeProvider } from "@hope-ui/solid"
 import { createSignal, onCleanup, type JSX } from "solid-js"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -32,8 +31,7 @@ const user = (over: Record<string, unknown> = {}) =>
     ...over,
   }) as any
 
-const mount = (ui: () => JSX.Element) =>
-  render(() => <HopeProvider>{ui()}</HopeProvider>)
+const mount = (ui: () => JSX.Element) => render(ui)
 
 const ok = (data: any) => ({ code: 200, message: "ok", data })
 
