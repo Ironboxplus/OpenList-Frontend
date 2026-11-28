@@ -1,3 +1,5 @@
+import fs from "node:fs"
+import path from "node:path"
 import { describe, expect, it } from "vitest"
 
 // hope-ui is gone from the app (PLAN_FE_SYSTEM_UX_1127 P5, B6): no source
@@ -20,13 +22,21 @@ const sources = raw(
     eager: true,
   }),
 ).filter((f) => f.path !== SELF)
-const styles = raw(
-  import.meta.glob("../../**/*.css", {
-    query: "?raw",
-    import: "default",
-    eager: true,
-  }),
-)
+// Vitest hands a stylesheet imported with ?raw back empty, so the styles are
+// read from disk.
+const cssFiles = (dir: string): string[] =>
+  fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name)
+    if (e.isDirectory()) return cssFiles(p)
+    return e.name.endsWith(".css") ? [p] : []
+  })
+const styles = cssFiles(path.resolve(process.cwd(), "src")).map((p) => ({
+  path: path
+    .relative(path.resolve(process.cwd(), "src"), p)
+    .split(path.sep)
+    .join("/"),
+  src: fs.readFileSync(p, "utf8"),
+}))
 const manifest = (
   Object.values(
     import.meta.glob("../../../package.json", {
@@ -50,6 +60,9 @@ describe("hope-ui leaving src (P5)", () => {
   it("scans the sources, the styles and the manifest", () => {
     expect(sources.length).toBeGreaterThan(400)
     expect(styles.length).toBeGreaterThan(5)
+    // read, not empty (a ?raw import of a stylesheet is empty under Vitest)
+    expect(styles.every((f) => f.src.length > 0)).toBe(true)
+    expect(styles.map((f) => f.path)).toContain("app/base.css")
     const paths = sources.map((f) => f.path)
     expect(paths).toContain("app/App.tsx")
     expect(paths).toContain("app/ColorSchemeSync.tsx")

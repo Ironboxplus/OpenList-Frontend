@@ -1,3 +1,5 @@
+import fs from "node:fs"
+import path from "node:path"
 import { describe, expect, it } from "vitest"
 
 // The page's base layer (app/base.css) is what hope-ui's reset and the app's
@@ -6,21 +8,12 @@ import { describe, expect, it } from "vitest"
 // global reset (dist/index.mjs 2306-2362) and the old app/theme.ts
 // globalStyles; the parser below reads `selector { declarations }` blocks.
 //
-// The glob keys are relative to this file; each is resolved to its path under
-// src/ (as no-hope.test.ts does).
-const files = Object.entries(
-  import.meta.glob("../../app/*.{css,tsx}", {
-    query: "?raw",
-    import: "default",
-    eager: true,
-  }) as Record<string, string>,
-).map(([key, src]) => ({
-  path: new URL(key, import.meta.url).pathname.replace(/^.*\/src\//, ""),
-  src,
-}))
-const text = (path: string) => files.find((f) => f.path === path)?.src ?? ""
-const css = text("app/base.css")
-const app = text("app/App.tsx")
+// (Vitest hands a stylesheet imported with ?raw back empty, so it is read from
+// disk; the app's source is read the way no-hope.test.ts reads its sources.)
+const read = (p: string) =>
+  fs.readFileSync(path.resolve(process.cwd(), p), "utf8")
+const css = read("src/app/base.css")
+const app = read("src/app/App.tsx")
 
 const rules = () => {
   const out: Record<string, Record<string, string>> = {}
@@ -38,7 +31,6 @@ const rules = () => {
 
 describe("base.css", () => {
   it("exists and the app loads it", () => {
-    expect(files.map((f) => f.path)).toContain("app/base.css")
     expect(css.length).toBeGreaterThan(200)
     expect(app).toContain('import "./base.css"')
   })

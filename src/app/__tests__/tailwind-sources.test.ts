@@ -1,3 +1,4 @@
+import fs from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 
@@ -8,18 +9,10 @@ import { describe, expect, it } from "vitest"
 const rel = (key: string) =>
   new URL(key, import.meta.url).pathname.replace(/^.*\/src\//, "")
 
-const cssKey = Object.keys(
-  import.meta.glob("../tailwind.css", { query: "?raw", eager: true }),
-)[0]
-const css = (
-  Object.values(
-    import.meta.glob("../tailwind.css", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    }),
-  ) as string[]
-)[0]
+const css = fs.readFileSync(
+  path.resolve(process.cwd(), "src/app/tailwind.css"),
+  "utf8",
+)
 
 // `@source "dir"` and `@source not "dir"`, relative to app/
 const entries = [
@@ -39,7 +32,7 @@ const files = Object.keys(import.meta.glob("../../**/*.tsx"))
 
 describe("tailwind.css", () => {
   it("lists its sources", () => {
-    expect(cssKey).toContain("tailwind.css")
+    expect(css).toContain("@import")
     expect(entries.filter((e) => !e.not).length).toBeGreaterThan(0)
     expect(files.length).toBeGreaterThan(300)
   })
