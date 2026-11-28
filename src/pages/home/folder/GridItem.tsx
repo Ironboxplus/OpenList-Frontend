@@ -1,11 +1,12 @@
-import { Center, VStack, Icon, Text } from "@hope-ui/solid"
 import { Show } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { CenterLoading, LinkWithPush, ImageWithError } from "~/components"
 import { usePath, useUtil } from "~/hooks"
 import { openListed } from "~/features/viewer/state"
 import { checkboxOpen, getMainColor, local, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus, getFileSize, hoverColor } from "~/utils"
+import { bus, getFileSize } from "~/utils"
+import { cn } from "~/utils/cn"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
 import type { GridDecor } from "~/features/files/grid-decor"
@@ -16,7 +17,8 @@ import { PosterArt } from "~/features/files/PosterArt"
 import { selectionMode } from "~/features/files/selection-mode"
 import { phoneShell, shellActive } from "~/features/shell/topbar-slot"
 import { createLongPress } from "~/utils/touch"
-import { ItemCheckbox, selectForMenu, useSelectWithMouse } from "./helper"
+import { selectForMenu, useSelectWithMouse } from "./helper"
+import { ItemCheckbox } from "./ItemCheckbox"
 
 export const GridItem = (props: {
   obj: StoreObj
@@ -38,10 +40,13 @@ export const GridItem = (props: {
   const { setPathAs } = usePath()
   const filenameStyle = () => local["list_item_filename_overflow"]
   const objIcon = (
-    <Icon
-      color={getMainColor()}
-      boxSize={`${parseInt(local["grid_item_size"]) - 30}px`}
-      as={getIconByObj(props.obj)}
+    <Dynamic
+      component={getIconByObj(props.obj)}
+      style={{
+        color: getMainColor(),
+        width: `${parseInt(local["grid_item_size"]) - 30}px`,
+        height: `${parseInt(local["grid_item_size"]) - 30}px`,
+      }}
     />
   )
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
@@ -51,15 +56,10 @@ export const GridItem = (props: {
     checkboxOpen() && !phoneShell()
       ? () => (
           <ItemCheckbox
-            on:mousedown={(e: MouseEvent) => {
-              e.stopPropagation()
-            }}
-            on:click={(e: MouseEvent) => {
-              e.stopPropagation()
-            }}
+            stop
             checked={props.obj.selected}
-            onChange={(e: any) => {
-              selectIndex(props.index, e.target.checked)
+            onChange={(on) => {
+              selectIndex(props.index, on)
             }}
           />
         )
@@ -74,32 +74,19 @@ export const GridItem = (props: {
         width: "100%",
       }}
     >
-      <VStack
-        class={[
-          "grid-item viselect-item group/row",
-          props.obj.selected && "selected",
+      <LinkWithPush
+        class={cn(
+          "grid-item viselect-item group/row flex w-full flex-col items-center gap-y-1 rounded-lg p-1 transition-all duration-300 hover:scale-[1.06] hover:bg-accent",
+          props.obj.selected && "selected bg-accent",
           props.card && "grid-card",
           props.card && props.obj.is_dir && "folder",
-        ]
-          .filter(Boolean)
-          .join(" ")}
+          openWithDoubleClick() || toggleWithClick()
+            ? "cursor-default"
+            : "cursor-pointer",
+        )}
         data-index={props.index}
         data-row-name={props.obj.name}
-        w="$full"
-        p="$1"
-        spacing="$1"
-        rounded="$lg"
-        transition="all 0.3s"
-        _hover={{
-          transform: "scale(1.06)",
-          bgColor: hoverColor(),
-        }}
-        as={LinkWithPush}
         href={props.obj.name}
-        cursor={
-          openWithDoubleClick() || toggleWithClick() ? "default" : "pointer"
-        }
-        bgColor={props.obj.selected ? hoverColor() : undefined}
         on:dblclick={(e: MouseEvent) => {
           if (!openWithDoubleClick()) return
           selectIndex(props.index, true, true)
@@ -135,17 +122,19 @@ export const GridItem = (props: {
           when={props.card}
           fallback={
             <>
-              <Center
-                class="item-thumbnail"
-                h={
-                  cover() || decor()?.placeholder || decor()?.mosaic?.length
-                    ? undefined
-                    : `${parseInt(local["grid_item_size"])}px`
-                }
-                w="$full"
-                cursor={
-                  props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"
-                }
+              <div
+                class={cn(
+                  "item-thumbnail relative flex w-full items-center justify-center",
+                  props.obj.type !== ObjType.IMAGE
+                    ? "cursor-[inherit]"
+                    : "cursor-pointer",
+                )}
+                style={{
+                  height:
+                    cover() || decor()?.placeholder || decor()?.mosaic?.length
+                      ? undefined
+                      : `${parseInt(local["grid_item_size"])}px`,
+                }}
                 on:click={(e: MouseEvent) => {
                   if (props.obj.type !== ObjType.IMAGE) return
                   if (e.ctrlKey || e.metaKey || e.shiftKey) return
@@ -154,7 +143,6 @@ export const GridItem = (props: {
                   e.preventDefault()
                   e.stopPropagation()
                 }}
-                pos="relative"
               >
                 <Show when={decor()?.badge}>
                   <CardBadge text={decor()!.badge!} />
@@ -167,19 +155,11 @@ export const GridItem = (props: {
                 </Show>
                 <Show when={checkboxOpen() && !phoneShell()}>
                   <ItemCheckbox
-                    pos="absolute"
-                    left="$1"
-                    top="$1"
-                    // colorScheme="neutral"
-                    on:mousedown={(e: MouseEvent) => {
-                      e.stopPropagation()
-                    }}
-                    on:click={(e: MouseEvent) => {
-                      e.stopPropagation()
-                    }}
+                    stop
+                    class="absolute top-1 left-1"
                     checked={props.obj.selected}
-                    onChange={(e: any) => {
-                      selectIndex(props.index, e.target.checked)
+                    onChange={(on) => {
+                      selectIndex(props.index, on)
                     }}
                   />
                 </Show>
@@ -200,46 +180,37 @@ export const GridItem = (props: {
                     </Show>
                   }
                 />
-              </Center>
-              <Text
-                class="name"
-                css={{
-                  wordBreak: "break-all",
-                  whiteSpace:
-                    filenameStyle() === "multi_line" ? "unset" : "nowrap",
-                  "overflow-x":
-                    filenameStyle() === "scrollable" ? "auto" : "hidden",
-                  "overflow-y": "hidden",
-                  textOverflow:
-                    filenameStyle() === "ellipsis" ? "ellipsis" : "unset",
-                  "scrollbar-width": "none", // firefox
-                  "&::-webkit-scrollbar": {
-                    // webkit
-                    display: "none",
-                  },
-                }}
-                w="$full"
-                textAlign="center"
-                fontSize="$sm"
+              </div>
+              <p
+                class={cn(
+                  "name w-full overflow-y-hidden text-center text-sm break-all [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+                  filenameStyle() === "multi_line"
+                    ? "whitespace-normal"
+                    : "whitespace-nowrap",
+                  filenameStyle() === "scrollable"
+                    ? "overflow-x-auto"
+                    : "overflow-x-hidden",
+                  filenameStyle() === "ellipsis"
+                    ? "text-ellipsis"
+                    : "text-clip",
+                )}
                 title={decor()?.label ?? props.obj.name}
               >
                 {decor()?.label ?? props.obj.name}
-              </Text>
+              </p>
               <Show
                 when={decor()?.sub}
                 fallback={
                   <Show
                     when={shellActive() && !props.obj.is_dir && props.obj.size}
                   >
-                    <Text class="meta" fontSize="$xs" color="$neutral10">
+                    <p class="text-xs text-muted-foreground meta">
                       {getFileSize(props.obj.size)}
-                    </Text>
+                    </p>
                   </Show>
                 }
               >
-                <Text class="meta" fontSize="$xs" color="$neutral10">
-                  {decor()!.sub}
-                </Text>
+                <p class="text-xs text-muted-foreground meta">{decor()!.sub}</p>
               </Show>
               <ExtraBadges extra={props.obj.extra} maxTags={1} />
             </>
@@ -283,7 +254,7 @@ export const GridItem = (props: {
             />
           </Show>
         </Show>
-      </VStack>
+      </LinkWithPush>
     </div>
   )
 }

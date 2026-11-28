@@ -1,8 +1,6 @@
 import { asPreview } from "~/utils"
-import { Box } from "@hope-ui/solid"
 import { onCleanup, onMount } from "solid-js"
 import { getSettingBool, objStore } from "~/store"
-import { ObjType } from "~/types"
 import View360, { ControlBar, EquirectProjection } from "@egjs/view360"
 import "@egjs/view360/css/view360.min.css"
 import "./video360.css"
@@ -36,13 +34,8 @@ const Preview = () => {
   onCleanup(() => viewer?.destroy())
 
   return (
-    <Box w="$full" h="60vh" id="video360-player">
-      <Box
-        w={"100%"}
-        h={"100%"}
-        id="view360-container"
-        className="view360-container"
-      >
+    <div class="w-full h-[60vh]" id="video360-player">
+      <div id="view360-container" class="view360-container h-full w-full">
         <canvas class="view360-canvas" />
         <video
           src={asPreview(objStore.raw_url)}
@@ -51,8 +44,8 @@ const Preview = () => {
           crossOrigin="anonymous"
           style="display: none;"
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   )
 }
 

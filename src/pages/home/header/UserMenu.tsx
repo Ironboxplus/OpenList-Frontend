@@ -1,4 +1,3 @@
-import { IconButton } from "@hope-ui/solid"
 import { changeColor } from "seemly"
 import { For, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
@@ -12,6 +11,7 @@ import { PResp } from "~/types"
 import { changeToken, handleResp, loginUrlFor, notify, r } from "~/utils"
 import { userMenuEntries, type UserMenuEntryId } from "./user-menu"
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
 
 const entryIcons: Record<UserMenuEntryId, typeof CgProfile> = {
   login: CgProfile,
@@ -45,29 +45,37 @@ export const UserMenu = () => {
       when={!guestEntry()}
       fallback={
         <AnchorWithBase href={guestEntry()!.href!}>
-          <IconButton
+          <Button
             aria-label="login"
-            color={getMainColor()}
-            bgColor={changeColor(getMainColor(), { alpha: 0.15 })}
-            _hover={{ bgColor: changeColor(getMainColor(), { alpha: 0.2 }) }}
-            compact
-            size="lg"
-            icon={<CgProfile />}
-          />
+            variant="ghost"
+            size="icon-lg"
+            class="bg-(--tint) text-(--main) hover:bg-(--tint-hover) hover:text-(--main)"
+            style={{
+              "--main": getMainColor(),
+              "--tint": changeColor(getMainColor(), { alpha: 0.15 }),
+              "--tint-hover": changeColor(getMainColor(), { alpha: 0.2 }),
+            }}
+          >
+            <CgProfile />
+          </Button>
         </AnchorWithBase>
       }
     >
       <Menu>
         <MenuTrigger
-          as={IconButton}
+          as={Button}
           aria-label="user menu"
-          compact
-          size="lg"
-          color={getMainColor()}
-          bgColor={changeColor(getMainColor(), { alpha: 0.15 })}
-          _hover={{ bgColor: changeColor(getMainColor(), { alpha: 0.2 }) }}
-          icon={<CgProfile />}
-        />
+          variant="ghost"
+          size="icon-lg"
+          class="bg-(--tint) text-(--main) hover:bg-(--tint-hover) hover:text-(--main)"
+          style={{
+            "--main": getMainColor(),
+            "--tint": changeColor(getMainColor(), { alpha: 0.15 }),
+            "--tint-hover": changeColor(getMainColor(), { alpha: 0.2 }),
+          }}
+        >
+          <CgProfile />
+        </MenuTrigger>
         <MenuContent>
           <For each={entries()}>
             {(entry) => (

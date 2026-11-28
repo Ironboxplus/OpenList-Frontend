@@ -1,8 +1,8 @@
-import { Button, Text } from "@hope-ui/solid"
 import { Match, onCleanup, onMount, Show, Switch } from "solid-js"
 import { FullLoading, Paginator } from "~/components"
 import { getGlobalPage, usePath, useRouter, useT } from "~/hooks"
 import { clearHistory, getPagination, objStore, State } from "~/store"
+import { Button } from "~/components/ui/button"
 
 const Pagination = () => {
   const pagination = getPagination()
@@ -25,9 +25,11 @@ const LoadMore = () => {
   return (
     <Show
       when={!allLoaded()}
-      fallback={<Text fontStyle="italic">{t("home.no_more")}</Text>}
+      fallback={<p class="italic">{t("home.no_more")}</p>}
     >
-      <Button onClick={loadMore}>{t("home.load_more")}</Button>
+      <Button variant="subtle" onClick={loadMore}>
+        {t("home.load_more")}
+      </Button>
     </Show>
   )
 }
@@ -57,7 +59,7 @@ const AutoLoadMore = () => {
   return (
     <Show
       when={!allLoaded()}
-      fallback={<Text fontStyle="italic">{t("home.no_more")}</Text>}
+      fallback={<p class="italic">{t("home.no_more")}</p>}
     >
       <FullLoading class="py-2" size="md" thickness={3} ref={el} />
     </Show>

@@ -1,4 +1,3 @@
-import { Box, HStack, VStack, Text } from "@hope-ui/solid"
 import {
   batch,
   createEffect,
@@ -25,7 +24,9 @@ import { OrderBy } from "~/store"
 import { Col, cols, ListItem } from "./ListItem"
 import { MediaListItem } from "./MediaListItem"
 import { shouldUseMediaRows } from "./row-layout"
-import { ItemCheckbox, useSelectWithMouse } from "./helper"
+import { useSelectWithMouse } from "./helper"
+import { ItemCheckbox } from "./ItemCheckbox"
+import { cn } from "~/utils/cn"
 import { VirtualRows } from "~/features/files/VirtualRows"
 import { rowEstimate, shouldVirtualize } from "~/features/files/virtualize"
 import { phoneShell } from "~/features/shell/topbar-slot"
@@ -78,134 +79,116 @@ export const ListTitle = (props: {
       })
     }
   }
-  const itemProps = (col: Col) => {
-    return {
-      fontWeight: "bold",
-      fontSize: "$sm",
-      color: "$neutral11",
-      textAlign: col.textAlign as any,
-      cursor: "pointer",
-      onClick: () => onSort(col),
-    }
-  }
+  const itemProps = (col: Col) => ({
+    class: cn(
+      "cursor-pointer text-sm font-bold text-muted-foreground",
+      col.align,
+    ),
+    onClick: () => onSort(col),
+  })
   // Direction indicator on the active sort column: one up-arrow that rotates to a
   // down-arrow via a CSS transform transition (GPU-driven, can't throw — no JS
   // animation lib needed for a 180° flip). reverse=false → ascending (↑).
   const SortArrow = (p: { col: Col }) => (
     <Show when={p.col.name === orderBy()}>
-      <Box
-        display="inline-flex"
-        alignItems="center"
-        color="$accent10"
+      <div
+        class="inline-flex items-center text-primary"
         style={{
           transition: "transform 0.18s ease",
           transform: reverse() ? "rotate(180deg)" : "rotate(0deg)",
         }}
       >
         <AiOutlineArrowUp size={14} />
-      </Box>
+      </div>
     </Show>
   )
   // Compact header: the selection controls stay on the left and the three sort
   // keys collapse into chips on the right, so they no longer pretend to be
   // column labels for a layout that has no columns.
   const SortChip = (p: { col: Col }) => (
-    <HStack
-      spacing="$0_5"
-      px="$1_5"
-      py="$0_5"
-      rounded="$sm"
-      cursor="pointer"
-      fontSize="$xs"
-      fontWeight="$medium"
-      color={p.col.name === orderBy() ? "$accent11" : "$neutral10"}
-      bgColor={p.col.name === orderBy() ? "$accent3" : "transparent"}
-      _hover={{ bgColor: p.col.name === orderBy() ? "$accent3" : "$neutral4" }}
+    <div
+      class={cn(
+        "flex cursor-pointer items-center gap-x-0.5 rounded-sm px-1.5 py-0.5 text-xs font-medium",
+        p.col.name === orderBy()
+          ? "bg-primary/10 text-primary"
+          : "bg-transparent text-muted-foreground hover:bg-accent",
+      )}
       onClick={() => onSort(p.col)}
     >
-      <Text>{t(`home.obj.${p.col.name}`)}</Text>
+      <p>{t(`home.obj.${p.col.name}`)}</p>
       <SortArrow col={p.col} />
-    </HStack>
+    </div>
   )
 
   if (props.compact) {
     return (
-      <HStack
-        class="title title-compact"
-        w="$full"
-        px="$2"
-        py="$1"
-        spacing="$2"
-      >
+      <div class="flex flex-row items-center w-full px-2 py-1 gap-x-2 title title-compact">
         <Show when={!props.disableCheckbox && checkboxOpen()}>
           <ItemCheckbox
             checked={allChecked()}
             indeterminate={isIndeterminate()}
-            onChange={(e: any) => {
-              selectAll(e.target.checked as boolean)
+            onChange={(on) => {
+              selectAll(on)
             }}
           />
         </Show>
         <Show when={selectedMsg()}>
-          <Text fontSize="$xs" color="$neutral11">
-            {selectedMsg()}
-          </Text>
+          <p class="text-xs text-muted-foreground">{selectedMsg()}</p>
         </Show>
-        <Box flex={1} />
+        <div class="flex-1" />
         <SortChip col={cols[0]} />
         <SortChip col={cols[1]} />
         <SortChip col={cols[2]} />
-      </HStack>
+      </div>
     )
   }
 
   return (
-    <HStack class="title" w="$full" p="$2">
-      <HStack w={cols[0].w} spacing="$1">
+    <div class="flex flex-row items-center w-full p-2 title">
+      <div class={cn("flex items-center gap-x-1", cols[0].w)}>
         <Show when={!props.disableCheckbox && checkboxOpen()}>
           <ItemCheckbox
             checked={allChecked()}
             indeterminate={isIndeterminate()}
-            onChange={(e: any) => {
-              selectAll(e.target.checked as boolean)
+            onChange={(on) => {
+              selectAll(on)
             }}
           />
         </Show>
         {selectedMsg() ? (
-          <Text {...itemProps(cols[0])}>{selectedMsg()}</Text>
+          <p {...itemProps(cols[0])}>{selectedMsg()}</p>
         ) : (
           <>
-            <Text {...itemProps(cols[0])}>{t(`home.obj.${cols[0].name}`)}</Text>
+            <p {...itemProps(cols[0])}>{t(`home.obj.${cols[0].name}`)}</p>
             <SortArrow col={cols[0]} />
           </>
         )}
-      </HStack>
-      <HStack
-        w={cols[1].w}
-        spacing="$1"
-        justifyContent="flex-end"
-        cursor="pointer"
+      </div>
+      <div
+        class={cn(
+          "flex cursor-pointer items-center justify-end gap-x-1",
+          cols[1].w,
+        )}
         onClick={() => onSort(cols[1])}
       >
-        <Text fontWeight="bold" fontSize="$sm" color="$neutral11">
+        <p class="text-sm font-bold text-muted-foreground">
           {t(`home.obj.${cols[1].name}`)}
-        </Text>
+        </p>
         <SortArrow col={cols[1]} />
-      </HStack>
-      <HStack
-        w={cols[2].w}
-        spacing="$1"
-        justifyContent="flex-end"
-        cursor="pointer"
+      </div>
+      <div
+        class={cn(
+          "hidden cursor-pointer items-center justify-end gap-x-1 md:flex",
+          cols[2].w,
+        )}
         onClick={() => onSort(cols[2])}
-        display={{ "@initial": "none", "@md": "flex" }}
       >
-        <Text fontWeight="bold" fontSize="$sm" color="$neutral11">
+        <p class="text-sm font-bold text-muted-foreground">
           {t(`home.obj.${cols[2].name}`)}
-        </Text>
+        </p>
         <SortArrow col={cols[2]} />
-      </HStack>
-    </HStack>
+      </div>
+    </div>
   )
 }
 
@@ -237,7 +220,7 @@ const ListLayout = () => {
 
   // files dragged in: the folder's drop layer, in every layout (FilesArea)
   return (
-    <VStack class="list viselect-container" w="$full" spacing="$1">
+    <div class="flex flex-col items-center w-full gap-y-1 list viselect-container">
       <ListTitle
         sortCallback={sortObjs}
         initialOrder={saved()?.orderBy as OrderBy | undefined}
@@ -262,11 +245,9 @@ const ListLayout = () => {
         />
       </Show>
       <Show when={local["show_count_msg"] === "visible"}>
-        <Text size="sm" color="$neutral11">
-          {countMsg()}
-        </Text>
+        <p class="text-muted-foreground text-sm leading-5">{countMsg()}</p>
       </Show>
-    </VStack>
+    </div>
   )
 }
 

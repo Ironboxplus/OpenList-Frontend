@@ -1,5 +1,4 @@
 import { BoxWithFullScreen, FullLoading, Error as Erro } from "~/components"
-import { Box, Button, IconButton } from "@hope-ui/solid"
 import { loadScriptIIFE } from "~/utils"
 import { createSignal, onMount, onCleanup, Show } from "solid-js"
 import { useLink, useT, useCDN } from "~/hooks"
@@ -9,6 +8,7 @@ import {
   HiOutlineMagnifyingGlassMinus,
 } from "solid-icons/hi"
 import { Tooltip } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
 
 // 声明全局docx类型
 declare global {
@@ -145,25 +145,15 @@ const DocViewerApp = () => {
   return (
     <BoxWithFullScreen h="70vh">
       {/* 缩放控制 */}
-      <Box
-        pos="absolute"
-        top="$2"
-        left="$2"
-        zIndex="10"
-        display="flex"
-        alignItems="center"
-        gap="$1"
-        opacity="0.7"
-        transition="opacity 0.2s"
-        _hover={{ opacity: "1" }}
-      >
-        <IconButton
-          size="sm"
-          colorScheme="neutral"
+      <div class="absolute top-2 left-2 z-[10] flex items-center gap-x-1 opacity-70 transition-opacity duration-200 hover:opacity-100">
+        <Button
+          size="icon-sm"
+          variant="secondary"
           aria-label="Zoom Out"
-          icon={<HiOutlineMagnifyingGlassMinus />}
           onClick={zoomOut}
-        />
+        >
+          <HiOutlineMagnifyingGlassMinus />
+        </Button>
         <Tooltip
           withArrow
           label={
@@ -172,18 +162,19 @@ const DocViewerApp = () => {
               : t("home.preview.reset_zoom")
           }
         >
-          <Button size="sm" colorScheme="neutral" onClick={zoomReset}>
+          <Button variant="secondary" size="sm" onClick={zoomReset}>
             {zoom() === null ? "Auto" : `${Math.round((zoom() ?? 1) * 100)}%`}
           </Button>
         </Tooltip>
-        <IconButton
-          size="sm"
-          colorScheme="neutral"
+        <Button
+          size="icon-sm"
+          variant="secondary"
           aria-label="Zoom In"
-          icon={<HiOutlineMagnifyingGlassPlus />}
           onClick={zoomIn}
-        />
-      </Box>
+        >
+          <HiOutlineMagnifyingGlassPlus />
+        </Button>
+      </div>
 
       {/* DOCX容器 */}
       <div

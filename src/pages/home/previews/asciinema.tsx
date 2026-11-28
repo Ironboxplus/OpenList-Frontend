@@ -1,5 +1,4 @@
 import { asPreview } from "~/utils"
-import { Box } from "@hope-ui/solid"
 // @ts-ignore
 import * as AsciinemaPlayer from "asciinema-player"
 import "asciinema-player/dist/bundle/asciinema-player.css"
@@ -11,5 +10,5 @@ export default function Preview() {
   onMount(() => {
     AsciinemaPlayer.create(asPreview(objStore.raw_url), d)
   })
-  return <Box w="$full" ref={d} />
+  return <div class="w-full" ref={d} />
 }

@@ -1,4 +1,3 @@
-import { Box, Center, Skeleton, Text, VStack } from "@hope-ui/solid"
 import {
   For,
   Match,
@@ -9,6 +8,7 @@ import {
   onCleanup,
   onMount,
 } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { CenterLoading, ImageWithError, LinkWithPush } from "~/components"
 import { useLink, useT, useUtil } from "~/hooks"
 import { openListed } from "~/features/viewer/state"
@@ -28,6 +28,8 @@ import {
   masonryCardKind,
   masonryNameAlwaysVisible,
 } from "./masonry-card"
+import { Skeleton } from "~/components/ui/skeleton"
+import { cn } from "~/utils/cn"
 
 // Lazily fetch a text file's head once the card is visible, so a folder full
 // of text files doesn't fire a request storm on mount.
@@ -63,54 +65,28 @@ const TextPreview = (props: { obj: StoreObj }) => {
   })
   onCleanup(() => io?.disconnect())
   return (
-    <Box ref={el} w="$full" h="220px" pos="relative" bgColor="$neutral2">
+    <div class="w-full h-[220px] relative bg-muted" ref={el}>
       <Show
         when={content() !== undefined}
         fallback={
-          <VStack w="$full" h="$full" p="$3" spacing="$2" alignItems="stretch">
+          <div class="flex flex-col w-full h-full p-3 items-stretch gap-y-2">
             <Show when={!failed()} fallback={<CenterLoading size="lg" />}>
-              <Skeleton height="12px" />
-              <Skeleton height="12px" />
-              <Skeleton height="12px" width="80%" />
-              <Skeleton height="12px" />
-              <Skeleton height="12px" width="60%" />
+              <Skeleton class="h-[12px]" />
+              <Skeleton class="h-[12px]" />
+              <Skeleton class="h-[12px] w-[80%]" />
+              <Skeleton class="h-[12px]" />
+              <Skeleton class="h-[12px] w-[60%]" />
             </Show>
-          </VStack>
+          </div>
         }
       >
-        <Box
-          as="pre"
-          w="$full"
-          h="$full"
-          m={0}
-          p="$3"
-          color="$neutral11"
-          css={{
-            fontFamily:
-              "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-            fontSize: "11px",
-            lineHeight: 1.5,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            overflow: "hidden",
-          }}
-        >
+        <pre class="m-0 h-full w-full overflow-hidden p-3 font-mono text-[11px] leading-[1.5] break-words whitespace-pre-wrap text-muted-foreground">
           {content()}
-        </Box>
+        </pre>
       </Show>
       {/* fade the bottom so truncation looks intentional */}
-      <Box
-        pos="absolute"
-        bottom="0"
-        left="0"
-        right="0"
-        h="48px"
-        css={{
-          background:
-            "linear-gradient(to top, var(--hope-colors-neutral2), transparent)",
-        }}
-      />
-    </Box>
+      <div class="absolute right-0 bottom-0 left-0 h-12 bg-linear-to-t from-muted to-transparent" />
+    </div>
   )
 }
 
@@ -124,31 +100,18 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
   const isImage = kind === "image"
   const { previewLink } = useLink()
   const typeIcon = (size: string) => (
-    <Box as={getIconByObj(obj) as any} color={getMainColor()} fontSize={size} />
+    <Dynamic
+      component={getIconByObj(obj)}
+      style={{ color: getMainColor(), "font-size": size }}
+    />
   )
   return (
     <div style={{ "break-inside": "avoid", "margin-bottom": "0.6rem" }}>
-      <Box
-        as={LinkWithPush}
+      <LinkWithPush
         href={obj.name}
         data-row-name={obj.name}
-        pos="relative"
-        display="block"
-        w="$full"
-        rounded="$lg"
-        overflow="hidden"
-        bgColor="$neutral3"
-        shadow="$sm"
-        cursor="pointer"
-        transition="transform 0.25s ease, box-shadow 0.25s ease"
-        css={{
-          "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: `0 10px 26px -8px ${getMainColor()}66`,
-          },
-          "&:hover .masonry-overlay": { opacity: 1 },
-          "&:hover img": { filter: "brightness(1.05)" },
-        }}
+        class="group/masonry relative block w-full cursor-pointer overflow-hidden rounded-lg bg-muted shadow-sm transition-[translate,box-shadow] duration-250 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_26px_-8px_var(--masonry-glow)] [&:hover_img]:brightness-105"
+        style={{ "--masonry-glow": `${getMainColor()}66` }}
         onContextMenu={() => selectForMenu(props.index)}
         on:click={(e: MouseEvent) => {
           e.preventDefault()
@@ -163,7 +126,11 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
             <ImageWithError
               class="block w-full object-cover transition-[filter] duration-250 ease-in-out"
               fallback={<CenterLoading size="lg" class="h-40 w-full" />}
-              fallbackErr={<Center h="160px">{typeIcon("48px")}</Center>}
+              fallbackErr={
+                <div class="flex justify-center items-center h-[160px]">
+                  {typeIcon("48px")}
+                </div>
+              }
               src={obj.thumb || previewLink(obj)}
               loading="lazy"
             />
@@ -171,41 +138,35 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
 
           {/* video with a thumbnail */}
           <Match when={kind === "video-thumb"}>
-            <Box pos="relative" w="$full">
+            <div class="relative w-full">
               <ImageWithError
                 class="block w-full object-cover transition-[filter] duration-250 ease-in-out"
                 fallback={<CenterLoading size="lg" class="h-40 w-full" />}
-                fallbackErr={<Center h="160px">{typeIcon("48px")}</Center>}
+                fallbackErr={
+                  <div class="flex justify-center items-center h-[160px]">
+                    {typeIcon("48px")}
+                  </div>
+                }
                 src={obj.thumb}
                 loading="lazy"
               />
-              <Center pos="absolute" top="0" left="0" right="0" bottom="0">
-                <Box
-                  as={BsPlayCircleFill as any}
-                  color="white"
-                  fontSize="44px"
-                  css={{
-                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
-                    opacity: 0.92,
-                  }}
-                />
-              </Center>
-            </Box>
+              <div class="flex justify-center items-center absolute top-0 left-0 right-0 bottom-0">
+                <BsPlayCircleFill class="size-[44px] text-white opacity-[0.92] drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]" />
+              </div>
+            </div>
           </Match>
 
           {/* video without a thumbnail: a video skeleton placeholder */}
           <Match when={kind === "video-skeleton"}>
-            <Box pos="relative" w="$full" css={{ aspectRatio: "16 / 9" }}>
-              <Skeleton w="$full" h="$full" />
-              <Center pos="absolute" top="0" left="0" right="0" bottom="0">
-                <Box
-                  as={BsPlayCircleFill as any}
-                  color={getMainColor()}
-                  fontSize="44px"
-                  css={{ opacity: 0.8 }}
+            <div class="relative aspect-video w-full">
+              <Skeleton class="h-full w-full" />
+              <div class="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center">
+                <BsPlayCircleFill
+                  class="size-[44px] opacity-80"
+                  style={{ color: getMainColor() }}
                 />
-              </Center>
-            </Box>
+              </div>
+            </div>
           </Match>
 
           {/* text: its actual content */}
@@ -215,40 +176,24 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
 
           {/* folders & everything else: a clean icon card */}
           <Match when={true}>
-            <Center
-              w="$full"
-              h="140px"
-              css={{
-                background:
-                  "linear-gradient(135deg, var(--hope-colors-neutral2), var(--hope-colors-neutral4))",
-              }}
-            >
+            <div class="flex h-[140px] w-full items-center justify-center bg-linear-to-br from-muted to-accent">
               {typeIcon("52px")}
-            </Center>
+            </div>
           </Match>
         </Switch>
 
         {/* filename bar — always readable, brightens on hover */}
-        <Box
-          class="masonry-overlay"
-          pos="absolute"
-          bottom="0"
-          left="0"
-          right="0"
-          px="$2"
-          py="$1"
-          opacity={masonryNameAlwaysVisible(obj) ? 0.96 : 0}
-          transition="opacity 0.25s ease"
-          css={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0))",
-          }}
+        <div
+          class={cn(
+            "masonry-overlay absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/70 to-black/0 px-2 py-1 transition-opacity duration-250 ease-in-out group-hover/masonry:opacity-100",
+            masonryNameAlwaysVisible(obj) ? "opacity-95" : "opacity-0",
+          )}
         >
-          <Text size="xs" color="white" noOfLines={1} title={obj.name}>
+          <p class="text-white line-clamp-1 text-xs leading-4" title={obj.name}>
             {obj.name}
-          </Text>
-        </Box>
-      </Box>
+          </p>
+        </div>
+      </LinkWithPush>
     </div>
   )
 }
@@ -256,41 +201,30 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
 const MasonryLayout = (props: { images: StoreObj[] }) => {
   const t = useT()
   return (
-    <VStack spacing="$2" w="$full">
+    <div class="flex flex-col items-center w-full gap-y-2">
       <Show when={local["show_count_msg"] === "visible"}>
-        <Box w="100%" textAlign="left" pl="$2">
-          <Text size="sm" color="$neutral11">
+        <div class="w-full text-left pl-2">
+          <p class="text-muted-foreground text-sm leading-5">
             {smartCountMsg()}
-          </Text>
-        </Box>
+          </p>
+        </div>
       </Show>
       <Show
         when={objStore.objs.length > 0}
         fallback={
-          <Center w="$full" p="$8" color="$neutral10">
+          <div class="flex justify-center items-center w-full p-8 text-muted-foreground">
             {t("home.empty_folder")}
-          </Center>
+          </div>
         }
       >
         {/* Responsive CSS-column waterfall. Mobile-first: 2 → 6 columns. */}
-        <Box
-          w="$full"
-          class="masonry-images"
-          css={{
-            columnGap: "0.6rem",
-            columnCount: 2,
-            "@media (min-width: 480px)": { columnCount: 3 },
-            "@media (min-width: 768px)": { columnCount: 4 },
-            "@media (min-width: 1200px)": { columnCount: 5 },
-            "@media (min-width: 1600px)": { columnCount: 6 },
-          }}
-        >
+        <div class="masonry-images w-full columns-2 gap-x-[0.6rem] min-[480px]:columns-3 md:columns-4 min-[1200px]:columns-5 min-[1600px]:columns-6">
           <For each={objStore.objs}>
             {(obj, i) => <MasonryItem obj={obj} index={i()} />}
           </For>
-        </Box>
+        </div>
       </Show>
-    </VStack>
+    </div>
   )
 }
 

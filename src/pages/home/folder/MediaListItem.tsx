@@ -1,13 +1,15 @@
-import { Box, HStack, Icon, Text, VStack } from "@hope-ui/solid"
 import { createMemo, createSignal, Show } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { AiFillStar } from "solid-icons/ai"
 import { LinkWithPush } from "~/components"
 import { checkboxOpen, getMainColor, local } from "~/store"
 import { StoreObj } from "~/types"
-import { formatDate, formatDateCompact, getFileSize, hoverColor } from "~/utils"
+import { formatDate, formatDateCompact, getFileSize } from "~/utils"
+import { cn } from "~/utils/cn"
 import { getIconByObj } from "~/utils/icon"
 import { readExtra } from "./extra-meta"
-import { ItemCheckbox, useFileRowInteraction } from "./helper"
+import { useFileRowInteraction } from "./helper"
+import { ItemCheckbox } from "./ItemCheckbox"
 import { episodeFor } from "~/features/media/state"
 import { PlayingBadge, RowDownload } from "~/features/files/RowExtras"
 
@@ -73,23 +75,18 @@ export const MediaListItem = (props: {
 
   return (
     <div style={{ width: "100%" }}>
-      <HStack
-        class={`media-list-item viselect-item group/row${props.obj.selected ? " selected" : ""}`}
+      <LinkWithPush
+        class={cn(
+          "media-list-item viselect-item group/row flex w-full items-center gap-x-3 rounded-lg p-2 hover:bg-accent",
+          // Only the background transitions. `transition: all` on every row of a
+          // long list animates properties that never needed animating.
+          "transition-colors duration-150",
+          props.obj.selected && "selected bg-accent",
+          ix.cursor() === "pointer" ? "cursor-pointer" : "cursor-default",
+        )}
         data-index={props.index}
         data-row-name={props.obj.name}
-        w="$full"
-        p="$2"
-        spacing="$3"
-        rounded="$lg"
-        alignItems="center"
-        // Only the background transitions. `transition: all` on every row of a
-        // long list animates properties that never needed animating.
-        css={{ transition: "background-color 0.15s ease" }}
-        _hover={{ bgColor: hoverColor() }}
-        as={LinkWithPush}
         href={props.obj.name}
-        cursor={ix.cursor()}
-        bgColor={props.obj.selected ? hoverColor() : undefined}
         on:dblclick={ix.onDblClick}
         on:click={ix.onClick}
         onMouseEnter={ix.onMouseEnter}
@@ -101,8 +98,7 @@ export const MediaListItem = (props: {
       >
         <Show when={checkboxOpen()}>
           <ItemCheckbox
-            on:mousedown={ix.stopPropagation}
-            on:click={ix.stopPropagation}
+            stop
             checked={props.obj.selected}
             onChange={ix.onCheckboxChange}
           />
@@ -110,131 +106,86 @@ export const MediaListItem = (props: {
 
         {/* Thumbnail, degrading to the type icon when absent or broken. A failed
             image must not leave a blank hole where the icon should be. */}
-        <Box
-          class="media-thumb"
-          w={`${THUMB_W}px`}
-          h={`${THUMB_H}px`}
-          flexShrink={0}
-          rounded="$md"
-          overflow="hidden"
-          bgColor="$neutral3"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
+        <div
+          class="media-thumb flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted"
+          style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px` }}
         >
           <Show
             when={showThumb()}
             fallback={
-              <Icon
-                boxSize="$5"
-                color={getMainColor()}
-                as={getIconByObj(props.obj)}
+              <Dynamic
+                component={getIconByObj(props.obj)}
+                class="size-5"
+                style={{ color: getMainColor() }}
               />
             }
           >
-            <Box
-              as="img"
+            <img
               data-origin
               src={props.obj.thumb}
               loading="lazy"
-              w="$full"
-              h="$full"
-              css={{ objectFit: "cover", display: "block" }}
+              class="block h-full w-full object-cover"
               on:error={() => setThumbFailed(true)}
             />
           </Show>
-        </Box>
+        </div>
 
         {/* min-w=0 is what lets the title truncate instead of forcing the row wider. */}
-        <VStack
-          flex={1}
-          minW={0}
-          alignItems="flex-start"
-          spacing="$0_5"
-          class="media-text"
-        >
-          <HStack w="$full" spacing="$2" alignItems="center">
-            <Text
-              class="name"
-              fontSize="$sm"
-              fontWeight="$medium"
+        <div class="media-text flex min-w-0 flex-1 flex-col items-start gap-y-0.5">
+          <div class="flex flex-row w-full items-center gap-x-2">
+            <p
+              class={cn(
+                "name min-w-0 flex-1 overflow-hidden text-sm font-medium text-ellipsis",
+                local["list_item_filename_overflow"] === "multi_line"
+                  ? "whitespace-normal"
+                  : "whitespace-nowrap",
+              )}
               title={props.obj.name}
-              css={{
-                minWidth: 0,
-                flex: 1,
-                whiteSpace:
-                  local["list_item_filename_overflow"] === "multi_line"
-                    ? "unset"
-                    : "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
             >
               {props.obj.name}
-            </Text>
+            </p>
             <PlayingBadge name={props.obj.name} />
             <Show when={meta().starred}>
-              <Box as={AiFillStar} color="$warning8" title="starred" />
+              <AiFillStar class="text-warning" title="starred" />
             </Show>
             <Show when={meta().resolution}>
-              <Text
-                class="resolution"
-                flexShrink={0}
-                fontSize="$xs"
-                fontWeight="$medium"
-                px="$1_5"
-                rounded="$sm"
-                color={resolutionAccent() ? "$accent11" : "$neutral11"}
-                bgColor={resolutionAccent() ? "$accent3" : "$neutral4"}
+              <p
+                class={cn(
+                  "resolution shrink-0 rounded-sm px-1.5 text-xs font-medium",
+                  resolutionAccent()
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground",
+                )}
               >
                 {meta().resolution}
-              </Text>
+              </p>
             </Show>
-          </HStack>
+          </div>
 
-          <HStack
-            w="$full"
-            spacing="$2"
-            alignItems="center"
-            color="$neutral10"
-            fontSize="$xs"
-          >
-            <Text
-              class="meta"
-              css={{
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                fontVariantNumeric: "tabular-nums",
-              }}
+          <div class="flex flex-row w-full items-center text-muted-foreground text-xs gap-x-2">
+            <p
+              class="meta overflow-hidden text-ellipsis whitespace-nowrap tabular-nums"
               title={
                 props.obj.modified ? formatDate(props.obj.modified) : undefined
               }
             >
               {secondary()}
-            </Text>
+            </p>
             <Show when={meta().tags.length}>
-              <HStack spacing="$1" flexShrink={0}>
+              <div class="flex flex-row items-center shrink-0 gap-x-1">
                 {meta()
                   .tags.slice(0, 2)
                   .map((tag) => (
-                    <Text
-                      class="tag"
-                      fontSize="$xs"
-                      px="$1"
-                      rounded="$sm"
-                      bgColor="$neutral4"
-                      css={{ whiteSpace: "nowrap" }}
-                    >
+                    <p class="tag rounded-sm bg-muted px-1 text-xs whitespace-nowrap">
                       {tag}
-                    </Text>
+                    </p>
                   ))}
-              </HStack>
+              </div>
             </Show>
-          </HStack>
-        </VStack>
+          </div>
+        </div>
         <RowDownload obj={props.obj} />
-      </HStack>
+      </LinkWithPush>
     </div>
   )
 }

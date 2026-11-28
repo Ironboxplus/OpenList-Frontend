@@ -1,8 +1,8 @@
 import { BoxWithFullScreen, Error as Erro, FullLoading } from "~/components"
-import { Box, Button, HStack } from "@hope-ui/solid"
 import { loadScriptIIFE } from "~/utils"
 import { createSignal, onMount, For, Show } from "solid-js"
 import { useLink, useT, useCDN } from "~/hooks"
+import { Button } from "~/components/ui/button"
 
 // 声明全局ExcelJS类型
 declare global {
@@ -130,35 +130,24 @@ const ExcelViewerApp = () => {
   return (
     <BoxWithFullScreen h="70vh">
       {/* 工作表标签和全屏按钮 */}
-      <Box
-        pos="absolute"
-        top="$2"
-        left="$2"
-        right="$2"
-        zIndex="10"
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        px="$2"
-      >
+      <div class="absolute top-2 left-2 right-2 z-10 flex justify-between items-center px-2">
         {/* 工作表标签 */}
         <Show when={!loading() && !error() && sheets().length > 0}>
-          <HStack spacing="$2" flexWrap="wrap">
+          <div class="flex flex-row items-center flex-wrap gap-x-2">
             <For each={sheets()}>
               {(sheet, index) => (
                 <Button
                   size="sm"
                   variant={
-                    currentSheetIndex() === index() ? "solid" : "outline"
+                    currentSheetIndex() === index() ? "default" : "outline"
                   }
-                  colorScheme="primary"
                   onClick={() => setCurrentSheetIndex(index())}
                 >
                   {sheet.name}
                 </Button>
               )}
             </For>
-          </HStack>
+          </div>
         </Show>
 
         {/* Excel表格容器 */}
@@ -232,7 +221,7 @@ const ExcelViewerApp = () => {
             <Erro msg={t("preview.failed_load_excel")} h="70vh" />
           </Show>
         </div>
-      </Box>
+      </div>
     </BoxWithFullScreen>
   )
 }

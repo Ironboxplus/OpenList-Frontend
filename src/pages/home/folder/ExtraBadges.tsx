@@ -1,9 +1,9 @@
-import { Badge, Box, HStack, Text } from "@hope-ui/solid"
 import { createMemo, For, Show } from "solid-js"
 import { AiFillStar } from "solid-icons/ai"
 import { ObjExtra } from "~/types"
 import { hasExtra, readExtra } from "./extra-meta"
 import { Tooltip } from "~/components/overlay"
+import { Badge } from "~/components/ui/badge"
 
 /**
  * Renders the optional driver-specific metadata bag (`obj.extra`) as compact
@@ -22,35 +22,35 @@ export const ExtraBadges = (props: {
   const hidden = () => meta().tags.length - tags().length
   return (
     <Show when={hasExtra(meta())}>
-      <HStack spacing="$1" flexShrink={0} alignItems="center">
+      <div class="flex flex-row shrink-0 items-center gap-x-1">
         <Show when={meta().starred}>
-          <Box as={AiFillStar} color="$warning8" title="starred" />
+          <AiFillStar class="text-warning" title="starred" />
         </Show>
         <Show when={meta().resolution}>
-          <Badge colorScheme="info" variant="subtle" fontSize="$xs">
+          <Badge variant="info" class="text-xs">
             {meta().resolution}
           </Badge>
         </Show>
         <Show when={meta().duration}>
-          <Text fontSize="$xs" color="$neutral10" fontFamily="$mono">
+          <p class="text-xs text-muted-foreground font-mono">
             {meta().duration}
-          </Text>
+          </p>
         </Show>
         <For each={tags()}>
           {(tag) => (
-            <Badge colorScheme="neutral" variant="subtle" fontSize="$xs">
+            <Badge variant="secondary" class="text-xs">
               {tag}
             </Badge>
           )}
         </For>
         <Show when={hidden() > 0}>
           <Tooltip label={meta().tags.join(", ")} withArrow>
-            <Badge colorScheme="neutral" variant="subtle" fontSize="$xs">
+            <Badge variant="secondary" class="text-xs">
               +{hidden()}
             </Badge>
           </Tooltip>
         </Show>
-      </HStack>
+      </div>
     </Show>
   )
 }

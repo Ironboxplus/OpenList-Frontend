@@ -1,14 +1,4 @@
 import {
-  Box,
-  Center,
-  Flex,
-  HStack,
-  IconButton,
-  Spacer,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
-import {
   BsArrowClockwise,
   BsArrowCounterclockwise,
   BsInfoCircle,
@@ -47,6 +37,8 @@ import {
   asPreview,
 } from "~/utils"
 import { Tooltip } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
+import { cn } from "~/utils/cn"
 
 const HEIF_EXTS = new Set(["heic", "heif", "avif", "vvc", "avc"])
 const isHeif = (name: string) => HEIF_EXTS.has(ext(name).toLowerCase())
@@ -327,167 +319,162 @@ const Preview = (props: PreviewProps) => {
   // ── render ──────────────────────────────────────────────────────
   return (
     <BoxWithFullScreen h="70vh">
-      <VStack ref={containerRef} w="$full" h="$full">
+      <div class="flex flex-col items-center w-full h-full" ref={containerRef}>
         {/* ── Toolbar ── */}
-        <Flex
-          w="$full"
-          bg="$neutral1"
-          p="$2"
-          position={isFullscreen() ? "absolute" : "relative"}
-          top={isFullscreen() ? "0" : undefined}
-          left={isFullscreen() ? "0" : undefined}
-          zIndex="$docked"
-          transition="opacity 0.3s ease"
-          opacity={isFullscreen() ? "0.7" : undefined}
-          _hover={{ opacity: isFullscreen() ? "1" : undefined }}
+        <div
+          class={cn(
+            "z-10 flex w-full bg-card p-2 transition-opacity duration-300",
+            isFullscreen()
+              ? "absolute top-0 left-0 opacity-70 hover:opacity-100"
+              : "relative",
+          )}
         >
-          <HStack spacing="$1">
+          <div class="flex flex-row items-center gap-x-1">
             <Show when={curIdx() > 0}>
               <Tooltip label="Previous (←)">
-                <IconButton
-                  icon={<FaSolidAngleLeft />}
-                  aria-label="Previous"
+                <Button
+                  size="icon-sm"
                   variant="ghost"
-                  size="sm"
+                  aria-label="Previous"
                   onClick={prev}
-                />
+                >
+                  <FaSolidAngleLeft />
+                </Button>
               </Tooltip>
             </Show>
             <Show when={curIdx() < images.length - 1}>
               <Tooltip label="Next (→)">
-                <IconButton
-                  icon={<FaSolidAngleRight />}
-                  aria-label="Next"
+                <Button
+                  size="icon-sm"
                   variant="ghost"
-                  size="sm"
+                  aria-label="Next"
                   onClick={next}
-                />
+                >
+                  <FaSolidAngleRight />
+                </Button>
               </Tooltip>
             </Show>
-            <Text
-              size="sm"
-              maxW="280px"
-              overflow="hidden"
-              ml="$1"
-              css={{
-                "text-overflow": "ellipsis",
-                "white-space": "nowrap",
-              }}
-              display={{ "@initial": "none", "@sm": "block" }}
-            >
+            <p class="ml-1 hidden max-w-[280px] truncate text-sm sm:block">
               {objStore.obj.name}
-            </Text>
+            </p>
             <Show when={images.length > 1}>
-              <Text color="$neutral11" size="xs">
+              <p class="text-muted-foreground text-xs leading-4">
                 {curIdx() + 1}/{images.length}
-              </Text>
+              </p>
             </Show>
-          </HStack>
-          <Spacer />
-          <HStack spacing="$1">
+          </div>
+          <div class="flex-1 self-stretch" />
+          <div class="flex flex-row items-center gap-x-1">
             <Tooltip label="Info (I)">
-              <IconButton
-                icon={<BsInfoCircle />}
+              <Button
                 aria-label="Info"
                 variant={showInfo() ? "subtle" : "ghost"}
-                size="sm"
+                size="icon-sm"
                 onClick={() => setShowInfo((v) => !v)}
-              />
+              >
+                <BsInfoCircle />
+              </Button>
             </Tooltip>
 
             <Tooltip label="Zoom out (−)">
-              <IconButton
-                icon={<BsZoomOut />}
-                aria-label="Zoom out"
+              <Button
+                size="icon-sm"
                 variant="ghost"
-                size="sm"
+                aria-label="Zoom out"
                 onClick={zoomOut}
-              />
+              >
+                <BsZoomOut />
+              </Button>
             </Tooltip>
             <Tooltip label="Zoom in (+)">
-              <IconButton
-                icon={<BsZoomIn />}
-                aria-label="Zoom in"
+              <Button
+                size="icon-sm"
                 variant="ghost"
-                size="sm"
+                aria-label="Zoom in"
                 onClick={zoomIn}
-              />
+              >
+                <BsZoomIn />
+              </Button>
             </Tooltip>
             <Tooltip label="Fit page (C)">
-              <IconButton
-                icon={<TbArrowAutofitContent />}
-                aria-label="Fit page"
+              <Button
+                size="icon-sm"
                 variant="ghost"
-                size="sm"
+                aria-label="Fit page"
                 onClick={fitPage}
-              />
+              >
+                <TbArrowAutofitContent />
+              </Button>
             </Tooltip>
             <Tooltip label="Fit height (H)">
-              <IconButton
-                icon={<TbArrowAutofitHeight />}
-                aria-label="Fit height"
+              <Button
+                size="icon-sm"
                 variant="ghost"
-                size="sm"
+                aria-label="Fit height"
                 onClick={fitHeight}
-              />
+              >
+                <TbArrowAutofitHeight />
+              </Button>
             </Tooltip>
             <Tooltip label="Fit width (W)">
-              <IconButton
-                icon={<TbArrowAutofitWidth />}
-                aria-label="Fit width"
+              <Button
+                size="icon-sm"
                 variant="ghost"
-                size="sm"
+                aria-label="Fit width"
                 onClick={fitWidth}
-              />
+              >
+                <TbArrowAutofitWidth />
+              </Button>
             </Tooltip>
             <Tooltip label="Rotate left (R)">
-              <IconButton
-                icon={<BsArrowCounterclockwise />}
-                aria-label="Rotate left"
+              <Button
+                size="icon-sm"
                 variant="ghost"
-                size="sm"
+                aria-label="Rotate left"
                 onClick={rotL}
-              />
+              >
+                <BsArrowCounterclockwise />
+              </Button>
             </Tooltip>
             <Tooltip label="Rotate right (Shift+R)">
-              <IconButton
-                icon={<BsArrowClockwise />}
-                aria-label="Rotate right"
+              <Button
+                size="icon-sm"
                 variant="ghost"
-                size="sm"
+                aria-label="Rotate right"
                 onClick={rotR}
-              />
+              >
+                <BsArrowClockwise />
+              </Button>
             </Tooltip>
-          </HStack>
-        </Flex>
+          </div>
+        </div>
 
         {/* ── Image area ── */}
-        <Center
+        <div
           ref={areaRef}
-          w="$full"
-          h={isFullscreen() ? "$full" : undefined}
-          flex="1"
-          backgroundColor="$neutral2"
-          overflow="hidden"
-          cursor={cursor()}
+          class={cn(
+            "flex w-full flex-1 items-center justify-center overflow-hidden bg-muted",
+            isFullscreen() && "h-full",
+          )}
+          style={{ cursor: cursor() }}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
           onMouseLeave={onMouseUp}
           onDblClick={onDblClick}
         >
-          <Center
-            {...(fitMode() === "contain"
-              ? { w: "$full", h: "$full" }
-              : {
-                  css:
-                    fitMode() === "height"
-                      ? { height: "100%", width: "fit-content" }
-                      : { width: "100%", height: "fit-content" },
-                })}
-            transform={imgTransform()}
-            transition={dragging() ? "none" : "transform 0.15s ease"}
-            transform-origin="center center"
+          <div
+            class={cn(
+              "flex items-center justify-center",
+              fitMode() === "contain" && "h-full w-full",
+              fitMode() === "height" && "h-full w-fit",
+              fitMode() === "width" && "h-fit w-full",
+            )}
+            style={{
+              transform: imgTransform(),
+              transition: dragging() ? "none" : "transform 0.15s ease",
+              "transform-origin": "center center",
+            }}
           >
             <Switch
               fallback={
@@ -526,41 +513,23 @@ const Preview = (props: PreviewProps) => {
                 />
               </Match>
             </Switch>
-          </Center>
+          </div>
 
           {/* ── Info overlay ── */}
           <Show when={showInfo()}>
-            <Box
-              position="absolute"
-              bottom="$2"
-              left="$2"
-              p="$2"
-              bg="$blackAlpha9"
-              borderRadius="$md"
-              zIndex="$docked"
-              fontSize="$sm"
-              css={{
-                "backdrop-filter": "blur(8px)",
-              }}
-            >
-              <Text color="$whiteAlpha12" fontWeight="$semibold">
-                {objStore.obj.name}
-              </Text>
-              <Text color="$whiteAlpha11">
-                {getFileSize(objStore.obj.size)}
-              </Text>
+            <div class="absolute bottom-2 left-2 z-10 rounded-md bg-black/70 p-2 text-sm backdrop-blur-sm">
+              <p class="font-semibold text-white">{objStore.obj.name}</p>
+              <p class="text-white/80">{getFileSize(objStore.obj.size)}</p>
               <Show when={imgSize().w > 0}>
-                <Text color="$whiteAlpha11">
+                <p class="text-white/80">
                   {imgSize().w} × {imgSize().h}px
-                </Text>
+                </p>
               </Show>
-              <Text color="$whiteAlpha11">
-                {formatDate(objStore.obj.modified)}
-              </Text>
-            </Box>
+              <p class="text-white/80">{formatDate(objStore.obj.modified)}</p>
+            </div>
           </Show>
-        </Center>
-      </VStack>
+        </div>
+      </div>
     </BoxWithFullScreen>
   )
 }

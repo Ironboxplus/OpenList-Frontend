@@ -1,19 +1,3 @@
-import {
-  VStack,
-  HStack,
-  Text,
-  Button,
-  Badge,
-  Heading,
-  Box,
-  Checkbox,
-  Divider,
-  Alert,
-  AlertIcon,
-  Textarea,
-  IconButton,
-  SimpleGrid,
-} from "@hope-ui/solid"
 import { createEffect, createSignal, For, onMount, Show } from "solid-js"
 import { getSettingBool, objStore } from "~/store"
 import {
@@ -47,7 +31,7 @@ import { FolderChooseInput, SelectWrapper } from "~/components"
 import axios from "axios"
 import bencode from "bencode"
 import crypto from "crypto-js"
-import { TbCopy, TbRefresh, TbTrash } from "solid-icons/tb"
+import { TbAlertTriangle, TbCopy, TbRefresh, TbTrash } from "solid-icons/tb"
 import { BsInfoCircle } from "solid-icons/bs"
 import { FiExternalLink } from "solid-icons/fi"
 import {
@@ -60,6 +44,12 @@ import {
   Tooltip,
   createDisclosure,
 } from "~/components/overlay"
+import { Textarea } from "~/components/ui/input"
+import { Alert } from "~/components/ui/alert"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { Separator } from "~/components/ui/separator"
+import { CheckboxField } from "~/components/ui/toggle-field"
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B"
@@ -240,7 +230,6 @@ const SeedFileRow = (props: {
         <Button
           size="xs"
           variant="outline"
-          colorScheme={hash ? "neutral" : undefined}
           disabled={!hash}
           onClick={() => copyHash(algo)}
         >
@@ -251,33 +240,16 @@ const SeedFileRow = (props: {
   }
 
   return (
-    <Box
-      border="1px solid $neutral6"
-      borderRadius="$md"
-      p="$2"
-      mb="$2"
-      _hover={{ bg: "$neutral2" }}
-    >
-      <HStack spacing="$2" alignItems="center" flexWrap="wrap">
-        <Checkbox
-          size="sm"
-          checked={props.selected}
-          onChange={props.onToggle}
-        />
-        <Text
-          fontSize="$sm"
-          flex={1}
-          minW="120px"
-          css={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
+    <div class="border border-border rounded-md p-2 mb-2 hover:bg-muted">
+      <div class="flex flex-row items-center flex-wrap gap-x-2">
+        <CheckboxField checked={props.selected} onChange={props.onToggle} />
+        <p
+          class="min-w-[120px] flex-1 truncate text-sm"
           title={props.file.path}
         >
           {props.file.path}
-        </Text>
-        <HStack spacing="$1">
+        </p>
+        <div class="flex flex-row items-center gap-x-1">
           <For each={ALGORITHMS}>{(algo) => hashButton(algo)}</For>
           <Tooltip
             label={
@@ -292,63 +264,66 @@ const SeedFileRow = (props: {
             <Button
               size="xs"
               variant="outline"
-              colorScheme={hasPieces() ? "accent" : undefined}
               disabled={!hasPieces()}
               onClick={piecesDisclosure.onOpen}
             >
               {t("home.transfer_seed.piece_hashes")}
             </Button>
           </Tooltip>
-        </HStack>
-        <Text fontSize="$xs" color="$neutral10" flexShrink={0}>
+        </div>
+        <p class="text-xs text-muted-foreground shrink-0">
           {formatFileSize(props.file.size)}
-        </Text>
+        </p>
         <Tooltip label={t("home.transfer_seed.preview_file")}>
-          <IconButton
-            icon={<FiExternalLink />}
-            aria-label={t("home.transfer_seed.preview_file")}
-            size="xs"
+          <Button
+            size="icon-xs"
             variant="ghost"
+            aria-label={t("home.transfer_seed.preview_file")}
             onClick={props.onPreview}
-          />
+          >
+            <FiExternalLink />
+          </Button>
         </Tooltip>
         <Tooltip
           label={props.file.comment || t("home.transfer_seed.no_comment")}
         >
-          <IconButton
-            icon={<BsInfoCircle />}
-            aria-label={t("home.transfer_seed.copy_comment")}
-            size="xs"
+          <Button
+            size="icon-xs"
             variant="ghost"
+            aria-label={t("home.transfer_seed.copy_comment")}
             disabled={!props.file.comment}
             onClick={props.onCommentCopy}
-          />
+          >
+            <BsInfoCircle />
+          </Button>
         </Tooltip>
         <Tooltip label={t("home.transfer_seed.recalc_file")}>
-          <IconButton
-            icon={<TbRefresh />}
-            aria-label={t("home.transfer_seed.recalc_file")}
-            size="xs"
+          <Button
+            size="icon-xs"
             variant="ghost"
+            aria-label={t("home.transfer_seed.recalc_file")}
             onClick={props.onRecalc}
-          />
+          >
+            <TbRefresh />
+          </Button>
         </Tooltip>
         <Tooltip label={t("home.transfer_seed.remove_file")}>
-          <IconButton
-            icon={<TbTrash />}
-            aria-label={t("home.transfer_seed.remove_file")}
-            size="xs"
+          <Button
+            size="icon-xs"
             variant="ghost"
-            colorScheme="danger"
+            class="text-destructive hover:text-destructive"
+            aria-label={t("home.transfer_seed.remove_file")}
             onClick={props.onRemove}
-          />
+          >
+            <TbTrash />
+          </Button>
         </Tooltip>
         <Show when={props.saveMethod}>
-          <Badge colorScheme={methodBadgeColor(props.saveMethod!)}>
+          <Badge variant={methodBadgeColor(props.saveMethod!)}>
             {t(`home.transfer_seed.method_${props.saveMethod!}`)}
           </Badge>
         </Show>
-      </HStack>
+      </div>
 
       {/* 分片哈希弹窗 */}
       <Modal
@@ -362,63 +337,56 @@ const SeedFileRow = (props: {
             {t("home.transfer_seed.piece_hashes")} · {props.file.path}
           </ModalHeader>
           <ModalBody>
-            <Text fontSize="$xs" color="$neutral10" mb="$2">
+            <p class="text-xs text-muted-foreground mb-2">
               {t("home.transfer_seed.piece_info", {
                 count: String(pieceCount()),
                 size: formatFileSize(props.pieceSize),
               })}
-            </Text>
+            </p>
             <For each={ALGORITHMS}>
               {(algo) => {
                 const list = () => pieceHashes()[algo]
                 return (
                   <Show when={list()?.length}>
-                    <Box mb="$3">
-                      <HStack justifyContent="space-between" mb="$1">
-                        <Text fontSize="$sm" fontWeight="$semibold">
+                    <div class="mb-3">
+                      <div class="flex flex-row items-center justify-between mb-1">
+                        <p class="text-sm font-semibold">
                           {t("home.transfer_seed.piece_hash_title", {
                             alg: algo.toUpperCase(),
                           })}
-                        </Text>
+                        </p>
                         <Button
+                          variant="subtle"
                           size="xs"
-                          leftIcon={<TbCopy />}
                           onClick={() => copyAllPieces(algo)}
                         >
+                          <TbCopy class="mr-1.5" />
                           {t("home.transfer_seed.copy_all_hashes")}
                         </Button>
-                      </HStack>
-                      <Box
-                        maxH="160px"
-                        overflowY="auto"
-                        fontFamily="$mono"
-                        fontSize="$xs"
-                        p="$2"
-                        bg="$neutral2"
-                        borderRadius="$sm"
-                      >
+                      </div>
+                      <div class="max-h-[160px] overflow-y-auto font-mono text-xs p-2 bg-muted rounded-sm">
                         <For each={list()}>
                           {(hash, index) => (
-                            <Text css={{ wordBreak: "break-all" }}>
+                            <p class="break-all">
                               {index()}: {hash}
-                            </Text>
+                            </p>
                           )}
                         </For>
-                      </Box>
-                    </Box>
+                      </div>
+                    </div>
                   </Show>
                 )
               }}
             </For>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="neutral" onClick={piecesDisclosure.onClose}>
+            <Button variant="secondary" onClick={piecesDisclosure.onClose}>
               {t("global.close")}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Box>
+    </div>
   )
 }
 
@@ -1113,30 +1081,25 @@ const TorrentPreview = () => {
   }
 
   return (
-    <VStack spacing="$4" w="$full" p="$4">
+    <div class="flex flex-col items-center w-full p-4 gap-y-4">
       <Show when={loading()}>
-        <Text>{t("home.toolbar.offline_download_enhanced.parsing")}</Text>
+        <p>{t("home.toolbar.offline_download_enhanced.parsing")}</p>
       </Show>
 
       <Show when={error()}>
-        <Text color="$danger9">{error()}</Text>
+        <p class="text-destructive">{error()}</p>
       </Show>
 
       <Show when={!loading() && !error() && torrentInfo()}>
-        <VStack spacing="$3" alignItems="stretch" w="$full">
-          <HStack
-            justifyContent="space-between"
-            alignItems="center"
-            flexWrap="wrap"
-            gap="$2"
-          >
-            <VStack alignItems="flex-start" spacing="$1">
-              <Heading size="sm" css={{ wordBreak: "break-all" }}>
+        <div class="flex flex-col items-stretch w-full gap-y-3">
+          <div class="flex flex-row justify-between items-center flex-wrap gap-2">
+            <div class="flex flex-col items-start gap-y-1">
+              <h2 class="text-sm font-semibold break-all">
                 {objStore.obj.name}
-              </Heading>
-              <HStack spacing="$2" alignItems="center" flexWrap="wrap">
-                <Badge colorScheme="info">{formatDisplayName()}</Badge>
-                <Text fontSize="$xs" color="$neutral10">
+              </h2>
+              <div class="flex flex-row items-center flex-wrap gap-x-2">
+                <Badge variant="info">{formatDisplayName()}</Badge>
+                <p class="text-xs text-muted-foreground">
                   {formatFileSize(torrentInfo()!.total_size)} ·{" "}
                   {torrentInfo()!.files.length}{" "}
                   {t("home.transfer_seed.file_count")}
@@ -1144,20 +1107,18 @@ const TorrentPreview = () => {
                     {" · "}
                     {formatDate(torrentInfo()!.created_at!)}
                   </Show>
-                </Text>
-              </HStack>
-            </VStack>
-            <HStack spacing="$2">
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-row items-center gap-x-2">
               <Show when={torrentInfo()!.has_cas}>
-                <Badge colorScheme="success">
+                <Badge variant="success">
                   {t("home.toolbar.offline_download_enhanced.cas_supported")}
                 </Badge>
               </Show>
               <Show when={torrentInfo()!.share}>
                 <Badge
-                  colorScheme={
-                    torrentInfo()!.share?.valid ? "success" : "danger"
-                  }
+                  variant={torrentInfo()!.share?.valid ? "success" : "danger"}
                 >
                   {torrentInfo()!.share?.valid
                     ? t("home.transfer_seed.share_valid")
@@ -1165,7 +1126,7 @@ const TorrentPreview = () => {
                 </Badge>
               </Show>
               <Show when={torrentInfo()!.channel?.status}>
-                <Badge colorScheme="accent">
+                <Badge variant="info">
                   {torrentInfo()!.channel?.name ||
                     t("home.transfer_seed.channel")}
                   : {torrentInfo()!.channel?.status}
@@ -1173,47 +1134,43 @@ const TorrentPreview = () => {
               </Show>
               <For each={torrentInfo()!.channels || []}>
                 {(channel) => (
-                  <Badge colorScheme="accent">
+                  <Badge variant="info">
                     {channel.driver}
                     {channel.mount_path ? `: ${channel.mount_path}` : ""}
                   </Badge>
                 )}
               </For>
-            </HStack>
-          </HStack>
+            </div>
+          </div>
 
           <Show when={torrentInfo()!.format === "cas" && !hasCasPieces()}>
-            <Alert status="warning">
-              <AlertIcon />
+            <Alert variant="warning">
+              <TbAlertTriangle />
               {t("home.transfer_seed.cas_legacy_warning")}
             </Alert>
           </Show>
           <Show when={torrentInfo()!.trackers?.length}>
-            <Box>
-              <Text fontSize="$sm" fontWeight="$semibold">
+            <div>
+              <p class="text-sm font-semibold">
                 {t("home.transfer_seed.trackers")}
-              </Text>
+              </p>
               <For each={torrentInfo()!.trackers}>
                 {(tracker) => (
-                  <Text
-                    fontSize="$xs"
-                    color="$neutral10"
-                    css={{ wordBreak: "break-all" }}
-                  >
+                  <p class="text-xs break-all text-muted-foreground">
                     {tracker}
-                  </Text>
+                  </p>
                 )}
               </For>
-            </Box>
+            </div>
           </Show>
 
           {/* 文件列表 */}
-          <Box>
-            <HStack justifyContent="space-between" alignItems="center" mb="$1">
-              <Text fontSize="$sm" fontWeight="$semibold">
+          <div>
+            <div class="flex flex-row justify-between items-center mb-1">
+              <p class="text-sm font-semibold">
                 {t("home.transfer_seed.files")}
-              </Text>
-              <HStack spacing="$2">
+              </p>
+              <div class="flex flex-row items-center gap-x-2">
                 <Button
                   size="xs"
                   variant="ghost"
@@ -1233,8 +1190,8 @@ const TorrentPreview = () => {
                     ? t("home.toolbar.offline_download_enhanced.cancel_select")
                     : t("home.toolbar.offline_download_enhanced.select_all")}
                 </Button>
-              </HStack>
-            </HStack>
+              </div>
+            </div>
             <For each={torrentInfo()!.files}>
               {(file, index) => (
                 <SeedFileRow
@@ -1265,38 +1222,39 @@ const TorrentPreview = () => {
                 />
               )}
             </For>
-          </Box>
+          </div>
 
           {/* 整体注释（多行） */}
           <Show when={!isShare() && operationSupported("edit")}>
-            <Box>
-              <Text fontSize="$sm" fontWeight="$semibold" mb="$1">
+            <div>
+              <p class="text-sm font-semibold mb-1">
                 {t("home.transfer_seed.overall_comment")}
-              </Text>
+              </p>
               <Textarea
                 rows={3}
                 placeholder={t("home.transfer_seed.comment_placeholder")}
                 value={editComment()}
                 onInput={(event) => setEditComment(event.currentTarget.value)}
               />
-            </Box>
+            </div>
           </Show>
 
           {/* 下载 / 秒传区 */}
           <Show when={!isShare()}>
-            <Divider />
-            <HStack spacing="$2" alignItems="center" flexWrap="wrap">
-              <Text fontSize="$sm" flexShrink={0}>
+            <Separator />
+            <div class="flex flex-row items-center flex-wrap gap-x-2">
+              <p class="text-sm shrink-0">
                 {t("home.transfer_seed.destination")}
-              </Text>
-              <Box flex="1" minW={{ "@initial": "$full", "@md": "$72" }}>
+              </p>
+              <div class="flex-1 min-w-full md:min-w-72">
                 <FolderChooseInput
                   id="seed-preview-destination"
                   value={destination()}
                   onChange={setDestination}
                 />
-              </Box>
+              </div>
               <Button
+                variant="subtle"
                 loading={operation() === "rapid"}
                 disabled={
                   !operationSupported("rapid_upload") ||
@@ -1328,23 +1286,23 @@ const TorrentPreview = () => {
               >
                 {t("home.transfer_seed.transit_save")}
               </Button>
-            </HStack>
-            <HStack spacing="$2" alignItems="center" flexWrap="wrap">
+            </div>
+            <div class="flex flex-row items-center flex-wrap gap-x-2">
               <Show when={destinationProvider()}>
-                <Badge colorScheme="info">
+                <Badge variant="info">
                   {t("home.transfer_seed.destination_driver")}:{" "}
                   {destinationProvider()}
                 </Badge>
               </Show>
               <Show when={driverSupportsText()}>
-                <Badge colorScheme="neutral">
+                <Badge variant="secondary">
                   {t("home.transfer_seed.driver_supports")}:{" "}
                   {driverSupportsText()}
                 </Badge>
               </Show>
               <Show when={saveCapabilities()}>
                 <Badge
-                  colorScheme={
+                  variant={
                     canRapidSave() && hasRequiredHashes()
                       ? "success"
                       : "warning"
@@ -1356,56 +1314,54 @@ const TorrentPreview = () => {
                 </Badge>
               </Show>
               <Show when={requiredHashesText()}>
-                <Badge colorScheme="accent">{requiredHashesText()}</Badge>
+                <Badge variant="info">{requiredHashesText()}</Badge>
               </Show>
               <Show when={availableHashesText()}>
-                <Badge
-                  colorScheme={hasRequiredHashes() ? "success" : "warning"}
-                >
+                <Badge variant={hasRequiredHashes() ? "success" : "warning"}>
                   {availableHashesText()}
                 </Badge>
               </Show>
               <Show when={rapidUnavailableReason()}>
                 <Tooltip label={rapidUnavailableReason()}>
-                  <Badge colorScheme="danger" cursor="help">
-                    <HStack spacing="$1">
+                  <Badge variant="danger" class="cursor-help">
+                    <div class="flex flex-row items-center gap-x-1">
                       <BsInfoCircle />
                       <span>{t("home.transfer_seed.unavailable_reason")}</span>
-                    </HStack>
+                    </div>
                   </Badge>
                 </Tooltip>
               </Show>
-              <Checkbox
+              <CheckboxField
                 checked={updateChannel()}
-                onChange={() => setUpdateChannel(!updateChannel())}
+                onChange={setUpdateChannel}
               >
                 {t("home.transfer_seed.update_channel")}
-              </Checkbox>
-            </HStack>
+              </CheckboxField>
+            </div>
             <Show when={operationSupported("transfer")}>
-              <HStack spacing="$2" alignItems="center" flexWrap="wrap">
-                <Text fontSize="$sm" flexShrink={0}>
+              <div class="flex flex-row items-center flex-wrap gap-x-2">
+                <p class="text-sm shrink-0">
                   {t("home.transfer_seed.transit_path")}
-                </Text>
-                <Box w={{ "@initial": "$full", "@md": "$64" }}>
+                </p>
+                <div class="w-full md:w-64">
                   <FolderChooseInput
                     id="seed-preview-transit-path"
                     value={transitPath()}
                     onChange={setTransitPath}
                   />
-                </Box>
-              </HStack>
+                </div>
+              </div>
             </Show>
           </Show>
 
           {/* 转换区：feasibility 与 convert 合并到一行 */}
           <Show when={!isShare() && operationSupported("convert")}>
-            <Divider />
-            <HStack spacing="$2" alignItems="center" flexWrap="wrap">
-              <Text fontSize="$sm" fontWeight="$semibold" flexShrink={0}>
+            <Separator />
+            <div class="flex flex-row items-center flex-wrap gap-x-2">
+              <p class="text-sm font-semibold shrink-0">
                 {t("home.transfer_seed.convert_to")}
-              </Text>
-              <Box flex="1" minW={{ "@initial": "$full", "@md": "$64" }}>
+              </p>
+              <div class="flex-1 min-w-full md:min-w-64">
                 <SelectWrapper
                   value={targetFormat()}
                   onChange={(value) => setTargetFormat(value as SeedFormat)}
@@ -1425,8 +1381,9 @@ const TorrentPreview = () => {
                     },
                   )}
                 />
-              </Box>
+              </div>
               <Button
+                variant="subtle"
                 loading={operation() === "convert"}
                 disabled={!conversionSupported()}
                 onClick={() => runOperation("convert")}
@@ -1450,8 +1407,10 @@ const TorrentPreview = () => {
                       >
                         <Button
                           size="xs"
-                          variant="subtle"
-                          colorScheme={feasible() ? "success" : "danger"}
+                          variant="outline"
+                          class={
+                            feasible() ? "text-success" : "text-destructive"
+                          }
                           onClick={() => openConversionDetail(format)}
                         >
                           {format.toUpperCase()} {feasible() ? "✓" : "✗"}
@@ -1461,79 +1420,48 @@ const TorrentPreview = () => {
                   }}
                 </For>
               </Show>
-            </HStack>
+            </div>
           </Show>
 
           {/* 整体保存 */}
           <Show when={!isShare() && operationSupported("edit")}>
-            <Divider />
+            <Separator />
             <Show when={operationSupported("recalculate")}>
-              <Text fontSize="$xs" fontWeight="$semibold" mt="$2">
+              <p class="text-xs font-semibold mt-2">
                 {t("home.transfer_seed.recalc_matrix")}
-              </Text>
-              <SimpleGrid
-                columns={{ "@initial": 1, "@md": 3 }}
-                gap="$2"
-                mb="$2"
-              >
+              </p>
+              <div class="mb-2 grid grid-cols-1 gap-2 md:grid-cols-3">
                 <For each={ALGORITHMS}>
                   {(algo) => (
-                    <VStack
-                      alignItems="flex-start"
-                      spacing="$1"
-                      border="1px solid $neutral7"
-                      borderRadius="$md"
-                      bg="$background"
-                      p="$2"
-                    >
-                      <Text fontSize="$xs" fontWeight="$semibold">
-                        {algo.toUpperCase()}
-                      </Text>
-                      <Checkbox
-                        size="sm"
+                    <div class="flex flex-col items-start border border-border rounded-md bg-canvas p-2 gap-y-1">
+                      <p class="text-xs font-semibold">{algo.toUpperCase()}</p>
+                      <CheckboxField
                         checked={recalcMatrix()[algo].whole}
-                        onChange={(event: {
-                          currentTarget: HTMLInputElement
-                        }) =>
-                          setRecalcHash(
-                            algo,
-                            "whole",
-                            event.currentTarget.checked,
-                          )
-                        }
+                        onChange={(on) => setRecalcHash(algo, "whole", on)}
                       >
                         {t("home.transfer_seed.whole")}
-                      </Checkbox>
-                      <Checkbox
-                        size="sm"
+                      </CheckboxField>
+                      <CheckboxField
                         checked={recalcMatrix()[algo].pieces}
-                        onChange={(event: {
-                          currentTarget: HTMLInputElement
-                        }) =>
-                          setRecalcHash(
-                            algo,
-                            "pieces",
-                            event.currentTarget.checked,
-                          )
-                        }
+                        onChange={(on) => setRecalcHash(algo, "pieces", on)}
                       >
                         {t("home.transfer_seed.pieces")}
-                      </Checkbox>
-                    </VStack>
+                      </CheckboxField>
+                    </div>
                   )}
                 </For>
-              </SimpleGrid>
-              <Text fontSize="$xs" fontWeight="$semibold" mt="$2">
+              </div>
+              <p class="text-xs font-semibold mt-2">
                 {t("home.transfer_seed.recalc_source_dir")}
-              </Text>
-              <HStack spacing="$2" alignItems="center" flexWrap="wrap" mb="$2">
-                <Box flex="1" minW={{ "@initial": "$full", "@md": "$72" }}>
+              </p>
+              <div class="flex flex-row items-center flex-wrap mb-2 gap-x-2">
+                <div class="flex-1 min-w-full md:min-w-72">
                   <FolderChooseInput
                     id="seed-preview-recalc-source-dir"
                     value={effectiveRecalcSourceDir()}
                     onChange={setRecalcSourceDir}
                   />
-                </Box>
+                </div>
                 <Button
                   variant="outline"
                   loading={operation() === "update"}
@@ -1553,10 +1481,10 @@ const TorrentPreview = () => {
                 >
                   {t("home.transfer_seed.recalculate")}
                 </Button>
-              </HStack>
+              </div>
             </Show>
           </Show>
-        </VStack>
+        </div>
       </Show>
 
       {/* 预览文件确认弹窗 */}
@@ -1570,11 +1498,12 @@ const TorrentPreview = () => {
             {t("home.transfer_seed.preview_confirm_title")}
           </ModalHeader>
           <ModalBody>{t("home.transfer_seed.preview_confirm_body")}</ModalBody>
-          <ModalFooter display="flex" gap="$2">
-            <Button colorScheme="neutral" onClick={previewDisclosure.onClose}>
+          <ModalFooter class="flex gap-2">
+            <Button variant="secondary" onClick={previewDisclosure.onClose}>
               {t("global.cancel")}
             </Button>
             <Button
+              variant="subtle"
               loading={operation() === "preview"}
               onClick={confirmPreviewFile}
             >
@@ -1597,12 +1526,12 @@ const TorrentPreview = () => {
           <ModalBody>
             {t("home.transfer_seed.remove_file_confirm_body")}
           </ModalBody>
-          <ModalFooter display="flex" gap="$2">
-            <Button colorScheme="neutral" onClick={removeDisclosure.onClose}>
+          <ModalFooter class="flex gap-2">
+            <Button variant="secondary" onClick={removeDisclosure.onClose}>
               {t("global.cancel")}
             </Button>
             <Button
-              colorScheme="danger"
+              variant="destructive"
               loading={operation() === "remove"}
               onClick={confirmRemoveFile}
             >
@@ -1625,32 +1554,33 @@ const TorrentPreview = () => {
               when={recalcFileIndex() !== null && torrentInfo()}
               fallback={null}
             >
-              <Text fontSize="$sm" mb="$2">
+              <p class="text-sm mb-2">
                 {torrentInfo()!.files[recalcFileIndex()!]?.path}
-              </Text>
+              </p>
             </Show>
-            <Text fontSize="$sm" mb="$1">
+            <p class="text-sm mb-1">
               {t("home.transfer_seed.recalc_source_dir")}
-            </Text>
+            </p>
             <FolderChooseInput
               id="seed-preview-recalc-file-source-dir"
               value={effectiveRecalcSourceDir()}
               onChange={setRecalcSourceDir}
             />
             <Show when={recalcFileIndex() !== null && torrentInfo()}>
-              <Text fontSize="$xs" color="$neutral10" mt="$1">
+              <p class="text-xs text-muted-foreground mt-1">
                 {t("home.transfer_seed.recalc_source_hint")}:{" "}
                 {buildRecalcSourcePath(
                   torrentInfo()!.files[recalcFileIndex()!]?.path || "",
                 )}
-              </Text>
+              </p>
             </Show>
           </ModalBody>
-          <ModalFooter display="flex" gap="$2">
-            <Button colorScheme="neutral" onClick={recalcDisclosure.onClose}>
+          <ModalFooter class="flex gap-2">
+            <Button variant="secondary" onClick={recalcDisclosure.onClose}>
               {t("global.cancel")}
             </Button>
             <Button
+              variant="subtle"
               loading={operation() === "recalculate"}
               onClick={confirmRecalcFile}
             >
@@ -1669,9 +1599,7 @@ const TorrentPreview = () => {
         <ModalContent>
           <ModalHeader>{t("home.toolbar.offline_download")}</ModalHeader>
           <ModalBody>
-            <Text fontSize="$sm" mb="$1">
-              {t("home.transfer_seed.offline_tool")}
-            </Text>
+            <p class="text-sm mb-1">{t("home.transfer_seed.offline_tool")}</p>
             <SelectWrapper
               value={offlineTool()}
               onChange={(value) => setOfflineTool(value)}
@@ -1680,9 +1608,9 @@ const TorrentPreview = () => {
                 label: tool,
               }))}
             />
-            <Text fontSize="$sm" mt="$3" mb="$1">
+            <p class="text-sm mt-3 mb-1">
               {t("home.transfer_seed.offline_delete_policy")}
-            </Text>
+            </p>
             <SelectWrapper
               value={offlineDeletePolicy()}
               onChange={(value) => setOfflineDeletePolicy(value)}
@@ -1696,11 +1624,15 @@ const TorrentPreview = () => {
               }))}
             />
           </ModalBody>
-          <ModalFooter display="flex" gap="$2">
-            <Button colorScheme="neutral" onClick={offlineDisclosure.onClose}>
+          <ModalFooter class="flex gap-2">
+            <Button variant="secondary" onClick={offlineDisclosure.onClose}>
               {t("global.cancel")}
             </Button>
-            <Button loading={offlineLoading()} onClick={confirmOfflineDownload}>
+            <Button
+              variant="subtle"
+              loading={offlineLoading()}
+              onClick={confirmOfflineDownload}
+            >
               {t("global.confirm")}
             </Button>
           </ModalFooter>
@@ -1729,30 +1661,24 @@ const TorrentPreview = () => {
               fallback={null}
             >
               {(detail) => (
-                <VStack alignItems="stretch" spacing="$2">
+                <div class="flex flex-col items-stretch gap-y-2">
                   <For each={detail()?.missing || []}>
                     {(reason) => (
-                      <Text
-                        fontSize="$sm"
-                        color="$warning10"
-                        css={{ wordBreak: "break-all" }}
-                      >
-                        • {reason}
-                      </Text>
+                      <p class="text-sm break-all text-warning">• {reason}</p>
                     )}
                   </For>
                   <Show when={!detail()?.missing?.length}>
-                    <Text fontSize="$sm" color="$success10">
+                    <p class="text-sm text-success">
                       {t("home.transfer_seed.feasible")}
-                    </Text>
+                    </p>
                   </Show>
-                </VStack>
+                </div>
               )}
             </Show>
           </ModalBody>
           <ModalFooter>
             <Button
-              colorScheme="neutral"
+              variant="secondary"
               onClick={conversionDetailDisclosure.onClose}
             >
               {t("global.close")}
@@ -1760,7 +1686,7 @@ const TorrentPreview = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </VStack>
+    </div>
   )
 }
 

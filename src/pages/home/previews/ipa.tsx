@@ -1,9 +1,9 @@
-import { Button, HStack } from "@hope-ui/solid"
 import { createSignal } from "solid-js"
 import { useT, useLink } from "~/hooks"
 import { objStore } from "~/store"
 import { api, baseName, safeBtoa } from "~/utils"
 import { FileInfo } from "./info"
+import { Button } from "~/components/ui/button"
 
 const Ipa = () => {
   const t = useT()
@@ -12,9 +12,10 @@ const Ipa = () => {
   const { currentObjLink } = useLink()
   return (
     <FileInfo>
-      <HStack spacing="$2">
+      <div class="flex flex-row items-center gap-x-2">
         <Button
           as="a"
+          variant="subtle"
           href={
             "itms-services://?action=download-manifest&url=" +
             `${api}/i/${safeBtoa(
@@ -31,7 +32,7 @@ const Ipa = () => {
         </Button>
         <Button
           as="a"
-          colorScheme="primary"
+          variant="subtle"
           href={
             "apple-magnifier://install?url=" +
             encodeURIComponent(currentObjLink(true))
@@ -42,7 +43,7 @@ const Ipa = () => {
         >
           {t(`home.preview.${trInstalling() ? "tr-installing" : "tr-install"}`)}
         </Button>
-      </HStack>
+      </div>
     </FileInfo>
   )
 }

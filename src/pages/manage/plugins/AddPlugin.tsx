@@ -212,7 +212,7 @@ const AddPlugin = () => {
                   />
                 </Show>
               </div>
-              <div class="flex-col items-start flex-1 gap-y-0.5">
+              <div class="flex flex-1 flex-col items-start gap-y-0.5">
                 <div class="flex flex-row items-center flex-wrap gap-x-2">
                   <p class="font-bold text-sm">{zipParsedManifest()?.name}</p>
                   <Badge variant="info">v{zipParsedManifest()?.version}</Badge>

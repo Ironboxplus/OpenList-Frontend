@@ -1,12 +1,3 @@
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  HStack,
-  IconButton,
-  Input,
-  VStack,
-} from "@hope-ui/solid"
 import { createShortcut } from "@solid-primitives/keyboard"
 import { useBeforeLeave } from "@solidjs/router"
 import type * as monacoType from "monaco-editor"
@@ -46,6 +37,9 @@ import {
   Tooltip,
 } from "~/components/overlay"
 import { colorMode } from "~/store/color-mode"
+import { Button } from "~/components/ui/button"
+import { cn } from "~/utils/cn"
+import { Input } from "~/components/ui/input"
 
 interface LanguageOption {
   id: string
@@ -263,153 +257,150 @@ function Editor(props: { data?: string | ArrayBuffer; contentType?: string }) {
   }
 
   return (
-    <VStack
-      w="$full"
-      h="$full"
-      alignItems="stretch"
-      spacing={0}
-      top={0}
-      left={0}
-      bg={colorMode() === "light" ? "$neutral1" : "$neutral2"}
-    >
+    <div class="flex h-full w-full flex-col items-stretch bg-card dark:bg-muted">
       {/* Toolbar */}
-      <HStack
-        px="$3"
-        py="$1_5"
-        spacing="$1"
-        borderBottom="1px solid"
-        borderColor={colorMode() === "light" ? "$neutral4" : "$neutral3"}
-        bg={colorMode() === "light" ? "$neutral2" : "$neutral1"}
-        overflowX="auto"
-        flexShrink={0}
-      >
+      <div class="flex shrink-0 items-center gap-x-1 overflow-x-auto border-b border-border bg-muted px-3 py-1.5 dark:bg-card">
         <Show when={canWrite()}>
           <Tooltip label={`${t("global.save")} (Ctrl+S)`} withArrow>
             <Button
+              variant="subtle"
+              size="sm"
+              class="gap-1.5"
               aria-label={t("global.save")}
               disabled={!modified() || saving()}
-              leftIcon={<TbDeviceFloppy />}
-              size="sm"
-              variant="solid"
               loading={saving()}
               onClick={onSave}
             >
+              {<TbDeviceFloppy />}
               {t("global.save")}
             </Button>
           </Tooltip>
 
           <Tooltip label={`${t("global.undo")} (Ctrl+Z)`} withArrow>
-            <IconButton
-              aria-label={t("global.undo")}
-              icon={<BiRegularUndo />}
-              size="sm"
+            <Button
+              size="icon-sm"
               variant="ghost"
+              aria-label={t("global.undo")}
               onClick={undo}
-            />
+            >
+              <BiRegularUndo />
+            </Button>
           </Tooltip>
           <Tooltip label={`${t("global.redo")} (Ctrl+Y)`} withArrow>
-            <IconButton
-              aria-label={t("global.redo")}
-              icon={<BiRegularRedo />}
-              size="sm"
+            <Button
+              size="icon-sm"
               variant="ghost"
+              aria-label={t("global.redo")}
               onClick={redo}
-            />
+            >
+              <BiRegularRedo />
+            </Button>
           </Tooltip>
 
-          <Box w="1px" h="$5" bg="$neutral4" mx="$1" />
+          <div class="w-[1px] h-5 bg-accent mx-1" />
         </Show>
 
         <Tooltip label={`${t("global.copy")} (Ctrl+C)`} withArrow>
-          <IconButton
-            aria-label={t("global.copy")}
-            icon={<TbCopy />}
-            size="sm"
+          <Button
+            size="icon-sm"
             variant="ghost"
+            aria-label={t("global.copy")}
             onClick={copyToClipboard}
-          />
+          >
+            <TbCopy />
+          </Button>
         </Tooltip>
         <Show when={canWrite()}>
           <Tooltip label={`${t("global.paste")} (Ctrl+V)`} withArrow>
-            <IconButton
-              aria-label={t("global.paste")}
-              icon={<TbClipboardText />}
-              size="sm"
+            <Button
+              size="icon-sm"
               variant="ghost"
+              aria-label={t("global.paste")}
               onClick={pasteFromClipboard}
-            />
+            >
+              <TbClipboardText />
+            </Button>
           </Tooltip>
         </Show>
 
-        <Box w="1px" h="$5" bg="$neutral4" mx="$1" />
+        <div class="w-[1px] h-5 bg-accent mx-1" />
 
         <Tooltip label={t("home.local_settings.editor_word_wrap")} withArrow>
-          <IconButton
-            aria-label={t("home.local_settings.editor_word_wrap")}
-            icon={wordWrap() ? <TbTextWrap /> : <TbTextWrapDisabled />}
-            size="sm"
+          <Button
+            size="icon-sm"
             variant="ghost"
+            aria-label={t("home.local_settings.editor_word_wrap")}
             onClick={toggleWordWrap}
-            color={wordWrap() ? "$info11" : undefined}
-          />
+            class={wordWrap() ? "text-primary" : undefined}
+          >
+            wordWrap() ? <TbTextWrap /> : <TbTextWrapDisabled />
+          </Button>
         </Tooltip>
 
         <Tooltip label={t("home.local_settings.editor_minimap")} withArrow>
-          <IconButton
-            aria-label={t("home.local_settings.editor_minimap")}
-            icon={minimap() ? <TbMap /> : <TbMapOff />}
-            size="sm"
+          <Button
+            size="icon-sm"
             variant="ghost"
+            aria-label={t("home.local_settings.editor_minimap")}
             onClick={() => {
               setLocal("editor_minimap", String(!minimap()))
             }}
-            color={minimap() ? "$info11" : undefined}
-          />
+            class={minimap() ? "text-primary" : undefined}
+          >
+            minimap() ? <TbMap /> : <TbMapOff />
+          </Button>
         </Tooltip>
 
-        <Box w="1px" h="$5" bg="$neutral4" mx="$1" />
+        <div class="w-[1px] h-5 bg-accent mx-1" />
 
-        <ButtonGroup
-          size="sm"
-          variant="ghost"
-          attached
-          display={{ "@initial": "none", "@sm": "flex" }}
-        >
+        <div class="hidden items-center sm:flex">
           <Tooltip
             label={`${t("global.decrease")} ${t("home.local_settings.editor_font_size")}`}
             withArrow
           >
-            <IconButton
+            <Button
               aria-label={`${t("global.decrease")} ${t("home.local_settings.editor_font_size")}`}
-              icon={<FaSolidMinus />}
+              size="icon-sm"
+              variant="ghost"
+              class="rounded-r-none"
               onClick={() => changeFontSize(-1)}
-            />
+            >
+              <FaSolidMinus />
+            </Button>
           </Tooltip>
-          <Button fontSize="$xs" color="$neutral11">
+          <Button
+            size="sm"
+            variant="ghost"
+            class="rounded-none text-xs text-muted-foreground"
+          >
             {local.editor_font_size}
           </Button>
           <Tooltip
             label={`${t("global.increase")} ${t("home.local_settings.editor_font_size")}`}
             withArrow
           >
-            <IconButton
+            <Button
               aria-label={`${t("global.increase")} ${t("home.local_settings.editor_font_size")}`}
-              icon={<FaSolidPlus />}
+              size="icon-sm"
+              variant="ghost"
+              class="rounded-l-none"
               onClick={() => changeFontSize(1)}
-            />
+            >
+              <FaSolidPlus />
+            </Button>
           </Tooltip>
-        </ButtonGroup>
+        </div>
 
         <Show when={!isString}>
-          <Box w="$28">
+          <div class="w-28">
             <EncodingSelect
               encoding={encoding()}
               setEncoding={setEncoding}
               referenceText={props.data}
             />
-          </Box>
+          </div>
         </Show>
-      </HStack>
+      </div>
 
       {/* Editor */}
       <MonacoEditorLoader
@@ -427,61 +418,37 @@ function Editor(props: { data?: string | ArrayBuffer; contentType?: string }) {
       />
 
       {/* Status Bar */}
-      <HStack
-        px="$3"
-        py="$1"
-        spacing="$3"
-        borderTop="1px solid"
-        borderColor={colorMode() === "light" ? "$neutral4" : "$neutral3"}
-        bg={colorMode() === "light" ? "$neutral2" : "$neutral1"}
-        fontSize="$xs"
-        color="$neutral11"
-        flexShrink={0}
-      >
+      <div class="flex shrink-0 items-center gap-x-3 border-t border-border bg-muted px-3 py-1 text-xs text-muted-foreground dark:bg-card">
         <Show when={language()}>
           <Popover placement="top-end" onClose={() => setLangSearch("")}>
             <PopoverTrigger
-              as={Box}
-              style={{ "white-space": "nowrap", cursor: "pointer" }}
-              px="$1"
-              borderRadius="$sm"
-              _hover={{
-                bg: "$neutral4",
-              }}
+              as="div"
+              class="cursor-pointer rounded-sm px-1 whitespace-nowrap hover:bg-accent"
             >
-              <HStack spacing="$1">
+              <div class="flex flex-row items-center gap-x-1">
                 <TbBraces size={13} />
-                <Box>{languageDisplayName()}</Box>
-              </HStack>
+                <div>{languageDisplayName()}</div>
+              </div>
             </PopoverTrigger>
-            <PopoverContent w="280px" maxH="350px" borderRadius="$lg">
+            <PopoverContent class="max-h-[350px] w-[280px] rounded-lg">
               <PopoverBody p="$2">
                 <Input
-                  size="xs"
+                  class="mb-2 h-7 text-xs"
                   placeholder="Search language..."
                   value={langSearch()}
                   onInput={(e) => setLangSearch(e.currentTarget.value)}
-                  mb="$2"
                   autofocus
                 />
-                <VStack
-                  spacing={0}
-                  maxH="280px"
-                  overflowY="auto"
-                  alignItems="stretch"
-                >
+                <div class="flex flex-col max-h-[280px] overflow-y-auto items-stretch gap-y-0">
                   <For each={filteredLanguages()}>
                     {(lang) => (
-                      <Box
-                        px="$2"
-                        py="$1_5"
-                        fontSize="$xs"
-                        borderRadius="$sm"
-                        cursor="pointer"
-                        bg={language() === lang.id ? "$info4" : "transparent"}
-                        _hover={{
-                          bg: "$neutral4",
-                        }}
+                      <div
+                        class={cn(
+                          "cursor-pointer rounded-sm px-2 py-1.5 text-xs",
+                          language() === lang.id
+                            ? "bg-primary/10"
+                            : "bg-transparent hover:bg-accent",
+                        )}
                         onClick={() => {
                           setLanguage(lang.id)
                           setLangSearch("")
@@ -489,35 +456,30 @@ function Editor(props: { data?: string | ArrayBuffer; contentType?: string }) {
                       >
                         {lang.aliases?.[0] || lang.id}
                         <Show when={lang.aliases?.[0]}>
-                          <Box
-                            as="span"
-                            color="$neutral9"
-                            fontSize="$2xs"
-                            ml="$1"
-                          >
+                          <span class="ml-1 text-[0.625rem] text-muted-foreground">
                             ({lang.id})
-                          </Box>
+                          </span>
                         </Show>
-                      </Box>
+                      </div>
                     )}
                   </For>
-                </VStack>
+                </div>
               </PopoverBody>
             </PopoverContent>
           </Popover>
         </Show>
-        <Box flex="1" />
-        <Box style={{ "white-space": "nowrap" }}>
+        <div class="flex-1" />
+        <div style={{ "white-space": "nowrap" }}>
           Ln {cursorLine()}, Col {cursorColumn()}
-        </Box>
-        <Box style={{ "white-space": "nowrap" }}>{wordCount()} words</Box>
+        </div>
+        <div style={{ "white-space": "nowrap" }}>{wordCount()} words</div>
         <Show when={modified()}>
-          <Box color="$warning11" style={{ "white-space": "nowrap" }}>
+          <div class="text-warning" style={{ "white-space": "nowrap" }}>
             ●
-          </Box>
+          </div>
         </Show>
-      </HStack>
-    </VStack>
+      </div>
+    </div>
   )
 }
 

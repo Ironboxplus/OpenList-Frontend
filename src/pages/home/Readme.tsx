@@ -1,17 +1,14 @@
-import { Box } from "@hope-ui/solid"
 import { createMemo, Show, on } from "solid-js"
 import { Markdown, MaybeLoading } from "~/components"
 import { useLink, useRouter } from "~/hooks"
 import { getSettingBool, objStore, State } from "~/store"
 import { fetchText } from "~/utils"
 import { createLoad } from "~/utils/load"
-import { colorModeValue } from "~/store/color-mode"
 
 export function Readme(props: {
   files: string[]
   fromMeta: keyof typeof objStore
 }) {
-  const cardBg = colorModeValue("white", "$neutral3")
   const { previewLink } = useLink()
   const { pathname } = useRouter()
   const readme = createMemo(
@@ -59,14 +56,7 @@ export function Readme(props: {
   )
   return (
     <Show when={getSettingBool("readme_autorender") && readme()}>
-      <Box
-        w="$full"
-        rounded="$xl"
-        p="$4"
-        bgColor={cardBg()}
-        shadow="$lg"
-        css={{ border: "1px solid var(--border)" }}
-      >
+      <div class="w-full rounded-xl border border-border bg-white p-4 shadow-lg dark:bg-muted">
         <MaybeLoading loading={content.loading()}>
           <Markdown
             children={content.data()?.content}
@@ -74,7 +64,7 @@ export function Readme(props: {
             toc={props.fromMeta === "readme"}
           />
         </MaybeLoading>
-      </Box>
+      </div>
     </Show>
   )
 }

@@ -1,6 +1,5 @@
-import { Box } from "@hope-ui/solid"
 import { createMemo, onCleanup, onMount } from "solid-js"
-import { useRouter, useLink } from "~/hooks"
+import { useLink, useRouter, useT } from "~/hooks"
 import { getMainColor, getSettingBool, objStore, viewerPath } from "~/store"
 import { ObjType } from "~/types"
 import { ext, safeJsonParse, asPreview } from "~/utils"
@@ -43,7 +42,6 @@ import { ArtPlayerIconsSubtitle } from "~/components/icons"
 import "./artplayer.css"
 import { registerAc3Decoder } from "@mediabunny/ac3"
 import { requestTranscodePlay } from "~/utils/media_api"
-import { useT } from "~/hooks"
 // AC3 解码器改为按需注册：模块 import 期不产生任何副作用
 let ac3Registered = false
 function ensureAc3Decoder() {
@@ -469,7 +467,7 @@ const Preview = () => {
     flvPlayer?.destroy()
     hlsPlayer?.destroy()
   })
-  return <Box w="$full" h="60vh" id="video-player" />
+  return <div class="w-full h-[60vh]" id="video-player" />
 }
 
 export default Preview

@@ -1,15 +1,6 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  VStack,
-  Text,
-  Divider,
-  HStack,
-  Icon,
-} from "@hope-ui/solid"
 import { MotionDiv, MotionTokens } from "~/platform/motion"
+import { Separator } from "~/components/ui/separator"
+import { cn } from "~/utils/cn"
 import {
   batch,
   createEffect,
@@ -21,6 +12,7 @@ import {
   Switch,
   Suspense,
   onCleanup,
+  type JSX,
 } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import {
@@ -55,7 +47,6 @@ import {
   fsArchiveMeta,
   getFileSize,
   handleRespWithoutNotify,
-  hoverColor,
 } from "~/utils"
 import naturalSort from "typescript-natural-sort"
 import Password from "~/pages/home/Password"
@@ -66,6 +57,35 @@ import { Item, Menu, useContextMenu } from "solid-contextmenu"
 import { TbCopy, TbLink } from "solid-icons/tb"
 import { AiOutlineCloudDownload } from "solid-icons/ai"
 import { Operations } from "~/pages/home/toolbar/operations"
+
+// One crumb of the archive path: a link back to it, or the current place.
+const Crumb = (props: {
+  current: boolean
+  onClick?: () => void
+  children: JSX.Element
+}) => (
+  <Show
+    when={!props.current}
+    fallback={
+      <span aria-current="page" class="relative inline-flex items-center">
+        {props.children}
+      </span>
+    }
+  >
+    <a
+      class="relative inline-flex cursor-pointer items-center text-muted-foreground no-underline outline-none transition-colors duration-250 hover:text-primary"
+      on:click={props.onClick}
+    >
+      {props.children}
+    </a>
+  </Show>
+)
+
+const CrumbSeparator = () => (
+  <span aria-hidden="true" class="inline-flex items-center justify-center">
+    /
+  </span>
+)
 import "solid-contextmenu/dist/style.css"
 import { colorMode } from "~/store/color-mode"
 
@@ -96,18 +116,12 @@ const ListItem = (props: ListItemProps) => {
         width: "100%",
       }}
     >
-      <HStack
-        class="list-item viselect-item"
+      <div
+        class={cn(
+          "list-item viselect-item flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent",
+          !isMouseSupported() ? "cursor-pointer" : "cursor-default",
+        )}
         data-index={props.index}
-        w="$full"
-        p="$2"
-        rounded="$lg"
-        transition="all 0.3s"
-        _hover={{
-          transform: "scale(1.01)",
-          bgColor: hoverColor(),
-        }}
-        cursor={!isMouseSupported() ? "pointer" : "default"}
         on:click={(_: MouseEvent) => {
           if (props.obj.is_dir) {
             props.jumpCallback()
@@ -119,54 +133,43 @@ const ListItem = (props: ListItemProps) => {
           show(e, { props: props })
         }}
       >
-        <HStack class="name-box" spacing="$1" w={cols[0].w}>
-          <Icon
-            class="icon"
-            boxSize="$6"
-            color={getMainColor()}
-            as={getIconByObj(props.obj)}
-            mr="$1"
+        <div class={cn("name-box flex items-center gap-x-1", cols[0].w)}>
+          <Dynamic
+            component={getIconByObj(props.obj)}
+            class="icon mr-1 size-6"
+            style={{ color: getMainColor() }}
           />
-          <Text
-            class="name"
-            css={{
-              wordBreak: "break-all",
-              whiteSpace: filenameStyle() === "multi_line" ? "unset" : "nowrap",
-              "overflow-x":
-                filenameStyle() === "scrollable" ? "auto" : "hidden",
-              textOverflow:
-                filenameStyle() === "ellipsis" ? "ellipsis" : "unset",
-              "scrollbar-width": "none", // firefox
-              "&::-webkit-scrollbar": {
-                // webkit
-                display: "none",
-              },
-            }}
+          <p
+            class={cn(
+              "name break-all [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              filenameStyle() === "multi_line"
+                ? "whitespace-normal"
+                : "whitespace-nowrap",
+              filenameStyle() === "scrollable"
+                ? "overflow-x-auto"
+                : "overflow-x-hidden",
+              filenameStyle() === "ellipsis" ? "text-ellipsis" : "text-clip",
+            )}
             title={props.obj.name}
           >
             {props.obj.name}
-          </Text>
-        </HStack>
-        <Text class="size" w={cols[1].w} textAlign={cols[1].textAlign as any}>
+          </p>
+        </div>
+        <p class={cn("size", cols[1].w, cols[1].align)}>
           {getFileSize(props.obj.size)}
-        </Text>
-        <Text
-          class="modified"
-          display={{ "@initial": "none", "@md": "inline" }}
-          w={cols[2].w}
-          textAlign={cols[2].textAlign as any}
-        >
+        </p>
+        <p class={cn("modified hidden md:inline", cols[2].w, cols[2].align)}>
           {formatDate(props.obj.modified)}
-        </Text>
-      </HStack>
+        </p>
+      </div>
     </MotionDiv>
   )
 }
 
 const operations: Operations = {
-  extract: { icon: TbCopy, color: "$success9" },
-  copy_link: { icon: TbLink, color: "$info9" },
-  download: { icon: AiOutlineCloudDownload, color: "$primary9" },
+  extract: { icon: TbCopy, color: "text-success" },
+  copy_link: { icon: TbLink, color: "text-primary" },
+  download: { icon: AiOutlineCloudDownload, color: "text-primary" },
 }
 
 const ContextMenu = () => {
@@ -177,7 +180,7 @@ const ContextMenu = () => {
       id={2}
       animation="scale"
       theme={colorMode() !== "dark" ? "light" : "dark"}
-      style="z-index: var(--hope-zIndices-popover)"
+      style="z-index: 1500"
     >
       <Item
         hidden={({ props }) => {
@@ -222,15 +225,17 @@ const ContextMenu = () => {
 const ItemContent = (props: { name: string }) => {
   const t = useT()
   return (
-    <HStack spacing="$2">
-      <Icon
-        p={operations[props.name].p ? "$1" : undefined}
-        as={operations[props.name].icon}
-        boxSize="$7"
-        color={operations[props.name].color}
+    <div class="flex flex-row items-center gap-x-2">
+      <Dynamic
+        component={operations[props.name].icon}
+        class={cn(
+          "size-7",
+          operations[props.name].p && "p-1",
+          operations[props.name].color,
+        )}
       />
-      <Text>{t(`home.toolbar.${props.name}`)}</Text>
-    </HStack>
+      <p>{t(`home.toolbar.${props.name}`)}</p>
+    </div>
   )
 }
 
@@ -484,42 +489,47 @@ const Preview = () => {
     setSelectedPreviewKey("")
   })
   return (
-    <VStack spacing="$2" w="$full">
-      <Breadcrumb pl="$2" pr="$2" w="$full">
-        <BreadcrumbItem>
-          <BreadcrumbLink
-            currentPage={innerPaths().length === 0 && !selectedFile()}
-            on:click={() => {
-              setInnerPaths([])
-              changeFile("")
-            }}
-          >
-            .
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <For each={innerPaths()}>
-          {(name, i) => (
-            <BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbLink
-                currentPage={innerPaths().length === i() + 1 && !selectedFile()}
-                on:click={() => {
-                  setInnerPaths(innerPaths().slice(0, i() + 1))
-                  changeFile("")
-                }}
-              >
-                {name}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          )}
-        </For>
-        <Show when={selectedFile()}>
-          <BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbLink currentPage={true}>{selectedFile()}</BreadcrumbLink>
-          </BreadcrumbItem>
-        </Show>
-      </Breadcrumb>
+    <div class="flex flex-col items-center w-full gap-y-2">
+      <nav
+        aria-label="breadcrumb"
+        class="block w-full px-2 text-base leading-6"
+      >
+        <ol class="m-0 flex list-none items-center gap-x-2 p-0">
+          <li class="inline-flex items-center gap-x-2">
+            <Crumb
+              current={innerPaths().length === 0 && !selectedFile()}
+              onClick={() => {
+                setInnerPaths([])
+                changeFile("")
+              }}
+            >
+              .
+            </Crumb>
+          </li>
+          <For each={innerPaths()}>
+            {(name, i) => (
+              <li class="inline-flex items-center gap-x-2">
+                <CrumbSeparator />
+                <Crumb
+                  current={innerPaths().length === i() + 1 && !selectedFile()}
+                  onClick={() => {
+                    setInnerPaths(innerPaths().slice(0, i() + 1))
+                    changeFile("")
+                  }}
+                >
+                  {name}
+                </Crumb>
+              </li>
+            )}
+          </For>
+          <Show when={selectedFile()}>
+            <li class="inline-flex items-center gap-x-2">
+              <CrumbSeparator />
+              <Crumb current={true}>{selectedFile()}</Crumb>
+            </li>
+          </Show>
+        </ol>
+      </nav>
       <Switch>
         <Match when={error() !== ""}>
           <Error msg={error()} disableColor />
@@ -532,9 +542,9 @@ const Preview = () => {
             enterCallback={() => refresh()}
           >
             <Show when={wrongPassword()}>
-              <Text color="$danger9">
+              <p class="text-destructive">
                 {t("home.toolbar.archive.incorrect_password")}
-              </Text>
+              </p>
             </Show>
           </Password>
         </Match>
@@ -543,7 +553,7 @@ const Preview = () => {
             when={selectedFile()}
             fallback={
               <MaybeLoading loading={loading()}>
-                <VStack class="list" w="$full" spacing="$1">
+                <div class="flex flex-col items-center w-full gap-y-1 list">
                   <ListTitle sortCallback={sortObjs} disableCheckbox />
                   <For each={sortedObjs()}>
                     {(obj, i) => {
@@ -569,11 +579,11 @@ const Preview = () => {
                     }}
                   </For>
                   <ContextMenu />
-                </VStack>
+                </div>
               </MaybeLoading>
             }
           >
-            <VStack w="$full" spacing="$2" alignItems="center">
+            <div class="flex flex-col w-full items-center gap-y-2">
               <Show when={currentPreview()}>
                 <Suspense fallback={<FullLoading />}>
                   <Dynamic
@@ -585,7 +595,7 @@ const Preview = () => {
                   />
                 </Suspense>
               </Show>
-              <HStack w="$full" justifyContent="center" spacing="$2" p="$2">
+              <div class="flex flex-row items-center w-full justify-center p-2 gap-x-2">
                 <Show when={previews().length > 1}>
                   <SelectWrapper
                     value={currentPreview()?.key || ""}
@@ -597,18 +607,16 @@ const Preview = () => {
                   />
                 </Show>
                 <OpenWith />
-              </HStack>
-            </VStack>
+              </div>
+            </div>
           </Show>
         </Match>
       </Switch>
       <Show when={comment() !== ""}>
-        <Divider />
-        <Text w="$full" pl="$1" pr="$1">
-          {comment()}
-        </Text>
+        <Separator />
+        <p class="w-full pl-1 pr-1">{comment()}</p>
       </Show>
-    </VStack>
+    </div>
   )
 }
 

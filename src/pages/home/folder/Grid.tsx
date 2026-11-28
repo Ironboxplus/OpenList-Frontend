@@ -1,4 +1,3 @@
-import { Box, Grid, Text } from "@hope-ui/solid"
 import { createMemo, createSignal, For, onCleanup, Show } from "solid-js"
 import { GridItem } from "./GridItem"
 import { smartCountMsg, local, objStore, getPagination } from "~/store"
@@ -94,11 +93,9 @@ const GridLayout = (props: GridLayoutProps) => {
 
   const countMsg = (
     <Show when={local["show_count_msg"] === "visible"}>
-      <Box w="100%" textAlign="left" pl="$2">
-        <Text size="sm" color="$neutral11">
-          {smartCountMsg()}
-        </Text>
-      </Box>
+      <div class="w-full text-left pl-2">
+        <p class="text-muted-foreground text-sm leading-5">{smartCountMsg()}</p>
+      </div>
     </Show>
   )
 
@@ -111,16 +108,16 @@ const GridLayout = (props: GridLayoutProps) => {
           <Show
             when={virtual()}
             fallback={
-              <Grid
-                class="viselect-container files-grid"
-                w="$full"
-                gap="$1"
-                templateColumns={`repeat(auto-fill, minmax(${
-                  parseInt(local["grid_item_size"]) + 20
-                }px,1fr))`}
+              <div
+                class="viselect-container files-grid grid w-full gap-1"
+                style={{
+                  "grid-template-columns": `repeat(auto-fill, minmax(${
+                    parseInt(local["grid_item_size"]) + 20
+                  }px,1fr))`,
+                }}
               >
                 <For each={order()}>{(i) => card(i)}</For>
-              </Grid>
+              </div>
             }
           >
             <div

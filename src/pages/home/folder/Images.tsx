@@ -1,4 +1,3 @@
-import { Box, Flex, Grid, Heading, Text, VStack } from "@hope-ui/solid"
 import { For, Show, createMemo } from "solid-js"
 import { ImageItem } from "./ImageItem"
 import { smartCountMsg, local, objStore } from "~/store"
@@ -10,49 +9,44 @@ import { useSelectWithMouse } from "./helper"
 const ImageLayout = (props: { images: StoreObj[] }) => {
   const t = useT()
   const folders = createMemo(() => (
-    <Grid
-      w="$full"
-      gap="$1"
-      templateColumns="repeat(auto-fill, minmax(100px,1fr))"
-      class="image-folders"
-    >
+    <div class="image-folders grid w-full grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-1">
       <For each={objStore.objs.filter((obj) => obj.is_dir)}>
         {(obj, i) => {
           return <GridItem obj={obj} index={i()} />
         }}
       </For>
-    </Grid>
+    </div>
   ))
   const { isMouseSupported, registerSelectContainer } = useSelectWithMouse()
   registerSelectContainer()
   return (
-    <VStack class="viselect-container" spacing="$2" w="$full">
+    <div class="flex flex-col items-center w-full gap-y-2 viselect-container">
       <Show when={local["show_count_msg"] === "visible"}>
-        <Box w="100%" textAlign="left" pl="$2">
-          <Text size="sm" color="$neutral11">
+        <div class="w-full text-left pl-2">
+          <p class="text-muted-foreground text-sm leading-5">
             {smartCountMsg(ObjType.IMAGE)}
-          </Text>
-        </Box>
+          </p>
+        </div>
       </Show>
       <Show when={local["show_folder_in_image_view"] === "top"}>
         {folders()}
       </Show>
       <Show
         when={props.images.length > 0}
-        fallback={<Heading m="$2">{t("home.no_images")}</Heading>}
+        fallback={<h2 class="font-semibold m-2">{t("home.no_images")}</h2>}
       >
-        <Flex w="$full" gap="$1" flexWrap="wrap" class="image-images">
+        <div class="flex w-full gap-1 flex-wrap image-images">
           <For each={objStore.objs}>
             {(obj, i) => {
               return <ImageItem obj={obj} index={i()} />
             }}
           </For>
-        </Flex>
+        </div>
       </Show>
       <Show when={local["show_folder_in_image_view"] === "bottom"}>
         {folders()}
       </Show>
-    </VStack>
+    </div>
   )
 }
 

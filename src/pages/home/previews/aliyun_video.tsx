@@ -1,4 +1,3 @@
-import { Box, Center } from "@hope-ui/solid"
 import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js"
 import { useRouter, useLink, useFetch } from "~/hooks"
 import {
@@ -12,9 +11,7 @@ import {
 import { ObjType, PResp } from "~/types"
 import { ext, handleResp, notify, r, safeJsonParse } from "~/utils"
 import Artplayer from "artplayer"
-import { type Option } from "artplayer"
-import { type Setting } from "artplayer"
-import { type Events } from "artplayer"
+import { type Events, type Option, type Setting } from "artplayer"
 import artplayerPluginDanmuku from "artplayer-plugin-danmuku"
 import { type Option as DanmukuOption } from "artplayer-plugin-danmuku"
 import artplayerPluginAss from "~/components/artplayer-plugin-ass"
@@ -423,11 +420,11 @@ const Preview = () => {
   const [warnVisible, setWarnVisible] = createSignal(false)
   return (
     <>
-      <Box w="$full" h="60vh" id="video-player" />
+      <div class="w-full h-[60vh]" id="video-player" />
       <Show when={warnVisible()}>
-        <Center w="100%" h="60vh" bgColor="black">
+        <div class="flex justify-center items-center w-full h-[60vh] bg-black">
           <TiWarning size="4rem" />
-        </Center>
+        </div>
       </Show>
     </>
   )

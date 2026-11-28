@@ -1,4 +1,3 @@
-import { Text, VStack, Button } from "@hope-ui/solid"
 import {
   createEffect,
   createMemo,
@@ -36,7 +35,8 @@ import { fadeThrough } from "~/features/files/files-motion"
 import { shellActive } from "~/features/shell/topbar-slot"
 import { Dock } from "~/features/viewer/Dock"
 import { ViewerHost } from "~/features/viewer/ViewerHost"
-import { colorModeValue } from "~/store/color-mode"
+import { Button } from "~/components/ui/button"
+import { cn } from "~/utils/cn"
 
 const Folder = lazy(() => import("./folder/Folder"))
 const Password = lazy(() => import("./Password"))
@@ -48,7 +48,6 @@ export { objBoxRef }
 
 export const Obj = () => {
   const t = useT()
-  const cardBg = colorModeValue("white", "$neutral3")
   const { pathname, searchParams, setSearchParams, isShare, to } = useRouter()
   // The share prompt keeps what is typed here only: a share password is traded
   // for a token and never stored (the folder prompt's cookie is not used).
@@ -116,23 +115,17 @@ export const Obj = () => {
   })
 
   const storageErrorActions = () => (
-    <Button colorScheme="accent" onClick={() => to("/@manage/storages")}>
+    <Button variant="subtle" onClick={() => to("/@manage/storages")}>
       {t("global.go_to_storages")}
     </Button>
   )
   return (
-    <VStack
+    <div
       ref={(el: HTMLDivElement) => setObjBoxRef(el)}
-      // one class expression: hope rewrites the whole class attribute when
-      // its style props change (bgColor follows the theme), which drops
-      // whatever a classList had added (E1)
-      class={shellActive() ? "obj-box files-card" : "obj-box"}
-      w="$full"
-      rounded="$xl"
-      bgColor={cardBg()}
-      p="$2"
-      shadow="$lg"
-      spacing="$2"
+      class={cn(
+        "obj-box flex w-full flex-col items-center gap-y-2 rounded-xl bg-white p-2 shadow-lg dark:bg-muted",
+        shellActive() && "files-card",
+      )}
     >
       {/* A file opens over its folder (features/viewer): the docked player
           above the list, the other viewers over the page. Both stay mounted
@@ -192,14 +185,13 @@ export const Obj = () => {
                 }
               >
                 <Show when={!isShare()}>
-                  <Text>{t("global.have_account")}</Text>
-                  <Text
-                    color="$info9"
-                    as={LinkWithBase}
+                  <p>{t("global.have_account")}</p>
+                  <LinkWithBase
+                    class="text-primary"
                     href={loginUrlFor(location)}
                   >
                     {t("global.go_login")}
-                  </Text>
+                  </LinkWithBase>
                 </Show>
               </Password>
             </Match>
@@ -211,6 +203,6 @@ export const Obj = () => {
           </Switch>
         </Suspense>
       </FilesArea>
-    </VStack>
+    </div>
   )
 }

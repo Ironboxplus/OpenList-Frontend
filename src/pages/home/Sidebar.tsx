@@ -1,4 +1,3 @@
-import { Box } from "@hope-ui/solid"
 import { useLocation } from "@solidjs/router"
 import {
   Show,
@@ -93,31 +92,20 @@ function SidebarPanel() {
     // window's edge), it hides the part of the panel that is slid out of view,
     // so that part never covers the side nav. Its 3px padding leaves room for
     // the outline shadow. It lets pointer events through; the panel takes them.
-    <Box
-      pos="fixed"
-      zIndex="$overlay"
-      left="var(--shell-content-left, 0px)"
-      top="var(--shell-top, 0px)"
-      h="calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))"
-      p="3px"
-      overflow="hidden"
-      pointerEvents="none"
+    <div
+      class="pointer-events-none fixed z-[1300] overflow-hidden p-[3px]"
+      style={{
+        left: "var(--shell-content-left, 0px)",
+        top: "var(--shell-top, 0px)",
+        height: "calc(100dvh - var(--shell-top, 0px) - var(--shell-gap, 0px))",
+      }}
       ref={(el: HTMLDivElement) => setAnchorRef(el)}
     >
-      <Box
-        as={MotionDiv}
+      <MotionDiv
         initial={{ x: -999 }}
         animate={{ x: offsetX() }}
         timing={MotionTokens.options.pane}
-        h="$full"
-        minW={180}
-        p="$2"
-        overflow="auto"
-        shadow="$lg"
-        rounded="$lg"
-        bgColor="white"
-        pointerEvents="auto"
-        _dark={{ bgColor: "$neutral3" }}
+        class="pointer-events-auto h-full min-w-[180px] overflow-auto rounded-lg bg-white p-2 shadow-lg dark:bg-muted"
         onMouseEnter={showFullSidebar}
         onMouseLeave={resetSidebar}
         ref={(el: HTMLDivElement) => setSideBarRef(el)}
@@ -129,8 +117,8 @@ function SidebarPanel() {
           onChange={(path) => to(path)}
           handle={(handler) => setFolderTreeHandler(handler)}
         />
-      </Box>
-    </Box>
+      </MotionDiv>
+    </div>
   )
 }
 

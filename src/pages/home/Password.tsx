@@ -1,15 +1,7 @@
-import {
-  Button,
-  Flex,
-  Heading,
-  HStack,
-  Input,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
 import { useRouter, useT } from "~/hooks"
 import { JSXElement } from "solid-js"
-import { colorModeValue } from "~/store/color-mode"
+import { Button } from "~/components/ui/button"
+import { Input } from "~/components/ui/input"
 
 type PasswordProps = {
   title: string
@@ -23,21 +15,12 @@ const Password = (props: PasswordProps) => {
   const t = useT()
   const { back } = useRouter()
   return (
-    <VStack
-      w={{
-        "@initial": "$full",
-        "@md": "$lg",
-      }}
-      p="$8"
-      spacing="$3"
-      alignItems="start"
-    >
-      <Heading>{props.title}</Heading>
+    <div class="flex flex-col p-8 items-start gap-y-3 w-full md:w-lg">
+      <h2 class="font-semibold">{props.title}</h2>
       <Input
         autofocus={true}
         type="password"
         value={props.password()}
-        background={colorModeValue("$neutral3", "$neutral2")()}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             props.enterCallback()
@@ -45,25 +28,20 @@ const Password = (props: PasswordProps) => {
         }}
         onInput={(e) => props.setPassword(e.currentTarget.value)}
       />
-      <HStack w="$full" justifyContent="space-between">
-        <Flex
-          fontSize="$sm"
-          color="$neutral10"
-          direction={{ "@initial": "column", "@sm": "row" }}
-          columnGap="$1"
-        >
+      <div class="flex flex-row items-center w-full justify-between">
+        <div class="flex text-sm text-muted-foreground gap-x-1 flex-col sm:flex-row">
           {props.children}
-        </Flex>
-        <HStack spacing="$2">
-          <Button colorScheme="neutral" onClick={back}>
+        </div>
+        <div class="flex flex-row items-center gap-x-2">
+          <Button variant="secondary" onClick={back}>
             {t("global.back")}
           </Button>
-          <Button onClick={() => props.enterCallback()}>
+          <Button variant="subtle" onClick={() => props.enterCallback()}>
             {t("global.ok")}
           </Button>
-        </HStack>
-      </HStack>
-    </VStack>
+        </div>
+      </div>
+    </div>
   )
 }
 export default Password

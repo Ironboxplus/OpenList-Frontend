@@ -1,12 +1,14 @@
-import { Center, VStack, Icon } from "@hope-ui/solid"
 import { Show } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { CenterLoading, ImageWithError } from "~/components"
 import { useLink, usePath, useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, selectAll, selectIndex } from "~/store"
 import { ObjType, StoreObj } from "~/types"
 import { bus } from "~/utils"
 import { getIconByObj } from "~/utils/icon"
-import { ItemCheckbox, selectForMenu, useSelectWithMouse } from "./helper"
+import { selectForMenu, useSelectWithMouse } from "./helper"
+import { ItemCheckbox } from "./ItemCheckbox"
+import { cn } from "~/utils/cn"
 
 export const ImageItem = (props: { obj: StoreObj; index: number }) => {
   const { isHide } = useUtil()
@@ -15,7 +17,11 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
   }
   const { setPathAs } = usePath()
   const objIcon = (
-    <Icon color={getMainColor()} boxSize="$12" as={getIconByObj(props.obj)} />
+    <Dynamic
+      component={getIconByObj(props.obj)}
+      class="size-12"
+      style={{ color: getMainColor() }}
+    />
   )
   const { previewLink } = useLink()
   const { openWithDoubleClick, toggleWithClick, restoreSelectionCache } =
@@ -26,42 +32,30 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
         "flex-grow": 1,
       }}
     >
-      <VStack
-        w="$full"
-        class={`image-item viselect-item${props.obj.selected ? " selected" : ""}`}
+      <div
+        class={cn(
+          "image-item viselect-item flex w-full flex-col items-center gap-y-1 rounded-lg border-2 border-transparent p-1 transition-all duration-300 hover:border-(--main)",
+          props.obj.selected && "selected",
+          openWithDoubleClick() || toggleWithClick()
+            ? "cursor-default"
+            : "cursor-pointer",
+        )}
+        style={{ "--main": getMainColor() }}
         data-index={props.index}
         data-row-name={props.obj.name}
-        p="$1"
-        spacing="$1"
-        rounded="$lg"
-        transition="all 0.3s"
-        border="2px solid transparent"
-        _hover={{
-          border: `2px solid ${getMainColor()}`,
-        }}
-        cursor={
-          openWithDoubleClick() || toggleWithClick() ? "default" : "pointer"
-        }
         onMouseEnter={() => {
           setPathAs(props.obj.name, props.obj.is_dir, true)
         }}
         onContextMenu={() => selectForMenu(props.index)}
       >
-        <Center w="$full" pos="relative">
+        <div class="flex justify-center items-center w-full relative">
           <Show when={checkboxOpen()}>
             <ItemCheckbox
-              pos="absolute"
-              left="$1"
-              top="$1"
-              on:mousedown={(e: MouseEvent) => {
-                e.stopPropagation()
-              }}
-              on:click={(e: MouseEvent) => {
-                e.stopPropagation()
-              }}
+              stop
+              class="absolute top-1 left-1"
               checked={props.obj.selected}
-              onChange={(e: any) => {
-                selectIndex(props.index, e.target.checked)
+              onChange={(on) => {
+                selectIndex(props.index, on)
               }}
             />
           </Show>
@@ -86,8 +80,8 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
               bus.emit("gallery", props.obj.name)
             }}
           />
-        </Center>
-      </VStack>
+        </div>
+      </div>
     </div>
   )
 }

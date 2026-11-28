@@ -1,4 +1,3 @@
-import { IconButton } from "@hope-ui/solid"
 import { changeColor } from "seemly"
 import { BsGridFill, BsCardImage, BsColumnsGap } from "solid-icons/bs"
 import { FaSolidListUl } from "solid-icons/fa"
@@ -7,6 +6,7 @@ import { Dynamic } from "solid-js/web"
 import { useT } from "~/hooks"
 import { getMainColor, LayoutType, layout, setLayout } from "~/store"
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
 
 const layouts = {
   list: FaSolidListUl,
@@ -20,32 +20,32 @@ export const Layout = () => {
   return (
     <Menu>
       <MenuTrigger
-        as={IconButton}
-        color={getMainColor()}
-        bgColor={changeColor(getMainColor(), { alpha: 0.15 })}
-        _hover={{
-          bgColor: changeColor(getMainColor(), { alpha: 0.2 }),
+        as={Button}
+        variant="ghost"
+        size="icon-lg"
+        class="bg-(--tint) text-(--main) hover:bg-(--tint-hover) hover:text-(--main)"
+        style={{
+          "--main": getMainColor(),
+          "--tint": changeColor(getMainColor(), { alpha: 0.15 }),
+          "--tint-hover": changeColor(getMainColor(), { alpha: 0.2 }),
         }}
         aria-label="switch layout"
-        compact
-        size="lg"
-        icon={
-          <Switch>
-            <Match when={layout() === "list"}>
-              <FaSolidListUl />
-            </Match>
-            <Match when={layout() === "grid"}>
-              <BsGridFill />
-            </Match>
-            <Match when={layout() === "image"}>
-              <BsCardImage />
-            </Match>
-            <Match when={layout() === "masonry"}>
-              <BsColumnsGap />
-            </Match>
-          </Switch>
-        }
-      ></MenuTrigger>
+      >
+        <Switch>
+          <Match when={layout() === "list"}>
+            <FaSolidListUl />
+          </Match>
+          <Match when={layout() === "grid"}>
+            <BsGridFill />
+          </Match>
+          <Match when={layout() === "image"}>
+            <BsCardImage />
+          </Match>
+          <Match when={layout() === "masonry"}>
+            <BsColumnsGap />
+          </Match>
+        </Switch>
+      </MenuTrigger>
       <MenuContent>
         <For each={Object.entries(layouts)}>
           {(item) => (

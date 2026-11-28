@@ -1,7 +1,6 @@
 import "aplayer/dist/APlayer.min.css"
 import "./audio.css"
 import APlayer from "aplayer"
-import { Box } from "@hope-ui/solid"
 import { onCleanup, onMount } from "solid-js"
 import { useLink, useRouter, useT, useTitle } from "~/hooks"
 import { getMainColor, getSetting, getSettingBool, objStore } from "~/store"
@@ -153,7 +152,7 @@ const Preview = () => {
   onCleanup(() => {
     ap?.destroy()
   })
-  return <Box w="$full" id="audio-player" />
+  return <div class="w-full" id="audio-player" />
 }
 
 export default Preview

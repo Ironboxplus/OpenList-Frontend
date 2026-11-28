@@ -1,10 +1,11 @@
-import { Box, HStack, Icon, Text } from "@hope-ui/solid"
 import { createSignal, onCleanup, Show } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { LinkWithPush } from "~/components"
 import { useUtil } from "~/hooks"
 import { checkboxOpen, getMainColor, local, OrderBy } from "~/store"
 import { ObjType, StoreObj } from "~/types"
-import { bus, hoverColor, isTouchDevice } from "~/utils"
+import { bus, isTouchDevice } from "~/utils"
+import { cn } from "~/utils/cn"
 import { getIconByObj } from "~/utils/icon"
 import { ExtraBadges } from "./ExtraBadges"
 import {
@@ -16,7 +17,8 @@ import { PhoneRowBody } from "~/features/files/PhoneRowBody"
 import { RowThumb } from "~/features/files/RowThumb"
 import { PlayingBadge, RowDownload } from "~/features/files/RowExtras"
 import { phoneShell } from "~/features/shell/topbar-slot"
-import { ItemCheckbox, useFileRowInteraction } from "./helper"
+import { useFileRowInteraction } from "./helper"
+import { ItemCheckbox } from "./ItemCheckbox"
 import {
   isMediaPreviewEnabled,
   shouldShowPreview,
@@ -24,22 +26,24 @@ import {
 
 export interface Col {
   name: OrderBy
-  textAlign: "left" | "right"
-  w: any
+  /** Tailwind: the column's text alignment. */
+  align: string
+  /** Tailwind: the column's width (responsive). */
+  w: string
 }
 
 // Shared with the `ListTitle` header in ./List.tsx, so header and rows stay
 // aligned by construction rather than by copy.
 //
-// The `@md` split was 50/17/33: a third of every row was reserved for a
+// The `md` split was 50/17/33: a third of every row was reserved for a
 // 19-character timestamp. `formatDateCompact` caps `modified` at 11 characters,
 // so that reserve is no longer needed and the freed width goes to `name`, which
 // is what users actually scan. `size` keeps 17% because mount points render a
 // disk-usage progress bar in that slot, not just a short byte count.
 export const cols: Col[] = [
-  { name: "name", textAlign: "left", w: { "@initial": "76%", "@md": "63%" } },
-  { name: "size", textAlign: "right", w: { "@initial": "24%", "@md": "17%" } },
-  { name: "modified", textAlign: "right", w: { "@initial": 0, "@md": "20%" } },
+  { name: "name", align: "text-left", w: "w-[76%] md:w-[63%]" },
+  { name: "size", align: "text-right", w: "w-[24%] md:w-[17%]" },
+  { name: "modified", align: "text-right", w: "w-0 md:w-[20%]" },
 ]
 
 const PREVIEW_DELAY_MS = 550
@@ -110,22 +114,15 @@ export const ListItem = (props: {
         position: "relative",
       }}
     >
-      <HStack
-        class={`list-item viselect-item group/row${props.obj.selected ? " selected" : ""}`}
+      <LinkWithPush
+        class={cn(
+          "list-item viselect-item group/row flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent",
+          props.obj.selected && "selected bg-accent",
+          ix.cursor() === "pointer" ? "cursor-pointer" : "cursor-default",
+        )}
         data-index={props.index}
         data-row-name={props.obj.name}
-        w="$full"
-        p="$2"
-        rounded="$lg"
-        transition="all 0.3s"
-        _hover={{
-          transform: "scale(1.01)",
-          bgColor: hoverColor(),
-        }}
-        as={LinkWithPush}
         href={props.obj.name}
-        cursor={ix.cursor()}
-        bgColor={props.obj.selected ? hoverColor() : undefined}
         on:dblclick={ix.onDblClick}
         on:click={ix.onClick}
         onMouseEnter={handleMouseEnter}
@@ -140,11 +137,10 @@ export const ListItem = (props: {
           <PhoneRowBody obj={props.obj} />
         </Show>
         <Show when={!phoneShell()}>
-          <HStack class="name-box" spacing="$1" w={cols[0].w}>
+          <div class={cn("name-box flex items-center gap-x-1", cols[0].w)}>
             <Show when={checkboxOpen()}>
               <ItemCheckbox
-                on:mousedown={ix.stopPropagation}
-                on:click={ix.stopPropagation}
+                stop
                 checked={props.obj.selected}
                 onChange={ix.onCheckboxChange}
               />
@@ -153,92 +149,61 @@ export const ListItem = (props: {
               obj={props.obj}
               onClick={openGallery}
               fallback={
-                <Icon
-                  class="icon"
-                  boxSize="$6"
-                  color={getMainColor()}
-                  as={getIconByObj(props.obj)}
-                  mr="$1"
-                  cursor={
-                    props.obj.type !== ObjType.IMAGE ? "inherit" : "pointer"
-                  }
+                <Dynamic
+                  component={getIconByObj(props.obj)}
+                  class={cn(
+                    "icon mr-1 size-6",
+                    props.obj.type !== ObjType.IMAGE
+                      ? "cursor-[inherit]"
+                      : "cursor-pointer",
+                  )}
+                  style={{ color: getMainColor() }}
                   on:click={openGallery}
                 />
               }
             />
-            <Text
-              class="name"
-              css={{
-                wordBreak: "break-all",
-                whiteSpace:
-                  filenameStyle() === "multi_line" ? "unset" : "nowrap",
-                "overflow-x":
-                  filenameStyle() === "scrollable" ? "auto" : "hidden",
-                textOverflow:
-                  filenameStyle() === "ellipsis" ? "ellipsis" : "unset",
-                "scrollbar-width": "none", // firefox
-                "&::-webkit-scrollbar": {
-                  // webkit
-                  display: "none",
-                },
-              }}
+            <p
+              class={cn(
+                "name break-all [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+                filenameStyle() === "multi_line"
+                  ? "whitespace-normal"
+                  : "whitespace-nowrap",
+                filenameStyle() === "scrollable"
+                  ? "overflow-x-auto"
+                  : "overflow-x-hidden",
+                filenameStyle() === "ellipsis" ? "text-ellipsis" : "text-clip",
+              )}
               title={props.obj.name}
             >
               {props.obj.name}
-            </Text>
+            </p>
             <EpisodeText name={props.obj.name} />
             <ExtraBadges extra={props.obj.extra} />
             <PlayingBadge name={props.obj.name} />
             <span class="ml-auto" />
             <RowDownload obj={props.obj} />
-          </HStack>
-          <Box w={cols[1].w} textAlign={cols[1].textAlign as any}>
+          </div>
+          <div class={cn(cols[1].w, cols[1].align)}>
             <SizeOrUsage obj={props.obj} />
-          </Box>
-          <Box
-            display={{ "@initial": "none", "@md": "block" }}
-            w={cols[2].w}
-            textAlign={cols[2].textAlign as any}
-          >
+          </div>
+          <div class={cn("hidden md:block", cols[2].w, cols[2].align)}>
             <ModifiedText modified={props.obj.modified} />
-          </Box>
+          </div>
         </Show>
-      </HStack>
+      </LinkWithPush>
 
       {/* Hover thumbnail preview — desktop only, gated by plugin enabled state */}
       <Show when={previewVisible()}>
-        <Box
-          class="media-hover-preview"
-          pos="absolute"
+        <div
+          class="media-hover-preview pointer-events-none absolute top-1/2 left-[52%] z-[1000] animate-[mediaPreviewFadeIn_0.18s_ease-out_forwards]"
           // Position to the right of the name column, slightly above center
-          top="50%"
-          left="52%"
-          zIndex={1000}
-          pointerEvents="none"
-          css={{
-            transform: "translateY(-50%)",
-            animation: "mediaPreviewFadeIn 0.18s ease-out forwards",
-            "@keyframes mediaPreviewFadeIn": {
-              from: { opacity: 0, transform: "translateY(-50%) scale(0.94)" },
-              to: { opacity: 1, transform: "translateY(-50%) scale(1)" },
-            },
-          }}
+          style={{ transform: "translateY(-50%)" }}
         >
-          <Box
-            as="img"
+          <img
             src={props.obj.thumb}
-            maxW="320px"
-            maxH="240px"
-            rounded="$lg"
-            shadow="$2xl"
-            css={{
-              display: "block",
-              objectFit: "contain",
-              border: "2px solid var(--hope-colors-neutral4)",
-              background: "var(--hope-colors-neutral1)",
-            }}
+            class="block max-h-[240px] max-w-[320px] rounded-lg border-2 border-border bg-card object-contain shadow-2xl"
           />
-        </Box>
+        </div>
       </Show>
     </div>
   )

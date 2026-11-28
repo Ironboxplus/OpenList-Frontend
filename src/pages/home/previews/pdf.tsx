@@ -1,6 +1,5 @@
 import EmbedPDF from "@embedpdf/snippet"
 import pdfiumWasmUrl from "@embedpdf/snippet/dist/pdfium.wasm?url"
-import { Box } from "@hope-ui/solid"
 import { onMount } from "solid-js"
 import { currentLang } from "~/app/i18n"
 import { BoxWithFullScreen } from "~/components"
@@ -33,7 +32,7 @@ const PDFViewer = () => {
   })
   return (
     <BoxWithFullScreen h="60vh">
-      <Box ref={ref} w="$full" h="$full" />
+      <div class="w-full h-full" ref={ref} />
     </BoxWithFullScreen>
   )
 }

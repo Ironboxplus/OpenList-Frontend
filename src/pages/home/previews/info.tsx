@@ -1,5 +1,5 @@
-import { Heading, Icon, Image, Text, VStack } from "@hope-ui/solid"
-import { JSXElement } from "solid-js"
+import { JSXElement, Show, createSignal } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { useT } from "~/hooks"
 import { getMainColor, objStore } from "~/store"
 import { formatDate, getFileSize } from "~/utils"
@@ -7,37 +7,37 @@ import { getIconByObj } from "~/utils/icon"
 
 export const FileInfo = (props: { children: JSXElement }) => {
   const t = useT()
+  // the type's icon stands in until the thumbnail is there (and if it cannot be)
+  const [thumbReady, setThumbReady] = createSignal(false)
   return (
-    <VStack class="fileinfo" py="$6" spacing="$6" w="$full">
-      <Image
-        boxSize="$20"
-        fallback={
-          <Icon
-            color={getMainColor()}
-            boxSize="$20"
-            as={getIconByObj(objStore.obj)}
-          />
-        }
-        src={objStore.obj.thumb}
-      />
-      <VStack spacing="$2">
-        <Heading
-          size="lg"
-          css={{
-            wordBreak: "break-all",
-          }}
-        >
-          {objStore.obj.name}
-        </Heading>
-        <Text color="$neutral10" size="sm">
+    <div class="flex flex-col items-center py-6 w-full gap-y-6 fileinfo">
+      <Show when={objStore.obj.thumb}>
+        <img
+          class="size-20"
+          classList={{ hidden: !thumbReady() }}
+          src={objStore.obj.thumb}
+          onLoad={() => setThumbReady(true)}
+          onError={() => setThumbReady(false)}
+        />
+      </Show>
+      <Show when={!objStore.obj.thumb || !thumbReady()}>
+        <Dynamic
+          component={getIconByObj(objStore.obj)}
+          class="size-20"
+          style={{ color: getMainColor() }}
+        />
+      </Show>
+      <div class="flex flex-col items-center gap-y-2">
+        <h2 class="text-lg font-semibold break-all">{objStore.obj.name}</h2>
+        <p class="text-muted-foreground text-sm leading-5">
           {[
             getFileSize(objStore.obj.size),
             formatDate(objStore.obj.modified),
             t(`drivers.drivers.${objStore.provider}`),
           ].join("  ·  ")}
-        </Text>
-      </VStack>
-      <VStack spacing="$2">{props.children}</VStack>
-    </VStack>
+        </p>
+      </div>
+      <div class="flex flex-col items-center gap-y-2">{props.children}</div>
+    </div>
   )
 }

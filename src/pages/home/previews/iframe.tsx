@@ -1,11 +1,11 @@
 import { BoxWithFullScreen } from "~/components"
 import { objStore } from "~/store"
-import { hope, IconButton } from "@hope-ui/solid"
 import { convertURL, asPreview } from "~/utils"
 import { Component, createMemo } from "solid-js"
 import { useLink } from "~/hooks"
 import { TbExternalLink } from "solid-icons/tb"
 import { Tooltip } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
 
 const IframePreview = (props: { scheme: string }) => {
   const { currentPreviewLink } = useLink()
@@ -22,19 +22,20 @@ const IframePreview = (props: { scheme: string }) => {
       h="70vh"
       extraButtons={
         <Tooltip label="Open in new tab" withArrow>
-          <IconButton
+          <Button
             aria-label="Open in new tab"
-            icon={<TbExternalLink />}
+            variant="secondary"
+            size="icon-sm"
             onClick={() => {
               window.open(iframeSrc(), "_blank")
             }}
-            colorScheme="neutral"
-            size="sm"
-          />
+          >
+            <TbExternalLink />
+          </Button>
         </Tooltip>
       }
     >
-      <hope.iframe w="$full" h="$full" src={iframeSrc()} />
+      <iframe class="h-full w-full" src={iframeSrc()} />
     </BoxWithFullScreen>
   )
 }

@@ -1,4 +1,3 @@
-import { VStack } from "@hope-ui/solid"
 import { lazy, Show } from "solid-js"
 import { AnnouncementCard } from "~/features/files/AnnouncementCard"
 import { DirTasksCard } from "~/features/files/DirTasksCard"
@@ -18,15 +17,7 @@ export const Body = () => (
     when={shellActive()}
     fallback={
       <Container>
-        <VStack
-          class="body"
-          mt="$1"
-          py="$2"
-          px="2%"
-          minH="80vh"
-          w="$full"
-          gap="$4"
-        >
+        <div class="flex flex-col items-center mt-1 py-2 px-[2%] min-h-[80vh] w-full gap-4 body">
           <Readme
             files={["header.md", "top.md", "index.md"]}
             fromMeta="header"
@@ -38,14 +29,14 @@ export const Body = () => (
             fromMeta="readme"
           />
           <Sidebar />
-        </VStack>
+        </div>
       </Container>
     }
   >
     {/* In the shell the breadcrumb is in the TopBar, and README, list and
         footer share one container so nothing is off-centre. */}
     <FilesFrame>
-      <VStack class="body" py="$3" minH="70vh" w="$full" gap="$4">
+      <div class="flex flex-col items-center py-3 min-h-[70vh] w-full gap-4 body">
         <AnnouncementCard />
         <Readme files={["header.md", "top.md", "index.md"]} fromMeta="header" />
         <MediaController />
@@ -56,7 +47,7 @@ export const Body = () => (
           fromMeta="readme"
         />
         <Sidebar />
-      </VStack>
+      </div>
     </FilesFrame>
   </Show>
 )

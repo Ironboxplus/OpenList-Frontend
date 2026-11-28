@@ -1,4 +1,3 @@
-import { Checkbox, hope } from "@hope-ui/solid"
 import { batch, createEffect, onCleanup } from "solid-js"
 import SelectionArea from "@viselect/vanilla"
 import {
@@ -186,7 +185,7 @@ export function useFileRowInteraction(
     selectForMenu(index())
   }
 
-  const onCheckboxChange = (e: any) => selectIndex(index(), e.target.checked)
+  const onCheckboxChange = (checked: boolean) => selectIndex(index(), checked)
 
   /** Checkbox clicks must not bubble into the row's navigate-on-click. */
   const stopPropagation = (e: MouseEvent) => e.stopPropagation()
@@ -210,17 +209,3 @@ export function useFileRowInteraction(
     restoreSelectionCache,
   }
 }
-
-export const ItemCheckbox = hope(Checkbox, {
-  baseStyle: {
-    // expand the range of click
-    _before: {
-      content: "",
-      pos: "absolute",
-      top: -10,
-      right: -2,
-      bottom: -10,
-      left: -10,
-    },
-  },
-})

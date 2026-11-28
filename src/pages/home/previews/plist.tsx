@@ -1,8 +1,8 @@
-import { Button } from "@hope-ui/solid"
 import { createSignal } from "solid-js"
 import { useT } from "~/hooks"
 import { objStore } from "~/store"
 import { FileInfo } from "./info"
+import { Button } from "~/components/ui/button"
 
 const Plist = () => {
   const t = useT()
@@ -11,6 +11,7 @@ const Plist = () => {
     <FileInfo>
       <Button
         as="a"
+        variant="subtle"
         href={
           "itms-services://?action=download-manifest&url=" + objStore.raw_url
         }
