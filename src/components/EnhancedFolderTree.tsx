@@ -1,4 +1,5 @@
-import { Box, HStack, Icon, Spinner, Text, VStack } from "@hope-ui/solid"
+import { Spinner } from "~/components/ui/spinner"
+import { cn } from "~/utils/cn"
 import { BiSolidRightArrow, BiSolidFolderOpen } from "solid-icons/bi"
 import { TbFile, TbFolder } from "solid-icons/tb"
 import {
@@ -15,13 +16,7 @@ import {
 import { useFetch, useT, useUtil } from "~/hooks"
 import { getMainColor, password } from "~/store"
 import { Obj } from "~/types"
-import {
-  pathBase,
-  handleResp,
-  hoverColor,
-  pathJoin,
-  createMatcher,
-} from "~/utils"
+import { pathBase, handleResp, pathJoin, createMatcher } from "~/utils"
 import { fsList } from "~/utils/api"
 
 export type EnhancedFolderTreeHandler = {
@@ -50,7 +45,7 @@ export const EnhancedFolderTree = (props: EnhancedFolderTreeProps) => {
   const [path, setPath] = createSignal("/")
   props.handle?.({ setPath })
   return (
-    <Box class="folder-tree-box" w="$full" overflowX="auto">
+    <div class="w-full overflow-x-auto folder-tree-box">
       <context.Provider
         value={{
           value: path,
@@ -66,9 +61,16 @@ export const EnhancedFolderTree = (props: EnhancedFolderTreeProps) => {
       >
         <EnhancedFolderTreeNode path="/" />
       </context.Provider>
-    </Box>
+    </div>
   )
 }
+
+/** A folder's or file's name: the selected one is tinted, the others grey on hover. */
+const nodeName = (selected: boolean) =>
+  cn(
+    "cursor-pointer rounded-md px-1 text-base whitespace-nowrap",
+    selected ? "bg-primary/20" : "hover:bg-[rgba(132,133,141,0.18)]",
+  )
 
 const EnhancedFolderTreeNode = (props: { path: string }) => {
   const { isHidePath } = useUtil()
@@ -128,22 +130,22 @@ const EnhancedFolderTreeNode = (props: { path: string }) => {
 
   return (
     <Show when={showHiddenFolder || !isHiddenFolder()}>
-      <Box>
-        <HStack spacing="$2">
+      <div>
+        <div class="flex flex-row items-center gap-x-2">
           <Show
             when={!loading()}
             fallback={<Spinner size="sm" color={getMainColor()} />}
           >
             <Show
               when={!emptyIconVisible()}
-              fallback={<Icon color={getMainColor()} as={BiSolidFolderOpen} />}
+              fallback={<BiSolidFolderOpen style={{ color: getMainColor() }} />}
             >
-              <Icon
-                color={getMainColor()}
-                as={BiSolidRightArrow}
-                transform={isOpen() ? "rotate(90deg)" : "none"}
-                transition="transform 0.2s"
-                cursor="pointer"
+              <BiSolidRightArrow
+                class="cursor-pointer transition-transform duration-200"
+                style={{
+                  color: getMainColor(),
+                  transform: isOpen() ? "rotate(90deg)" : "none",
+                }}
                 onClick={() => {
                   onToggle()
                   if (isOpen()) {
@@ -153,31 +155,19 @@ const EnhancedFolderTreeNode = (props: { path: string }) => {
               />
             </Show>
           </Show>
-          <Icon color={getMainColor()} as={TbFolder} cursor="pointer" />
-          <Text
-            css={{
-              whiteSpace: "nowrap",
-            }}
-            fontSize="$md"
-            cursor="pointer"
-            px="$1"
-            rounded="$md"
-            bgColor={active() ? "$info8" : "transparent"}
-            _hover={
-              {
-                bgColor: active() ? "$info8" : hoverColor(),
-              } as any
-            }
+          <TbFolder class="cursor-pointer" style={{ color: getMainColor() }} />
+          <p
+            class={nodeName(active())}
             onClick={() => {
               onChange(props.path)
             }}
           >
             {props.path === "/" ? "root" : pathBase(props.path)}
-          </Text>
-        </HStack>
+          </p>
+        </div>
 
         <Show when={isOpen()}>
-          <VStack mt="$1" pl="$4" alignItems="start" spacing="$1">
+          <div class="flex flex-col mt-1 pl-4 items-start gap-y-1">
             <For each={folders()}>
               {(item) => (
                 <EnhancedFolderTreeNode
@@ -188,42 +178,28 @@ const EnhancedFolderTreeNode = (props: { path: string }) => {
 
             <For each={files()}>
               {(item) => (
-                <HStack spacing="$2" w="$full">
-                  <Box w="16px" />
-                  <Icon color={getMainColor()} as={TbFile} cursor="pointer" />
-                  <Text
-                    css={{
-                      whiteSpace: "nowrap",
-                    }}
-                    fontSize="$md"
-                    cursor="pointer"
-                    px="$1"
-                    rounded="$md"
-                    bgColor={
-                      value() === pathJoin(props.path, item.name)
-                        ? "$info8"
-                        : "transparent"
-                    }
-                    _hover={
-                      {
-                        bgColor:
-                          value() === pathJoin(props.path, item.name)
-                            ? "$info8"
-                            : hoverColor(),
-                      } as any
-                    }
+                <div class="flex flex-row items-center w-full gap-x-2">
+                  <div class="w-[16px]" />
+                  <TbFile
+                    class="cursor-pointer"
+                    style={{ color: getMainColor() }}
+                  />
+                  <p
+                    class={nodeName(
+                      value() === pathJoin(props.path, item.name),
+                    )}
                     onClick={() => {
                       onChange(pathJoin(props.path, item.name))
                     }}
                   >
                     {item.name}
-                  </Text>
-                </HStack>
+                  </p>
+                </div>
               )}
             </For>
-          </VStack>
+          </div>
         </Show>
-      </Box>
+      </div>
     </Show>
   )
 }

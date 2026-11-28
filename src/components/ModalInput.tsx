@@ -1,4 +1,5 @@
-import { Button, Input, Textarea, FormHelperText } from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
+import { Input, Textarea } from "~/components/ui/input"
 import {
   createSignal,
   JSXElement,
@@ -122,7 +123,7 @@ export const ModalInput = (props: ModalInputProps) => {
                 type={props.type}
                 value={value()}
                 ref={(el) => (inputRef = el)}
-                invalid={!!validationError()}
+                aria-invalid={!!validationError()}
                 onInput={(e) => {
                   handleInput(e.currentTarget.value)
                 }}
@@ -139,7 +140,7 @@ export const ModalInput = (props: ModalInputProps) => {
               id="modal-input"
               value={value()}
               ref={(el) => (inputRef = el)}
-              invalid={!!validationError()}
+              aria-invalid={!!validationError()}
               onInput={(e) => {
                 handleInput(e.currentTarget.value)
               }}
@@ -147,21 +148,25 @@ export const ModalInput = (props: ModalInputProps) => {
             />
           </Show>
           <Show when={validationError()}>
-            <FormHelperText color="$danger9">
+            <p class="mt-1 text-sm text-destructive">
               {t(`global.${validationError()}`)}
-            </FormHelperText>
+            </p>
           </Show>
           <Show when={props.tips}>
-            <FormHelperText>{props.tips}</FormHelperText>
+            <p class="mt-1 text-sm text-muted-foreground">{props.tips}</p>
           </Show>
           <Show when={props.bottomSlot}>{props.bottomSlot}</Show>
         </ModalBody>
-        <ModalFooter display="flex" gap="$2">
+        <ModalFooter class="flex gap-2">
           <Show when={props.footerSlot}>{props.footerSlot}</Show>
-          <Button onClick={props.onClose} colorScheme="neutral">
+          <Button onClick={props.onClose} variant="secondary">
             {t("global.cancel")}
           </Button>
-          <Button loading={props.loading} onClick={() => submit()}>
+          <Button
+            variant="subtle"
+            loading={props.loading}
+            onClick={() => submit()}
+          >
             {t("global.ok")}
           </Button>
         </ModalFooter>

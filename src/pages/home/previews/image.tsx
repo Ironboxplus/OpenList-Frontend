@@ -326,7 +326,7 @@ const Preview = (props: PreviewProps) => {
 
   // ── render ──────────────────────────────────────────────────────
   return (
-    <BoxWithFullScreen w="$full" h="70vh">
+    <BoxWithFullScreen h="70vh">
       <VStack ref={containerRef} w="$full" h="$full">
         {/* ── Toolbar ── */}
         <Flex
@@ -498,22 +498,13 @@ const Preview = (props: PreviewProps) => {
                     <Error msg={t("home.preview.failed_load_img")} />
                   }
                   onLoad={onImgLoad}
-                  {...(fitMode() === "contain"
-                    ? { w: "$full", h: "$full", objectFit: "contain" }
-                    : {
-                        css:
-                          fitMode() === "height"
-                            ? {
-                                height: "100%",
-                                width: "auto",
-                                "max-width": "none",
-                              }
-                            : {
-                                width: "100%",
-                                height: "auto",
-                                "max-height": "none",
-                              },
-                      })}
+                  class={
+                    fitMode() === "contain"
+                      ? "h-full w-full object-contain"
+                      : fitMode() === "height"
+                        ? "h-full w-auto max-w-none"
+                        : "h-auto max-h-none w-full"
+                  }
                 />
               }
             >

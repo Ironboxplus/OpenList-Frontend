@@ -1,4 +1,4 @@
-import { Button, Icon } from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
 import { For, createSignal } from "solid-js"
 import { FaSolidAngleDown } from "solid-icons/fa"
 import { getPlatform, notify } from "~/utils"
@@ -16,10 +16,19 @@ interface OpenWithPlayerProps {
   /** 文件名，用于部分播放器的标题参数 */
   name?: string
   size?: "xs" | "sm" | "md"
+  /** hope's names: solid is the kit's default, subtle (neutral) its secondary. */
   variant?: "solid" | "subtle" | "outline" | "ghost" | "link"
   /** 深色背景（如底部播放条）下使用浅色描边样式 */
   dark?: boolean
 }
+
+const VARIANT = {
+  solid: "default",
+  subtle: "secondary",
+  outline: "outline",
+  ghost: "ghost",
+  link: "link",
+} as const
 
 /**
  * “在本地播放器打开”下拉菜单。
@@ -117,14 +126,12 @@ export const OpenWithPlayer = (props: OpenWithPlayerProps) => {
     <Menu>
       <MenuTrigger
         as={Button}
-        size={props.size ?? "sm"}
-        variant={props.variant ?? "subtle"}
-        colorScheme="neutral"
+        size={props.size === "md" ? "default" : (props.size ?? "sm")}
+        variant={VARIANT[props.variant ?? "subtle"]}
         loading={loading()}
         onMouseEnter={prefetch}
         onFocus={prefetch}
         onClick={prefetch}
-        rightIcon={<Icon as={FaSolidAngleDown} />}
         style={
           props.dark
             ? {
@@ -136,6 +143,7 @@ export const OpenWithPlayer = (props: OpenWithPlayerProps) => {
         }
       >
         本地播放器
+        <FaSolidAngleDown class="ml-2" />
       </MenuTrigger>
       <MenuContent>
         <For each={players()}>

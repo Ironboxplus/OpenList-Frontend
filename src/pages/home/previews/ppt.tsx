@@ -197,7 +197,7 @@ const PPTViewerApp = () => {
   })
 
   return (
-    <BoxWithFullScreen w="$full" h="70vh" pos="relative">
+    <BoxWithFullScreen h="70vh">
       {/* PPT容器 */}
       <div
         ref={containerRef}

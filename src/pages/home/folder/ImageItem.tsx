@@ -66,11 +66,7 @@ export const ImageItem = (props: { obj: StoreObj; index: number }) => {
             />
           </Show>
           <ImageWithError
-            h="150px"
-            w="$full"
-            objectFit="cover"
-            rounded="$lg"
-            shadow="$md"
+            class="h-[150px] w-full rounded-lg object-cover shadow-md"
             fallback={<CenterLoading size="lg" />}
             fallbackErr={objIcon}
             src={previewLink(props.obj)}

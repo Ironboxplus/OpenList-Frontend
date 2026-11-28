@@ -59,7 +59,7 @@ const AutoLoadMore = () => {
       when={!allLoaded()}
       fallback={<Text fontStyle="italic">{t("home.no_more")}</Text>}
     >
-      <FullLoading py="$2" size="md" thickness={3} ref={el} />
+      <FullLoading class="py-2" size="md" thickness={3} ref={el} />
     </Show>
   )
 }
@@ -69,7 +69,7 @@ export const Pager = () => {
   return (
     <Switch>
       <Match when={objStore.state === State.FetchingMore}>
-        <FullLoading py="$2" size="md" thickness={3} />
+        <FullLoading class="py-2" size="md" thickness={3} />
       </Match>
       <Match when={pagination.type === "pagination"}>
         <Pagination />

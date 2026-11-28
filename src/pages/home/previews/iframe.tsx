@@ -19,7 +19,6 @@ const IframePreview = (props: { scheme: string }) => {
   })
   return (
     <BoxWithFullScreen
-      w="$full"
       h="70vh"
       extraButtons={
         <Tooltip label="Open in new tab" withArrow>

@@ -1,4 +1,3 @@
-import { Anchor, Box, List, ListItem } from "@hope-ui/solid"
 import { createStorageSignal } from "@solid-primitives/storage"
 import { clsx } from "clsx"
 import rehypeRaw from "rehype-raw"
@@ -114,42 +113,41 @@ function MarkdownToc(props: {
 
   return (
     <Show when={!isTocDisabled() && isTocVisible()}>
-      <Box
-        as={MotionDiv}
+      <MotionDiv
         initial={{ x: 999 }}
         animate={{ x: offsetX() }}
         timing={MotionTokens.options.pane}
         onMouseEnter={() => setOffsetX(0)}
         onMouseLeave={() => setOffsetX(initialOffsetX)}
-        zIndex="$overlay"
-        pos="fixed"
-        right="calc(var(--shell-content-right, 0px) + 1.5rem)"
-        top="calc(var(--shell-gap, 0px) + 1.5rem)"
+        class="fixed z-[1300]"
+        style={{
+          right: "calc(var(--shell-content-right, 0px) + 1.5rem)",
+          top: "calc(var(--shell-gap, 0px) + 1.5rem)",
+        }}
       >
-        <Box
-          mt="$5"
-          p="$2"
-          shadow="$outline"
-          rounded="$lg"
-          bgColor="white"
-          _dark={{ bgColor: "$neutral3" }}
-        >
-          <List maxH="60vh" overflowY="auto">
+        <div class="mt-5 rounded-lg bg-card p-2 shadow-lg ring-1 ring-border">
+          <ul class="max-h-[60vh] list-none overflow-y-auto">
             <For each={tocList()}>
               {(item) => (
-                <ListItem pl={15 * item.indent} m={4}>
-                  <Anchor
-                    color={getMainColor()}
+                <li
+                  style={{
+                    "padding-left": `${15 * item.indent}px`,
+                    margin: "4px",
+                  }}
+                >
+                  <a
+                    class="relative cursor-pointer rounded-lg px-1.5 py-1 hover:bg-[rgba(132,133,141,0.18)]"
+                    style={{ color: getMainColor() }}
                     onClick={() => handleAnchor(item)}
                   >
                     {item.text}
-                  </Anchor>
-                </ListItem>
+                  </a>
+                </li>
               )}
             </For>
-          </List>
-        </Box>
-      </Box>
+          </ul>
+        </div>
+      </MotionDiv>
     </Show>
   )
 }
@@ -303,14 +301,12 @@ export function Markdown(props: {
   const [markdownRef, setMarkdownRef] = createSignal<HTMLDivElement>()
 
   return (
-    <Box
+    <div
       ref={(r: HTMLDivElement) => setMarkdownRef(r)}
-      class="markdown"
-      pos="relative"
-      w="$full"
+      class="markdown relative w-full"
     >
       <Show when={show()}>
-        <Box
+        <div
           class={clsx("markdown-body", props.class)}
           innerHTML={markdownHTML()}
         />
@@ -323,6 +319,6 @@ export function Markdown(props: {
         />
       </Show>
       <MarkdownToc disabled={!props.toc} markdownRef={markdownRef()!} />
-    </Box>
+    </div>
   )
 }

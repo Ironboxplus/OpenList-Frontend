@@ -128,7 +128,7 @@ const ExcelViewerApp = () => {
   })
 
   return (
-    <BoxWithFullScreen w="$full" h="70vh" pos="relative">
+    <BoxWithFullScreen h="70vh">
       {/* 工作表标签和全屏按钮 */}
       <Box
         pos="absolute"

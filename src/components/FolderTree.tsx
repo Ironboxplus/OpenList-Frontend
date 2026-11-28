@@ -1,13 +1,6 @@
-import {
-  Box,
-  Button,
-  HStack,
-  Icon,
-  Input,
-  Spinner,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
+import { Input } from "~/components/ui/input"
+import { Spinner } from "~/components/ui/spinner"
 import { BiSolidRightArrow, BiSolidFolderOpen } from "solid-icons/bi"
 import {
   TbX,
@@ -36,7 +29,6 @@ import {
   pathBase,
   handleResp,
   handleRespWithNotifySuccess,
-  hoverColor,
   pathJoin,
   fsDirs,
   createMatcher,
@@ -55,6 +47,7 @@ import {
   ModalOverlay,
 } from "~/components/overlay"
 import { Fold } from "~/components/ui/collapsible"
+import { cn } from "~/utils/cn"
 
 export type FolderTreeHandler = {
   setPath: Setter<string>
@@ -100,14 +93,13 @@ export const FolderTree = (props: FolderTreeProps) => {
   const rows = (tree: JSXElement) =>
     props.variant === "nav" ? <div class="w-max min-w-full">{tree}</div> : tree
   return (
-    <Box
-      class={
+    <div
+      class={cn(
+        "w-full overflow-x-auto",
         props.variant === "nav"
           ? "folder-tree-box [scrollbar-width:thin]"
-          : "folder-tree-box"
-      }
-      w="$full"
-      overflowX="auto"
+          : "folder-tree-box",
+      )}
     >
       {rows(
         <context.Provider
@@ -130,7 +122,7 @@ export const FolderTree = (props: FolderTreeProps) => {
           <FolderTreeNode path="/" />
         </context.Provider>,
       )}
-    </Box>
+    </div>
   )
 }
 
@@ -282,8 +274,8 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
   return (
     <Show when={showHiddenFolder || !isHiddenFolder()}>
       <Show when={variant !== "nav"} fallback={navNode()}>
-        <Box>
-          <HStack spacing="$2">
+        <div>
+          <div class="flex flex-row items-center gap-x-2">
             <Show
               when={!loading()}
               fallback={<Spinner size="sm" color={getMainColor()} />}
@@ -291,42 +283,35 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
               <Show
                 when={!emptyIconVisible()}
                 fallback={
-                  <Icon color={getMainColor()} as={BiSolidFolderOpen} />
+                  <BiSolidFolderOpen style={{ color: getMainColor() }} />
                 }
               >
-                <Icon
-                  color={getMainColor()}
-                  as={BiSolidRightArrow}
-                  transform={isOpen() ? "rotate(90deg)" : "none"}
-                  transition="transform 0.2s"
-                  cursor="pointer"
+                <BiSolidRightArrow
+                  class="cursor-pointer transition-transform duration-200"
+                  style={{
+                    color: getMainColor(),
+                    transform: isOpen() ? "rotate(90deg)" : "none",
+                  }}
                   onClick={toggle}
                 />
               </Show>
             </Show>
-            <Text
-              css={{
-                // textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-              // overflow="hidden"
-              fontSize="$md"
-              cursor="pointer"
-              px="$1"
-              rounded="$md"
-              bgColor={active() ? "$info8" : "transparent"}
-              _hover={{
-                bgColor: active() ? "$info8" : hoverColor(),
-              }}
+            <p
+              class={cn(
+                "cursor-pointer rounded-md px-1 text-base whitespace-nowrap",
+                active()
+                  ? "bg-primary/20"
+                  : "hover:bg-[rgba(132,133,141,0.18)]",
+              )}
               onClick={() => {
                 onChange(props.path)
               }}
             >
               {props.path === "/" ? "root" : pathBase(props.path)}
-            </Text>
-          </HStack>
+            </p>
+          </div>
           <Show when={isOpen()}>
-            <VStack mt="$1" pl="$4" alignItems="start" spacing="$1">
+            <div class="flex flex-col mt-1 pl-4 items-start gap-y-1">
               <For each={children()}>
                 {(item) => (
                   <FolderTreeNode path={pathJoin(props.path, item.name)} />
@@ -343,9 +328,9 @@ const FolderTreeNode = (props: { path: string; depth?: number }) => {
                   }}
                 />
               </Show>
-            </VStack>
+            </div>
           </Show>
-        </Box>
+        </div>
       </Show>
     </Show>
   )
@@ -395,15 +380,14 @@ const FolderNameInput = (props: {
   })
 
   return (
-    <HStack spacing="$2" w="$full" pl="$4" alignItems="center">
-      <Icon color={getMainColor()} as={BiSolidFolderOpen} />
+    <div class="flex flex-row w-full pl-4 items-center gap-x-2">
+      <BiSolidFolderOpen style={{ color: getMainColor() }} />
       <Input
         ref={(el) => (inputRef = el)}
         value={folderName()}
         onInput={(e) => setFolderName(e.currentTarget.value)}
         placeholder={t("home.toolbar.input_dir_name")}
-        size="sm"
-        flex="1"
+        class="h-8 flex-1"
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault()
@@ -427,32 +411,28 @@ const FolderNameInput = (props: {
       >
         <Button
           aria-label={t("global.ok")}
-          size="sm"
+          size="icon-sm"
           variant="ghost"
-          rounded="$md"
-          p="$1"
-          color="$success9"
+          class="p-1 text-success"
           onClick={handleSubmit}
           tabIndex={0}
           data-folder-action="true"
         >
-          <Icon as={TbCheck} boxSize="$6" />
+          <TbCheck class="size-6" />
         </Button>
       </Show>
       <Button
         aria-label={t("global.cancel")}
-        size="sm"
+        size="icon-sm"
         variant="ghost"
-        rounded="$md"
-        p="$1"
-        color="$danger9"
+        class="p-1 text-destructive"
         onClick={props.onCancel}
         tabIndex={0}
         data-folder-action="true"
       >
-        <Icon as={TbX} boxSize="$6" />
+        <TbX class="size-6" />
       </Button>
-    </HStack>
+    </div>
   )
 }
 
@@ -493,13 +473,13 @@ export const ModalFolderChoose = (props: ModalFolderChooseProps) => {
       <ModalOverlay />
       <ModalContent>
         {/* <ModalCloseButton /> */}
-        <ModalHeader w="$full" css={{ overflowWrap: "break-word" }}>
-          <HStack w="$full" justifyContent="space-between" alignItems="center">
-            <Box css={{ overflowWrap: "break-word" }}>{props.header}</Box>
+        <ModalHeader class="w-full break-words">
+          <div class="flex flex-row w-full justify-between items-center">
+            <div class="break-words">{props.header}</div>
             <Show when={props.headerSlot && handler()}>
               {props.headerSlot!(handler()!)}
             </Show>
-          </HStack>
+          </div>
         </ModalHeader>
         <ModalBody>
           {props.children}
@@ -509,27 +489,22 @@ export const ModalFolderChoose = (props: ModalFolderChooseProps) => {
             autoOpen
           />
         </ModalBody>
-        <ModalFooter
-          display="flex"
-          w="$full"
-          gap="$4"
-          alignItems="flex-end"
-          justifyContent="flex-end"
-        >
+        <ModalFooter class="flex w-full items-end justify-end gap-4">
           <Show when={props.footerSlot}>
-            <Box mr="auto">{props.footerSlot}</Box>
+            <div class="mr-auto">{props.footerSlot}</div>
           </Show>
-          <HStack spacing="$2">
-            <Button onClick={props.onClose} colorScheme="neutral">
+          <div class="flex flex-row items-center gap-x-2">
+            <Button onClick={props.onClose} variant="secondary">
               {t("global.cancel")}
             </Button>
             <Button
+              variant="subtle"
               loading={props.loading}
               onClick={() => props.onSubmit?.(value())}
             >
               {t("global.ok")}
             </Button>
-          </HStack>
+          </div>
         </ModalFooter>
       </ModalContent>
     </Modal>
@@ -546,7 +521,7 @@ export const FolderChooseInput = (props: {
   const t = useT()
   return (
     <>
-      <HStack w="$full" spacing="$2">
+      <div class="flex flex-row items-center w-full gap-x-2">
         <Input
           id={props.id}
           value={props.value}
@@ -560,9 +535,11 @@ export const FolderChooseInput = (props: {
           )}
         />
         <Show when={!props.onlyFolder}>
-          <Button onClick={onOpen}>{t("global.choose")}</Button>
+          <Button variant="subtle" onClick={onOpen}>
+            {t("global.choose")}
+          </Button>
         </Show>
-      </HStack>
+      </div>
       <Modal size="xl" opened={isOpen()} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
@@ -572,7 +549,9 @@ export const FolderChooseInput = (props: {
             <FolderTree forceRoot onChange={props.onChange} />
           </ModalBody>
           <ModalFooter>
-            <Button onClick={onClose}>{t("global.confirm")}</Button>
+            <Button variant="subtle" onClick={onClose}>
+              {t("global.confirm")}
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

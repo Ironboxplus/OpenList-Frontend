@@ -191,10 +191,7 @@ export const GridItem = (props: {
                   fallback={
                     <Show when={props.obj.thumb} fallback={objIcon}>
                       <ImageWithError
-                        maxH="$full"
-                        maxW="$full"
-                        rounded="$lg"
-                        shadow="$md"
+                        class="max-h-full max-w-full rounded-lg shadow-md"
                         fallback={<CenterLoading size="lg" />}
                         fallbackErr={objIcon}
                         src={props.obj.thumb}

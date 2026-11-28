@@ -1,4 +1,4 @@
-import { Box, Center, Flex, Heading, IconButton, VStack } from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
 import { SwitchColorMode } from "./SwitchColorMode"
 import {
   Select,
@@ -7,71 +7,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select"
-import {
-  mergeProps,
-  Show,
-  JSXElement,
-  createSignal,
-  onMount,
-  onCleanup,
-} from "solid-js"
+import { Show, JSXElement, createSignal, onMount, onCleanup } from "solid-js"
 import { AiOutlineFullscreen, AiOutlineFullscreenExit } from "solid-icons/ai"
 import { BsFullscreen, BsFullscreenExit } from "solid-icons/bs"
 import { useT } from "~/hooks"
 import { createDisclosure, Tooltip } from "~/components/overlay"
-import { colorModeValue } from "~/store/color-mode"
 
 export const Error = (props: {
   msg: string
   disableColor?: boolean
+  /** A CSS height; the parent's by default. */
   h?: string
   actions?: JSXElement
 }) => {
-  const merged = mergeProps(
-    {
-      h: "$full",
-    },
-    props,
-  )
   return (
-    <Center h={merged.h} p="$2" flexDirection="column">
-      <Box
-        rounded="$lg"
-        px="$4"
-        py="$6"
-        bgColor={colorModeValue("white", "$neutral3")()}
-        css={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "$4",
-        }}
-      >
-        <Heading
-          css={{
-            wordBreak: "break-all",
-          }}
-        >
-          {props.msg}
-        </Heading>
+    <div
+      class="flex flex-col items-center justify-center p-2"
+      style={{ height: props.h ?? "100%" }}
+    >
+      <div class="flex flex-col items-center gap-4 rounded-lg bg-card px-4 py-6">
+        <h2 class="font-semibold break-all">{props.msg}</h2>
         <Show when={props.actions}>
-          <Flex mt="$4" justifyContent="center">
-            {props.actions}
-          </Flex>
+          <div class="mt-4 flex justify-center">{props.actions}</div>
         </Show>
         <Show when={!props.disableColor}>
-          <Flex mt="$2" justifyContent="end">
+          <div class="mt-2 flex justify-end">
             <SwitchColorMode />
-          </Flex>
+          </div>
         </Show>
-      </Box>
-    </Center>
+      </div>
+    </div>
   )
 }
 
-export const BoxWithFullScreen = (
-  props: Parameters<typeof Box>[0] & { extraButtons?: JSXElement },
-) => {
+export const BoxWithFullScreen = (props: {
+  /** A CSS height. */
+  h: string
+  extraButtons?: JSXElement
+  children?: JSXElement
+}) => {
   const { isOpen: isFullView, onToggle } = createDisclosure()
   const [isFullScreen, setIsFullScreen] = createSignal(false)
   let containerRef: HTMLDivElement
@@ -94,31 +68,20 @@ export const BoxWithFullScreen = (
   })
 
   return (
-    <Box
+    <div
       ref={containerRef!}
-      pos={isFullView() ? "fixed" : "relative"}
-      w={isFullView() ? "100vw" : props.w}
-      h={isFullView() ? "100vh" : props.h}
-      top={0}
-      left={0}
-      zIndex={isFullView() ? "$modal" : undefined}
-      transition="all 0.2s ease-in-out"
-      css={{
-        backdropFilter: isFullView() ? "blur(5px)" : undefined,
+      class="top-0 left-0 transition-all duration-200 ease-in-out"
+      classList={{
+        "fixed z-[1400] backdrop-blur-[5px]": isFullView(),
+        "relative w-full": !isFullView(),
+      }}
+      style={{
+        width: isFullView() ? "100vw" : undefined,
+        height: isFullView() ? "100vh" : props.h,
       }}
     >
       {props.children}
-      <VStack
-        pos="absolute"
-        right="$2"
-        bottom="$2"
-        spacing="$2"
-        opacity="0.7"
-        _hover={{ opacity: "1" }}
-        transition="opacity 0.3s ease"
-        pointerEvents="auto"
-        zIndex="$docked"
-      >
+      <div class="pointer-events-auto absolute right-2 bottom-2 z-10 flex flex-col items-center gap-y-2 opacity-70 transition-opacity duration-300 ease-in hover:opacity-100">
         {props.extraButtons}
         <Show when={!isFullScreen()}>
           {/* Full view toggle */}
@@ -130,17 +93,18 @@ export const BoxWithFullScreen = (
             }
             withArrow
           >
-            <IconButton
+            <Button
               aria-label={
                 isFullView()
                   ? t("home.preview.exit_fullview")
                   : t("home.preview.fullview")
               }
-              icon={isFullView() ? <BsFullscreenExit /> : <BsFullscreen />}
+              variant="secondary"
+              size="icon-sm"
               onClick={onToggle}
-              colorScheme="neutral"
-              size="sm"
-            />
+            >
+              {isFullView() ? <BsFullscreenExit /> : <BsFullscreen />}
+            </Button>
           </Tooltip>
         </Show>
 
@@ -153,26 +117,25 @@ export const BoxWithFullScreen = (
           }
           withArrow
         >
-          <IconButton
+          <Button
             aria-label={
               isFullScreen()
                 ? t("home.preview.exit_fullscreen")
                 : t("home.preview.fullscreen")
             }
-            icon={
-              isFullScreen() ? (
-                <AiOutlineFullscreenExit />
-              ) : (
-                <AiOutlineFullscreen />
-              )
-            }
+            variant="secondary"
+            size="icon-sm"
             onClick={toggleFullscreen}
-            colorScheme="neutral"
-            size="sm"
-          />
+          >
+            {isFullScreen() ? (
+              <AiOutlineFullscreenExit />
+            ) : (
+              <AiOutlineFullscreen />
+            )}
+          </Button>
         </Tooltip>
-      </VStack>
-    </Box>
+      </div>
+    </div>
   )
 }
 

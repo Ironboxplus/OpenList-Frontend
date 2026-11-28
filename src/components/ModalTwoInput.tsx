@@ -1,4 +1,5 @@
-import { Button, Input, Textarea, FormHelperText, VStack } from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
+import { Input, Textarea } from "~/components/ui/input"
 import { createSignal, JSXElement, Show } from "solid-js"
 import { useT } from "~/hooks"
 import { notify, validateFilename } from "~/utils"
@@ -87,12 +88,12 @@ export const ModalTwoInput = (props: ModalTwoInputProps) => {
           <Show
             when={props.type === "text"}
             fallback={
-              <VStack spacing="$2">
+              <div class="flex flex-col items-center gap-y-2">
                 <Input
                   id="modal-input1" // Update id to "modal-input1" for first input
                   type={props.type}
                   value={value1()} // Update value to value1 for first input
-                  invalid={!!validationError1()}
+                  aria-invalid={!!validationError1()}
                   onInput={(e) => {
                     handleInput1(e.currentTarget.value)
                   }}
@@ -103,15 +104,15 @@ export const ModalTwoInput = (props: ModalTwoInputProps) => {
                   }}
                 />
                 <Show when={validationError1()}>
-                  <FormHelperText color="$danger9">
+                  <p class="mt-1 text-sm text-destructive">
                     {t(`global.${validationError1()}`)}
-                  </FormHelperText>
+                  </p>
                 </Show>
                 <Input
                   id="modal-input2" // Add second input with id "modal-input2"
                   type={props.type}
                   value={value2()} // Bind value to value2 for second input
-                  invalid={!!validationError2()}
+                  aria-invalid={!!validationError2()}
                   onInput={(e) => {
                     handleInput2(e.currentTarget.value)
                   }}
@@ -122,51 +123,52 @@ export const ModalTwoInput = (props: ModalTwoInputProps) => {
                   }}
                 />
                 <Show when={validationError2()}>
-                  <FormHelperText color="$danger9">
+                  <p class="mt-1 text-sm text-destructive">
                     {t(`global.${validationError2()}`)}
-                  </FormHelperText>
+                  </p>
                 </Show>
-              </VStack>
+              </div>
             }
           >
-            <VStack spacing="$2">
+            <div class="flex flex-col items-center gap-y-2">
               <Textarea
                 id="modal-input1" // Update id to "modal-input1" for first input
                 value={value1()} // Update value to value1 for first input
-                invalid={!!validationError1()}
+                aria-invalid={!!validationError1()}
                 onInput={(e) => {
                   handleInput1(e.currentTarget.value)
                 }}
               />
               <Show when={validationError1()}>
-                <FormHelperText color="$danger9">
+                <p class="mt-1 text-sm text-destructive">
                   {t(`global.${validationError1()}`)}
-                </FormHelperText>
+                </p>
               </Show>
               <Textarea
                 id="modal-input2" // Add second input with id "modal-input2"
                 value={value2()} // Bind value to value2 for second input
-                invalid={!!validationError2()}
+                aria-invalid={!!validationError2()}
                 onInput={(e) => {
                   handleInput2(e.currentTarget.value)
                 }}
               />
               <Show when={validationError2()}>
-                <FormHelperText color="$danger9">
+                <p class="mt-1 text-sm text-destructive">
                   {t(`global.${validationError2()}`)}
-                </FormHelperText>
+                </p>
               </Show>
-            </VStack>
+            </div>
           </Show>
           <Show when={props.tips}>
-            <FormHelperText>{props.tips}</FormHelperText>
+            <p class="mt-1 text-sm text-muted-foreground">{props.tips}</p>
           </Show>
         </ModalBody>
-        <ModalFooter display="flex" gap="$2">
-          <Button onClick={props.onClose} colorScheme="neutral">
+        <ModalFooter class="flex gap-2">
+          <Button onClick={props.onClose} variant="secondary">
             {t("global.cancel")}
           </Button>
           <Button
+            variant="subtle"
             loading={props.loading}
             onClick={() => submit()}
             disabled={!value1() || !value2()}

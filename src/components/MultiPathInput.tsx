@@ -1,7 +1,6 @@
-import { VStack, Button } from "@hope-ui/solid"
 import { createSignal } from "solid-js"
 import { TbPlus, TbFolder } from "solid-icons/tb"
-import { Button as KitButton } from "~/components/ui/button"
+import { Button } from "~/components/ui/button"
 import { Textarea } from "~/components/ui/input"
 import { useT } from "~/hooks"
 import { pathJoin } from "~/utils"
@@ -45,7 +44,7 @@ export const MultiPathInput = (props: MultiPathInputProps) => {
   }
 
   return (
-    <VStack w="$full" spacing="$2" alignItems="stretch">
+    <div class="flex flex-col w-full items-stretch gap-y-2">
       {/* the kit's field and button, framed as the rest of the forms it is
           in (it was hope's filled textarea among outlined fields) */}
       <div class="flex w-full items-start gap-2">
@@ -58,7 +57,7 @@ export const MultiPathInput = (props: MultiPathInputProps) => {
           placeholder={props.placeholder || t("shares.files_placeholder")}
           onInput={(e) => props.onChange(e.currentTarget.value)}
         />
-        <KitButton
+        <Button
           type="button"
           variant="outline"
           size="icon"
@@ -68,7 +67,7 @@ export const MultiPathInput = (props: MultiPathInputProps) => {
           disabled={props.readOnly}
         >
           <TbFolder class="size-4" />
-        </KitButton>
+        </Button>
       </div>
 
       <Modal size="xl" opened={isOpen()} onClose={onClose}>
@@ -83,20 +82,17 @@ export const MultiPathInput = (props: MultiPathInputProps) => {
               showHiddenFolder={true}
             />
           </ModalBody>
-          <ModalFooter display="flex" gap="$2">
-            <Button onClick={onClose} colorScheme="neutral">
+          <ModalFooter class="flex gap-2">
+            <Button onClick={onClose} variant="secondary">
               {t("global.cancel")}
             </Button>
-            <Button
-              onClick={addPath}
-              colorScheme="primary"
-              leftIcon={<TbPlus />}
-            >
+            <Button onClick={addPath} variant="subtle">
+              <TbPlus class="mr-1.5 size-4" />
               {t("shares.add_path")}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </VStack>
+    </div>
   )
 }

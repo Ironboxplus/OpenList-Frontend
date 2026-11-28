@@ -32,7 +32,7 @@ const PDFViewer = () => {
     }
   })
   return (
-    <BoxWithFullScreen w="$full" h="60vh">
+    <BoxWithFullScreen h="60vh">
       <Box ref={ref} w="$full" h="$full" />
     </BoxWithFullScreen>
   )

@@ -143,7 +143,7 @@ const DocViewerApp = () => {
   })
 
   return (
-    <BoxWithFullScreen w="$full" h="70vh" pos="relative">
+    <BoxWithFullScreen h="70vh">
       {/* 缩放控制 */}
       <Box
         pos="absolute"

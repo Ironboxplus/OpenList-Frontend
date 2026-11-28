@@ -1,4 +1,3 @@
-import { Box } from "@hope-ui/solid"
 import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js"
 import { MaybeLoading } from "./FullLoading"
 import loader from "@monaco-editor/loader"
@@ -96,5 +95,5 @@ export const MonacoEditor = (props: MonacoEditorProps) => {
     model && model.dispose()
     monacoEditor && monacoEditor.dispose()
   })
-  return <Box w="$full" flex={1} minH="60vh" ref={monacoEditorDiv!} />
+  return <div class="w-full flex-1 min-h-[60vh]" ref={monacoEditorDiv!} />
 }

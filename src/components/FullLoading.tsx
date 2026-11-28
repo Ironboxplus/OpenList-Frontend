@@ -1,44 +1,47 @@
-import { Center, ElementType, Spinner, SpinnerProps } from "@hope-ui/solid"
-import { JSXElement, mergeProps, Show } from "solid-js"
+import { ComponentProps, JSXElement, Show } from "solid-js"
+import { Spinner } from "~/components/ui/spinner"
+import { cn } from "~/utils/cn"
 import { getMainColor } from "~/store"
+
+type Size = ComponentProps<typeof Spinner>["size"]
+
 export const FullScreenLoading = () => {
   return (
-    <Center h="100vh">
+    <div class="flex h-screen items-center justify-center">
       <Spinner
+        size="xl"
         thickness="4px"
         speed="0.65s"
-        emptyColor="$neutral4"
         color={getMainColor()}
-        size="xl"
+        class="border-accent"
       />
-    </Center>
+    </div>
   )
 }
 
 export const FullLoading = (props: {
-  py?: string
-  size?: string
+  /** Classes of the box (the padding is py-8 by default). */
+  class?: string
+  size?: Size
   thickness?: number
   ref?: any
 }) => {
-  const merged = mergeProps(
-    {
-      py: "$8",
-      size: "xl",
-      thickness: 4,
-    },
-    props,
-  )
   return (
-    <Center ref={props.ref} h="$full" w="$full" py={merged.py}>
+    <div
+      ref={props.ref}
+      class={cn(
+        "flex h-full w-full items-center justify-center py-8",
+        props.class,
+      )}
+    >
       <Spinner
-        thickness={`${merged.thickness}px`}
+        size={props.size ?? "xl"}
+        thickness={`${props.thickness ?? 4}px`}
         speed="0.65s"
-        emptyColor="$neutral4"
         color={getMainColor()}
-        size={merged.size as any}
+        class="border-accent"
       />
-    </Center>
+    </div>
   )
 }
 
@@ -53,12 +56,12 @@ export const MaybeLoading = (props: {
   )
 }
 
-export const CenterLoading = <C extends ElementType = "div">(
-  props: SpinnerProps<C>,
-) => {
+export const CenterLoading = (props: { size?: Size; class?: string }) => {
   return (
-    <Center w="$full" h="$full">
-      <Spinner color={getMainColor()} {...props} />
-    </Center>
+    <div
+      class={cn("flex h-full w-full items-center justify-center", props.class)}
+    >
+      <Spinner color={getMainColor()} size={props.size} />
+    </div>
   )
 }

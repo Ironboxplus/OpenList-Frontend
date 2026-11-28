@@ -524,7 +524,7 @@ function Editor(props: { data?: string | ArrayBuffer; contentType?: string }) {
 const TextEditor = () => {
   const [content] = useFetchText()
   return (
-    <BoxWithFullScreen w="$full" h="70vh">
+    <BoxWithFullScreen h="70vh">
       <MaybeLoading loading={content.loading}>
         <Editor
           data={content()?.content}

@@ -161,14 +161,11 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
           {/* image: the image itself */}
           <Match when={isImage}>
             <ImageWithError
-              w="$full"
-              display="block"
-              objectFit="cover"
-              fallback={<CenterLoading size="lg" h="160px" w="$full" />}
+              class="block w-full object-cover transition-[filter] duration-250 ease-in-out"
+              fallback={<CenterLoading size="lg" class="h-40 w-full" />}
               fallbackErr={<Center h="160px">{typeIcon("48px")}</Center>}
               src={obj.thumb || previewLink(obj)}
               loading="lazy"
-              css={{ transition: "filter 0.25s ease" }}
             />
           </Match>
 
@@ -176,14 +173,11 @@ const MasonryItem = (props: { obj: StoreObj; index: number }) => {
           <Match when={kind === "video-thumb"}>
             <Box pos="relative" w="$full">
               <ImageWithError
-                w="$full"
-                display="block"
-                objectFit="cover"
-                fallback={<CenterLoading size="lg" h="160px" w="$full" />}
+                class="block w-full object-cover transition-[filter] duration-250 ease-in-out"
+                fallback={<CenterLoading size="lg" class="h-40 w-full" />}
                 fallbackErr={<Center h="160px">{typeIcon("48px")}</Center>}
                 src={obj.thumb}
                 loading="lazy"
-                css={{ transition: "filter 0.25s ease" }}
               />
               <Center pos="absolute" top="0" left="0" right="0" bottom="0">
                 <Box

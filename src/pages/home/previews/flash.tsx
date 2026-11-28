@@ -94,7 +94,7 @@ const Preview = () => {
   }
 
   return (
-    <BoxWithFullScreen w="$full" h="75vh">
+    <BoxWithFullScreen h="75vh">
       <div
         id="swf-container"
         style={{
@@ -113,7 +113,7 @@ const Preview = () => {
 
         {/* 错误状态 */}
         <Show when={error()}>
-          <Error msg={t("preview.failed_load_swf")} h="$full" />
+          <Error msg={t("preview.failed_load_swf")} />
         </Show>
       </div>
     </BoxWithFullScreen>

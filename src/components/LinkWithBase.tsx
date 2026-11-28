@@ -1,8 +1,8 @@
 import { Link } from "@solidjs/router"
-import { Anchor } from "@hope-ui/solid"
 import { joinBase, encodePath } from "~/utils"
 import { useRouter } from "~/hooks"
 import { ComponentProps } from "solid-js"
+import { cn } from "~/utils/cn"
 
 export const LinkWithBase = (
   props: ComponentProps<typeof Link> & { encode?: boolean },
@@ -13,11 +13,16 @@ export const LinkWithBase = (
   />
 )
 
+/** A link with hope's Anchor look (our theme: rounded, padded, a grey hover). */
 export const AnchorWithBase = (
-  props: ComponentProps<typeof Anchor> & { cancelBase?: boolean },
+  props: ComponentProps<typeof Link> & { cancelBase?: boolean },
 ) => (
-  <Anchor
+  <Link
     {...props}
+    class={cn(
+      "relative cursor-pointer rounded-lg px-1.5 py-1 no-underline outline-none transition-[text-decoration] hover:bg-[rgba(132,133,141,0.18)] active:scale-95",
+      props.class,
+    )}
     href={props.cancelBase ? props.href : joinBase(props.href)}
   />
 )

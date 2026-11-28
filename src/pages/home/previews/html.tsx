@@ -7,7 +7,7 @@ function Html(props: { children?: string | ArrayBuffer }) {
   const [encoding, setEncoding] = createSignal<string>("utf-8")
   const { isString, text } = useParseText(props.children)
   return (
-    <BoxWithFullScreen w="$full" h="70vh" pos="relative">
+    <BoxWithFullScreen h="70vh">
       <hope.iframe
         w="$full"
         h="$full"

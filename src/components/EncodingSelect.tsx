@@ -1,4 +1,3 @@
-import { Box } from "@hope-ui/solid"
 import { SelectWrapper } from "./Base"
 import chardet from "chardet"
 import { createEffect } from "solid-js"
@@ -115,17 +114,7 @@ export function EncodingSelect(props: {
   })
 
   return (
-    <Box
-      pos="absolute"
-      right={0}
-      top={0}
-      w="$36"
-      opacity={0.15}
-      _hover={{
-        opacity: 1,
-      }}
-      zIndex="$docked"
-    >
+    <div class="absolute top-0 right-0 z-10 w-36 opacity-15 hover:opacity-100">
       <SelectWrapper
         options={encodingLabels.map((label) => ({
           label: label.toLocaleUpperCase(),
@@ -134,6 +123,6 @@ export function EncodingSelect(props: {
         value={props.encoding}
         onChange={(v) => props.setEncoding(v)}
       />
-    </Box>
+    </div>
   )
 }

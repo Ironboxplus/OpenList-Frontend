@@ -1,6 +1,5 @@
 import { IconButton } from "@hope-ui/solid"
 import { changeColor } from "seemly"
-import { Link } from "@solidjs/router"
 import { For, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { CgProfile } from "solid-icons/cg"
@@ -45,7 +44,7 @@ export const UserMenu = () => {
     <Show
       when={!guestEntry()}
       fallback={
-        <AnchorWithBase as={Link} href={guestEntry()!.href!}>
+        <AnchorWithBase href={guestEntry()!.href!}>
           <IconButton
             aria-label="login"
             color={getMainColor()}
