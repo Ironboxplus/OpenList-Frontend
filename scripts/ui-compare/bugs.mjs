@@ -2322,14 +2322,47 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
 // to the top): it takes the width of the files area at 16:9, and the only
 // limit is that the video and the title row under it lie whole in the window;
 // a window too wide for that narrows the video (user, 11-28)
+// The parts of the open dock per frame where one changes (the card, the dock,
+// the video, the title row: width and height), for "its size stays put"
+const dockParts = () => {
+  const w = (window.__parts = [])
+  const read = () => {
+    const q = (s) => document.querySelector(s)?.getBoundingClientRect()
+    const card = q(".obj-box")
+    const dock = q('[data-testid="dock"]')
+    const frame = q('[data-testid="dock-frame"]')
+    const title = document.querySelector('[data-testid="dock-title"]')?.parentElement?.parentElement?.getBoundingClientRect()
+    return [card?.width, dock?.width, dock?.height, frame?.width, frame?.height, title?.height].map((v) => +(v ?? 0).toFixed(2))
+  }
+  const frame = () => {
+    const p = read()
+    const last = w[w.length - 1]
+    if (p[2] > 0 && (!last || p.some((v, i) => v !== last[1][i]))) w.push([Math.round(performance.now()), p])
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+}
 for (const height of [900, 720]) {
-  await spec("viewer-dock-geometry", { height, init: [viewerProbe, listLayout] }, async (env) => {
+  await spec("viewer-dock-geometry", { height, init: [viewerProbe, listLayout, dockParts] }, async (env) => {
     const { page } = env
     const c = checker(env)
     await go(page, VDIR, 1200)
     await openRow(page, V1)
     c("the dock opens", await seen(page, DOCK_OPEN))
     await settle(page)
+    // the video plays: whatever its loading does to the page has been done
+    await playing(page)
+    const parts = await page.evaluate(() => window.__parts)
+    env.report = { ...(env.report ?? {}), parts }
+    // The card, the dock's width, the video and the title row (all but the
+    // dock's own height, which runs for 500ms) read the same, to the 20th of a
+    // pixel, from the first frame the dock stands to now; the dock's height
+    // too, once its run is over (a 0.5px change 340ms after it opened: the
+    // video's width followed a 1px change of the area, CI 46128004966)
+    const lastP = parts[parts.length - 1]?.[1]
+    const runOver = parts.filter((p) => p[0] > parts[0][0] + 700)
+    const drift = parts.some((p) => p[1].some((v, i) => i !== 2 && Math.abs(v - lastP[i]) >= JITTER)) || runOver.some((p) => Math.abs(p[1][2] - lastP[2]) >= JITTER)
+    c("the open dock's size stays put once it stands", parts.length > 0 && !drift, parts.slice(-8))
     const g = await page.evaluate(() => {
       const r = (sel) => document.querySelector(sel)?.getBoundingClientRect()
       const f = r('[data-testid="dock-frame"]')

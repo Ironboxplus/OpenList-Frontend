@@ -65,11 +65,10 @@ const nameOf = (path: string) => path.split("/").pop()!
 /** The title row under the video (two text lines and its padding), px. */
 const TITLE_ROW = 52
 /**
- * What lies above the video in the window, px: under the top bar the card's
- * gap, padding and header (the video's top was 73px under it at 1440, CI
- * 46127847627) and a margin.
+ * What lies above the video in the window, px: the video's top is 21px under
+ * the top bar's bottom (--shell-top) at scroll 0 (CI 46127847627), and a margin.
  */
-const EDGES = 88
+const EDGES = 32
 
 /**
  * Puts the window's scroll at `top` at once. The dock's own height and the
