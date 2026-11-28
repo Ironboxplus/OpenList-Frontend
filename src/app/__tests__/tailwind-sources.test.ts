@@ -70,7 +70,7 @@ describe("animations by name", () => {
     }
     expect([...used].length).toBeGreaterThan(0)
     const missing = [...used].filter(
-      (name) => !new RegExp(`@keyframes\s+${name}\b`).test(sheets),
+      (name) => !sheets.includes(`@keyframes ${name} {`),
     )
     expect(missing).toEqual([])
   })
