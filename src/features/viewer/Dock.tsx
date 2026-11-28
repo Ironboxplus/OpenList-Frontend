@@ -62,6 +62,10 @@ type MoviEl = HTMLElement & {
 
 const isVideo = (o: Obj) => o.type === ObjType.VIDEO
 const nameOf = (path: string) => path.split("/").pop()!
+/** The title row under the video (two text lines and its padding), px. */
+const TITLE_ROW = 52
+/** What lies above the video: the card's gap and padding, plus a margin, px. */
+const EDGES = 32
 
 /**
  * Puts the window's scroll at `top` at once. The dock's own height and the
@@ -401,10 +405,10 @@ export const Dock = () => {
           ref={slot}
           class="relative mx-auto aspect-video"
           style={{
-            // about 60% of the screen at most, and room for five rows of
-            // the list under it (plan §0.2)
-            width:
-              "min(100%, max(320px, calc(min(60vh, 100vh - var(--shell-top, 0px) - 380px) * 16 / 9)))",
+            // the files area's width at 16:9; the one limit is that the video
+            // and the title row under it lie whole in the window, and a window
+            // too wide for that narrows the video (plan §0.2, 11-28)
+            width: `min(100%, max(320px, calc((100dvh - var(--shell-top, 0px) - ${TITLE_ROW + EDGES}px) * 16 / 9)))`,
           }}
         >
           <div
