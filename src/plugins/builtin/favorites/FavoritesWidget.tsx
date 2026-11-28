@@ -1,13 +1,5 @@
-import {
-  Box,
-  HStack,
-  Icon,
-  IconButton,
-  Spinner,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
 import { For, Show, createSignal } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { TbBookmark, TbBookmarkFilled, TbFolder, TbFile } from "solid-icons/tb"
 import { useRouter, useT } from "~/hooks"
 import { handleResp, notify, r } from "~/utils"
@@ -23,6 +15,8 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
+import { Spinner } from "~/components/ui/spinner"
 
 export const FavoritesWidget = () => {
   const t = useT()
@@ -73,90 +67,80 @@ export const FavoritesWidget = () => {
   return (
     <Popover placement="bottom-end" onOpen={refresh} closeOnBlur>
       <PopoverTrigger
-        as={IconButton}
+        as={Button}
         aria-label={t("home.favorites.title")}
-        compact
-        size="lg"
+        size="icon-lg"
         variant="ghost"
-        icon={<TbBookmark />}
-      />
+      >
+        <TbBookmark />
+      </PopoverTrigger>
       <PopoverContent w="$96" maxW="90vw">
         <PopoverArrow />
         <PopoverHeader border="none">
-          <HStack justifyContent="space-between" w="$full">
-            <Text fontWeight="$medium">{t("home.favorites.title")}</Text>
-            <IconButton
+          <div class="flex flex-row items-center justify-between w-full">
+            <p class="font-medium">{t("home.favorites.title")}</p>
+            <Button
               aria-label={t("home.favorites.add")}
-              size="sm"
+              size="icon-sm"
               variant="ghost"
               disabled={currentIsFavorited()}
-              icon={
-                currentIsFavorited() ? <TbBookmarkFilled /> : <TbBookmark />
-              }
               onClick={addCurrent}
-            />
-          </HStack>
+            >
+              {currentIsFavorited() ? <TbBookmarkFilled /> : <TbBookmark />}
+            </Button>
+          </div>
         </PopoverHeader>
         <PopoverBody maxH="$96" overflowY="auto">
           <Show
             when={!loading()}
             fallback={
-              <HStack justifyContent="center" py="$4">
+              <div class="flex flex-row items-center justify-center py-4">
                 <Spinner size="sm" />
-              </HStack>
+              </div>
             }
           >
             <Show
               when={favorites().length > 0}
               fallback={
-                <Text color="$neutral10" textAlign="center" py="$4">
+                <p class="text-muted-foreground text-center py-4">
                   {t("home.favorites.empty")}
-                </Text>
+                </p>
               }
             >
-              <VStack alignItems="stretch" spacing="$1">
+              <div class="flex flex-col items-stretch gap-y-1">
                 <For each={favorites()}>
                   {(fav) => (
-                    <HStack
-                      px="$2"
-                      py="$2"
-                      rounded="$md"
-                      cursor="pointer"
-                      _hover={{ bgColor: "$neutral4" }}
-                      justifyContent="space-between"
+                    <div
+                      class="flex flex-row items-center px-2 py-2 rounded-md cursor-pointer justify-between hover:bg-accent"
                       onClick={() => to(fav.path)}
                     >
-                      <HStack spacing="$2" minW="0">
-                        <Icon
-                          as={fav.is_dir ? TbFolder : TbFile}
-                          color="$neutral10"
-                          boxSize="$5"
+                      <div class="flex flex-row items-center min-w-0 gap-x-2">
+                        <Dynamic
+                          component={fav.is_dir ? TbFolder : TbFile}
+                          class="size-5 text-muted-foreground"
                         />
-                        <Box minW="0">
-                          <Text noOfLines={1}>{fav.name || fav.path}</Text>
+                        <div class="min-w-0">
+                          <p class="line-clamp-1">{fav.name || fav.path}</p>
                           <Show when={fav.tag}>
-                            <Text
-                              fontSize="$xs"
-                              color="$neutral10"
-                              noOfLines={1}
-                            >
+                            <p class="text-xs text-muted-foreground line-clamp-1">
                               {fav.tag}
-                            </Text>
+                            </p>
                           </Show>
-                        </Box>
-                      </HStack>
-                      <IconButton
+                        </div>
+                      </div>
+                      <Button
                         aria-label={t("home.favorites.remove")}
-                        size="xs"
+                        size="icon-xs"
                         variant="ghost"
-                        colorScheme="danger"
-                        icon={<TbBookmarkFilled />}
+                        class="text-destructive hover:text-destructive"
                         onClick={(e: MouseEvent) => remove(fav, e)}
-                      />
-                    </HStack>
+                      >
+                        <TbBookmarkFilled />
+                      </Button>
+                    </div>
                   )}
                 </For>
-              </VStack>
+              </div>
             </Show>
           </Show>
         </PopoverBody>

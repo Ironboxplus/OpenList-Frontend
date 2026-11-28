@@ -1,19 +1,11 @@
-import {
-  Badge,
-  Box,
-  Button,
-  HStack,
-  Td,
-  Text,
-  Tr,
-  VStack,
-} from "@hope-ui/solid"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
 import { Show } from "solid-js"
 import { useRouter, useT } from "~/hooks"
 import { PluginItem } from "~/types"
 import { DeletePopover } from "../common/DeletePopover"
 import { FaSolidPuzzlePiece } from "solid-icons/fa"
-import { colorModeValue } from "~/store/color-mode"
+import { TableCell, TableRow } from "~/components/ui/table"
 
 export interface PluginItemProps {
   plugin: PluginItem
@@ -26,8 +18,9 @@ export function PluginOp(props: PluginItemProps) {
   const t = useT()
   const { to } = useRouter()
   return (
-    <HStack spacing="$2">
+    <div class="flex flex-row items-center gap-x-2">
       <Button
+        variant="subtle"
         size="sm"
         onClick={() => {
           to(`/@manage/plugins/config/${encodeURIComponent(props.plugin.id)}`)
@@ -37,7 +30,7 @@ export function PluginOp(props: PluginItemProps) {
       </Button>
       <Button
         size="sm"
-        colorScheme={props.plugin.enabled ? "warning" : "success"}
+        variant={props.plugin.enabled ? "warning" : "success"}
         onClick={() => {
           props.onToggle(props.plugin)
         }}
@@ -50,27 +43,17 @@ export function PluginOp(props: PluginItemProps) {
           props.onDelete(props.plugin)
         }}
       />
-    </HStack>
+    </div>
   )
 }
 
 export function PluginListItem(props: PluginItemProps) {
   const t = useT()
   return (
-    <Tr>
-      <Td>
-        <HStack spacing="$2">
-          <Box
-            w="$7"
-            h="$7"
-            rounded="$md"
-            bgColor="$neutral3"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            flexShrink={0}
-            overflow="hidden"
-          >
+    <TableRow>
+      <TableCell>
+        <div class="flex flex-row items-center gap-x-2">
+          <div class="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
             <Show
               when={props.plugin.icon}
               fallback={<FaSolidPuzzlePiece size={14} />}
@@ -85,76 +68,56 @@ export function PluginListItem(props: PluginItemProps) {
                 }}
               />
             </Show>
-          </Box>
-          <VStack alignItems="start" spacing="0">
-            <Text fontWeight="$medium">{props.plugin.name}</Text>
-            <Text fontSize="$xs" color="$neutral10">
-              {props.plugin.id}
-            </Text>
-          </VStack>
-        </HStack>
-      </Td>
-      <Td>
-        <Badge colorScheme="neutral">{props.plugin.type || "ui"}</Badge>
-      </Td>
-      <Td>
-        <Text fontSize="$sm">v{props.plugin.version || "1.0.0"}</Text>
-      </Td>
-      <Td>
-        <Text fontSize="$sm" color="$neutral10">
+          </div>
+          <div class="flex flex-col items-start gap-y-0">
+            <p class="font-medium">{props.plugin.name}</p>
+            <p class="text-xs text-muted-foreground">{props.plugin.id}</p>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant="secondary">{props.plugin.type || "ui"}</Badge>
+      </TableCell>
+      <TableCell>
+        <p class="text-sm">v{props.plugin.version || "1.0.0"}</p>
+      </TableCell>
+      <TableCell>
+        <p class="text-sm text-muted-foreground">
           {props.plugin.author || "Community"}
-        </Text>
-      </Td>
-      <Td>
-        <HStack spacing="$1">
-          <Badge colorScheme={props.plugin.enabled ? "success" : "neutral"}>
+        </p>
+      </TableCell>
+      <TableCell>
+        <div class="flex flex-row items-center gap-x-1">
+          <Badge variant={props.plugin.enabled ? "success" : "secondary"}>
             {t(`global.${props.plugin.enabled ? "enable" : "disable"}`)}
           </Badge>
           <Show when={props.plugin.high_privilege}>
-            <Badge colorScheme="danger">Root</Badge>
+            <Badge variant="danger">Root</Badge>
           </Show>
-        </HStack>
-      </Td>
-      <Td>
+        </div>
+      </TableCell>
+      <TableCell>
         <PluginOp {...props} />
-      </Td>
-    </Tr>
+      </TableCell>
+    </TableRow>
   )
 }
 
 export function PluginGridItem(props: PluginItemProps) {
   const t = useT()
-  const shadow = colorModeValue("$sm", "$none")
-  const bg = colorModeValue("$white", "$neutral3")
-  const borderColor = colorModeValue("$neutral4", "$neutral5")
 
   return (
-    <VStack
-      w="$full"
-      p="$3"
-      spacing="$3"
-      rounded="$lg"
-      border="1px solid"
-      borderColor={props.plugin.high_privilege ? "$danger6" : borderColor()}
-      bgColor={bg()}
-      shadow={shadow()}
-      alignItems="start"
-      justifyContent="space-between"
+    <div
+      class="flex w-full flex-col items-start justify-between gap-y-3 rounded-lg border bg-card p-3 shadow-sm dark:shadow-none"
+      classList={{
+        "border-destructive/40": props.plugin.high_privilege,
+        "border-border": !props.plugin.high_privilege,
+      }}
     >
-      <VStack alignItems="start" spacing="$1_5" w="$full">
-        <HStack spacing="$2" w="$full" justifyContent="space-between">
-          <HStack spacing="$2">
-            <Box
-              w="$8"
-              h="$8"
-              rounded="$md"
-              bgColor="$neutral3"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              flexShrink={0}
-              overflow="hidden"
-            >
+      <div class="flex flex-col items-start w-full gap-y-1.5">
+        <div class="flex flex-row items-center w-full justify-between gap-x-2">
+          <div class="flex flex-row items-center gap-x-2">
+            <div class="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
               <Show
                 when={props.plugin.icon}
                 fallback={<FaSolidPuzzlePiece size={16} />}
@@ -169,42 +132,38 @@ export function PluginGridItem(props: PluginItemProps) {
                   }}
                 />
               </Show>
-            </Box>
-            <VStack alignItems="start" spacing="0">
-              <Text fontWeight="$bold" fontSize="$sm">
-                {props.plugin.name}
-              </Text>
-              <Text fontSize="$xs" color="$neutral10">
-                {props.plugin.id}
-              </Text>
-            </VStack>
-          </HStack>
-          <HStack spacing="$1">
-            <Badge colorScheme={props.plugin.enabled ? "success" : "neutral"}>
+            </div>
+            <div class="flex flex-col items-start gap-y-0">
+              <p class="font-bold text-sm">{props.plugin.name}</p>
+              <p class="text-xs text-muted-foreground">{props.plugin.id}</p>
+            </div>
+          </div>
+          <div class="flex flex-row items-center gap-x-1">
+            <Badge variant={props.plugin.enabled ? "success" : "secondary"}>
               {t(`global.${props.plugin.enabled ? "enable" : "disable"}`)}
             </Badge>
             <Show when={props.plugin.high_privilege}>
-              <Badge colorScheme="danger">Root</Badge>
+              <Badge variant="danger">Root</Badge>
             </Show>
-          </HStack>
-        </HStack>
+          </div>
+        </div>
 
-        <Text fontSize="$xs" color="$neutral10" noOfLines={2} minH="32px">
+        <p class="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
           {props.plugin.description || t("plugins.empty_desc")}
-        </Text>
+        </p>
 
-        <HStack spacing="$2" fontSize="$xs" color="$neutral9">
+        <div class="flex flex-row items-center text-xs text-muted-foreground gap-x-2">
           <span>v{props.plugin.version || "1.0.0"}</span>
           <span>•</span>
           <span>{props.plugin.author || "Community"}</span>
           <span>•</span>
-          <Badge colorScheme="neutral">{props.plugin.type || "ui"}</Badge>
-        </HStack>
-      </VStack>
+          <Badge variant="secondary">{props.plugin.type || "ui"}</Badge>
+        </div>
+      </div>
 
-      <HStack spacing="$2" w="$full" justifyContent="end">
+      <div class="flex flex-row items-center w-full justify-end gap-x-2">
         <PluginOp {...props} />
-      </HStack>
-    </VStack>
+      </div>
+    </div>
   )
 }

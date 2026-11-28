@@ -1,27 +1,3 @@
-import {
-  Box,
-  Button,
-  Grid,
-  HStack,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectTrigger,
-  SelectValue,
-  Table,
-  Tbody,
-  Text,
-  Textarea,
-  Th,
-  Thead,
-  Tr,
-  VStack,
-  Switch as HopeSwitch,
-} from "@hope-ui/solid"
 import { createMemo, createSignal, For, Match, onMount, Switch } from "solid-js"
 import { createStorageSignal } from "@solid-primitives/storage"
 import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
@@ -37,6 +13,17 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "~/components/overlay"
+import { Button } from "~/components/ui/button"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import { SwitchField } from "~/components/ui/toggle-field"
+import { Textarea } from "~/components/ui/input"
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table"
 
 const Plugins = () => {
   const t = useT()
@@ -154,83 +141,60 @@ const Plugins = () => {
   ]
 
   return (
-    <VStack spacing="$3" alignItems="start" w="$full">
+    <div class="flex flex-col items-start w-full gap-y-3">
       {/* Top Operations Bar */}
-      <HStack
-        spacing="$2"
-        gap="$2"
-        w="$full"
-        wrap={{
-          "@initial": "wrap",
-          "@md": "unset",
-        }}
-      >
-        <Button colorScheme="accent" loading={loading()} onClick={refresh}>
+      <div class="flex w-full flex-row flex-wrap items-center gap-2 md:flex-nowrap">
+        <Button variant="subtle" loading={loading()} onClick={refresh}>
           {t("global.refresh")}
         </Button>
         <Button
+          variant="subtle"
           onClick={() => {
             to("/@manage/plugins/add")
           }}
         >
           {t("global.add")}
         </Button>
-        <Button colorScheme="neutral" onClick={() => setImportModalOpen(true)}>
+        <Button variant="secondary" onClick={() => setImportModalOpen(true)}>
           {t("plugins.actions.import")}
         </Button>
-        <Button colorScheme="neutral" onClick={handleExportJson}>
+        <Button variant="secondary" onClick={handleExportJson}>
           {t("plugins.actions.export")}
         </Button>
 
-        <HStack spacing="$1">
+        <div class="flex flex-row items-center gap-x-1">
           <span>{t("storages.other.layout")}</span>
-          <HopeSwitch
+          <SwitchField
+            aria-label={t("storages.other.layout")}
             checked={layout() === "grid"}
-            onChange={(e: any) =>
-              setLayout(e.target.checked ? "grid" : "table")
-            }
+            onChange={(on) => setLayout(on ? "grid" : "table")}
           />
-        </HStack>
+        </div>
 
-        <Select
+        <SimpleSelect
+          class="w-40"
+          options={categories.map((c) => ({ value: c.key, label: c.label }))}
           value={selectedType()}
-          onChange={(v: any) => setSelectedType(v)}
-        >
-          <SelectTrigger w="$40">
-            <SelectValue />
-            <SelectIcon />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectListbox>
-              <For each={categories}>
-                {(cat) => (
-                  <SelectOption value={cat.key}>
-                    <SelectOptionText>{cat.label}</SelectOptionText>
-                    <SelectOptionIndicator />
-                  </SelectOption>
-                )}
-              </For>
-            </SelectListbox>
-          </SelectContent>
-        </Select>
-      </HStack>
+          onChange={setSelectedType}
+        />
+      </div>
 
       {/* Main Content Layout */}
       <Switch>
         <Match when={layout() === "table"}>
-          <Box w="$full" overflowX="auto">
-            <Table highlightOnHover dense>
-              <Thead>
-                <Tr>
-                  <Th>{t("plugins.name")}</Th>
-                  <Th>{t("plugins.type")}</Th>
-                  <Th>{t("plugins.version")}</Th>
-                  <Th>{t("plugins.author")}</Th>
-                  <Th>{t("plugins.status")}</Th>
-                  <Th>{t("global.operations")}</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
+          <div class="w-full overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("plugins.name")}</TableHead>
+                  <TableHead>{t("plugins.type")}</TableHead>
+                  <TableHead>{t("plugins.version")}</TableHead>
+                  <TableHead>{t("plugins.author")}</TableHead>
+                  <TableHead>{t("plugins.status")}</TableHead>
+                  <TableHead>{t("global.operations")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 <For each={shownPlugins()}>
                   {(plugin) => (
                     <PluginListItem
@@ -240,21 +204,13 @@ const Plugins = () => {
                     />
                   )}
                 </For>
-              </Tbody>
+              </TableBody>
             </Table>
-          </Box>
+          </div>
         </Match>
 
         <Match when={layout() === "grid"}>
-          <Grid
-            templateColumns={{
-              "@initial": "1fr",
-              "@md": "repeat(2, 1fr)",
-              "@lg": "repeat(3, 1fr)",
-            }}
-            gap="$3"
-            w="$full"
-          >
+          <div class="grid w-full grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             <For each={shownPlugins()}>
               {(plugin) => (
                 <PluginGridItem
@@ -264,7 +220,7 @@ const Plugins = () => {
                 />
               )}
             </For>
-          </Grid>
+          </div>
         </Match>
       </Switch>
 
@@ -279,35 +235,34 @@ const Plugins = () => {
           <ModalCloseButton />
           <ModalHeader>{t("plugins.import_modal.title")}</ModalHeader>
           <ModalBody>
-            <VStack spacing="$3" alignItems="stretch">
-              <Text fontSize="$sm" color="$neutral11">
+            <div class="flex flex-col items-stretch gap-y-3">
+              <p class="text-sm text-muted-foreground">
                 {t("plugins.import_modal.paste_json")}
-              </Text>
+              </p>
               <Textarea
                 rows={10}
                 placeholder='[{"id": "plugin-1", "name": "...", "enabled": true}]'
                 value={importJsonText()}
                 onInput={(e: any) => setImportJsonText(e.target.value)}
               />
-            </VStack>
+            </div>
           </ModalBody>
           <ModalFooter>
-            <HStack spacing="$2">
+            <div class="flex flex-row items-center gap-x-2">
               <Button
-                variant="subtle"
-                colorScheme="neutral"
+                variant="secondary"
                 onClick={() => setImportModalOpen(false)}
               >
                 {t("global.cancel")}
               </Button>
-              <Button colorScheme="accent" onClick={handleImportJson}>
+              <Button variant="subtle" onClick={handleImportJson}>
                 {t("plugins.actions.import")}
               </Button>
-            </HStack>
+            </div>
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </VStack>
+    </div>
   )
 }
 

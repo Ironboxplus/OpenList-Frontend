@@ -1,34 +1,14 @@
-import {
-  Badge,
-  Box,
-  Button,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  Heading,
-  HStack,
-  Icon,
-  Input,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectTrigger,
-  SelectValue,
-  Switch as HopeSwitch,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
 import { createSignal, Show } from "solid-js"
 import { FiUploadCloud } from "solid-icons/fi"
 import { FaSolidPuzzlePiece } from "solid-icons/fa"
 import { useManageTitle, useRouter, useT } from "~/hooks"
 import { PluginItem, Resp } from "~/types"
 import { handleResp, notify, parsePluginZip, pluginEngine, r } from "~/utils"
-import { colorModeValue } from "~/store/color-mode"
+import { Input } from "~/components/ui/input"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import { SwitchField } from "~/components/ui/toggle-field"
 
 const AddPlugin = () => {
   const t = useT()
@@ -49,9 +29,6 @@ const AddPlugin = () => {
 
   // High privilege state
   const [highPrivilege, setHighPrivilege] = createSignal(false)
-
-  const borderColor = colorModeValue("$neutral4", "$neutral5")
-  const dropBg = colorModeValue("$neutral1", "$neutral2")
 
   const handleFileChange = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".zip")) {
@@ -121,99 +98,62 @@ const AddPlugin = () => {
   }
 
   return (
-    <VStack spacing="$5" alignItems="start" w="$full" maxW="$3xl">
-      <Heading mb="$1">{t("plugins.actions.install")}</Heading>
+    <div class="flex flex-col items-start w-full max-w-3xl gap-y-5">
+      <h2 class="font-semibold mb-1">{t("plugins.actions.install")}</h2>
 
       {/* 1. Install Method Select */}
-      <FormControl
-        w="$full"
-        display="flex"
-        flexDirection="column"
-        alignItems="start"
-        gap="$1_5"
-      >
-        <FormLabel for="install_method">
-          {t("plugins.install_modal.install_type")}
-        </FormLabel>
-        <Select
-          id="install_method"
-          value={installMethod()}
-          onChange={(v: any) => setInstallMethod(v)}
+      <div class="relative w-full flex flex-col items-start gap-1.5">
+        <label
+          class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+          for="install_method"
         >
-          <SelectTrigger w="$full" maxW="$sm">
-            <SelectValue />
-            <SelectIcon />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectListbox>
-              <SelectOption value="zip">
-                <SelectOptionText>
-                  {t("plugins.install_modal.zip_tab")}
-                </SelectOptionText>
-                <SelectOptionIndicator />
-              </SelectOption>
-              <SelectOption value="url">
-                <SelectOptionText>
-                  {t("plugins.install_modal.url_tab")}
-                </SelectOptionText>
-                <SelectOptionIndicator />
-              </SelectOption>
-            </SelectListbox>
-          </SelectContent>
-        </Select>
-      </FormControl>
+          {t("plugins.install_modal.install_type")}
+        </label>
+        <SimpleSelect
+          class="w-full max-w-sm"
+          options={[
+            { value: "zip", label: t("plugins.install_modal.zip_tab") },
+            { value: "url", label: t("plugins.install_modal.url_tab") },
+          ]}
+          value={installMethod()}
+          onChange={(v) => setInstallMethod(v as "zip" | "url")}
+        />
+      </div>
 
       {/* 2. ZIP Mode */}
       <Show
         when={installMethod() === "zip"}
         fallback={
-          <FormControl
-            w="$full"
-            display="flex"
-            flexDirection="column"
-            alignItems="start"
-            gap="$1_5"
-            required
-          >
-            <FormLabel for="manifest_url">
+          <div class="relative w-full flex flex-col items-start gap-1.5">
+            <label
+              class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+              for="manifest_url"
+            >
               {t("plugins.install_modal.url_label")}
-            </FormLabel>
+            </label>
             <Input
+              class="w-full max-w-2xl"
               id="manifest_url"
-              w="$full"
-              maxW="$2xl"
               placeholder={t("plugins.install_modal.url_placeholder")}
               value={manifestUrl()}
               onInput={(e: any) => setManifestUrl(e.target.value)}
             />
-            <FormHelperText color="$neutral10" fontSize="$xs" mt="$0_5">
+            <p class="mt-0.5 inline-block text-xs leading-5 text-muted-foreground">
               {t("plugins.install_modal.url_help")}
-            </FormHelperText>
-          </FormControl>
+            </p>
+          </div>
         }
       >
-        <FormControl
-          w="$full"
-          display="flex"
-          flexDirection="column"
-          alignItems="start"
-          gap="$1_5"
-          required
-        >
-          <FormLabel>{t("plugins.install_modal.zip_file_label")}</FormLabel>
-          <Box
-            w="$full"
-            maxW="$2xl"
-            p="$6"
-            rounded="$md"
-            borderWidth="2px"
-            borderStyle="dashed"
-            borderColor={isDragging() ? "$accent8" : borderColor()}
-            bgColor={isDragging() ? "$accent1" : dropBg()}
-            textAlign="center"
-            cursor="pointer"
-            transition="all 0.2s"
-            _hover={{ borderColor: "$accent8" }}
+        <div class="relative w-full flex flex-col items-start gap-1.5">
+          <label class="inline-block mb-1 text-sm leading-5 font-medium text-foreground">
+            {t("plugins.install_modal.zip_file_label")}
+          </label>
+          <div
+            class="w-full max-w-2xl cursor-pointer rounded-md border-2 border-dashed p-6 text-center transition-all hover:border-primary"
+            classList={{
+              "border-primary bg-primary/10": isDragging(),
+              "border-border bg-muted": !isDragging(),
+            }}
             onDragOver={(e: DragEvent) => {
               e.preventDefault()
               setIsDragging(true)
@@ -238,47 +178,28 @@ const AddPlugin = () => {
               input.click()
             }}
           >
-            <VStack spacing="$2" alignItems="center">
-              <Icon as={FiUploadCloud} boxSize="$8" color="$accent9" />
-              <Text fontWeight="$medium" fontSize="$sm">
+            <div class="flex flex-col items-center gap-y-2">
+              <FiUploadCloud class="size-8 text-primary" />
+              <p class="font-medium text-sm">
                 {zipFile()
                   ? zipFile()?.name
                   : t("plugins.install_modal.zip_drop_title")}
-              </Text>
-              <Text fontSize="$xs" color="$neutral10">
+              </p>
+              <p class="text-xs text-muted-foreground">
                 {t("plugins.install_modal.zip_drop_help")}
-              </Text>
-            </VStack>
-          </Box>
-        </FormControl>
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Extracted Preview */}
         <Show when={zipParsedManifest()}>
-          <Box
-            w="$full"
-            maxW="$2xl"
-            p="$3"
-            rounded="$md"
-            borderWidth="1px"
-            borderColor="$accent6"
-            bgColor="$accent1"
-          >
-            <HStack spacing="$3" alignItems="center">
-              <Box
-                w="$9"
-                h="$9"
-                rounded="$md"
-                bgColor="$accent3"
-                color="$accent9"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                flexShrink={0}
-                overflow="hidden"
-              >
+          <div class="w-full max-w-2xl p-3 rounded-md border border-primary bg-primary/10">
+            <div class="flex flex-row items-center gap-x-3">
+              <div class="w-9 h-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 overflow-hidden">
                 <Show
                   when={zipParsedManifest()?.icon}
-                  fallback={<Icon as={FaSolidPuzzlePiece} boxSize="$5" />}
+                  fallback={<FaSolidPuzzlePiece class="size-5" />}
                 >
                   <img
                     src={zipParsedManifest()?.icon}
@@ -290,65 +211,56 @@ const AddPlugin = () => {
                     }}
                   />
                 </Show>
-              </Box>
-              <VStack alignItems="flex-start" spacing="$0_5" flex={1}>
-                <HStack spacing="$2" wrap="wrap">
-                  <Text fontWeight="$bold" fontSize="$sm">
-                    {zipParsedManifest()?.name}
-                  </Text>
-                  <Badge colorScheme="accent" variant="subtle">
-                    v{zipParsedManifest()?.version}
-                  </Badge>
-                  <Badge colorScheme="neutral" variant="outline">
-                    {zipParsedManifest()?.id}
-                  </Badge>
-                </HStack>
-                <Text fontSize="$xs" color="$neutral10" noOfLines={1}>
+              </div>
+              <div class="flex-col items-start flex-1 gap-y-0.5">
+                <div class="flex flex-row items-center flex-wrap gap-x-2">
+                  <p class="font-bold text-sm">{zipParsedManifest()?.name}</p>
+                  <Badge variant="info">v{zipParsedManifest()?.version}</Badge>
+                  <Badge variant="outline">{zipParsedManifest()?.id}</Badge>
+                </div>
+                <p class="text-xs text-muted-foreground line-clamp-1">
                   {zipParsedManifest()?.description ||
                     "ZIP plugin package parsed successfully"}
-                </Text>
-              </VStack>
-            </HStack>
-          </Box>
+                </p>
+              </div>
+            </div>
+          </div>
         </Show>
       </Show>
 
       {/* 3. High Privilege Option */}
-      <FormControl
-        w="$full"
-        display="flex"
-        flexDirection="column"
-        alignItems="start"
-        gap="$1_5"
-      >
-        <FormLabel for="high_privilege">
+      <div class="relative w-full flex flex-col items-start gap-1.5">
+        <label
+          class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+          for="high_privilege"
+        >
           {t("plugins.install_modal.high_privilege_label")}
-        </FormLabel>
-        <HStack spacing="$2">
-          <HopeSwitch
+        </label>
+        <div class="flex flex-row items-center gap-x-2">
+          <SwitchField
             id="high_privilege"
             checked={highPrivilege()}
-            onChange={(e: any) => setHighPrivilege(e.target.checked)}
+            onChange={setHighPrivilege}
           />
           <Show when={highPrivilege()}>
-            <Badge colorScheme="danger">Root Access</Badge>
+            <Badge variant="danger">Root Access</Badge>
           </Show>
-        </HStack>
-        <FormHelperText color="$neutral10" fontSize="$xs" mt="$0_5">
+        </div>
+        <p class="mt-0.5 inline-block text-xs leading-5 text-muted-foreground">
           {t("plugins.install_modal.high_privilege_help")}
-        </FormHelperText>
-      </FormControl>
+        </p>
+      </div>
 
       {/* 4. Operations */}
-      <HStack spacing="$2" mt="$2">
-        <Button loading={loading()} onClick={handleInstall}>
+      <div class="flex flex-row items-center mt-2 gap-x-2">
+        <Button variant="subtle" loading={loading()} onClick={handleInstall}>
           {t("global.add")}
         </Button>
-        <Button colorScheme="neutral" onClick={() => back()}>
+        <Button variant="secondary" onClick={() => back()}>
           {t("global.back")}
         </Button>
-      </HStack>
-    </VStack>
+      </div>
+    </div>
   )
 }
 

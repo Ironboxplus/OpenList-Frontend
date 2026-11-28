@@ -1,19 +1,4 @@
 import {
-  Image,
-  Center,
-  Flex,
-  Heading,
-  Input,
-  Button,
-  Progress,
-  Text,
-  Spinner,
-  Badge,
-  HStack,
-  Spacer,
-  VStack,
-} from "@hope-ui/solid"
-import {
   createEffect,
   createMemo,
   createSignal,
@@ -35,6 +20,13 @@ import {
 import LoginBg from "../login/LoginBg"
 import EnvCheck, { useEnvCheck } from "./EnvCheck"
 import { colorModeValue } from "~/store/color-mode"
+import { Badge } from "~/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { Card } from "~/components/ui/card"
+import { Input } from "~/components/ui/input"
+import { Progress } from "~/components/ui/progress"
+import { cn } from "~/utils/cn"
+import { Spinner } from "~/components/ui/spinner"
 
 /**
  * 初始化阶段：
@@ -93,7 +85,6 @@ const Init = () => {
     () => `${t("init.setup_to")} ${getSetting("site_title")}`,
   )
   useTitle(title)
-  const bgColor = colorModeValue("white", "$neutral1")
 
   const [username, setUsername] = createSignal("admin")
   const [password, setPassword] = createSignal("")
@@ -303,52 +294,42 @@ const Init = () => {
   }
 
   return (
-    <Center zIndex="$docked" w="$full" h="100vh">
-      <VStack
-        bgColor={bgColor()}
-        rounded="$xl"
-        p="24px"
-        w={{
-          "@initial": "90%",
-          "@sm": "364px",
-        }}
-        spacing="$4"
-      >
-        <Flex alignItems="center" justifyContent="space-around">
-          <Image mr="$2" boxSize="$12" src={logo()} />
-          <Heading color="$info9" fontSize="$2xl">
-            {t("init.title")}
-          </Heading>
-        </Flex>
+    <div class="flex justify-center items-center z-10 w-full h-screen">
+      <Card class="flex w-[90%] flex-col items-center gap-y-4 p-6 sm:w-[364px]">
+        <div class="flex items-center justify-around">
+          <img class="mr-2 size-12" src={logo()} />
+          <h2 class="font-semibold text-primary text-2xl">{t("init.title")}</h2>
+        </div>
 
         {/* 步骤指示器（Go 后端无环境自检步骤，只显示两步） */}
-        <HStack w="$full" spacing="$2" justifyContent="center">
+        <div class="flex flex-row items-center w-full justify-center gap-x-2">
           <For each={steps()}>
             {(s, i) => (
-              <HStack spacing="$1">
+              <div class="flex flex-row items-center gap-x-1">
                 <Badge
-                  borderRadius="$full"
-                  variant={step() === s ? "solid" : "subtle"}
-                  colorScheme={
+                  class="rounded-full"
+                  variant={
                     step() === s
-                      ? "primary"
+                      ? "default"
                       : steps().indexOf(step()) > i()
                         ? "success"
-                        : "neutral"
+                        : "secondary"
                   }
                 >
                   {i() + 1}
                 </Badge>
-                <Text
-                  fontSize="$xs"
-                  color={step() === s ? "$primary11" : "$neutral10"}
+                <p
+                  class={cn(
+                    "text-xs",
+                    step() === s ? "text-primary" : "text-muted-foreground",
+                  )}
                 >
                   {t(`init.step_${s}`)}
-                </Text>
-              </HStack>
+                </p>
+              </div>
             )}
           </For>
-        </HStack>
+        </div>
 
         {/*
           后端自报的存储问题（来自 /public/init_status）。
@@ -361,32 +342,21 @@ const Init = () => {
           此时横幅照常展示。
         */}
         <Show when={storageIssue() && (!showEnvStep() || step() !== "env")}>
-          <VStack
-            spacing="$1"
-            w="$full"
-            p="$3"
-            rounded="$md"
-            bgColor="$danger3"
-            alignItems="stretch"
-          >
-            <Text fontSize="$xs" fontWeight="$medium" color="$neutral12">
+          <div class="flex flex-col w-full p-3 rounded-md bg-destructive/10 items-stretch gap-y-1">
+            <p class="text-xs font-medium text-foreground">
               {t("init.storage_issue_title")}
-            </Text>
-            <Text fontSize="$xs" color="$neutral12">
-              {storageIssue()}
-            </Text>
+            </p>
+            <p class="text-xs text-foreground">{storageIssue()}</p>
             <Show when={storageSuggestion()}>
-              <Text fontSize="$xs" fontWeight="$medium" color="$neutral12">
+              <p class="text-xs font-medium text-foreground">
                 {t("init.env_fix_title")}
-              </Text>
-              <Text fontSize="$xs" color="$neutral12">
-                {storageSuggestion()}
-              </Text>
+              </p>
+              <p class="text-xs text-foreground">{storageSuggestion()}</p>
             </Show>
-            <Text fontSize="$xs" color="$neutral10">
+            <p class="text-xs text-muted-foreground">
               {t("init.storage_issue_hint")}
-            </Text>
-          </VStack>
+            </p>
+          </div>
         </Show>
 
         {/*
@@ -405,69 +375,58 @@ const Init = () => {
           {/* 就绪时才提「下一步做什么」；未就绪时面板里已有
               「Resolve the issues above to continue」，两句话意思重复 */}
           <Show when={canProceed()}>
-            <Text fontSize="$xs" color="$neutral10" textAlign="center">
+            <p class="text-xs text-muted-foreground text-center">
               {t("init.env_next_tip")}
-            </Text>
+            </p>
           </Show>
 
-          <HStack w="$full" spacing="$2">
+          <div class="flex flex-row items-center w-full gap-x-2">
             <Button
-              variant="subtle"
-              colorScheme="neutral"
-              flex="1"
+              variant="secondary"
+              class="flex-1"
               loading={env.loading()}
               onClick={env.refresh}
             >
               {t("init.env_check_refresh")}
             </Button>
             <Button
-              colorScheme="primary"
-              flex="2"
+              class="flex-[2]"
               disabled={!canProceed()}
               onClick={goNextFromEnv}
             >
               {t("init.env_continue")}
             </Button>
-          </HStack>
+          </div>
         </Show>
 
         {/* ── 第 2 步：填写管理员信息 ── */}
         <Show when={step() === "account"}>
           {/* 上一次初始化的失败原因（来自后端 data.code/data.reason） */}
           <Show when={failure()}>
-            <VStack
-              spacing="$1"
-              w="$full"
-              p="$3"
-              rounded="$md"
-              bgColor="$danger3"
-              alignItems="stretch"
-            >
-              <Text fontSize="$xs" fontWeight="$medium" color="$neutral12">
+            <div class="flex flex-col w-full p-3 rounded-md bg-destructive/10 items-stretch gap-y-1">
+              <p class="text-xs font-medium text-foreground">
                 {t("init.error_title")}
-              </Text>
+              </p>
               {/* 只展示一行短原因：reason 是多行/可能被截断的完整说明，留给排查 */}
-              <Text fontSize="$xs" color="$neutral12">
+              <p class="text-xs text-foreground">
                 {failure()?.summary || failure()?.reason || t("init.failed")}
-              </Text>
+              </p>
               <Show when={failure()?.suggestion}>
-                <Text fontSize="$xs" fontWeight="$medium" color="$neutral12">
+                <p class="text-xs font-medium text-foreground">
                   {t("init.env_fix_title")}
-                </Text>
-                <Text fontSize="$xs" color="$neutral12">
-                  {failure()?.suggestion}
-                </Text>
+                </p>
+                <p class="text-xs text-foreground">{failure()?.suggestion}</p>
               </Show>
               <Show when={failure()?.code}>
-                <HStack fontSize="$xs">
-                  <Text color="$neutral11">{t("init.error_code")}</Text>
-                  <Spacer />
-                  <Text fontFamily="mono" color="$neutral11">
+                <div class="flex flex-row items-center text-xs">
+                  <p class="text-muted-foreground">{t("init.error_code")}</p>
+                  <div class="flex-1 self-stretch" />
+                  <p class="font-mono text-muted-foreground">
                     {failure()?.code}
-                  </Text>
-                </HStack>
+                  </p>
+                </div>
               </Show>
-            </VStack>
+            </div>
           </Show>
           <Input
             name="username"
@@ -505,142 +464,117 @@ const Init = () => {
               }
             }}
           />
-          <HStack w="$full" spacing="$2">
+          <div class="flex flex-row items-center w-full gap-x-2">
             <Button
-              variant="subtle"
-              colorScheme="neutral"
-              flex="1"
+              variant="secondary"
+              class="flex-1"
               onClick={() => setStep("env")}
             >
               {t("init.back")}
             </Button>
-            <Button colorScheme="primary" flex="2" onClick={submit}>
+            <Button class="flex-[2]" onClick={submit}>
               {t("init.setup")}
             </Button>
-          </HStack>
+          </div>
         </Show>
 
         {/* ── 第 3 步：初始化进度与完成 ── */}
         <Show when={step() === "done"}>
-          <VStack spacing="$4" w="$full" py="$4">
+          <div class="flex flex-col items-center w-full py-4 gap-y-4">
             <Show when={busy()}>
-              <VStack spacing="$3" w="$full" alignItems="center">
-                <Spinner size="lg" color="$info9" />
-                <Progress w="$full" size="xs" indeterminate />
-                <Text fontSize="$sm" color="$neutral11">
+              <div class="flex flex-col w-full items-center gap-y-3">
+                <Spinner size="lg" />
+                <Progress class="w-full" trackClass="h-1" indeterminate />
+                <p class="text-sm text-muted-foreground">
                   {phase() === "creating"
                     ? t("init.creating_account")
                     : t("init.waiting_storage")}
-                </Text>
-                <Text fontSize="$xs" color="$neutral10" textAlign="center">
+                </p>
+                <p class="text-xs text-muted-foreground text-center">
                   {phase() === "creating"
                     ? t("init.finalizing_tip")
                     : t("init.waiting_storage_tip")}
-                </Text>
-              </VStack>
+                </p>
+              </div>
             </Show>
 
             {/* 完成：展示用户名与站点地址，提供进入后台/首页按钮 */}
             <Show when={phase() === "done"}>
-              <VStack spacing="$3" w="$full" alignItems="center">
-                <Badge colorScheme="success" variant="subtle">
-                  {t("init.done_title")}
-                </Badge>
-                <Text fontSize="$sm" color="$neutral11" textAlign="center">
+              <div class="flex flex-col w-full items-center gap-y-3">
+                <Badge variant="success">{t("init.done_title")}</Badge>
+                <p class="text-sm text-muted-foreground text-center">
                   {t("init.done_subtitle")}
-                </Text>
+                </p>
 
-                <VStack
-                  spacing="$2"
-                  w="$full"
-                  p="$3"
-                  rounded="$md"
-                  bgColor="$neutral2"
-                  alignItems="stretch"
-                >
-                  <HStack fontSize="$sm">
-                    <Text color="$neutral11">{t("init.done_username")}</Text>
-                    <Spacer />
-                    <Text fontFamily="mono" fontWeight="$medium">
-                      {username()}
-                    </Text>
-                  </HStack>
-                  <HStack fontSize="$sm">
-                    <Text color="$neutral11">{t("init.done_site_url")}</Text>
-                    <Spacer />
-                    <Text
-                      as="a"
+                <div class="flex flex-col w-full p-3 rounded-md bg-muted items-stretch gap-y-2">
+                  <div class="flex flex-row items-center text-sm">
+                    <p class="text-muted-foreground">
+                      {t("init.done_username")}
+                    </p>
+                    <div class="flex-1 self-stretch" />
+                    <p class="font-mono font-medium">{username()}</p>
+                  </div>
+                  <div class="flex flex-row items-center text-sm">
+                    <p class="text-muted-foreground">
+                      {t("init.done_site_url")}
+                    </p>
+                    <div class="flex-1 self-stretch" />
+                    <a
+                      class="font-mono text-primary underline"
                       href={siteUrl()}
                       target="_blank"
                       rel="noopener"
-                      fontFamily="mono"
-                      color="$info11"
-                      textDecoration="underline"
                     >
                       {siteUrl()}
-                    </Text>
-                  </HStack>
-                </VStack>
+                    </a>
+                  </div>
+                </div>
 
-                <HStack w="$full" spacing="$2">
+                <div class="flex flex-row items-center w-full gap-x-2">
                   <Button
-                    variant="subtle"
-                    colorScheme="neutral"
-                    flex="1"
+                    variant="secondary"
+                    class="flex-1"
                     onClick={() => goTo("/")}
                   >
                     {t("init.done_go_home")}
                   </Button>
-                  <Button
-                    colorScheme="primary"
-                    flex="1"
-                    onClick={() => goTo("/@login")}
-                  >
+                  <Button class="flex-1" onClick={() => goTo("/@login")}>
                     {t("init.done_go_login")}
                   </Button>
-                </HStack>
-              </VStack>
+                </div>
+              </div>
             </Show>
 
             {/* 超时：不谎报成功，提示重试或直接登录 */}
             <Show when={phase() === "timeout"}>
-              <VStack spacing="$3" w="$full" alignItems="center">
-                <Badge colorScheme="warning" variant="subtle">
-                  {t("init.timeout_title")}
-                </Badge>
-                <Text fontSize="$sm" color="$neutral11" textAlign="center">
+              <div class="flex flex-col w-full items-center gap-y-3">
+                <Badge variant="warning">{t("init.timeout_title")}</Badge>
+                <p class="text-sm text-muted-foreground text-center">
                   {t("init.timeout_tip")}
-                </Text>
-                <HStack w="$full" spacing="$2">
+                </p>
+                <div class="flex flex-row items-center w-full gap-x-2">
                   <Button
-                    variant="subtle"
-                    colorScheme="neutral"
-                    flex="1"
+                    variant="secondary"
+                    class="flex-1"
                     onClick={() => goTo("/@login")}
                   >
                     {t("init.done_go_login")}
                   </Button>
-                  <Button colorScheme="primary" flex="1" onClick={retryReady}>
+                  <Button class="flex-1" onClick={retryReady}>
                     {t("init.env_check_refresh")}
                   </Button>
-                </HStack>
-              </VStack>
+                </div>
+              </div>
             </Show>
-          </VStack>
+          </div>
         </Show>
-        <Flex
-          mt="$2"
-          justifyContent="space-evenly"
-          alignItems="center"
-          color="$neutral10"
-          w="$full"
-        >
+        <div class="flex mt-2 justify-evenly items-center text-muted-foreground w-full">
           <SwitchLanguageWhite />
           <SwitchColorMode />
-        </Flex>
-      </VStack>
+        </div>
+      </Card>
       <LoginBg />
-    </Center>
+    </div>
   )
 }
 

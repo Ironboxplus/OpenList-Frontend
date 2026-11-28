@@ -1,34 +1,14 @@
-import {
-  Badge,
-  Box,
-  Button,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  Heading,
-  HStack,
-  Icon,
-  Input,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectTrigger,
-  SelectValue,
-  Switch as HopeSwitch,
-  Text,
-  Textarea,
-  VStack,
-} from "@hope-ui/solid"
+import { Badge } from "~/components/ui/badge"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import { SwitchField } from "~/components/ui/toggle-field"
 import { createSignal, For, onMount, Show } from "solid-js"
 import { FaSolidPuzzlePiece } from "solid-icons/fa"
 import { useFetch, useManageTitle, useRouter, useT } from "~/hooks"
 import { PluginConfigField, PluginItem, Resp } from "~/types"
 import { handleResp, notify, pluginEngine, r } from "~/utils"
 import { MaybeLoading } from "~/components"
+import { Input, Textarea } from "~/components/ui/input"
+import { Button } from "~/components/ui/button"
 
 const ConfigPlugin = () => {
   const t = useT()
@@ -121,9 +101,8 @@ const ConfigPlugin = () => {
       case "string":
         return (
           <Input
+            class="w-full max-w-2xl"
             id={field.key}
-            w="$full"
-            maxW="$2xl"
             value={value() || ""}
             onInput={(e: any) => handleFieldChange(field.key, e.target.value)}
           />
@@ -131,9 +110,8 @@ const ConfigPlugin = () => {
       case "number":
         return (
           <Input
+            class="w-full max-w-sm"
             id={field.key}
-            w="$full"
-            maxW="$sm"
             type="number"
             value={value() ?? 0}
             onInput={(e: any) =>
@@ -143,50 +121,31 @@ const ConfigPlugin = () => {
         )
       case "bool":
         return (
-          <HStack spacing="$2" py="$1">
-            <HopeSwitch
+          <div class="flex flex-row items-center py-1 gap-x-2">
+            <SwitchField
               id={field.key}
               checked={!!value()}
-              onChange={(e: any) =>
-                handleFieldChange(field.key, e.target.checked)
-              }
+              onChange={(on) => handleFieldChange(field.key, on)}
             />
-            <Badge colorScheme={value() ? "success" : "neutral"}>
+            <Badge variant={value() ? "success" : "secondary"}>
               {t(`global.${value() ? "enable" : "disable"}`)}
             </Badge>
-          </HStack>
+          </div>
         )
       case "select":
         return (
-          <Select
-            id={field.key}
-            value={value() ?? field.options?.[0]}
-            onChange={(val: any) => handleFieldChange(field.key, val)}
-          >
-            <SelectTrigger w="$full" maxW="$2xl">
-              <SelectValue />
-              <SelectIcon />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectListbox>
-                <For each={field.options || []}>
-                  {(opt) => (
-                    <SelectOption value={opt}>
-                      <SelectOptionText>{opt}</SelectOptionText>
-                      <SelectOptionIndicator />
-                    </SelectOption>
-                  )}
-                </For>
-              </SelectListbox>
-            </SelectContent>
-          </Select>
+          <SimpleSelect
+            class="w-full max-w-2xl"
+            options={(field.options || []).map((o) => ({ value: o, label: o }))}
+            value={String(value() ?? field.options?.[0] ?? "")}
+            onChange={(val) => handleFieldChange(field.key, val)}
+          />
         )
       case "text":
         return (
           <Textarea
+            class="w-full max-w-2xl"
             id={field.key}
-            w="$full"
-            maxW="$2xl"
             rows={4}
             value={value() || ""}
             onInput={(e: any) => handleFieldChange(field.key, e.target.value)}
@@ -195,9 +154,8 @@ const ConfigPlugin = () => {
       default:
         return (
           <Input
+            class="w-full max-w-2xl"
             id={field.key}
-            w="$full"
-            maxW="$2xl"
             value={value() || ""}
             onInput={(e: any) => handleFieldChange(field.key, e.target.value)}
           />
@@ -207,35 +165,17 @@ const ConfigPlugin = () => {
 
   return (
     <MaybeLoading loading={fetchLoading()}>
-      <VStack spacing="$5" alignItems="start" w="$full" maxW="$3xl">
-        <Heading mb="$1">{t("plugins.config_modal.title")}</Heading>
+      <div class="flex flex-col items-start w-full max-w-3xl gap-y-5">
+        <h2 class="font-semibold mb-1">{t("plugins.config_modal.title")}</h2>
 
         {/* Plugin Info Banner */}
         <Show when={plugin()}>
-          <Box
-            w="$full"
-            maxW="$2xl"
-            p="$4"
-            rounded="$md"
-            borderWidth="1px"
-            borderColor="$neutral4"
-            bgColor="$neutral1"
-          >
-            <HStack spacing="$3" alignItems="center">
-              <Box
-                w="$10"
-                h="$10"
-                rounded="$md"
-                bgColor="$neutral3"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                flexShrink={0}
-                overflow="hidden"
-              >
+          <div class="w-full max-w-2xl p-4 rounded-md border border-border bg-background">
+            <div class="flex flex-row items-center gap-x-3">
+              <div class="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                 <Show
                   when={plugin()?.icon}
-                  fallback={<Icon as={FaSolidPuzzlePiece} boxSize="$5" />}
+                  fallback={<FaSolidPuzzlePiece class="size-5" />}
                 >
                   <img
                     src={plugin()?.icon}
@@ -247,112 +187,105 @@ const ConfigPlugin = () => {
                     }}
                   />
                 </Show>
-              </Box>
-              <VStack alignItems="flex-start" spacing="$0_5" flex={1}>
-                <HStack spacing="$2" wrap="wrap">
-                  <Text fontWeight="$bold" fontSize="$md">
-                    {plugin()?.name}
-                  </Text>
-                  <Badge colorScheme="accent">v{plugin()?.version}</Badge>
-                  <Badge colorScheme="neutral">{plugin()?.type || "ui"}</Badge>
-                </HStack>
-                <Text fontSize="$xs" color="$neutral10">
+              </div>
+              <div class="flex-col items-start flex-1 gap-y-0.5">
+                <div class="flex flex-row items-center flex-wrap gap-x-2">
+                  <p class="font-bold text-base">{plugin()?.name}</p>
+                  <Badge variant="info">v{plugin()?.version}</Badge>
+                  <Badge variant="secondary">{plugin()?.type || "ui"}</Badge>
+                </div>
+                <p class="text-xs text-muted-foreground">
                   {plugin()?.description || t("plugins.empty_desc")}
-                </Text>
-              </VStack>
-            </HStack>
-          </Box>
+                </p>
+              </div>
+            </div>
+          </div>
         </Show>
 
         {/* Plugin Enable State */}
-        <FormControl
-          w="$full"
-          display="flex"
-          flexDirection="column"
-          alignItems="start"
-          gap="$1_5"
-        >
-          <FormLabel for="plugin_enable">{t("global.enable")}</FormLabel>
-          <HStack spacing="$2">
-            <HopeSwitch
+        <div class="relative w-full flex flex-col items-start gap-1.5">
+          <label
+            class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+            for="plugin_enable"
+          >
+            {t("global.enable")}
+          </label>
+          <div class="flex flex-row items-center gap-x-2">
+            <SwitchField
               id="plugin_enable"
               checked={enabled()}
-              onChange={(e: any) => setEnabled(e.target.checked)}
+              onChange={setEnabled}
             />
-            <Badge colorScheme={enabled() ? "success" : "neutral"}>
+            <Badge variant={enabled() ? "success" : "secondary"}>
               {t(`global.${enabled() ? "enable" : "disable"}`)}
             </Badge>
-          </HStack>
-        </FormControl>
+          </div>
+        </div>
 
         {/* High Privilege Switch */}
-        <FormControl
-          w="$full"
-          display="flex"
-          flexDirection="column"
-          alignItems="start"
-          gap="$1_5"
-        >
-          <FormLabel for="plugin_high_privilege">
+        <div class="relative w-full flex flex-col items-start gap-1.5">
+          <label
+            class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+            for="plugin_high_privilege"
+          >
             {t("plugins.install_modal.high_privilege_label")}
-          </FormLabel>
-          <HStack spacing="$2">
-            <HopeSwitch
+          </label>
+          <div class="flex flex-row items-center gap-x-2">
+            <SwitchField
               id="plugin_high_privilege"
               checked={highPrivilege()}
-              onChange={(e: any) => setHighPrivilege(e.target.checked)}
+              onChange={setHighPrivilege}
             />
             <Show when={highPrivilege()}>
-              <Badge colorScheme="danger">Root Access</Badge>
+              <Badge variant="danger">Root Access</Badge>
             </Show>
-          </HStack>
-          <FormHelperText color="$neutral10" fontSize="$xs" mt="$0_5">
+          </div>
+          <p class="mt-0.5 inline-block text-xs leading-5 text-muted-foreground">
             {t("plugins.install_modal.high_privilege_help")}
-          </FormHelperText>
-        </FormControl>
+          </p>
+        </div>
 
         {/* Dynamic Config Schema Form */}
         <Show
           when={plugin()?.config_schema && plugin()!.config_schema!.length > 0}
           fallback={
-            <Box py="$2">
-              <Text fontSize="$sm" color="$neutral10">
+            <div class="py-2">
+              <p class="text-sm text-muted-foreground">
                 {t("plugins.config_modal.no_config")}
-              </Text>
-            </Box>
+              </p>
+            </div>
           }
         >
           <For each={plugin()?.config_schema}>
             {(field) => (
-              <FormControl
-                w="$full"
-                display="flex"
-                flexDirection="column"
-                alignItems="start"
-                gap="$1_5"
-              >
-                <FormLabel for={field.key}>{field.label}</FormLabel>
+              <div class="relative w-full flex flex-col items-start gap-1.5">
+                <label
+                  class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+                  for={field.key}
+                >
+                  {field.label}
+                </label>
                 {renderFieldInput(field)}
                 <Show when={field.description}>
-                  <FormHelperText color="$neutral10" fontSize="$xs" mt="$0_5">
+                  <p class="mt-0.5 inline-block text-xs leading-5 text-muted-foreground">
                     {field.description}
-                  </FormHelperText>
+                  </p>
                 </Show>
-              </FormControl>
+              </div>
             )}
           </For>
         </Show>
 
         {/* Operations */}
-        <HStack spacing="$2" mt="$2">
-          <Button loading={saving()} onClick={handleSave}>
+        <div class="flex flex-row items-center mt-2 gap-x-2">
+          <Button variant="subtle" loading={saving()} onClick={handleSave}>
             {t("global.save")}
           </Button>
-          <Button colorScheme="neutral" onClick={() => back()}>
+          <Button variant="secondary" onClick={() => back()}>
             {t("global.back")}
           </Button>
-        </HStack>
-      </VStack>
+        </div>
+      </div>
     </MaybeLoading>
   )
 }

@@ -1,33 +1,12 @@
-import {
-  Box,
-  Button,
-  Checkbox,
-  Flex,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  Heading,
-  HStack,
-  Input,
-  Select,
-  SelectContent,
-  SelectIcon,
-  SelectListbox,
-  SelectOption,
-  SelectOptionIndicator,
-  SelectOptionText,
-  SelectTrigger,
-  SelectValue,
-  SimpleGrid,
-  Switch,
-  Text,
-  VStack,
-} from "@hope-ui/solid"
 import { For, JSXElement, Show, createSignal } from "solid-js"
 import { MaybeLoading } from "~/components"
 import { useFetch, useManageTitle, useT } from "~/hooks"
 import { Group, PResp, SettingItem } from "~/types"
 import { handleResp, notify, r } from "~/utils"
+import { Input } from "~/components/ui/input"
+import { Button } from "~/components/ui/button"
+import { SimpleSelect } from "~/components/ui/simple-select"
+import { CheckboxField, SwitchField } from "~/components/ui/toggle-field"
 
 type SeedAlgorithm = "md5" | "sha1" | "sha256"
 type SeedFormat = "oss" | "torrent" | "cas"
@@ -73,23 +52,13 @@ const Section = (props: {
   children: JSXElement
 }) => {
   return (
-    <Box
-      w="$full"
-      border="1px solid $neutral6"
-      borderRadius="$lg"
-      bg="$neutral2"
-      p="$4"
-    >
-      <Heading size="lg" mb="$1">
-        {props.title}
-      </Heading>
+    <div class="w-full border border-border rounded-lg bg-muted p-4">
+      <h2 class="font-semibold mb-1 text-lg leading-7">{props.title}</h2>
       <Show when={props.description}>
-        <Text fontSize="$sm" color="$neutral10" mb="$3">
-          {props.description}
-        </Text>
+        <p class="text-sm text-muted-foreground mb-3">{props.description}</p>
       </Show>
       {props.children}
-    </Box>
+    </div>
   )
 }
 
@@ -100,29 +69,20 @@ const ToggleRow = (props: {
   onChange: (checked: boolean) => void
 }) => {
   return (
-    <Flex
-      w="$full"
-      gap="$4"
-      py="$2"
-      alignItems="center"
-      justifyContent="space-between"
-    >
-      <VStack alignItems="flex-start" spacing="$1">
-        <Text fontWeight="$medium">{props.label}</Text>
+    <div class="flex w-full gap-4 py-2 items-center justify-between">
+      <div class="flex flex-col items-start gap-y-1">
+        <p class="font-medium">{props.label}</p>
         <Show when={props.description}>
-          <Text fontSize="$xs" color="$neutral10">
-            {props.description}
-          </Text>
+          <p class="text-xs text-muted-foreground">{props.description}</p>
         </Show>
-      </VStack>
-      <Switch
-        css={{ flexShrink: 0 }}
+      </div>
+      <SwitchField
+        class="shrink-0"
+        aria-label={props.label}
         checked={props.checked}
-        onChange={(e: { currentTarget: HTMLInputElement }) =>
-          props.onChange(e.currentTarget.checked)
-        }
+        onChange={props.onChange}
       />
-    </Flex>
+    </div>
   )
 }
 
@@ -220,128 +180,99 @@ const SeedSettings = () => {
 
   return (
     <MaybeLoading loading={loading()}>
-      <VStack w="$full" alignItems="stretch" spacing="$4">
+      <div class="flex flex-col w-full items-stretch gap-y-4">
         <Section title={t("settings_seed.site_config")}>
-          <FormControl w="$full">
-            <FormLabel for="seed_site_url">
+          <div class="relative w-full">
+            <label
+              class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+              for="seed_site_url"
+            >
               {t("settings_seed.site_url")}
-            </FormLabel>
+            </label>
             <Input
               id="seed_site_url"
               placeholder="https://example.com"
               value={siteUrl()}
               onInput={(e) => setSiteUrl(e.currentTarget.value)}
             />
-            <FormHelperText>{t("settings_seed.site_url_help")}</FormHelperText>
-          </FormControl>
+            <p class="inline-block mt-1 text-sm leading-5 text-muted-foreground">
+              {t("settings_seed.site_url_help")}
+            </p>
+          </div>
         </Section>
 
         <Section
           title={t("settings_seed.default_matrix")}
           description={t("settings_seed.default_matrix_help")}
         >
-          <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$3">
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
             <For each={ALGORITHMS}>
               {(algorithm) => (
-                <VStack
-                  alignItems="flex-start"
-                  spacing="$1"
-                  border="1px solid $neutral7"
-                  borderRadius="$md"
-                  bg="$background"
-                  p="$3"
-                >
-                  <Text fontWeight="$semibold">
-                    {ALGORITHM_LABELS[algorithm]}
-                  </Text>
-                  <Checkbox
+                <div class="flex flex-col items-start border border-border rounded-md bg-canvas p-3 gap-y-1">
+                  <p class="font-semibold">{ALGORITHM_LABELS[algorithm]}</p>
+                  <CheckboxField
                     checked={matrix()[algorithm].whole}
-                    onChange={(e: { currentTarget: HTMLInputElement }) =>
-                      setHashScope(algorithm, "whole", e.currentTarget.checked)
-                    }
+                    onChange={(on) => setHashScope(algorithm, "whole", on)}
                   >
                     {t("settings_seed.whole")}
-                  </Checkbox>
-                  <Checkbox
+                  </CheckboxField>
+                  <CheckboxField
                     checked={matrix()[algorithm].pieces}
-                    onChange={(e: { currentTarget: HTMLInputElement }) =>
-                      setHashScope(algorithm, "pieces", e.currentTarget.checked)
-                    }
+                    onChange={(on) => setHashScope(algorithm, "pieces", on)}
                   >
                     {t("settings_seed.pieces")}
-                  </Checkbox>
-                </VStack>
+                  </CheckboxField>
+                </div>
               )}
             </For>
-          </SimpleGrid>
+          </div>
         </Section>
 
         <Section
           title={t("settings_seed.format_policies")}
           description={t("settings_seed.format_policies_help")}
         >
-          <SimpleGrid columns={{ "@initial": 1, "@md": 3 }} gap="$3">
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
             <For each={FORMATS}>
               {(format) => (
-                <Flex
-                  border="1px solid $neutral7"
-                  borderRadius="$md"
-                  bg="$background"
-                  p="$3"
-                  gap="$2"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Text fontWeight="$medium">
+                <div class="flex border border-border rounded-md bg-canvas p-3 gap-2 items-center justify-between">
+                  <p class="font-medium">
                     {t(`settings_seed.${format}_format`)}
-                  </Text>
-                  <Switch
-                    css={{ flexShrink: 0 }}
+                  </p>
+                  <SwitchField
+                    class="shrink-0"
+                    aria-label={t(`settings_seed.${format}_format`)}
                     checked={policies()[format] === "on"}
-                    onChange={(e: { currentTarget: HTMLInputElement }) =>
-                      setPolicy(format, e.currentTarget.checked)
-                    }
+                    onChange={(on) => setPolicy(format, on)}
                   />
-                </Flex>
+                </div>
               )}
             </For>
-          </SimpleGrid>
-          <FormControl mt="$4" w={{ "@initial": "$full", "@md": "$56" }}>
-            <FormLabel for="seed_default_format">
+          </div>
+          <div class="relative mt-4 w-full md:w-56">
+            <label
+              class="inline-block mb-1 text-sm leading-5 font-medium text-foreground"
+              for="seed_default_format"
+            >
               {t("settings_seed.default_format")}
-            </FormLabel>
-            <Select
-              id="seed_default_format"
+            </label>
+            <SimpleSelect
+              class="w-full"
+              options={FORMATS.map((format) => ({
+                value: format,
+                label: t(`settings.seed_default_formats.${format}`),
+              }))}
               value={defaultFormat()}
               onChange={(value) => setDefaultFormat(value as SeedFormat)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-                <SelectIcon />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectListbox>
-                  <For each={FORMATS}>
-                    {(format) => (
-                      <SelectOption value={format}>
-                        <SelectOptionText>
-                          {t(`settings.seed_default_formats.${format}`)}
-                        </SelectOptionText>
-                        <SelectOptionIndicator />
-                      </SelectOption>
-                    )}
-                  </For>
-                </SelectListbox>
-              </SelectContent>
-            </Select>
-            <FormHelperText>
+            />
+            <p class="inline-block mt-1 text-sm leading-5 text-muted-foreground">
               {t("settings_seed.default_format_help")}
-            </FormHelperText>
-          </FormControl>
+            </p>
+          </div>
         </Section>
 
         <Section title={t("settings_seed.other_options")}>
-          <VStack w="$full" alignItems="stretch" spacing="$1">
+          <div class="flex flex-col w-full items-stretch gap-y-1">
             <ToggleRow
               label={t("settings_seed.auto_generate")}
               description={t("settings_seed.auto_generate_help")}
@@ -360,11 +291,12 @@ const SeedSettings = () => {
               checked={casDirect()}
               onChange={setCasDirect}
             />
-          </VStack>
+          </div>
         </Section>
 
-        <HStack spacing="$2">
+        <div class="flex flex-row items-center gap-x-2">
           <Button
+            variant="subtle"
             loading={saveLoading()}
             onClick={async () => {
               const resp = await saveSettings()
@@ -377,14 +309,14 @@ const SeedSettings = () => {
             {t("global.save")}
           </Button>
           <Button
-            colorScheme="neutral"
+            variant="secondary"
             loading={loading()}
             onClick={() => refresh()}
           >
             {t("global.refresh")}
           </Button>
-        </HStack>
-      </VStack>
+        </div>
+      </div>
     </MaybeLoading>
   )
 }

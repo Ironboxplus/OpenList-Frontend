@@ -1,8 +1,10 @@
-import { Badge, HStack, Spacer, Spinner, Text, VStack } from "@hope-ui/solid"
 import { Accessor, createSignal, For, JSX, Show } from "solid-js"
 import { useT } from "~/hooks"
 import { EnvCheck as EnvCheckData, EnvCheckIssue, Resp } from "~/types"
 import { r } from "~/utils"
+import { Badge } from "~/components/ui/badge"
+import { Spinner } from "~/components/ui/spinner"
+import { cn } from "~/utils/cn"
 
 /** 各平台部署教程：对照绑定存储驱动 */
 const DEPLOY_DOCS = [
@@ -93,22 +95,19 @@ const Resolved = (props: { raw?: string | null; actual?: string | null }) => (
 
 /** 一行「标签 —— 值」；传 ok 时按状态着色，否则用等宽字体 */
 const Row = (props: { label: string; ok?: boolean; children: JSX.Element }) => (
-  <HStack fontSize="$xs">
-    <Text color="$neutral11">{props.label}</Text>
-    <Spacer />
-    <Text
-      fontFamily={props.ok === undefined ? "mono" : undefined}
-      color={
-        props.ok === undefined
-          ? undefined
-          : props.ok
-            ? "$success11"
-            : "$danger11"
-      }
+  <div class="flex flex-row items-center text-xs">
+    <p class="text-muted-foreground">{props.label}</p>
+    <div class="flex-1 self-stretch" />
+    <p
+      class={cn(
+        props.ok === undefined && "font-mono",
+        props.ok === true && "text-success",
+        props.ok === false && "text-destructive",
+      )}
     >
       {props.children}
-    </Text>
-  </HStack>
+    </p>
+  </div>
 )
 
 /**
@@ -126,37 +125,25 @@ const EnvCheck = (props: {
     ok ? t("init.env_status_ok") : t("init.env_status_bad")
 
   return (
-    <VStack
-      w="$full"
-      spacing="$2"
-      p="$3"
-      rounded="$md"
-      bgColor="$neutral2"
-      alignItems="stretch"
-    >
-      <HStack>
-        <Text fontSize="$sm" fontWeight="$medium">
-          {t("init.env_check")}
-        </Text>
-        <Spacer />
+    <div class="flex flex-col w-full p-3 rounded-md bg-muted items-stretch gap-y-2">
+      <div class="flex flex-row items-center">
+        <p class="text-sm font-medium">{t("init.env_check")}</p>
+        <div class="flex-1 self-stretch" />
         <Show when={props.loading()}>
-          <Spinner size="xs" color="$info9" />
+          <Spinner size="xs" />
         </Show>
         <Show when={!props.loading() && (props.check() || props.failed())}>
-          <Badge
-            colorScheme={props.check()?.ready ? "success" : "danger"}
-            variant="subtle"
-          >
+          <Badge variant={props.check()?.ready ? "success" : "danger"}>
             {props.check()?.ready
               ? t("init.env_check_ready")
               : t("init.env_check_not_ready")}
           </Badge>
         </Show>
-      </HStack>
+      </div>
 
       {/* 骨架始终渲染：接口不可用时各行显示占位符，让用户看到检查了哪些项 */}
       <Show when={props.check() || (!props.loading() && props.failed())}>
-        <VStack spacing="$1" alignItems="stretch">
+        <div class="flex flex-col items-stretch gap-y-1">
           <Row label={t("init.env_format")}>
             <Resolved
               raw={props.check()?.config.db_format}
@@ -185,77 +172,65 @@ const EnvCheck = (props: {
           <Row label={t("init.env_jwt")} ok={props.check()?.jwt.ready}>
             {status(props.check()?.jwt.ready)}
           </Row>
-        </VStack>
+        </div>
       </Show>
 
       {/* 问题清单：原因 + 怎么改 + 文档链接 */}
       <For each={props.check()?.issues ?? []}>
         {(issue: EnvCheckIssue) => (
-          <VStack
-            spacing="$1"
-            alignItems="stretch"
-            p="$2"
-            rounded="$sm"
-            bgColor={issue.level === "error" ? "$danger3" : "$warning3"}
+          <div
+            class="flex flex-col items-stretch gap-y-1 rounded-sm p-2"
+            classList={{
+              "bg-destructive/10": issue.level === "error",
+              "bg-warning/10": issue.level !== "error",
+            }}
           >
             {/* 只展示一行短原因：后端 message 是给排查用的多行长文，
                 界面上会变成「半句 + 省略号」，读不懂 */}
-            <Text fontSize="$xs" color="$neutral12">
+            <p class="text-xs text-foreground">
               {issue.summary || issue.message}
-            </Text>
+            </p>
             {/* 「怎么改」必须单独成段并置顶于文档链接之前：原因常是多行说明，
                 用户真正需要的是下一步动作，混在长文本里容易被忽略或截断 */}
             <Show when={issue.suggestion}>
-              <Text fontSize="$xs" fontWeight="$medium" color="$neutral12">
+              <p class="text-xs font-medium text-foreground">
                 {t("init.env_fix_title")}
-              </Text>
-              <Text fontSize="$xs" color="$neutral12">
-                {issue.suggestion}
-              </Text>
+              </p>
+              <p class="text-xs text-foreground">{issue.suggestion}</p>
             </Show>
-            <Text
-              as="a"
+            <a
+              class="text-xs text-primary underline"
               href={issue.docUrl}
               target="_blank"
               rel="noopener"
-              fontSize="$xs"
-              color="$info11"
-              textDecoration="underline"
             >
               {t("init.env_doc_link")}
-            </Text>
-          </VStack>
+            </a>
+          </div>
         )}
       </For>
 
       <Show when={props.check() && !props.check()?.ready}>
-        <Text fontSize="$xs" color="$danger11">
-          {t("init.env_blocked_tip")}
-        </Text>
+        <p class="text-xs text-destructive">{t("init.env_blocked_tip")}</p>
       </Show>
 
       {/* 部署教程：按平台直达，方便用户对照绑定存储 */}
-      <HStack spacing="$3" pt="$1" flexWrap="wrap">
-        <Text fontSize="$xs" color="$neutral11">
-          {t("init.env_deploy_docs")}
-        </Text>
+      <div class="flex flex-row items-center pt-1 flex-wrap gap-x-3">
+        <p class="text-xs text-muted-foreground">{t("init.env_deploy_docs")}</p>
         <For each={DEPLOY_DOCS}>
           {(doc) => (
-            <Text
-              as="a"
-              fontSize="$xs"
-              color="$info11"
-              textDecoration="underline"
+            <a
+              class="text-xs text-primary underline"
               href={doc.url}
               target="_blank"
               rel="noopener"
             >
               {doc.label}
-            </Text>
+            </a>
           )}
         </For>
-      </HStack>
-    </VStack>
+      </div>
+    </div>
   )
 }
 

@@ -1,4 +1,4 @@
-import { Button, HStack } from "@hope-ui/solid"
+import { Button } from "~/components/ui/button"
 import { useT } from "~/hooks"
 import {
   Popover,
@@ -20,7 +20,7 @@ export const DeletePopover = (props: DeletePopoverProps) => {
     <Popover>
       {({ onClose }) => (
         <>
-          <PopoverTrigger as={Button} colorScheme="danger">
+          <PopoverTrigger as={Button} variant="destructive">
             {t("global.delete")}
           </PopoverTrigger>
           <PopoverContent>
@@ -31,18 +31,18 @@ export const DeletePopover = (props: DeletePopoverProps) => {
               })}
             </PopoverHeader>
             <PopoverBody>
-              <HStack spacing="$2">
-                <Button onClick={onClose} colorScheme="neutral">
+              <div class="flex flex-row items-center gap-x-2">
+                <Button onClick={onClose} variant="secondary">
                   {t("global.cancel")}
                 </Button>
                 <Button
-                  colorScheme="danger"
+                  variant="destructive"
                   loading={props.loading}
                   onClick={props.onClick}
                 >
                   {t("global.confirm")}
                 </Button>
-              </HStack>
+              </div>
             </PopoverBody>
           </PopoverContent>
         </>

@@ -1,11 +1,3 @@
-import {
-  HStack,
-  Icon,
-  Progress,
-  ProgressIndicator,
-  Skeleton,
-  Text,
-} from "@hope-ui/solid"
 import { Show } from "solid-js"
 import { BsHddFill } from "solid-icons/bs"
 import { shellActive } from "~/features/shell/topbar-slot"
@@ -17,6 +9,9 @@ import {
   usedPercentage,
 } from "~/utils"
 import type { Plugin } from "../registry"
+import { Progress } from "~/components/ui/progress"
+import { Skeleton } from "~/components/ui/skeleton"
+import { cn } from "~/utils/cn"
 import { Tooltip } from "~/components/overlay"
 
 /**
@@ -43,19 +38,14 @@ const DiskUsageWidget = () => {
   const loading = () =>
     objStore.state === State.FetchingObj ||
     objStore.state === State.FetchingObjs
-  const accent = () => (nearlyFull(details()!) ? "$danger9" : "$info9")
+  const full = () => nearlyFull(details()!)
 
   return (
     <Show when={!shellActive()}>
       {/* First load (no data yet): show a skeleton placeholder. Subsequent
           navigations keep the existing bar (dimmed) so it never flashes. */}
       <Show when={loading() && !showDiskUsage(details())}>
-        <Skeleton
-          height="26px"
-          width="150px"
-          css={{ borderRadius: "9999px" }}
-          display={{ "@initial": "none", "@sm": "block" }}
-        />
+        <Skeleton class="hidden h-[26px] w-[150px] rounded-full sm:block" />
       </Show>
       <Show when={showDiskUsage(details())}>
         <Tooltip
@@ -65,53 +55,36 @@ const DiskUsageWidget = () => {
           placement="bottom"
           withArrow
         >
-          <HStack
-            class="header-disk-usage"
-            spacing="$2"
-            px="$2_5"
-            py="$1"
-            rounded="$full"
-            bg="$neutral3"
-            opacity={loading() ? 0.55 : 1}
-            css={{
-              transition: "opacity 0.2s ease, background-color 0.2s ease",
-            }}
-            _hover={{ bg: "$neutral4" }}
-            display={{ "@initial": "none", "@sm": "flex" }}
+          <div
+            class="header-disk-usage hidden items-center gap-x-2 rounded-full bg-muted px-2.5 py-1 transition-[opacity,background-color] duration-200 hover:bg-accent sm:flex"
+            classList={{ "opacity-55": loading() }}
           >
-            <Icon as={BsHddFill} boxSize="14px" color={accent()} />
+            <BsHddFill
+              class={cn(
+                "size-3.5",
+                full() ? "text-destructive" : "text-primary",
+              )}
+            />
             <Show when={storageType()}>
-              <Text
-                fontSize="$xs"
-                fontWeight="$semibold"
-                color="$neutral12"
-                css={{ whiteSpace: "nowrap" }}
-                display={{ "@initial": "none", "@md": "block" }}
-              >
+              <p class="hidden whitespace-nowrap text-xs font-semibold text-foreground md:block">
                 {storageType()}
-              </Text>
+              </p>
             </Show>
             <Progress
-              w="$20"
-              trackColor="$neutral6"
-              rounded="$full"
-              size="sm"
+              class="w-20"
+              trackClass="bg-border"
+              fillClass={cn(
+                "transition-[width] duration-500",
+                full()
+                  ? "bg-destructive data-[progress=complete]:bg-destructive"
+                  : "bg-primary",
+              )}
               value={usedPercentage(details()!)}
-            >
-              <ProgressIndicator
-                color={accent()}
-                rounded="$full"
-                css={{ transition: "width 0.5s ease" }}
-              />
-            </Progress>
-            <Text
-              fontSize="$xs"
-              color="$neutral11"
-              css={{ whiteSpace: "nowrap" }}
-            >
+            />
+            <p class="whitespace-nowrap text-xs text-muted-foreground">
               {toReadableUsage(details()!)}
-            </Text>
-          </HStack>
+            </p>
+          </div>
         </Tooltip>
       </Show>
     </Show>

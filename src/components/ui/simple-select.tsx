@@ -21,6 +21,7 @@ export const SimpleSelect = (props: {
   value: string
   onChange: (value: string) => void
   class?: string
+  id?: string
   "aria-label"?: string
   "data-testid"?: string
 }) => {
@@ -39,6 +40,7 @@ export const SimpleSelect = (props: {
     >
       <SelectTrigger
         class={props.class}
+        id={props.id}
         aria-label={props["aria-label"]}
         data-testid={props["data-testid"]}
       >
