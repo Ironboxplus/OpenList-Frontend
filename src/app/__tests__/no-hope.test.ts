@@ -19,6 +19,8 @@ const GONE: RegExp[] = [
   /^pages\/manage\/(?!__tests__\/)/,
   /^pages\/(init|login|test)\//,
   /^plugins\//,
+  // B4: the toolbar and the upload dialogs
+  /^pages\/home\/(toolbar|uploads)\//,
 ]
 
 // app/ColorSchemeSync.tsx hands the store's mode to hope's provider until B6
