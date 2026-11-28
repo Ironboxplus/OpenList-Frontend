@@ -2394,13 +2394,22 @@ await spec("viewer-dock-deep", { chrome: true, init: [viewerProbe, reverseByName
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   await page.waitForTimeout(300)
   const top0 = (await item(page, V2).boundingBox())?.y
+  // where the row sits in the page, element by element up (read when the list moves)
+  const chainOf = () =>
+    item(page, V2).evaluate((el) => {
+      const out = []
+      for (let e = el; e && e !== document.body; e = e.parentElement)
+        out.push(`${e.tagName.toLowerCase()}.${String(e.className).split(" ").slice(0, 3).join(".")} y${Math.round(e.getBoundingClientRect().top + scrollY)} h${Math.round(e.getBoundingClientRect().height)}`)
+      return { scrollY: Math.round(scrollY), docH: document.documentElement.scrollHeight, out }
+    })
+  const chain0 = await chainOf()
   const h0 = await histLen(page)
   await openRow(page, V2)
   c("a click deep in the list opens the mini window", await seen(page, DOCK_MINI))
   c("and pushes the file's address", pathOf(page) === `${VDIR}/${V2}` && (await histLen(page)) === h0 + 1, pathOf(page))
   await settle(page)
   const top1 = (await item(page, V2).boundingBox())?.y
-  c("the list stays where it was", top0 !== undefined && top1 !== undefined && Math.abs(top1 - top0) < 4, { top0, top1 })
+  c("the list stays where it was", top0 !== undefined && top1 !== undefined && Math.abs(top1 - top0) < 4, { top0, top1, before: chain0, after: await chainOf() })
   const box = await page.locator('[data-testid="dock-frame"]').boundingBox()
   const vw = await page.evaluate(() => innerWidth)
   c("the mini window floats in the top right corner", box && box.x + box.width > vw - 80 && box.y < 200 && box.width <= 420, box)
