@@ -2099,6 +2099,18 @@ const settle = (page) =>
   page
     .waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity), undefined, { timeout: 15000 })
     .catch(() => log("animations still running after 15s"))
+/**
+ * The docked player's height has stopped changing: it has not changed for
+ * 150ms (its run is on Motion's JS clock, which settle() cannot see, and a
+ * decelerating run's last steps are a hundredth of a pixel apart).
+ */
+const heightAtRest = (page) =>
+  page
+    .waitForFunction(() => {
+      const last = window.__viewer.heights.at(-1)
+      return !!last && performance.now() - last[0] > 150
+    }, undefined, { timeout: 15000 })
+    .catch(() => log("the dock's height still changing after 15s"))
 const scrollY = (page, y) =>
   page.evaluate((y) => new Promise((done) => {
     window.scrollTo(0, y)
@@ -2286,13 +2298,13 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
     const o0 = await page.evaluate(() => performance.now())
     await openRow(page, V3)
     await seen(page, DOCK_OPEN)
-    await settle(page)
+    await heightAtRest(page)
     const o1 = await page.evaluate(() => performance.now())
     runs.open.push(dockRun(await page.evaluate(() => window.__viewer.heights), o0, o1))
     const c0 = await page.evaluate(() => performance.now())
     await page.goBack()
     await closedDock(page)
-    await settle(page)
+    await heightAtRest(page)
     runs.close.push(dockRun(await page.evaluate(() => window.__viewer.heights), c0, Infinity))
   }
   const pinned = (list) => list.find(runWidthOk) ?? list.at(-1)
