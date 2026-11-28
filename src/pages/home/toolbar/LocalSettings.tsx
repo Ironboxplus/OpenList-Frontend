@@ -66,7 +66,7 @@ function LocalSettingEdit(props: LocalSetting) {
               variant="subtle"
               aria-label="decrease"
               size="icon-lg"
-              class="rounded-r-none"
+              class="shrink-0 rounded-r-none"
               onClick={() => {
                 setLocal(
                   props.key,
@@ -88,7 +88,7 @@ function LocalSettingEdit(props: LocalSetting) {
               variant="subtle"
               aria-label="increase"
               size="icon-lg"
-              class="rounded-l-none"
+              class="shrink-0 rounded-l-none"
               onClick={() => {
                 setLocal(props.key, (parseInt(local[props.key]) + 1).toString())
               }}

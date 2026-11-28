@@ -115,11 +115,11 @@ export const ListItem = (props: {
       }}
     >
       <LinkWithPush
-        class={cn(
-          "list-item viselect-item group/row flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent",
+        class={`list-item ${cn(
+          "viselect-item group/row flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent",
           props.obj.selected && "selected bg-accent",
           ix.cursor() === "pointer" ? "cursor-pointer" : "cursor-default",
-        )}
+        )}`}
         data-index={props.index}
         data-row-name={props.obj.name}
         href={props.obj.name}
@@ -152,7 +152,7 @@ export const ListItem = (props: {
                 <Dynamic
                   component={getIconByObj(props.obj)}
                   class={cn(
-                    "icon mr-1 size-6",
+                    "icon mr-1 size-6 shrink-0",
                     props.obj.type !== ObjType.IMAGE
                       ? "cursor-[inherit]"
                       : "cursor-pointer",

@@ -117,10 +117,10 @@ const ListItem = (props: ListItemProps) => {
       }}
     >
       <div
-        class={cn(
-          "list-item viselect-item flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent",
+        class={`list-item ${cn(
+          "viselect-item flex w-full items-center rounded-lg p-2 transition-all duration-300 hover:scale-[1.01] hover:bg-accent",
           !isMouseSupported() ? "cursor-pointer" : "cursor-default",
-        )}
+        )}`}
         data-index={props.index}
         on:click={(_: MouseEvent) => {
           if (props.obj.is_dir) {
@@ -136,7 +136,7 @@ const ListItem = (props: ListItemProps) => {
         <div class={cn("name-box flex items-center gap-x-1", cols[0].w)}>
           <Dynamic
             component={getIconByObj(props.obj)}
-            class="icon mr-1 size-6"
+            class="icon mr-1 size-6 shrink-0"
             style={{ color: getMainColor() }}
           />
           <p

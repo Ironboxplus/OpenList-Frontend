@@ -20,6 +20,9 @@
 @source not "../pages/manage/__tests__";
 @source not "../pages/media/__tests__";
 @source not "../plugins/builtin/stats/__tests__";
+/* `list-item` is the file row's marker class (the rules below, viselect, the
+   specs), not Tailwind's `display: list-item`, which would beat `flex`. */
+@source not inline("list-item");
 
 /*
  * Phone shell: the bottom tab bar is `position: fixed`, so Home's own fixed

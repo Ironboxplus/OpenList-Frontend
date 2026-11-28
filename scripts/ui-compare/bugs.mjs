@@ -1053,8 +1053,12 @@ const tallDialog = (name, opts, open) =>
     const m = await last.evaluate((el) => {
       const r = el.getBoundingClientRect()
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-      const d = el.closest('[role="dialog"]').getBoundingClientRect()
-      return { text: el.textContent.trim(), top: Math.round(r.top), bottom: Math.round(r.bottom), vh: innerHeight, dialog: [Math.round(d.top), Math.round(d.bottom)], hits: !!hit && (hit === el || el.contains(hit)) }
+      const dlg = el.closest('[role="dialog"]')
+      const d = dlg.getBoundingClientRect()
+      // a disabled button is pointer-events: none (the kit's), so a click on it falls
+      // to what is under it: there it must be the dialog's own, not a cover over it
+      const hits = !!hit && (el.disabled ? dlg.contains(hit) : hit === el || el.contains(hit))
+      return { text: el.textContent.trim(), top: Math.round(r.top), bottom: Math.round(r.bottom), vh: innerHeight, dialog: [Math.round(d.top), Math.round(d.bottom)], disabled: el.disabled, hits }
     })
     log(`${name}`, JSON.stringify(m))
     if (m.top < 0 || m.bottom > m.vh) throw new Error(`${name}: the footer's "${m.text}" is off screen (${m.top}..${m.bottom} of ${m.vh})`)
