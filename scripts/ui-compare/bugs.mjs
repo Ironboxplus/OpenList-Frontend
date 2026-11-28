@@ -2274,14 +2274,34 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
   c("Back returns to the folder's address at the scroll it had", pathOf(page) === VDIR && y0 > 50 && Math.abs(y - y0) < 4, `${pathOf(page)} scrollY=${y}, was ${y0}; ${JSON.stringify(moves)}`)
   m = await movi(page)
   c("closing keeps the same player element", m.added === 1 && m.removed === 0 && m.count === 1, m)
-  const heights = await page.evaluate(() => window.__viewer.heights)
-  const closed = dockRun(heights, t2, Infinity)
-  env.report = { ...(env.report ?? {}), dockOpen: opened, dockClose: closed }
   // the height runs on Motion's JS clock: measured by frame, what the frames
-  // bracket (ranFor)
-  c("the frames pin the opening down (bounds within 3 frames)", runWidthOk(opened), opened)
-  c("the frames pin the closing down (bounds within 3 frames)", runWidthOk(closed), closed)
-  c("the dock opens in 500ms", opened && opened.from === 0 && ranFor(opened, 500), opened)
+  // bracket (ranFor). A run the frames do not pin down (the bounds more than
+  // three frames apart: the runner drew a frame 40-60ms late right at the
+  // click, CI 46062225101) says nothing about the dock, in either direction:
+  // it is measured again, up to four times, and the first run that is pinned
+  // down is the one judged, by the same 3-frame bound and the same 500 / 200ms.
+  // Four unpinned runs fail the checks below, with all of them reported.
+  const runs = { open: [opened], close: [dockRun(await page.evaluate(() => window.__viewer.heights), t2, Infinity)] }
+  while (runs.open.length < 4 && !(runWidthOk(runs.open.at(-1)) && runWidthOk(runs.close.at(-1)))) {
+    const o0 = await page.evaluate(() => performance.now())
+    await openRow(page, V3)
+    await seen(page, DOCK_OPEN)
+    await settle(page)
+    const o1 = await page.evaluate(() => performance.now())
+    runs.open.push(dockRun(await page.evaluate(() => window.__viewer.heights), o0, o1))
+    const c0 = await page.evaluate(() => performance.now())
+    await page.goBack()
+    await closedDock(page)
+    await settle(page)
+    runs.close.push(dockRun(await page.evaluate(() => window.__viewer.heights), c0, Infinity))
+  }
+  const pinned = (list) => list.find(runWidthOk) ?? list.at(-1)
+  const open = pinned(runs.open)
+  const closed = pinned(runs.close)
+  env.report = { ...(env.report ?? {}), dockOpen: open, dockClose: closed, dockRuns: runs }
+  c("the frames pin the opening down (bounds within 3 frames)", runWidthOk(open), runs.open)
+  c("the frames pin the closing down (bounds within 3 frames)", runWidthOk(closed), runs.close)
+  c("the dock opens in 500ms", open && open.from === 0 && ranFor(open, 500), open)
   c("the dock closes in 200ms", closed && closed.to === 0 && ranFor(closed, 200), closed)
   c.done()
 })
