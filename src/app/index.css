@@ -44,7 +44,3 @@
 .dark ::-webkit-scrollbar-thumb:vertical:active {
   background-color: rgb(58, 58, 58);
 }
-
-.hope-select__option {
-  flex-shrink: 0;
-}

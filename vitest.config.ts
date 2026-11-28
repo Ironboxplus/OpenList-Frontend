@@ -15,7 +15,6 @@ export default defineConfig({
     // node:test suites run via `pnpm test:node`
     exclude: ["**/node_modules/**", "**/*.test.js"],
     setupFiles: ["./src/test-setup.ts"],
-    server: { deps: { inline: [/@hope-ui/] } },
     deps: {
       optimizer: {
         web: {

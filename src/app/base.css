@@ -1,0 +1,117 @@
+/*
+ * The page's base layer: what hope-ui's reset and the app's global styles gave
+ * every element, written out here now that hope-ui is gone (PLAN_FE_SYSTEM_UX_1127
+ * P5, B6). Rule by rule it is hope-ui 0.6.8's global reset (dist/index.mjs
+ * 2306-2362) with the old theme.ts globalStyles; tailwind's utilities are
+ * classes, so none of these element rules can beat one. The page's own colours
+ * are tokens.css's: canvas for the ground, foreground for the text.
+ */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--foreground);
+  font-family: inherit;
+  line-height: inherit;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select,
+optgroup {
+  font-family: inherit;
+  font-size: 100%;
+}
+
+ol,
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  background-color: transparent;
+  color: inherit;
+  text-decoration: inherit;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* The rubber-band selection of the file list (viselect). */
+.viselect-selection-area {
+  background: rgba(46, 115, 252, 0.11);
+  border: 2px solid rgba(98, 155, 255, 0.81);
+  border-radius: 0.1em;
+}
+
+.viselect-container {
+  user-select: none;
+}
+
+.viselect-container .viselect-item {
+  -webkit-user-drag: none;
+}
+
+.viselect-container .viselect-item img {
+  -webkit-user-drag: none;
+}

@@ -1,8 +1,9 @@
 /*
  * Tailwind entry for the new UI (shell, transfers, shadcn-solid components).
- * No preflight on purpose: hope-ui owns the global reset. Utilities are left
- * unlayered because hope-ui's unlayered `* { margin: 0; padding: 0 }` would
- * otherwise beat any layered `p-*` / `m-*` utility.
+ * No preflight on purpose: base.css is the reset (hope-ui's, written out).
+ * Utilities are left unlayered because that reset's unlayered
+ * `* { margin: 0; padding: 0 }` would otherwise beat any layered `p-*` / `m-*`
+ * utility.
  */
 @import "tailwindcss/theme" layer(theme);
 @import "./tokens.css";

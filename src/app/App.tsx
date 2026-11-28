@@ -41,8 +41,8 @@ import { SECTION_LOADERS } from "~/features/shell/nav-items"
 import { SessionGate } from "./MustUser"
 import "./index.css"
 import "./tailwind.css"
+import "./base.css"
 import { legacyTypeToFilter } from "~/features/transfers/adapter"
-import { globalStyles } from "./theme"
 
 const Home = lazy(SECTION_LOADERS.files)
 const Manage = lazy(SECTION_LOADERS.settings)
@@ -97,7 +97,6 @@ const CatchAll = () => {
 }
 
 const App: Component = () => {
-  globalStyles()
   const isRouting = useIsRouting()
   const { to, pathname } = useRouter()
   const onTo = (path: string) => {

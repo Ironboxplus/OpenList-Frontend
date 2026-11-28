@@ -29,7 +29,6 @@ import { MediaType, UserMethods } from "~/types"
 import { cn } from "~/utils/cn"
 import { joinBase } from "~/utils/path"
 import { MediaAccentPicker } from "./MediaAccentPicker"
-import { colorMode } from "~/store/color-mode"
 
 // The player is only needed inside the library: lazy, so it stays out of the
 // entry chunk and costs nothing while the media library is off.
@@ -130,13 +129,12 @@ const MediaNav = () => {
 
 /**
  * The media theme colour applies on media pages only: files, settings and
- * login keep the site palette. Light and dark each have their own scale, so it
- * is written again when the colour mode changes.
+ * login keep the site palette.
  */
 const useMediaAccent = () => {
   createEffect(() => {
     if (mediaAccentEnabled()) {
-      applyAccentPalette(accent(), colorMode() === "dark")
+      applyAccentPalette(accent())
     } else {
       clearAccentPalette()
     }

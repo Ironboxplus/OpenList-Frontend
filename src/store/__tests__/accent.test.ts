@@ -9,7 +9,7 @@ afterEach(() => accent.clearAccentPalette())
 
 describe("the media accent on the page", () => {
   it("writes the kit's variables and no hope palette", () => {
-    accent.applyAccentPalette("#336699", false)
+    accent.applyAccentPalette("#336699")
     expect(style()).toContain("--primary: #336699")
     expect(style()).toContain("--ring: #336699")
     expect(style()).toContain("--primary-foreground")
@@ -18,7 +18,7 @@ describe("the media accent on the page", () => {
   })
 
   it("takes them off again", () => {
-    accent.applyAccentPalette("#336699", true)
+    accent.applyAccentPalette("#336699")
     accent.clearAccentPalette()
     expect(style()).not.toContain("--primary")
     expect(style()).not.toContain("--ring")
