@@ -10,7 +10,7 @@ import type { PolymorphicProps } from "@kobalte/core/polymorphic"
 import type { VariantProps } from "class-variance-authority"
 import { cva } from "class-variance-authority"
 import { TbLoader2 } from "solid-icons/tb"
-import type { ValidComponent } from "solid-js"
+import type { JSX, ValidComponent } from "solid-js"
 import { Show, splitProps } from "solid-js"
 
 export const buttonVariants = cva(
@@ -55,6 +55,7 @@ type ButtonProps = ButtonPrimitive.ButtonRootProps &
     class?: string
     /** A spinner before the label and the button disabled. */
     loading?: boolean
+    children?: JSX.Element
   }
 
 export const Button = <T extends ValidComponent = "button">(
