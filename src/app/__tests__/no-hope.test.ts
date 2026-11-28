@@ -14,6 +14,11 @@ const GONE: RegExp[] = [
   // B2: components/, but for the overlay compat layer (its parts take hope's
   // style props until the pages that pass them are converted: end of B5)
   /^components\/(?!overlay\/)/,
+  // B3: manage (the six upstream pages included: docs/FE_UPSTREAM_DIVERGENCE.md),
+  // init, the rest of login, the built-in plugins, the test page
+  /^pages\/manage\/(?!__tests__\/)/,
+  /^pages\/(init|login|test)\//,
+  /^plugins\//,
 ]
 
 // app/ColorSchemeSync.tsx hands the store's mode to hope's provider until B6
