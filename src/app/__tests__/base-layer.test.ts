@@ -5,21 +5,22 @@ import { describe, expect, it } from "vitest"
 // media, the system font. Written out rule by rule from hope-ui 0.6.8's
 // global reset (dist/index.mjs 2306-2362) and the old app/theme.ts
 // globalStyles; the parser below reads `selector { declarations }` blocks.
-const files = import.meta.glob("../*.css", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>
-const css = files["../base.css"] ?? ""
-const app = (
-  Object.values(
-    import.meta.glob("../App.tsx", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    }),
-  ) as string[]
-)[0]
+//
+// The glob keys are relative to this file; each is resolved to its path under
+// src/ (as no-hope.test.ts does).
+const files = Object.entries(
+  import.meta.glob("../../app/*.{css,tsx}", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }) as Record<string, string>,
+).map(([key, src]) => ({
+  path: new URL(key, import.meta.url).pathname.replace(/^.*\/src\//, ""),
+  src,
+}))
+const text = (path: string) => files.find((f) => f.path === path)?.src ?? ""
+const css = text("app/base.css")
+const app = text("app/App.tsx")
 
 const rules = () => {
   const out: Record<string, Record<string, string>> = {}
@@ -37,6 +38,7 @@ const rules = () => {
 
 describe("base.css", () => {
   it("exists and the app loads it", () => {
+    expect(files.map((f) => f.path)).toContain("app/base.css")
     expect(css.length).toBeGreaterThan(200)
     expect(app).toContain('import "./base.css"')
   })

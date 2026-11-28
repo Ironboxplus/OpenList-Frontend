@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import * as accent from "../accent"
 
 // The media colour is the kit's: --primary, --ring and its foreground, on the
-// page. hope-ui's palette variables (--hope-colors-*) are not written any more.
+// page. hope-ui's palette variables are not written any more.
 const style = () => document.documentElement.getAttribute("style") ?? ""
 
 afterEach(() => accent.clearAccentPalette())
