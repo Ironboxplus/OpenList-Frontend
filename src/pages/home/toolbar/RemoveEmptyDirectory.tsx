@@ -47,7 +47,7 @@ export const RemoveEmptyDirectory = () => {
         <ModalBody>
           <p>{t("home.toolbar.remove_empty_directory-tips")}</p>
         </ModalBody>
-        <ModalFooter display="flex" gap="$2">
+        <ModalFooter class="flex gap-2">
           <Button variant="secondary" onClick={onClose}>
             {t("global.cancel")}
           </Button>

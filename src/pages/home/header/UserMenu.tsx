@@ -80,7 +80,7 @@ export const UserMenu = () => {
           <For each={entries()}>
             {(entry) => (
               <MenuItem
-                color={entry.danger ? "$danger9" : undefined}
+                danger={entry.danger}
                 icon={<Dynamic component={entryIcons[entry.id]} />}
                 disabled={entry.id === "logout" && logOutLoading()}
                 onSelect={() => {

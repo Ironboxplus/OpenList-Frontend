@@ -11,13 +11,11 @@ export const CopyLink = () => {
     copySelectedMpvCommand,
     canCopyMpvCommand,
   } = useCopyLink()
-  const colorScheme = "neutral"
   return (
     <Menu placement="top" offset={10}>
       <MenuTrigger as={CenterIcon} name="copy_link" />
       <MenuContent>
         <MenuItem
-          colorScheme={colorScheme}
           onSelect={() => {
             copySelectedPreviewPage()
           }}
@@ -25,7 +23,6 @@ export const CopyLink = () => {
           {t("home.toolbar.preview_page")}
         </MenuItem>
         <MenuItem
-          colorScheme={colorScheme}
           onSelect={() => {
             copySelectedRawLink()
           }}
@@ -33,7 +30,6 @@ export const CopyLink = () => {
           {t("home.toolbar.down_link")}
         </MenuItem>
         <MenuItem
-          colorScheme={colorScheme}
           onSelect={() => {
             copySelectedRawLink(true)
           }}
@@ -42,7 +38,6 @@ export const CopyLink = () => {
         </MenuItem>
         <Show when={canCopyMpvCommand()}>
           <MenuItem
-            colorScheme={colorScheme}
             onSelect={() => {
               void copySelectedMpvCommand()
             }}

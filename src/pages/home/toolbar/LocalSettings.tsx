@@ -119,7 +119,7 @@ export const LocalSettings = () => {
       <DrawerOverlay />
       <DrawerContent>
         <DrawerCloseButton />
-        <DrawerHeader color="$info9">
+        <DrawerHeader class="text-primary">
           {t("home.toolbar.local_settings")}
         </DrawerHeader>
         <DrawerBody>

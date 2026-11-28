@@ -55,7 +55,7 @@ export const Delete = () => {
             {t("home.toolbar.follow_seed")}
           </CheckboxField>
         </ModalBody>
-        <ModalFooter display="flex" gap="$2">
+        <ModalFooter class="flex gap-2">
           <Button variant="secondary" onClick={onClose}>
             {t("global.cancel")}
           </Button>

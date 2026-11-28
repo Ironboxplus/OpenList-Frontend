@@ -22,14 +22,13 @@ import { Button } from "~/components/ui/button"
 
 export const Download = () => {
   const t = useT()
-  const colorScheme = "neutral"
   const { batchDownloadSelected, sendToAria2, playlistDownloadSelected } =
     useDownload()
   return (
     <Menu placement="top" offset={10}>
       <MenuTrigger as={CenterIcon} name="download" />
       <MenuContent>
-        <MenuItem colorScheme={colorScheme} onSelect={batchDownloadSelected}>
+        <MenuItem onSelect={batchDownloadSelected}>
           {t("home.toolbar.batch_download")}
         </MenuItem>
         <Show
@@ -38,21 +37,17 @@ export const Download = () => {
           }
         >
           <MenuItem
-            colorScheme={colorScheme}
             onSelect={() => {
               bus.emit("tool", "package_download")
             }}
           >
             {t("home.toolbar.package_download")}
           </MenuItem>
-          <MenuItem
-            colorScheme={colorScheme}
-            onSelect={playlistDownloadSelected}
-          >
+          <MenuItem onSelect={playlistDownloadSelected}>
             {t("home.toolbar.playlist_download")}
           </MenuItem>
         </Show>
-        <MenuItem colorScheme={colorScheme} onSelect={sendToAria2}>
+        <MenuItem onSelect={sendToAria2}>
           {t("home.toolbar.send_aria2")}
         </MenuItem>
       </MenuContent>
@@ -99,7 +94,7 @@ export const PackageDownloadModal = () => {
             <ModalBody>
               <p>{t("home.toolbar.pre_package_download-tips")}</p>
             </ModalBody>
-            <ModalFooter display="flex" gap="$2">
+            <ModalFooter class="flex gap-2">
               <Button variant="secondary" onClick={onClose}>
                 {t("global.cancel")}
               </Button>

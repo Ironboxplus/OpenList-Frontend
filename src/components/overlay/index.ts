@@ -1,9 +1,8 @@
 /**
  * hope-ui's overlay API (Modal, Drawer, Menu, Popover, Tooltip,
  * createDisclosure) on the kit's Kobalte components, so every overlay shares
- * one layer stack and one focus scope (PLAN_FE_UNIFY_OVERLAYS_1126). Callers
- * only change their import; the layout parts stay hope's Box, so style props
- * on headers, bodies and footers keep working. Nothing here that hope lacks.
+ * one layer stack and one focus scope (PLAN_FE_UNIFY_OVERLAYS_1126). The parts
+ * are plain elements: callers give them Tailwind classes, not style props.
  */
 export { createDisclosure } from "./disclosure"
 export {

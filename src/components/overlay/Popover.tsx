@@ -1,4 +1,3 @@
-import { Box, type HTMLHopeProps } from "@hope-ui/solid"
 import type { PopoverRootProps } from "@kobalte/core/popover"
 import {
   createContext,
@@ -75,22 +74,21 @@ export const Popover = (props: PopoverProps) => {
 export const PopoverTrigger = UiPopoverTrigger
 
 /**
- * hope's look: column, at most 20rem wide. The callers' style props (w,
- * maxW, maxH, borderRadius) go to a hope Box inside, so they never compete
- * with the kit's classes for the same property.
+ * hope's look: column, at most 20rem wide. The callers' classes win over
+ * these (cn merges them), so w-96 or max-w-[90vw] resize it.
  */
-export const PopoverContent = (props: HTMLHopeProps<"div">) => {
+export const PopoverContent = (props: {
+  class?: string
+  children?: JSX.Element
+}) => {
   const ctx = useContext(PopoverContext)
-  const [local, rest] = splitProps(props, ["children", "class"])
   return (
     <UiPopoverContent
       showClose={false}
       animated={ctx.animated()}
-      class={cn("w-auto p-0", local.class)}
+      class={cn("flex w-auto max-w-xs flex-col p-0", props.class)}
     >
-      <Box display="flex" flexDirection="column" w="100%" maxW="$xs" {...rest}>
-        {local.children}
-      </Box>
+      {props.children}
     </UiPopoverContent>
   )
 }
@@ -99,20 +97,20 @@ export const PopoverArrow = (_props: Record<string, unknown>) => (
   <UiPopoverArrow />
 )
 
-export const PopoverHeader = (props: HTMLHopeProps<"div">) => (
-  <Box
-    display="flex"
-    alignItems="center"
-    flex="0"
-    borderBottom="1px solid var(--border)"
-    px="$3"
-    py="$2"
-    fontSize="$base"
-    fontWeight="$medium"
-    {...props}
-  />
-)
+export const PopoverHeader = (props: JSX.HTMLAttributes<HTMLDivElement>) => {
+  const [local, rest] = splitProps(props, ["class"])
+  return (
+    <div
+      class={cn(
+        "flex flex-[0] items-center border-b border-border px-3 py-2 text-[1rem] font-medium",
+        local.class,
+      )}
+      {...rest}
+    />
+  )
+}
 
-export const PopoverBody = (props: HTMLHopeProps<"div">) => (
-  <Box flex="1" px="$3" py="$2" {...props} />
-)
+export const PopoverBody = (props: JSX.HTMLAttributes<HTMLDivElement>) => {
+  const [local, rest] = splitProps(props, ["class"])
+  return <div class={cn("flex-1 px-3 py-2", local.class)} {...rest} />
+}

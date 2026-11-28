@@ -74,9 +74,9 @@ export const FavoritesWidget = () => {
       >
         <TbBookmark />
       </PopoverTrigger>
-      <PopoverContent w="$96" maxW="90vw">
+      <PopoverContent class="w-96 max-w-[90vw]">
         <PopoverArrow />
-        <PopoverHeader border="none">
+        <PopoverHeader class="border-b-0">
           <div class="flex flex-row items-center justify-between w-full">
             <p class="font-medium">{t("home.favorites.title")}</p>
             <Button
@@ -90,7 +90,7 @@ export const FavoritesWidget = () => {
             </Button>
           </div>
         </PopoverHeader>
-        <PopoverBody maxH="$96" overflowY="auto">
+        <PopoverBody class="max-h-96 overflow-y-auto">
           <Show
             when={!loading()}
             fallback={

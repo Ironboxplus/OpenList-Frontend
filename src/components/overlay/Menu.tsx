@@ -28,10 +28,7 @@ export const Menu = (props: MenuProps) => (
   </DropdownMenu>
 )
 
-/**
- * The trigger; `as` (a hope component) draws it and takes its style props,
- * Kobalte adds the ref, handlers and aria.
- */
+/** The trigger; `as` draws it, Kobalte adds the ref, handlers and aria. */
 export const MenuTrigger = DropdownMenuTrigger
 
 export const MenuContent = (props: ParentProps<{ class?: string }>) => (
@@ -44,10 +41,8 @@ export interface MenuItemProps {
   onSelect?: () => void
   /** Mapped to onSelect, so it too runs after the menu has closed. */
   onClick?: () => void
-  /** "danger" draws the item as destructive; the other schemes as normal. */
-  colorScheme?: string
-  /** A hope colour token; a danger one draws the item as destructive. */
-  color?: string
+  /** Draws the item as destructive. */
+  danger?: boolean
   icon?: JSX.Element
   disabled?: boolean
   class?: string
@@ -58,15 +53,12 @@ export const MenuItem = (props: MenuItemProps) => {
   const [local] = splitProps(props, [
     "onSelect",
     "onClick",
-    "colorScheme",
-    "color",
+    "danger",
     "icon",
     "disabled",
     "class",
     "children",
   ])
-  const danger = () =>
-    local.colorScheme === "danger" || !!local.color?.includes("danger")
   return (
     <DropdownMenuItem
       disabled={local.disabled}
@@ -76,7 +68,7 @@ export const MenuItem = (props: MenuItemProps) => {
       }}
       class={cn(
         "gap-2",
-        danger() && "text-destructive focus:text-destructive",
+        local.danger && "text-destructive focus:text-destructive",
         local.class,
       )}
     >

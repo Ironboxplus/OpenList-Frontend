@@ -1,7 +1,4 @@
-import { Box, type HTMLHopeProps } from "@hope-ui/solid"
-import * as DialogPrimitive from "@kobalte/core/dialog"
 import {
-  type Component,
   createContext,
   type JSX,
   type ParentProps,
@@ -11,6 +8,7 @@ import {
 import { DialogCloseButton } from "~/components/ui/dialog"
 import { Sheet, SheetContent } from "~/components/ui/sheet"
 import { cn } from "~/utils/cn"
+import { PartBody, PartFooter, PartHeader } from "./parts"
 
 type Placement = "top" | "right" | "bottom" | "left"
 const DrawerContext = createContext<{ placement?: Placement }>({})
@@ -59,38 +57,13 @@ export const DrawerContent = (
   )
 }
 
-const BoxTitle = DialogPrimitive.Title as unknown as Component<
-  Omit<HTMLHopeProps<"div">, "as"> & { as: typeof Box }
->
+export const DrawerHeader = PartHeader
 
-export const DrawerHeader = (props: Omit<HTMLHopeProps<"div">, "as">) => (
-  <BoxTitle
-    as={Box}
-    flex="0"
-    pt="$5"
-    px="$5"
-    pb="$3"
-    fontSize="$lg"
-    fontWeight="$medium"
-    {...props}
-  />
+export const DrawerBody = (props: Parameters<typeof PartBody>[0]) => (
+  <PartBody {...props} class={cn("overflow-y-auto", props.class)} />
 )
 
-export const DrawerBody = (props: HTMLHopeProps<"div">) => (
-  <Box flex="1" px="$5" py="$2" overflowY="auto" {...props} />
-)
-
-export const DrawerFooter = (props: HTMLHopeProps<"div">) => (
-  <Box
-    display="flex"
-    alignItems="center"
-    justifyContent="flex-end"
-    pt="$3"
-    px="$5"
-    pb="$5"
-    {...props}
-  />
-)
+export const DrawerFooter = PartFooter
 
 export const DrawerCloseButton = (_props: Record<string, unknown>) => (
   <DialogCloseButton />

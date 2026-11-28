@@ -431,7 +431,7 @@ function Editor(props: { data?: string | ArrayBuffer; contentType?: string }) {
               </div>
             </PopoverTrigger>
             <PopoverContent class="max-h-[350px] w-[280px] rounded-lg">
-              <PopoverBody p="$2">
+              <PopoverBody class="p-2">
                 <Input
                   class="mb-2 h-7 text-xs"
                   placeholder="Search language..."
