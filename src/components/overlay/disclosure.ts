@@ -9,7 +9,7 @@ export interface CreateDisclosureProps {
 }
 
 /**
- * hope-ui's createDisclosure, value for value (@hope-ui/solid 0.6.8,
+ * hope-ui's createDisclosure, value for value (hope-ui 0.6.8,
  * dist/index.mjs 15098-15137), so its 31 callers keep working unchanged.
  */
 export function createDisclosure(props: CreateDisclosureProps = {}) {

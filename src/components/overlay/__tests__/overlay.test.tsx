@@ -1,7 +1,3 @@
-import {
-  createDisclosure as hopeDisclosure,
-  HopeProvider,
-} from "@hope-ui/solid"
 import { cleanup, fireEvent, render, waitFor } from "@solidjs/testing-library"
 import { createRoot, createSignal, type JSX } from "solid-js"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -34,8 +30,7 @@ import {
 
 afterEach(cleanup)
 
-const hope = (ui: () => JSX.Element) =>
-  render(() => <HopeProvider>{ui()}</HopeProvider>)
+const mount = (ui: () => JSX.Element) => render(ui)
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]')
 const closeButtons = () =>
@@ -43,45 +38,61 @@ const closeButtons = () =>
     b.textContent?.includes("Close"),
   )
 
+// hope-ui 0.6.8's createDisclosure, value for value: [isOpen, isControlled,
+// then isOpen after onOpen, onToggle, onToggle, aria-expanded, hidden, and
+// after onClose isOpen, hidden], and the callbacks the steps fire. A
+// controlled disclosure never changes; a toggle of an open one closes it.
 describe("createDisclosure", () => {
-  it("matches hope's value for value", () => {
-    const steps = (d: ReturnType<typeof createDisclosure>) => {
-      const seen = [d.isOpen(), d.isControlled()]
-      d.onOpen()
-      seen.push(d.isOpen())
-      d.onToggle()
-      seen.push(d.isOpen())
-      d.onToggle()
-      seen.push(d.isOpen(), d.triggerProps()["aria-expanded"])
-      seen.push(d.disclosureProps().hidden)
-      d.onClose()
-      seen.push(d.isOpen(), d.disclosureProps().hidden)
-      return seen
-    }
-    createRoot((dispose) => {
-      for (const opts of [{}, { defaultIsOpen: true }, { isOpen: true }]) {
+  const steps = (d: ReturnType<typeof createDisclosure>) => {
+    const seen = [d.isOpen(), d.isControlled()]
+    d.onOpen()
+    seen.push(d.isOpen())
+    d.onToggle()
+    seen.push(d.isOpen())
+    d.onToggle()
+    seen.push(d.isOpen(), d.triggerProps()["aria-expanded"])
+    seen.push(d.disclosureProps().hidden)
+    d.onClose()
+    seen.push(d.isOpen(), d.disclosureProps().hidden)
+    return seen
+  }
+  const cases = [
+    {
+      name: "uncontrolled, closed",
+      opts: {},
+      seen: [false, false, true, false, true, true, false, false, true],
+      calls: ["open", "close", "open", "close"],
+    },
+    {
+      name: "uncontrolled, defaultIsOpen",
+      opts: { defaultIsOpen: true },
+      seen: [true, false, true, false, true, true, false, false, true],
+      calls: ["open", "close", "open", "close"],
+    },
+    {
+      name: "controlled open",
+      opts: { isOpen: true },
+      seen: [true, true, true, true, true, true, false, true, false],
+      calls: ["open", "close", "close", "close"],
+    },
+  ]
+  for (const c of cases) {
+    it(`goes ${c.name} through the steps as hope's`, () => {
+      createRoot((dispose) => {
         const calls: string[] = []
-        const hopeCalls: string[] = []
-        const ours = steps(
+        const seen = steps(
           createDisclosure({
-            ...opts,
+            ...c.opts,
             onOpen: () => calls.push("open"),
             onClose: () => calls.push("close"),
           }),
         )
-        const theirs = steps(
-          hopeDisclosure({
-            ...opts,
-            onOpen: () => hopeCalls.push("open"),
-            onClose: () => hopeCalls.push("close"),
-          }) as ReturnType<typeof createDisclosure>,
-        )
-        expect(ours).toEqual(theirs)
-        expect(calls).toEqual(hopeCalls)
-      }
-      dispose()
+        expect(seen).toEqual(c.seen)
+        expect(calls).toEqual(c.calls)
+        dispose()
+      })
     })
-  })
+  }
 })
 
 describe("modalSizeClass", () => {
@@ -129,7 +140,7 @@ const TestModal = (p: {
 
 describe("Modal", () => {
   it("is a labelled dialog with hope's parts and no X unless asked for", async () => {
-    hope(() => <TestModal onClose={() => {}} />)
+    mount(() => <TestModal onClose={() => {}} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     const title = [...dialog()!.querySelectorAll("[id]")].find(
       (e) => e.textContent === "Title",
@@ -139,13 +150,13 @@ describe("Modal", () => {
     expect(dialog()!.textContent).toContain("ok")
     expect(dialog()!.className).toContain("max-w-[28rem]")
     cleanup()
-    hope(() => <TestModal onClose={() => {}} close />)
+    mount(() => <TestModal onClose={() => {}} close />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     expect(closeButtons()).toHaveLength(1)
   })
 
   it("focuses initialFocus on opening", async () => {
-    hope(() => (
+    mount(() => (
       <TestModal onClose={() => {}} extra={{ initialFocus: "#modal-input" }} />
     ))
     await waitFor(() => expect(document.activeElement?.id).toBe("modal-input"))
@@ -153,13 +164,13 @@ describe("Modal", () => {
 
   it("Escape closes; closeOnEsc={false} keeps it open", async () => {
     const onClose = vi.fn()
-    hope(() => <TestModal onClose={onClose} />)
+    mount(() => <TestModal onClose={onClose} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     fireEvent.keyDown(dialog()!, { key: "Escape" })
     expect(onClose).toHaveBeenCalledTimes(1)
     cleanup()
     const kept = vi.fn()
-    hope(() => <TestModal onClose={kept} extra={{ closeOnEsc: false }} />)
+    mount(() => <TestModal onClose={kept} extra={{ closeOnEsc: false }} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     fireEvent.keyDown(dialog()!, { key: "Escape" })
     expect(kept).not.toHaveBeenCalled()
@@ -169,14 +180,14 @@ describe("Modal", () => {
     const outside = document.createElement("div")
     document.body.append(outside)
     const onClose = vi.fn()
-    hope(() => <TestModal onClose={onClose} />)
+    mount(() => <TestModal onClose={onClose} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     await sleep(20)
     fireEvent.pointerDown(outside)
     await waitFor(() => expect(onClose).toHaveBeenCalled())
     cleanup()
     const kept = vi.fn()
-    hope(() => (
+    mount(() => (
       <TestModal onClose={kept} extra={{ closeOnOverlayClick: false }} />
     ))
     await waitFor(() => expect(dialog()).not.toBeNull())
@@ -189,7 +200,7 @@ describe("Modal", () => {
 
   it("passes DOM handlers of ModalContent through (drop)", async () => {
     const onDrop = vi.fn()
-    hope(() => <TestModal onClose={() => {}} onDrop={onDrop} />)
+    mount(() => <TestModal onClose={() => {}} onDrop={onDrop} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     fireEvent.drop(dialog()!)
     expect(onDrop).toHaveBeenCalledTimes(1)
@@ -199,7 +210,7 @@ describe("Modal", () => {
 describe("Menu", () => {
   it("runs a MenuItem's onClick after the menu has closed, as onSelect", async () => {
     const seen: boolean[] = []
-    hope(() => (
+    mount(() => (
       <Menu>
         <MenuTrigger>open</MenuTrigger>
         <MenuContent>
@@ -243,7 +254,7 @@ const hopeClasses = (root: ParentNode) =>
 
 describe("the layout parts", () => {
   it("are plain elements: a labelled title, and the callers' classes", async () => {
-    hope(() => <TestModal onClose={() => {}} />)
+    mount(() => <TestModal onClose={() => {}} />)
     await waitFor(() => expect(dialog()).not.toBeNull())
     expect(hopeClasses(dialog()!)).toEqual([])
     const title = [...dialog()!.querySelectorAll("[id]")].find(
@@ -257,7 +268,7 @@ describe("the layout parts", () => {
   })
 
   it("keep the same shape on a drawer and a popover", async () => {
-    hope(() => (
+    mount(() => (
       <Drawer opened onClose={() => {}}>
         <DrawerContent>
           <DrawerHeader class="text-primary">Head</DrawerHeader>
@@ -273,7 +284,7 @@ describe("the layout parts", () => {
     )!
     expect(head.className).toContain("text-primary")
     cleanup()
-    hope(() => (
+    mount(() => (
       <Popover opened motionPreset="none">
         <PopoverTrigger>t</PopoverTrigger>
         <PopoverContent class="w-96">
@@ -299,7 +310,7 @@ describe("the layout parts", () => {
 
 describe("Popover", () => {
   it("hands a render function onClose, which closes it", async () => {
-    hope(() => (
+    mount(() => (
       <Popover>
         {({ onClose }: { onClose: () => void }) => (
           <>
@@ -334,7 +345,7 @@ describe("Popover", () => {
 
   it("follows `opened` when controlled", async () => {
     const [opened, setOpened] = createSignal(false)
-    hope(() => (
+    mount(() => (
       <Popover opened={opened()} motionPreset="none">
         <PopoverTrigger>t</PopoverTrigger>
         <PopoverContent>
@@ -350,7 +361,7 @@ describe("Popover", () => {
 
 describe("Tooltip (no wrapper element)", () => {
   const mount = (disabled = false) =>
-    hope(() => (
+    mount(() => (
       <div id="parent">
         <Tooltip label="the tip" disabled={disabled} withArrow>
           <button id="child">x</button>
@@ -392,7 +403,7 @@ describe("Tooltip (no wrapper element)", () => {
         </button>
       </Tooltip>
     )
-    hope(() => (
+    mount(() => (
       <Menu>
         <MenuTrigger as={TipButton} />
         <MenuContent>

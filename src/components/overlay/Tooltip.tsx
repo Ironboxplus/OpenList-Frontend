@@ -18,7 +18,7 @@ import {
  * Kobalte's trigger without an element of its own: the props Kobalte gives
  * its trigger (ref, pointer and focus handlers, aria) are put on the DOM node
  * of the child, as hope's Tooltip does (it resolves `children()` and
- * attaches its listeners to that node, @hope-ui/solid dist 14875-14989). The
+ * attaches its listeners to that node, hope-ui 0.6.8, dist 14875-14989). The
  * child keeps its place and its parent; the tooltip is anchored on it.
  */
 const OnChild = (
