@@ -7,6 +7,11 @@ import { createRoot, createSignal, type JSX } from "solid-js"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   createDisclosure,
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
   Menu,
   MenuContent,
   MenuItem,
@@ -22,6 +27,7 @@ import {
   Popover,
   PopoverBody,
   PopoverContent,
+  PopoverHeader,
   PopoverTrigger,
   Tooltip,
 } from ".."
@@ -114,7 +120,7 @@ const TestModal = (p: {
         <input id="first" />
         <input id="modal-input" />
       </ModalBody>
-      <ModalFooter display="flex" gap="$2">
+      <ModalFooter class="flex gap-2">
         <button>ok</button>
       </ModalFooter>
     </ModalContent>
@@ -204,7 +210,7 @@ describe("Menu", () => {
           >
             go
           </MenuItem>
-          <MenuItem colorScheme="danger">bad</MenuItem>
+          <MenuItem danger>bad</MenuItem>
         </MenuContent>
       </Menu>
     ))
@@ -226,6 +232,68 @@ describe("Menu", () => {
     fireEvent.keyDown(item, { key: "Enter" })
     expect(seen).toEqual([])
     await waitFor(() => expect(seen).toEqual([false]))
+  })
+})
+
+// The layout parts are plain elements carrying Tailwind classes, not hope's Box.
+const hopeClasses = (root: ParentNode) =>
+  [...root.querySelectorAll("*")]
+    .filter((e) => /(^|\s)hope-/.test(e.getAttribute("class") ?? ""))
+    .map((e) => e.tagName)
+
+describe("the layout parts", () => {
+  it("are plain elements: a labelled title, and the callers' classes", async () => {
+    hope(() => <TestModal onClose={() => {}} />)
+    await waitFor(() => expect(dialog()).not.toBeNull())
+    expect(hopeClasses(dialog()!)).toEqual([])
+    const title = [...dialog()!.querySelectorAll("[id]")].find(
+      (e) => e.textContent === "Title",
+    )!
+    expect(title.tagName).toBe("DIV")
+    expect(title.className).toContain("px-5")
+    const footer = dialog()!.querySelector("button")!.parentElement!
+    expect(footer.className).toContain("justify-end")
+    expect(footer.className).toContain("gap-2")
+  })
+
+  it("keep the same shape on a drawer and a popover", async () => {
+    hope(() => (
+      <Drawer opened onClose={() => {}}>
+        <DrawerContent>
+          <DrawerHeader class="text-primary">Head</DrawerHeader>
+          <DrawerBody>body</DrawerBody>
+          <DrawerFooter>foot</DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    ))
+    await waitFor(() => expect(dialog()).not.toBeNull())
+    expect(hopeClasses(dialog()!)).toEqual([])
+    const head = [...dialog()!.querySelectorAll("[id]")].find(
+      (e) => e.textContent === "Head",
+    )!
+    expect(head.className).toContain("text-primary")
+    cleanup()
+    hope(() => (
+      <Popover opened motionPreset="none">
+        <PopoverTrigger>t</PopoverTrigger>
+        <PopoverContent class="w-96">
+          <PopoverHeader class="border-b-0">head</PopoverHeader>
+          <PopoverBody class="overflow-y-auto">inside</PopoverBody>
+        </PopoverContent>
+      </Popover>
+    ))
+    const body = await waitFor(() => {
+      const el = [...document.querySelectorAll("div")].find(
+        (d) => d.textContent === "inside",
+      )
+      expect(el).toBeDefined()
+      return el!
+    })
+    expect(body.className).toContain("overflow-y-auto")
+    expect(hopeClasses(document.body)).toEqual([])
+    const content = body.parentElement!
+    expect(content.className).toContain("w-96")
+    expect(content.className).toContain("flex-col")
   })
 })
 

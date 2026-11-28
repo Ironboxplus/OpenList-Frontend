@@ -11,9 +11,8 @@ const GONE: RegExp[] = [
   /^pages\/login\/index\.tsx$/,
   /^store\//,
   /^utils\//,
-  // B2: components/, but for the overlay compat layer (its parts take hope's
-  // style props until the pages that pass them are converted: end of B5)
-  /^components\/(?!overlay\/)/,
+  // B2: components/ (the overlay compat layer's parts follow B5's callers)
+  /^components\//,
   // B3: manage (the six upstream pages included: docs/FE_UPSTREAM_DIVERGENCE.md),
   // init, the rest of login, the built-in plugins, the test page
   /^pages\/manage\/(?!__tests__\/)/,
