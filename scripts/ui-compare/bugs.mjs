@@ -2318,7 +2318,10 @@ await spec("viewer-dock", { chrome: true, init: [viewerProbe, listLayout], video
   c.done()
 })
 
-// desktop: at most about 60% of the screen high, 16:9, and five rows of the list in sight under it
+// desktop: the video is not capped to a share of the screen (it is not pinned
+// to the top): it takes the width of the files area at 16:9, and the only
+// limit is that the video and the title row under it lie whole in the window;
+// a window too wide for that narrows the video (user, 11-28)
 for (const height of [900, 720]) {
   await spec("viewer-dock-geometry", { height, init: [viewerProbe, listLayout] }, async (env) => {
     const { page } = env
@@ -2328,14 +2331,18 @@ for (const height of [900, 720]) {
     c("the dock opens", await seen(page, DOCK_OPEN))
     await settle(page)
     const g = await page.evaluate(() => {
-      const f = document.querySelector('[data-testid="dock-frame"]')?.getBoundingClientRect()
-      if (!f) return null
-      const rows = [...document.querySelectorAll(".viselect-item")].map((r) => r.getBoundingClientRect()).filter((r) => r.height > 0 && r.top >= f.bottom && r.bottom <= innerHeight)
-      return { w: Math.round(f.width), h: Math.round(f.height), vh: innerHeight, rows: rows.length }
+      const r = (sel) => document.querySelector(sel)?.getBoundingClientRect()
+      const f = r('[data-testid="dock-frame"]')
+      const dock = r('[data-testid="dock"]')
+      const title = document.querySelector('[data-testid="dock-title"]')?.parentElement?.parentElement?.getBoundingClientRect()
+      if (!f || !dock || !title) return null
+      return { w: Math.round(f.width), h: Math.round(f.height), top: Math.round(f.top), titleBottom: Math.round(title.bottom), area: Math.round(dock.width), vh: innerHeight, scrollY: Math.round(scrollY) }
     })
-    c("the player is at most 60% of the window high", g && g.h <= Math.ceil(g.vh * 0.6) + 1, g)
     c("the player is 16:9", g && Math.abs(g.w / g.h - 16 / 9) < 0.02, g)
-    c("five rows of the list show under it", g && g.rows >= 5, g)
+    c("the video and its title row lie whole in the window", g && g.top >= 0 && g.titleBottom <= g.vh, g)
+    if (height === 900) c("the video is as wide as the files area", g && Math.abs(g.w - g.area) <= 1, g)
+    // 720 high: the area at 16:9 would not fit, so the height limit narrows the video
+    if (height === 720) c("a window too wide for the height narrows the video", g && g.w < g.area - 40 && g.titleBottom >= g.vh - 48, g)
     c.done()
   })
 }
